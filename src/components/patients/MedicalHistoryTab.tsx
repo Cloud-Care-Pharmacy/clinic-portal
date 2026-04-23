@@ -134,13 +134,13 @@ function ClinicalDetailSheet({
                   {record.times_tried_quitting}
                 </p>
               )}
-              {record.quit_motivation.length > 0 && (
+              {record.quit_motivation && record.quit_motivation.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Quit motivation:</span>{" "}
                   {formatList(record.quit_motivation)}
                 </p>
               )}
-              {record.quit_methods.length > 0 && (
+              {record.quit_methods && record.quit_methods.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Quit methods:</span>{" "}
                   {formatList(record.quit_methods)}
@@ -208,7 +208,7 @@ function ClinicalDetailSheet({
                 <span className="text-muted-foreground">Has conditions:</span>{" "}
                 {record.has_medical_conditions === "yes" ? "Yes" : "No"}
               </p>
-              {record.medical_conditions.length > 0 && (
+              {record.medical_conditions && record.medical_conditions.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Conditions:</span>{" "}
                   {formatList(record.medical_conditions)}
@@ -233,7 +233,7 @@ function ClinicalDetailSheet({
                 <span className="text-muted-foreground">Takes medication:</span>{" "}
                 {record.takes_medication === "yes" ? "Yes" : "No"}
               </p>
-              {record.high_risk_medications.length > 0 && (
+              {record.high_risk_medications && record.high_risk_medications.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">High-risk medications:</span>{" "}
                   {formatList(record.high_risk_medications)}
