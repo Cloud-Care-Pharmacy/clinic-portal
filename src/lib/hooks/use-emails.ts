@@ -9,6 +9,12 @@ async function fetchEmails(patientId: string, limit = 50, offset = 0) {
   const res = await fetch(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/emails?${params}`
   );
+  if (res.status === 404) {
+    return {
+      success: true,
+      data: { patientId, emails: [], pagination: { limit, offset, total: 0 } },
+    };
+  }
   if (!res.ok) throw new Error("Failed to fetch emails");
   return res.json() as Promise<{
     success: boolean;
