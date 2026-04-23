@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -238,7 +238,10 @@ export function ProfileTab({
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="p-6">
+        <CardHeader>
+          <CardTitle>Patient Details</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 9 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
@@ -284,9 +287,9 @@ export function ProfileTab({
   return (
     <>
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold">Patient Details</h3>
+        <CardHeader>
+          <CardTitle>Patient Details</CardTitle>
+          <CardAction>
             <Button
               variant="outline"
               size="sm"
@@ -295,7 +298,9 @@ export function ProfileTab({
               <Pencil className="h-4 w-4 mr-1" />
               Edit
             </Button>
-          </div>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <DetailField
               icon={<User className="h-4 w-4" />}

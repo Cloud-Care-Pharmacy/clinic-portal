@@ -1,10 +1,15 @@
 import type { PatientNote, PatientNotesResponse, NoteCategory } from "@/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// ---- Fetch helpers ----
+// ---- Fetch helpers (via auth proxy → prescription-gateway) ----
+
+function notesUrl(patientId: string, noteId?: string) {
+  const base = `/api/proxy/patients/${encodeURIComponent(patientId)}/notes`;
+  return noteId ? `${base}/${encodeURIComponent(noteId)}` : base;
+}
 
 async function fetchNotes(patientId: string): Promise<PatientNotesResponse> {
-  const res = await fetch(`/api/notes/${encodeURIComponent(patientId)}`);
+  const res = await fetch(notesUrl(patientId));
   if (!res.ok) throw new Error("Failed to fetch notes");
   return res.json();
 }
@@ -20,7 +25,7 @@ async function createNote(
     authorRole: string;
   }
 ): Promise<{ success: boolean; data: PatientNote }> {
-  const res = await fetch(`/api/notes/${encodeURIComponent(patientId)}`, {
+  const res = await fetch(notesUrl(patientId), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -36,10 +41,7 @@ async function togglePin(
   patientId: string,
   noteId: string
 ): Promise<{ success: boolean; data: PatientNote }> {
-  const res = await fetch(
-    `/api/notes/${encodeURIComponent(patientId)}/${encodeURIComponent(noteId)}`,
-    { method: "PATCH" }
-  );
+  const res = await fetch(notesUrl(patientId, noteId), { method: "PATCH" });
   if (!res.ok) throw new Error("Failed to toggle pin");
   return res.json();
 }
@@ -48,10 +50,7 @@ async function deleteNote(
   patientId: string,
   noteId: string
 ): Promise<{ success: boolean }> {
-  const res = await fetch(
-    `/api/notes/${encodeURIComponent(patientId)}/${encodeURIComponent(noteId)}`,
-    { method: "DELETE" }
-  );
+  const res = await fetch(notesUrl(patientId, noteId), { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete note");
   return res.json();
 }
