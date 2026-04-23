@@ -14,11 +14,7 @@ import {
   X,
   CirclePlus,
 } from "lucide-react";
-import {
-  DataGrid,
-  type GridColDef,
-  type GridRowParams,
-} from "@mui/x-data-grid";
+import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -100,7 +96,11 @@ type StatusFilter = "Linked" | "Pending";
 const STATUS_OPTIONS: StatusFilter[] = ["Linked", "Pending"];
 
 interface ColumnVisibility {
+  patient_name: boolean;
   original_email: boolean;
+  date_of_birth: boolean;
+  mobile: boolean;
+  location: boolean;
   generated_email: boolean;
   halaxy_patient_id: boolean;
   pms_status: boolean;
@@ -108,15 +108,23 @@ interface ColumnVisibility {
 }
 
 const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
+  patient_name: true,
   original_email: true,
-  generated_email: true,
-  halaxy_patient_id: true,
+  date_of_birth: true,
+  mobile: false,
+  location: false,
+  generated_email: false,
+  halaxy_patient_id: false,
   pms_status: true,
   created_at: true,
 };
 
 const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
+  patient_name: "Name",
   original_email: "Email",
+  date_of_birth: "Date of Birth",
+  mobile: "Mobile",
+  location: "Location",
   generated_email: "Generated Email",
   halaxy_patient_id: "PMS ID",
   pms_status: "Status",
@@ -225,22 +233,20 @@ function FilterBar({
             <DropdownMenuGroup>
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
-                (key) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={columnVisibility[key]}
-                    onClick={() =>
-                      onColumnVisibilityChange({
-                        ...columnVisibility,
-                        [key]: !columnVisibility[key],
-                      })
-                    }
-                  >
-                    {COLUMN_LABELS[key]}
-                  </DropdownMenuCheckboxItem>
-                )
-              )}
+              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map((key) => (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={columnVisibility[key]}
+                  onClick={() =>
+                    onColumnVisibilityChange({
+                      ...columnVisibility,
+                      [key]: !columnVisibility[key],
+                    })
+                  }
+                >
+                  {COLUMN_LABELS[key]}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -281,7 +287,10 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
         (p) =>
           p.original_email.toLowerCase().includes(q) ||
           p.generated_email.toLowerCase().includes(q) ||
-          (p.halaxy_patient_id ?? "").toLowerCase().includes(q)
+          (p.halaxy_patient_id ?? "").toLowerCase().includes(q) ||
+          (p.first_name ?? "").toLowerCase().includes(q) ||
+          (p.last_name ?? "").toLowerCase().includes(q) ||
+          (p.mobile ?? "").toLowerCase().includes(q)
       );
     }
 
@@ -297,10 +306,48 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
 
   const columns: GridColDef<PatientMapping>[] = [
     {
+      field: "patient_name",
+      headerName: "Name",
+      flex: 1,
+      minWidth: 160,
+      valueGetter: (_value: unknown, row: PatientMapping) => {
+        const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
+        return name || "—";
+      },
+    },
+    {
       field: "original_email",
       headerName: "Email",
       flex: 1,
       minWidth: 220,
+    },
+    {
+      field: "date_of_birth",
+      headerName: "Date of Birth",
+      width: 130,
+      valueFormatter: (value: string | null) =>
+        value
+          ? new Date(value).toLocaleDateString("en-AU", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })
+          : "—",
+    },
+    {
+      field: "mobile",
+      headerName: "Mobile",
+      width: 140,
+      valueFormatter: (value: string | null) => value ?? "—",
+    },
+    {
+      field: "location",
+      headerName: "Location",
+      width: 160,
+      valueGetter: (_value: unknown, row: PatientMapping) => {
+        const parts = [row.city, row.state].filter(Boolean);
+        return parts.length > 0 ? parts.join(", ") : "—";
+      },
     },
     {
       field: "generated_email",
@@ -323,9 +370,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       valueOptions: ["Linked", "Pending"],
       valueGetter: (_value: unknown, row: PatientMapping) =>
         row.halaxy_patient_id ? "Linked" : "Pending",
-      renderCell: (params) => (
-        <PmsStatusCell value={params.row.halaxy_patient_id} />
-      ),
+      renderCell: (params) => <PmsStatusCell value={params.row.halaxy_patient_id} />,
     },
     {
       field: "created_at",
