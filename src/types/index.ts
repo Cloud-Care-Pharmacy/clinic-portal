@@ -75,14 +75,30 @@ export interface Entity {
   updated_at: string;
 }
 
-/** Patient mapping from D1 */
+/** Patient mapping from D1 — matches GET /api/patients/:id response */
 export interface PatientMapping {
   id: string;
   entity_id: string | null;
   generated_email: string;
   original_email: string;
   halaxy_patient_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  mobile: string | null;
+  street_address: string | null;
+  city: string | null;
+  state: string | null;
+  postcode: string | null;
+  country: string | null;
+  medicare_number: string | null;
+  medicare_irn: string | null;
+  forward_email: string | null;
+  proof_of_age_file_name: string | null;
+  proof_of_age_file_type: string | null;
   created_at: string;
+  updated_at: string | null;
 }
 
 /** Email record from D1 */
@@ -152,6 +168,77 @@ export interface ParchmentPrescriptionsResponse {
       total: number;
     };
   };
+}
+
+// ============================================
+// Clinical Data types (from prescription-gateway)
+// ============================================
+
+/** Clinical data record — matches GET /api/patients/:id/clinical-data response */
+export interface ClinicalDataRecord {
+  id: string;
+  patient_id: string;
+  smoking_status: string;
+  cigarettes_per_day: string | null;
+  years_smoked: string | null;
+  times_tried_quitting: string | null;
+  quit_motivation: string[];
+  quit_methods: string[];
+  quit_method_explanation: string | null;
+  last_cigarette: string | null;
+  vaping_status: string;
+  vaping_method: string | null;
+  vaping_strength: string | null;
+  vaping_volume: string | null;
+  vaping_notes: string | null;
+  has_medical_conditions: string;
+  medical_conditions: string[];
+  medical_conditions_other: string | null;
+  takes_medication: string;
+  high_risk_medications: string[];
+  medications_list: string | null;
+  cardiovascular: string;
+  pregnancy: string;
+  additional_notes: string | null;
+  safety_acknowledgment: string;
+  submitted_at: string;
+}
+
+export interface ClinicalDataListResponse {
+  success: boolean;
+  data: {
+    patientId: string;
+    records: ClinicalDataRecord[];
+    pagination: { limit: number; offset: number; total: number };
+  };
+}
+
+export interface LatestClinicalDataResponse {
+  success: boolean;
+  data: {
+    clinicalData: ClinicalDataRecord;
+  };
+}
+
+/** Payload for PUT /api/patients/:id */
+export interface UpdatePatientPayload {
+  firstName: string;
+  lastName: string;
+  dobDay: string;
+  dobMonth: string;
+  dobYear: string;
+  gender: string;
+  streetAddress: string;
+  city: string;
+  postcode: string;
+  mobile: string;
+  proofOfAgeFileName: string;
+  proofOfAgeFileType: string;
+  state?: string;
+  country?: string;
+  medicareNumber?: string;
+  medicareIRN?: string;
+  forwardEmail?: string;
 }
 
 // ============================================
