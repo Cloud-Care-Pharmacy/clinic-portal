@@ -28,8 +28,14 @@ async function handler(
 
   const headers: Record<string, string> = {
     "X-API-Key": API_SECRET,
-    "Content-Type": req.headers.get("content-type") ?? "application/json",
   };
+
+  const contentType = req.headers.get("content-type");
+  if (contentType) {
+    headers["Content-Type"] = contentType;
+  } else {
+    headers["Content-Type"] = "application/json";
+  }
 
   const fetchOptions: RequestInit = {
     method: req.method,
@@ -37,10 +43,33 @@ async function handler(
   };
 
   if (req.method !== "GET" && req.method !== "HEAD") {
-    fetchOptions.body = await req.text();
+    // Use arrayBuffer for binary-safe forwarding (e.g. multipart/form-data uploads)
+    const buf = await req.arrayBuffer();
+    fetchOptions.body = buf;
   }
 
   const backendRes = await fetch(url.toString(), fetchOptions);
+
+  // Stream binary responses (e.g. document downloads) directly
+  const resContentType = backendRes.headers.get("content-type") ?? "application/json";
+  const isJson = resContentType.includes("application/json");
+
+  if (!isJson) {
+    return new NextResponse(backendRes.body, {
+      status: backendRes.status,
+      headers: {
+        "Content-Type": resContentType,
+        ...(backendRes.headers.get("content-disposition")
+          ? { "Content-Disposition": backendRes.headers.get("content-disposition")! }
+          : {}),
+        ...(backendRes.headers.get("content-length")
+          ? { "Content-Length": backendRes.headers.get("content-length")! }
+          : {}),
+        "Cache-Control": backendRes.headers.get("cache-control") ?? "no-store",
+      },
+    });
+  }
+
   const data = await backendRes.text();
 
   return new NextResponse(data, {
