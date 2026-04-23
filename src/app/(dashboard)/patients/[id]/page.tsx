@@ -17,6 +17,8 @@ import { NotesTab } from "@/components/patients/NotesTab";
 import { ProfileTab } from "@/components/patients/ProfileTab";
 import { MedicalHistoryTab } from "@/components/patients/MedicalHistoryTab";
 import { Mail, Phone, MapPin, User, Copy } from "lucide-react";
+import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
+import { useEffect } from "react";
 
 const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
   { field: "product", headerName: "Product", flex: 1, minWidth: 180 },
@@ -190,6 +192,7 @@ export default function PatientDetailPage({
   const { id } = use(params);
   const { data: patientData, isLoading } = usePatient(id);
   const patient = patientData?.data?.patient;
+  const { setOverride, clearOverride } = useBreadcrumbOverrides();
 
   const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
   const displayName =
@@ -197,6 +200,13 @@ export default function PatientDetailPage({
     (patient?.original_email
       ? patient.original_email.split("@")[0].replace(/[._+]/g, " ")
       : "Loading…");
+
+  useEffect(() => {
+    if (displayName && displayName !== "Loading…") {
+      setOverride(`/patients/${id}`, displayName);
+    }
+    return () => clearOverride(`/patients/${id}`);
+  }, [displayName, id, setOverride, clearOverride]);
 
   const locationParts = [patient?.city, patient?.state, patient?.postcode].filter(
     Boolean
