@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -10,18 +10,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
   CreditCard,
   Hash,
   Pencil,
-  X,
   Forward,
 } from "lucide-react";
 import { useUpdatePatient } from "@/lib/hooks/use-patients";
+import { cn } from "@/lib/utils";
 import type { PatientMapping, UpdatePatientPayload } from "@/types";
 
 // ---- Zod schema for demographics update ----
@@ -125,6 +135,83 @@ function DetailField({
   );
 }
 
+// ---- Date of Birth Picker ----
+
+function DateOfBirthPicker({
+  form,
+}: {
+  form: ReturnType<typeof useForm<ProfileFormData>>;
+}) {
+  const [open, setOpen] = useState(false);
+  const dobDay = form.watch("dobDay");
+  const dobMonth = form.watch("dobMonth");
+  const dobYear = form.watch("dobYear");
+
+  const selectedDate =
+    dobDay && dobMonth && dobYear
+      ? new Date(Number(dobYear), Number(dobMonth) - 1, Number(dobDay))
+      : undefined;
+
+  const handleSelect = useCallback(
+    (date: Date | undefined) => {
+      if (!date) return;
+      form.setValue("dobDay", String(date.getDate()).padStart(2, "0"), { shouldDirty: true });
+      form.setValue("dobMonth", String(date.getMonth() + 1).padStart(2, "0"), { shouldDirty: true });
+      form.setValue("dobYear", String(date.getFullYear()), { shouldDirty: true });
+      form.clearErrors(["dobDay", "dobMonth", "dobYear"]);
+      setOpen(false);
+    },
+    [form]
+  );
+
+  const displayValue =
+    selectedDate && !isNaN(selectedDate.getTime())
+      ? selectedDate.toLocaleDateString("en-AU", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+      : null;
+
+  const hasError =
+    form.formState.errors.dobDay ||
+    form.formState.errors.dobMonth ||
+    form.formState.errors.dobYear;
+
+  return (
+    <div className="space-y-2">
+      <Label>Date of Birth *</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          className={cn(
+            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
+            !displayValue && "text-muted-foreground",
+            hasError && "border-red-500"
+          )}
+        >
+          <span>{displayValue ?? "Pick a date"}</span>
+          <CalendarIcon className="h-4 w-4 opacity-50" />
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <CalendarWidget
+            mode="single"
+            captionLayout="dropdown"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            defaultMonth={selectedDate ?? new Date(1990, 0)}
+            startMonth={new Date(1900, 0)}
+            endMonth={new Date()}
+            disabled={{ after: new Date() }}
+          />
+        </PopoverContent>
+      </Popover>
+      {hasError && (
+        <p className="text-sm text-red-500">Date of birth is required</p>
+      )}
+    </div>
+  );
+}
+
 // ---- Component ----
 
 export function ProfileTab({
@@ -190,36 +277,96 @@ export function ProfileTab({
     });
   }
 
-  // ---- Edit mode ----
-  if (editing) {
-    return (
+  const displayName = [patient?.first_name, patient?.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <>
       <Card>
         <CardContent className="p-6">
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Edit Patient Details</h3>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancel}
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={updateMutation.isPending}
-                >
-                  {updateMutation.isPending ? "Saving…" : "Save Changes"}
-                </Button>
-              </div>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold">Patient Details</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(true)}
+            >
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DetailField
+              icon={<User className="h-4 w-4" />}
+              label="Full Name"
+              value={displayName || null}
+            />
+            <DetailField
+              icon={<Mail className="h-4 w-4" />}
+              label="Email"
+              value={patient?.original_email}
+            />
+            <DetailField
+              icon={<Phone className="h-4 w-4" />}
+              label="Phone"
+              value={patient?.mobile}
+            />
+            <DetailField
+              icon={<CalendarIcon className="h-4 w-4" />}
+              label="Date of Birth"
+              value={formatDob(patient?.date_of_birth ?? null)}
+            />
+            <DetailField
+              icon={<User className="h-4 w-4" />}
+              label="Gender"
+              value={patient?.gender}
+            />
+            <DetailField
+              icon={<MapPin className="h-4 w-4" />}
+              label="Address"
+              value={patient ? formatAddress(patient) : null}
+            />
+            <DetailField
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Medicare Number"
+              value={
+                patient?.medicare_number
+                  ? `${patient.medicare_number}${patient.medicare_irn ? ` / IRN ${patient.medicare_irn}` : ""}`
+                  : null
+              }
+            />
+            <DetailField
+              icon={<Hash className="h-4 w-4" />}
+              label="PMS Patient ID"
+              value={patient?.halaxy_patient_id}
+            />
+            <DetailField
+              icon={<Forward className="h-4 w-4" />}
+              label="Forward Email"
+              value={patient?.forward_email}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
+      <Sheet open={editing} onOpenChange={(open) => {
+        if (!open) handleCancel();
+      }}>
+        <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Edit Patient Details</SheetTitle>
+            <SheetDescription>
+              Update patient demographics and contact information.
+            </SheetDescription>
+          </SheetHeader>
+          <form
+            id="edit-patient-form"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 px-4"
+          >
             {/* Name */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input id="firstName" {...form.register("firstName")} />
@@ -241,46 +388,10 @@ export function ProfileTab({
             </div>
 
             {/* DOB */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dobDay">Day *</Label>
-                <Input id="dobDay" placeholder="DD" {...form.register("dobDay")} />
-                {form.formState.errors.dobDay && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.dobDay.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dobMonth">Month *</Label>
-                <Input
-                  id="dobMonth"
-                  placeholder="MM"
-                  {...form.register("dobMonth")}
-                />
-                {form.formState.errors.dobMonth && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.dobMonth.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dobYear">Year *</Label>
-                <Input
-                  id="dobYear"
-                  placeholder="YYYY"
-                  {...form.register("dobYear")}
-                />
-                {form.formState.errors.dobYear && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.dobYear.message}
-                  </p>
-                )}
-              </div>
-            </div>
+            <DateOfBirthPicker form={form} />
 
             {/* Gender & Mobile */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="gender">Gender *</Label>
                 <Input
@@ -318,7 +429,7 @@ export function ProfileTab({
                 </p>
               )}
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="city">City *</Label>
                 <Input id="city" {...form.register("city")} />
@@ -348,7 +459,7 @@ export function ProfileTab({
             </div>
 
             {/* Medicare */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="medicareNumber">Medicare Number</Label>
                 <Input
@@ -372,82 +483,24 @@ export function ProfileTab({
               />
             </div>
           </form>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // ---- View mode ----
-  const displayName = [patient?.first_name, patient?.last_name]
-    .filter(Boolean)
-    .join(" ");
-
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Patient Details</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditing(true)}
-          >
-            <Pencil className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <DetailField
-            icon={<User className="h-4 w-4" />}
-            label="Full Name"
-            value={displayName || null}
-          />
-          <DetailField
-            icon={<Mail className="h-4 w-4" />}
-            label="Email"
-            value={patient?.original_email}
-          />
-          <DetailField
-            icon={<Phone className="h-4 w-4" />}
-            label="Phone"
-            value={patient?.mobile}
-          />
-          <DetailField
-            icon={<Calendar className="h-4 w-4" />}
-            label="Date of Birth"
-            value={formatDob(patient?.date_of_birth ?? null)}
-          />
-          <DetailField
-            icon={<User className="h-4 w-4" />}
-            label="Gender"
-            value={patient?.gender}
-          />
-          <DetailField
-            icon={<MapPin className="h-4 w-4" />}
-            label="Address"
-            value={patient ? formatAddress(patient) : null}
-          />
-          <DetailField
-            icon={<CreditCard className="h-4 w-4" />}
-            label="Medicare Number"
-            value={
-              patient?.medicare_number
-                ? `${patient.medicare_number}${patient.medicare_irn ? ` / IRN ${patient.medicare_irn}` : ""}`
-                : null
-            }
-          />
-          <DetailField
-            icon={<Hash className="h-4 w-4" />}
-            label="PMS Patient ID"
-            value={patient?.halaxy_patient_id}
-          />
-          <DetailField
-            icon={<Forward className="h-4 w-4" />}
-            label="Forward Email"
-            value={patient?.forward_email}
-          />
-        </div>
-      </CardContent>
-    </Card>
+          <SheetFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="edit-patient-form"
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
