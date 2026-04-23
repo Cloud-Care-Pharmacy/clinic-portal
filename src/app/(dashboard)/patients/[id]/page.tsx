@@ -87,9 +87,10 @@ function PrescriptionsTab({ patientId }: { patientId: string }) {
 
   if (error)
     return (
-      <div className="text-red-600 text-sm">
-        Failed to load prescriptions: {error.message}
-      </div>
+      <EmptyState
+        title="No prescriptions"
+        description="This patient has no prescriptions on record."
+      />
     );
 
   const prescriptions = data?.data?.prescriptions ?? [];
@@ -139,7 +140,10 @@ function EmailsTab({ patientId }: { patientId: string }) {
 
   if (error)
     return (
-      <div className="text-red-600 text-sm">Failed to load emails: {error.message}</div>
+      <EmptyState
+        title="No documents"
+        description="No emails or documents have been received for this patient."
+      />
     );
 
   const emails = data?.data?.emails ?? [];
