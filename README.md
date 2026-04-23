@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Patient Portal — Cloud Care Pharmacy
+
+A Next.js 16 Patient Management System frontend that connects to the [prescription-gateway](https://github.com/Cloud-Care-Pharmacy/prescription-gateway) Cloudflare Worker API.
+
+## Tech Stack
+
+- **Next.js 16** — App Router, Server Components, Server Actions
+- **TypeScript** — Strict mode
+- **shadcn/ui** — UI components (Tailwind CSS)
+- **MUI DataGrid** — Data tables (`@mui/x-data-grid`)
+- **NextAuth.js v5** — Google OAuth authentication
+- **TanStack Query** — Server state / data fetching
+- **React Hook Form + Zod** — Form validation
+- **Sonner** — Toast notifications
+
+## Architecture
+
+```
+Browser ──► Next.js App ──► /api/proxy/[...path] ──► prescription-gateway API
+               │                    │
+       Google OAuth          X-API-Key injected
+       (NextAuth v5)           server-side
+```
+
+All API calls go through a server-side proxy route that injects the `X-API-Key` header. The API secret is never exposed to the browser.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+- A Google OAuth app (from Google Cloud Console)
+- A running prescription-gateway backend
+
+### Setup
 
 ```bash
+# Clone
+git clone https://github.com/Cloud-Care-Pharmacy/patient-portal.git
+cd patient-portal
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.local.example .env.local
+
+# Fill in your values in .env.local (see below)
+
+# Run dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description | Required |
+|---|---|---|
+| `NEXTAUTH_URL` | App URL (e.g., `http://localhost:3000`) | Yes |
+| `NEXTAUTH_SECRET` | Random secret for NextAuth session encryption | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Yes |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Yes |
+| `NEXT_PUBLIC_API_URL` | Backend API URL (prescription-gateway) | Yes |
+| `API_SECRET` | API key matching `API_SECRET` in prescription-gateway | Yes |
+| `NEXT_PUBLIC_DEFAULT_ENTITY_ID` | Default entity/shop ID from D1 | Yes |
+| `ADMIN_EMAILS` | Comma-separated admin emails | No |
+| `DOCTOR_EMAILS` | Comma-separated doctor emails | No |
 
-## Learn More
+## Pages
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Description | API Status |
+|---|---|---|
+| `/login` | Google OAuth sign-in | ✅ |
+| `/dashboard` | Summary cards, recent activity, quick actions | Partial (mock stats) |
+| `/patients` | Patient list with MUI DataGrid | ✅ Real API |
+| `/patients/new` | 8-step intake form wizard | ✅ Real API |
+| `/patients/[id]` | Patient detail with tabs (Prescriptions, Documents) | ✅ Real API |
+| `/prescriptions` | Prescription viewer (per-patient) | ✅ Real API |
+| `/consultations` | Consultation list (mock data) | ❌ Needs backend |
+| `/admin` | Staff management (mock data) | ❌ Needs backend |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project is designed for Vercel deployment:
 
-## Deploy on Vercel
+1. Connect the GitHub repo to Vercel
+2. Set all environment variables in Vercel dashboard
+3. `API_SECRET` must be a server-side env var (not prefixed with `NEXT_PUBLIC_`)
+4. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private — Cloud Care Pharmacy
