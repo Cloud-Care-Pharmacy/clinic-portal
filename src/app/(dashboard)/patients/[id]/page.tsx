@@ -3,18 +3,18 @@
 import { use } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientEmails } from "@/lib/hooks/use-emails";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import type { ParchmentPrescription, EmailRecord } from "@/types";
+import type { ParchmentPrescription, EmailRecord, PatientMapping } from "@/types";
 import { usePatients } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
-import { Mail, Phone, MapPin, Calendar, User, CreditCard, Hash } from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, User, CreditCard, Hash, Copy } from "lucide-react";
 
 const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
 
@@ -202,6 +202,52 @@ function DetailField({
   );
 }
 
+function ProfileTab({ patient }: { patient: PatientMapping | undefined }) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <DetailField
+            icon={<Mail className="h-4 w-4" />}
+            label="Email"
+            value={patient?.original_email}
+          />
+          <DetailField
+            icon={<Phone className="h-4 w-4" />}
+            label="Phone"
+            value={null}
+          />
+          <DetailField
+            icon={<Calendar className="h-4 w-4" />}
+            label="Date of Birth"
+            value={null}
+          />
+          <DetailField
+            icon={<User className="h-4 w-4" />}
+            label="Gender"
+            value={null}
+          />
+          <DetailField
+            icon={<MapPin className="h-4 w-4" />}
+            label="Address"
+            value={null}
+          />
+          <DetailField
+            icon={<CreditCard className="h-4 w-4" />}
+            label="Medicare Number"
+            value={null}
+          />
+          <DetailField
+            icon={<Hash className="h-4 w-4" />}
+            label="PMS Patient ID"
+            value={patient?.halaxy_patient_id}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function PatientDetailPage({
   params,
 }: {
@@ -211,77 +257,60 @@ export default function PatientDetailPage({
   const { data: patientsData } = usePatients(ENTITY_ID || undefined);
   const patient = patientsData?.data?.patients?.find((p) => p.id === id);
 
+  const displayName = patient?.original_email
+    ? patient.original_email.split("@")[0].replace(/[._+]/g, " ")
+    : "Loading…";
+
   return (
     <div className="space-y-6">
-      {/* Profile Header — always visible */}
+      {/* Compact Profile Header */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col gap-6">
-            {/* Top row: name + meta */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="px-6 py-4">
+          <div className="flex flex-col gap-3">
+            {/* Row 1: avatar, name, ID, contact icons */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <User className="h-6 w-6" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                  {patient?.original_email
+                    ? patient.original_email.charAt(0).toUpperCase()
+                    : <User className="h-5 w-5" />}
                 </div>
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {patient?.original_email ?? "Loading…"}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Generated email:{" "}
-                    <code className="text-xs bg-secondary px-1 py-0.5 rounded">
-                      {patient?.generated_email ?? "—"}
-                    </code>
-                  </p>
+                <h2 className="text-lg font-semibold leading-tight">
+                  {displayName}
+                </h2>
+                <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 h-8 font-mono text-xs text-muted-foreground">
+                  {patient?.halaxy_patient_id ?? id.slice(0, 8)}
+                  <Copy className="size-3.5" />
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <ExpandableIconButton
+                    icon={<Mail className="size-4" />}
+                    label={patient?.original_email ?? ""}
+                    ariaLabel={`Email: ${patient?.original_email ?? "Not available"}`}
+                    disabled={!patient?.original_email}
+                  />
+                  <ExpandableIconButton
+                    icon={<Phone className="size-4" />}
+                    label="Not available"
+                    ariaLabel="Phone: Not available"
+                    disabled
+                  />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">ID: {id.slice(0, 8)}…</Badge>
-                {patient?.created_at && (
-                  <span className="text-xs text-muted-foreground">
-                    Created {new Date(patient.created_at).toLocaleDateString("en-AU")}
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Detail fields grid */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailField
-                icon={<Mail className="h-4 w-4" />}
-                label="Email"
-                value={patient?.original_email}
-              />
-              <DetailField
-                icon={<Phone className="h-4 w-4" />}
-                label="Phone"
-                value={null}
-              />
-              <DetailField
-                icon={<Calendar className="h-4 w-4" />}
-                label="Date of Birth"
-                value={null}
-              />
-              <DetailField
-                icon={<User className="h-4 w-4" />}
-                label="Gender"
-                value={null}
-              />
-              <DetailField
-                icon={<MapPin className="h-4 w-4" />}
-                label="Address"
-                value={null}
-              />
-              <DetailField
-                icon={<CreditCard className="h-4 w-4" />}
-                label="Medicare Number"
-                value={null}
-              />
-              <DetailField
-                icon={<Hash className="h-4 w-4" />}
-                label="PMS Patient ID"
-                value={patient?.halaxy_patient_id}
-              />
+            {/* Row 2: location, status, created date */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                Not available
+              </span>
+              <StatusBadge status="pending" />
+              {patient?.created_at && (
+                <span className="text-xs">
+                  Created {new Date(patient.created_at).toLocaleDateString("en-AU")}
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
@@ -290,11 +319,16 @@ export default function PatientDetailPage({
       {/* Tabs */}
       <Tabs defaultValue="notes" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="consultations">Consultations</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="profile">
+          <ProfileTab patient={patient} />
+        </TabsContent>
 
         <TabsContent value="notes">
           <ErrorBoundary>
