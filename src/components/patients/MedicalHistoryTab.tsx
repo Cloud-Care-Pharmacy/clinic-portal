@@ -103,7 +103,7 @@ function ClinicalDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-lg">
+      <SheetContent className="overflow-y-auto sm:max-w-xl p-6">
         <SheetHeader>
           <SheetTitle>Clinical Data Snapshot</SheetTitle>
           <SheetDescription>
