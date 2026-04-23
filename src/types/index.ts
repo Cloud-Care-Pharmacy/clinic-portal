@@ -252,6 +252,7 @@ export type NoteCategory = "clinical" | "pharmacy" | "follow-up" | "general";
 export interface PatientNote {
   id: string;
   patientId: string;
+  title: string;
   content: string;
   category: NoteCategory;
   isPinned: boolean;

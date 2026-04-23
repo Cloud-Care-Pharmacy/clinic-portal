@@ -49,7 +49,17 @@ export async function POST(
     );
   }
 
-  const { content, category, authorName, authorRole } = body as Record<string, unknown>;
+  const { title, content, category, authorName, authorRole, isPinned } = body as Record<
+    string,
+    unknown
+  >;
+
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return NextResponse.json(
+      { success: false, error: "title is required" },
+      { status: 400 }
+    );
+  }
 
   if (typeof content !== "string" || content.trim().length === 0) {
     return NextResponse.json(
@@ -75,9 +85,10 @@ export async function POST(
   const note: PatientNote = {
     id: crypto.randomUUID(),
     patientId,
+    title: (title as string).trim(),
     content: content.trim(),
     category: category as NoteCategory,
-    isPinned: false,
+    isPinned: typeof isPinned === "boolean" ? isPinned : false,
     authorName: typeof authorName === "string" ? authorName : "Staff Member",
     authorRole:
       authorRole === "admin" || authorRole === "doctor" || authorRole === "staff"

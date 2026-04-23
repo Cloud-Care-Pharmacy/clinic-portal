@@ -4,12 +4,13 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pin, PinOff, Trash2, StickyNote } from "lucide-react";
+import { Pin, PinOff, Trash2, StickyNote, Stethoscope, Pill, CalendarCheck, FileText, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import {
   usePatientNotes,
   useCreateNote,
@@ -38,8 +40,15 @@ import type { PatientNote, NoteCategory } from "@/types";
 // ---- Schema ----
 
 const noteSchema = z.object({
-  content: z.string().min(1, "Note content is required"),
+  title: z.string().min(1, "Title is required"),
+  content: z
+    .string()
+    .refine(
+      (val) => val.replace(/<[^>]*>/g, "").trim().length > 0,
+      "Note content is required"
+    ),
   category: z.string().min(1, "Category is required"),
+  isPinned: z.boolean(),
 });
 
 type NoteFormData = z.infer<typeof noteSchema>;
@@ -73,9 +82,10 @@ function AddNoteSheet({
 }) {
   const createNote = useCreateNote(patientId);
   const form = useForm<NoteFormData>({
-    defaultValues: { content: "", category: "general" },
+    defaultValues: { title: "", content: "", category: "general", isPinned: false },
   });
   const categoryValue = useWatch({ control: form.control, name: "category" });
+  const isPinnedValue = useWatch({ control: form.control, name: "isPinned" });
 
   function onSubmit(data: NoteFormData) {
     const result = noteSchema.safeParse(data);
@@ -89,8 +99,10 @@ function AddNoteSheet({
 
     createNote.mutate(
       {
+        title: result.data.title,
         content: result.data.content,
         category: result.data.category as NoteCategory,
+        isPinned: result.data.isPinned,
         authorName: "Staff Member",
         authorRole: "staff",
       },
@@ -109,7 +121,10 @@ function AddNoteSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col">
+      <SheetContent
+        side="right"
+        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-[400px]"
+      >
         <SheetHeader>
           <SheetTitle>Add Note</SheetTitle>
           <SheetDescription>
@@ -123,6 +138,20 @@ function AddNoteSheet({
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-1 flex-col gap-4 p-4"
         >
+          <div className="space-y-2">
+            <Label htmlFor="note-title">Title</Label>
+            <Input
+              id="note-title"
+              placeholder="Note title"
+              {...form.register("title")}
+            />
+            {form.formState.errors.title && (
+              <p className="text-sm text-red-500">
+                {form.formState.errors.title.message}
+              </p>
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="note-category">Category</Label>
             <Select
@@ -144,18 +173,31 @@ function AddNoteSheet({
           </div>
 
           <div className="flex-1 space-y-2">
-            <Label htmlFor="note-content">Note</Label>
-            <Textarea
-              id="note-content"
-              placeholder="Write your note here…"
-              className="min-h-[160px] resize-none"
-              {...form.register("content")}
+            <Label>Note</Label>
+            <SimpleEditor
+              content={form.getValues("content")}
+              onChange={(html) =>
+                form.setValue("content", html, { shouldValidate: true })
+              }
             />
             {form.formState.errors.content && (
               <p className="text-sm text-red-500">
                 {form.formState.errors.content.message}
               </p>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="note-pinned"
+              checked={isPinnedValue}
+              onCheckedChange={(checked) =>
+                form.setValue("isPinned", checked === true)
+              }
+            />
+            <Label htmlFor="note-pinned" className="text-sm font-normal cursor-pointer">
+              Pin this note
+            </Label>
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
@@ -179,7 +221,36 @@ function AddNoteSheet({
   );
 }
 
-// ---- NoteCard ----
+// ---- Category Icons ----
+
+const CATEGORY_ICONS: Record<NoteCategory, React.ReactNode> = {
+  clinical: <Stethoscope className="h-4 w-4" />,
+  pharmacy: <Pill className="h-4 w-4" />,
+  "follow-up": <CalendarCheck className="h-4 w-4" />,
+  general: <FileText className="h-4 w-4" />,
+};
+
+// ---- Helpers ----
+
+function groupNotesByMonth(notes: PatientNote[]) {
+  const groups: { label: string; notes: PatientNote[] }[] = [];
+  const map = new Map<string, PatientNote[]>();
+
+  for (const note of notes) {
+    const date = new Date(note.createdAt);
+    const key = `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`;
+    const label = date.toLocaleString("en-AU", { month: "long", year: "numeric" });
+    if (!map.has(key)) {
+      map.set(key, []);
+      groups.push({ label, notes: map.get(key)! });
+    }
+    map.get(key)!.push(note);
+  }
+
+  return groups;
+}
+
+// ---- NoteCard (timeline style) ----
 
 function NoteCard({
   note,
@@ -195,71 +266,101 @@ function NoteCard({
   isDeleting: boolean;
 }) {
   return (
-    <Card className={note.isPinned ? "border-amber-300 bg-amber-50/50" : undefined}>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          {/* Left: content */}
-          <div className="flex-1 min-w-0 space-y-2">
-            {/* Meta row */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium">{note.authorName}</span>
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                {note.authorRole}
-              </Badge>
-              <Badge
-                variant="outline"
-                className={`text-[10px] px-1.5 py-0 ${CATEGORY_COLORS[note.category]}`}
-              >
-                {CATEGORY_LABELS[note.category]}
-              </Badge>
-              {note.isPinned && <Pin className="h-3 w-3 text-amber-600" />}
+    <div className="flex gap-4 items-start">
+      {/* Left icon */}
+      <div
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground ${
+          note.isPinned ? "border-amber-300 text-amber-600" : ""
+        }`}
+      >
+        {CATEGORY_ICONS[note.category]}
+      </div>
+
+      {/* Card */}
+      <Card
+        className={`flex-1 ${
+          note.isPinned ? "border-amber-300 bg-amber-50/50" : ""
+        }`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Author avatar */}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                <User className="h-4 w-4 text-muted-foreground" />
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-1">
+                {/* Title */}
+                <p className="text-sm font-semibold leading-tight">
+                  {note.title}
+                  {note.isPinned && (
+                    <Pin className="inline-block ml-1.5 h-3 w-3 text-amber-600" />
+                  )}
+                </p>
+
+                {/* Content */}
+                <div
+                  className="text-sm text-muted-foreground prose prose-sm max-w-none [&_p]:my-0.5 [&_ul]:my-0.5 [&_ol]:my-0.5"
+                  dangerouslySetInnerHTML={{ __html: note.content }}
+                />
+
+                {/* Author + timestamp */}
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {note.authorName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">·</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(note.createdAt).toLocaleString("en-AU", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] px-1.5 py-0 ${CATEGORY_COLORS[note.category]}`}
+                  >
+                    {CATEGORY_LABELS[note.category]}
+                  </Badge>
+                </div>
+              </div>
             </div>
 
-            {/* Content */}
-            <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-
-            {/* Timestamp */}
-            <p className="text-xs text-muted-foreground">
-              {new Date(note.createdAt).toLocaleString("en-AU", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
+            {/* Actions */}
+            <div className="flex gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
+                onClick={onTogglePin}
+                disabled={isPinning}
+                title={note.isPinned ? "Unpin note" : "Pin note"}
+              >
+                {note.isPinned ? (
+                  <PinOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Pin className="h-3.5 w-3.5" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 text-red-500 hover:text-red-700"
+                onClick={onDelete}
+                disabled={isDeleting}
+                title="Delete note"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-
-          {/* Right: actions */}
-          <div className="flex flex-col gap-1">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
-              onClick={onTogglePin}
-              disabled={isPinning}
-              title={note.isPinned ? "Unpin note" : "Pin note"}
-            >
-              {note.isPinned ? (
-                <PinOff className="h-3.5 w-3.5" />
-              ) : (
-                <Pin className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-red-500 hover:text-red-700"
-              onClick={onDelete}
-              disabled={isDeleting}
-              title="Delete note"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -328,13 +429,16 @@ export function NotesTab({ patientId }: { patientId: string }) {
           description="Add your first note above to start documenting patient interactions."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {/* Pinned section */}
           {pinnedNotes.length > 0 && (
-            <>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Pinned
-              </p>
+            <div className="space-y-3">
+              <div className="flex justify-center">
+                <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
+                  <Pin className="mr-1.5 h-3 w-3" />
+                  Pinned
+                </Badge>
+              </div>
               {pinnedNotes.map((note) => (
                 <NoteCard
                   key={note.id}
@@ -348,26 +452,31 @@ export function NotesTab({ patientId }: { patientId: string }) {
                   }
                 />
               ))}
-              {unpinnedNotes.length > 0 && (
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-2">
-                  All Notes
-                </p>
-              )}
-            </>
+            </div>
           )}
 
-          {/* Chronological section */}
-          {unpinnedNotes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onTogglePin={() => handleTogglePin(note.id)}
-              onDelete={() => handleDelete(note.id)}
-              isPinning={togglePin.isPending && togglePin.variables === note.id}
-              isDeleting={
-                deleteNoteMutation.isPending && deleteNoteMutation.variables === note.id
-              }
-            />
+          {/* Timeline grouped by month */}
+          {groupNotesByMonth(unpinnedNotes).map((group) => (
+            <div key={group.label} className="space-y-3">
+              <div className="flex justify-center">
+                <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
+                  {group.label}
+                </Badge>
+              </div>
+              {group.notes.map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  onTogglePin={() => handleTogglePin(note.id)}
+                  onDelete={() => handleDelete(note.id)}
+                  isPinning={togglePin.isPending && togglePin.variables === note.id}
+                  isDeleting={
+                    deleteNoteMutation.isPending &&
+                    deleteNoteMutation.variables === note.id
+                  }
+                />
+              ))}
+            </div>
           ))}
         </div>
       )}

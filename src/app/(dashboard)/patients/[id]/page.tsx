@@ -1,12 +1,10 @@
 "use client";
 
 import { use } from "react";
-import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
@@ -16,16 +14,7 @@ import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import type { ParchmentPrescription, EmailRecord } from "@/types";
 import { usePatients } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
-import {
-  ArrowLeft,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  User,
-  CreditCard,
-  Hash,
-} from "lucide-react";
+import { Mail, Phone, MapPin, Calendar, User, CreditCard, Hash } from "lucide-react";
 
 const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
 
@@ -224,14 +213,6 @@ export default function PatientDetailPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Patient Profile"
-        breadcrumbs={[
-          { label: "Patients", href: "/patients" },
-          { label: patient?.original_email ?? id },
-        ]}
-      />
-
       {/* Profile Header — always visible */}
       <Card>
         <CardContent className="p-6">

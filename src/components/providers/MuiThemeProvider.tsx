@@ -1,7 +1,12 @@
 "use client";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { CacheProvider } from "@emotion/react";
+import createCache from "@emotion/cache";
 import type { ReactNode } from "react";
+
+const emotionCache = createCache({ key: "mui", prepend: true });
 
 const muiTheme = createTheme({
   palette: {
@@ -28,5 +33,9 @@ const muiTheme = createTheme({
 });
 
 export function MuiThemeProvider({ children }: { children: ReactNode }) {
-  return <ThemeProvider theme={muiTheme}>{children}</ThemeProvider>;
+  return (
+    <CacheProvider value={emotionCache}>
+      <ThemeProvider theme={muiTheme}>{children}</ThemeProvider>
+    </CacheProvider>
+  );
 }

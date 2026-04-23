@@ -12,8 +12,10 @@ async function fetchNotes(patientId: string): Promise<PatientNotesResponse> {
 async function createNote(
   patientId: string,
   body: {
+    title: string;
     content: string;
     category: NoteCategory;
+    isPinned: boolean;
     authorName: string;
     authorRole: string;
   }
@@ -68,8 +70,10 @@ export function useCreateNote(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: {
+      title: string;
       content: string;
       category: NoteCategory;
+      isPinned: boolean;
       authorName: string;
       authorRole: string;
     }) => createNote(patientId, body),
