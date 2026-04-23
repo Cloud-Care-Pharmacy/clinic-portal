@@ -10,6 +10,14 @@ import type {
   ClinicalDataRecord,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
+  PatientDocumentsListResponse,
+  PatientDocumentResponse,
+  DocumentUpdatePayload,
+  DocumentVerifyPayload,
+  DocumentSyncResponse,
+  DocumentCategory,
+  DocumentStatus,
+  DocumentSource,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
@@ -196,6 +204,88 @@ class ApiClient {
 
   async validateParchment(): Promise<{ success: boolean }> {
     return this.request("/api/parchment/validate");
+  }
+
+  // ---- Patient Documents ----
+
+  async getPatientDocuments(
+    patientId: string,
+    opts?: {
+      category?: DocumentCategory;
+      status?: DocumentStatus;
+      source?: DocumentSource;
+      limit?: number;
+      offset?: number;
+      sort?: "created_at" | "filename" | "category";
+      order?: "asc" | "desc";
+    }
+  ): Promise<PatientDocumentsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.category) params.set("category", opts.category);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.source) params.set("source", opts.source);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents${qs}`
+    );
+  }
+
+  async getDocument(
+    patientId: string,
+    documentId: string
+  ): Promise<PatientDocumentResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}`
+    );
+  }
+
+  async updateDocument(
+    patientId: string,
+    documentId: string,
+    data: DocumentUpdatePayload
+  ): Promise<PatientDocumentResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}`,
+      { method: "PATCH", body: JSON.stringify(data) }
+    );
+  }
+
+  async verifyDocument(
+    patientId: string,
+    documentId: string,
+    data: DocumentVerifyPayload
+  ): Promise<PatientDocumentResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}/verify`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+  }
+
+  async deleteDocument(
+    patientId: string,
+    documentId: string
+  ): Promise<{ success: boolean; data: { deleted: boolean } }> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}`,
+      { method: "DELETE" }
+    );
+  }
+
+  async syncEmailAttachments(
+    patientId: string
+  ): Promise<DocumentSyncResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/documents/sync-email-attachments`,
+      { method: "POST" }
+    );
+  }
+
+  getDocumentDownloadUrl(patientId: string, documentId: string): string {
+    return `${this.baseUrl}/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}/download`;
   }
 }
 

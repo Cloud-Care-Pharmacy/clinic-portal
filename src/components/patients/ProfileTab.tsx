@@ -194,9 +194,9 @@ function DateOfBirthPicker({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger
           className={cn(
-            "flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors",
+            "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
             !displayValue && "text-muted-foreground",
-            hasError && "border-red-500"
+            hasError && "border-destructive ring-3 ring-destructive/20"
           )}
         >
           <span>{displayValue ?? "Pick a date"}</span>

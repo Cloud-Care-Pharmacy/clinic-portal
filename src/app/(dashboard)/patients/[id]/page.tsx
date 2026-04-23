@@ -9,13 +9,14 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
-import { usePatientEmails } from "@/lib/hooks/use-emails";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import type { ParchmentPrescription, EmailRecord } from "@/types";
+import { dataGridSx } from "@/lib/utils";
+import type { ParchmentPrescription } from "@/types";
 import { usePatient } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
 import { ProfileTab } from "@/components/patients/ProfileTab";
 import { MedicalHistoryTab } from "@/components/patients/MedicalHistoryTab";
+import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { Mail, Phone, MapPin, User, Copy } from "lucide-react";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import { useEffect } from "react";
@@ -39,36 +40,6 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
     field: "status",
     headerName: "Status",
     width: 120,
-    renderCell: (params) => <StatusBadge status={params.value} />,
-  },
-];
-
-const emailColumns: GridColDef<EmailRecord>[] = [
-  { field: "from_address", headerName: "From", flex: 1, minWidth: 200 },
-  { field: "subject", headerName: "Subject", flex: 1, minWidth: 200 },
-  {
-    field: "attachment_count",
-    headerName: "Attachments",
-    width: 110,
-    type: "number",
-  },
-  {
-    field: "received_at",
-    headerName: "Received",
-    width: 160,
-    valueFormatter: (value: string) =>
-      new Date(value).toLocaleString("en-AU", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-  },
-  {
-    field: "status",
-    headerName: "Status",
-    width: 110,
     renderCell: (params) => <StatusBadge status={params.value} />,
   },
 ];
@@ -115,66 +86,7 @@ function PrescriptionsTab({ patientId }: { patientId: string }) {
         pagination: { paginationModel: { pageSize: 10 } },
       }}
       density="compact"
-      sx={{
-        border: "none",
-        "& .MuiDataGrid-cell:focus": { outline: "none" },
-        "& .MuiDataGrid-columnHeader:focus": { outline: "none" },
-        "& .MuiDataGrid-columnHeaders": { backgroundColor: "var(--secondary)" },
-        "& .MuiDataGrid-row:hover": { backgroundColor: "var(--secondary)" },
-      }}
-    />
-  );
-}
-
-function EmailsTab({ patientId }: { patientId: string }) {
-  const { data, isLoading, error } = usePatientEmails(patientId);
-
-  if (isLoading)
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
-      </div>
-    );
-
-  if (error)
-    return (
-      <EmptyState
-        title="No documents"
-        description="No emails or documents have been received for this patient."
-      />
-    );
-
-  const emails = data?.data?.emails ?? [];
-
-  if (emails.length === 0) {
-    return (
-      <EmptyState
-        title="No documents"
-        description="No emails or documents have been received for this patient."
-      />
-    );
-  }
-
-  return (
-    <DataGrid
-      rows={emails}
-      columns={emailColumns}
-      autoHeight
-      disableRowSelectionOnClick
-      pageSizeOptions={[10, 25]}
-      initialState={{
-        pagination: { paginationModel: { pageSize: 10 } },
-      }}
-      density="compact"
-      sx={{
-        border: "none",
-        "& .MuiDataGrid-cell:focus": { outline: "none" },
-        "& .MuiDataGrid-columnHeader:focus": { outline: "none" },
-        "& .MuiDataGrid-columnHeaders": { backgroundColor: "var(--secondary)" },
-        "& .MuiDataGrid-row:hover": { backgroundColor: "var(--secondary)" },
-      }}
+      sx={dataGridSx}
     />
   );
 }
@@ -310,7 +222,7 @@ export default function PatientDetailPage({
 
         <TabsContent value="documents">
           <ErrorBoundary>
-            <EmailsTab patientId={id} />
+            <DocumentsTab patientId={id} />
           </ErrorBoundary>
         </TabsContent>
 

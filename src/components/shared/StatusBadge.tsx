@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type StatusType = "active" | "pending" | "flagged" | "expired" | "inactive" | "received" | "processed" | "failed";
+type StatusType = "active" | "pending" | "flagged" | "expired" | "inactive" | "received" | "processed" | "failed" | "uploaded" | "verified" | "rejected";
 
 const statusStyles: Record<StatusType, string> = {
   active: "bg-green-100 text-green-800 border-green-200",
@@ -12,6 +12,9 @@ const statusStyles: Record<StatusType, string> = {
   received: "bg-blue-100 text-blue-800 border-blue-200",
   processed: "bg-green-100 text-green-800 border-green-200",
   failed: "bg-red-100 text-red-800 border-red-200",
+  uploaded: "bg-blue-100 text-blue-800 border-blue-200",
+  verified: "bg-green-100 text-green-800 border-green-200",
+  rejected: "bg-red-100 text-red-800 border-red-200",
 };
 
 interface StatusBadgeProps {

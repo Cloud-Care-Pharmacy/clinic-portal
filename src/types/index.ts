@@ -242,6 +242,93 @@ export interface UpdatePatientPayload {
 }
 
 // ============================================
+// Patient Document types (from prescription-gateway)
+// ============================================
+
+export type DocumentCategory =
+  | "proof_of_identity"
+  | "proof_of_age"
+  | "prescription"
+  | "lab_result"
+  | "referral"
+  | "consent_form"
+  | "insurance"
+  | "clinical_report"
+  | "imaging"
+  | "correspondence"
+  | "other";
+
+export type DocumentStatus = "uploaded" | "verified" | "rejected";
+
+export type DocumentSource = "upload" | "email_attachment";
+
+export interface PatientDocument {
+  id: string;
+  patient_id: string;
+  entity_id: string;
+  filename: string;
+  content_type: string;
+  file_size: number;
+  category: DocumentCategory;
+  description: string | null;
+  expiry_date: string | null;
+  source: DocumentSource;
+  source_email_id: string | null;
+  status: DocumentStatus;
+  verified_by: string | null;
+  verified_at: string | null;
+  rejection_reason: string | null;
+  uploaded_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientDocumentsListResponse {
+  success: boolean;
+  data: {
+    patientId: string;
+    documents: PatientDocument[];
+    pagination: { limit: number; offset: number; total: number };
+  };
+}
+
+export interface PatientDocumentResponse {
+  success: boolean;
+  data: {
+    document: PatientDocument;
+  };
+}
+
+export interface DocumentUploadPayload {
+  file: File;
+  category: DocumentCategory;
+  description?: string;
+  expiry_date?: string;
+  uploaded_by?: string;
+}
+
+export interface DocumentUpdatePayload {
+  category?: DocumentCategory;
+  description?: string;
+  expiry_date?: string | null;
+}
+
+export interface DocumentVerifyPayload {
+  action: "verify" | "reject";
+  verified_by?: string;
+  reason?: string;
+}
+
+export interface DocumentSyncResponse {
+  success: boolean;
+  data: {
+    synced: number;
+    skipped: number;
+    documents: PatientDocument[];
+  };
+}
+
+// ============================================
 // Frontend-only types (no backend yet)
 // ============================================
 

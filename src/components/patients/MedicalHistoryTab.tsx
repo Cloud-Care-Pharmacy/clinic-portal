@@ -14,6 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import { dataGridSx } from "@/lib/utils";
 import {
   Cigarette,
   Wind,
@@ -474,18 +475,7 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
               }}
               density="compact"
               onRowClick={(params) => setSelectedRecord(params.row)}
-              sx={{
-                border: "none",
-                cursor: "pointer",
-                "& .MuiDataGrid-cell:focus": { outline: "none" },
-                "& .MuiDataGrid-columnHeader:focus": { outline: "none" },
-                "& .MuiDataGrid-columnHeaders": {
-                  backgroundColor: "var(--secondary)",
-                },
-                "& .MuiDataGrid-row:hover": {
-                  backgroundColor: "var(--secondary)",
-                },
-              }}
+              sx={{ ...dataGridSx, cursor: "pointer" }}
             />
           </CardContent>
         </Card>
