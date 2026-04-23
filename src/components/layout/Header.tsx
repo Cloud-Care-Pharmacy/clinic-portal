@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSidebarState } from "@/components/providers/SidebarProvider";
+import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -20,12 +21,13 @@ const routeTitles: Record<string, string> = {
 export function Header() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebarState();
+  const { overrides } = useBreadcrumbOverrides();
 
   const segments = pathname.split("/").filter(Boolean);
 
   const breadcrumbs = segments.map((seg, i) => {
     const href = "/" + segments.slice(0, i + 1).join("/");
-    const label = routeTitles[href] ?? seg.replace(/-/g, " ");
+    const label = overrides[href] ?? routeTitles[href] ?? seg.replace(/-/g, " ");
     return { label, href };
   });
 
