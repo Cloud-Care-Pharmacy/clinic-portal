@@ -8,7 +8,11 @@ async function fetchPrescriptions(patientId: string) {
   if (res.status === 404) {
     return {
       success: true,
-      data: { patientId, prescriptions: [], pagination: { limit: 50, offset: 0, total: 0 } },
+      data: {
+        patientId,
+        prescriptions: [],
+        pagination: { limit: 50, offset: 0, total: 0 },
+      },
     } as ParchmentPrescriptionsResponse;
   }
   if (!res.ok) throw new Error("Failed to fetch prescriptions");

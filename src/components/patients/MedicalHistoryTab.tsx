@@ -23,10 +23,7 @@ import {
   Clock,
   Baby,
 } from "lucide-react";
-import {
-  useLatestClinicalData,
-  useClinicalData,
-} from "@/lib/hooks/use-patients";
+import { useLatestClinicalData, useClinicalData } from "@/lib/hooks/use-patients";
 import type { ClinicalDataRecord } from "@/types";
 
 // ---- Helpers ----
@@ -121,9 +118,7 @@ function ClinicalDetailSheet({
               </p>
               {record.cigarettes_per_day && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Cigarettes/day:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Cigarettes/day:</span>{" "}
                   {record.cigarettes_per_day}
                 </p>
               )}
@@ -135,17 +130,13 @@ function ClinicalDetailSheet({
               )}
               {record.times_tried_quitting && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Quit attempts:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Quit attempts:</span>{" "}
                   {record.times_tried_quitting}
                 </p>
               )}
               {record.quit_motivation.length > 0 && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Quit motivation:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Quit motivation:</span>{" "}
                   {formatList(record.quit_motivation)}
                 </p>
               )}
@@ -157,17 +148,13 @@ function ClinicalDetailSheet({
               )}
               {record.quit_method_explanation && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Method details:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Method details:</span>{" "}
                   {record.quit_method_explanation}
                 </p>
               )}
               {record.last_cigarette && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Last cigarette:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Last cigarette:</span>{" "}
                   {record.last_cigarette}
                 </p>
               )}
@@ -218,9 +205,7 @@ function ClinicalDetailSheet({
             <h4 className="text-sm font-semibold mb-2">Medical Conditions</h4>
             <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">
-                  Has conditions:
-                </span>{" "}
+                <span className="text-muted-foreground">Has conditions:</span>{" "}
                 {record.has_medical_conditions === "yes" ? "Yes" : "No"}
               </p>
               {record.medical_conditions.length > 0 && (
@@ -245,24 +230,18 @@ function ClinicalDetailSheet({
             <h4 className="text-sm font-semibold mb-2">Medications</h4>
             <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">
-                  Takes medication:
-                </span>{" "}
+                <span className="text-muted-foreground">Takes medication:</span>{" "}
                 {record.takes_medication === "yes" ? "Yes" : "No"}
               </p>
               {record.high_risk_medications.length > 0 && (
                 <p>
-                  <span className="text-muted-foreground">
-                    High-risk medications:
-                  </span>{" "}
+                  <span className="text-muted-foreground">High-risk medications:</span>{" "}
                   {formatList(record.high_risk_medications)}
                 </p>
               )}
               {record.medications_list && (
                 <p>
-                  <span className="text-muted-foreground">
-                    Medications list:
-                  </span>{" "}
+                  <span className="text-muted-foreground">Medications list:</span>{" "}
                   {record.medications_list}
                 </p>
               )}
@@ -294,9 +273,7 @@ function ClinicalDetailSheet({
             <>
               <Separator />
               <div>
-                <h4 className="text-sm font-semibold mb-2">
-                  Additional Notes
-                </h4>
+                <h4 className="text-sm font-semibold mb-2">Additional Notes</h4>
                 <p className="text-sm">{record.additional_notes}</p>
               </div>
             </>
@@ -309,11 +286,7 @@ function ClinicalDetailSheet({
 
 // ---- Latest Clinical Data Summary ----
 
-function LatestSummary({
-  record,
-}: {
-  record: ClinicalDataRecord;
-}) {
+function LatestSummary({ record }: { record: ClinicalDataRecord }) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -331,17 +304,13 @@ function LatestSummary({
           <SummaryField
             icon={<Cigarette className="h-4 w-4" />}
             label="Smoking Status"
-            value={
-              SMOKING_LABELS[record.smoking_status] ?? record.smoking_status
-            }
+            value={SMOKING_LABELS[record.smoking_status] ?? record.smoking_status}
             badge={record.cigarettes_per_day ?? undefined}
           />
           <SummaryField
             icon={<Wind className="h-4 w-4" />}
             label="Vaping Status"
-            value={
-              VAPING_LABELS[record.vaping_status] ?? record.vaping_status
-            }
+            value={VAPING_LABELS[record.vaping_status] ?? record.vaping_status}
             badge={record.vaping_method ?? undefined}
           />
           <SummaryField
@@ -358,7 +327,7 @@ function LatestSummary({
             label="Medications"
             value={
               record.takes_medication === "yes"
-                ? record.medications_list ?? formatList(record.high_risk_medications)
+                ? (record.medications_list ?? formatList(record.high_risk_medications))
                 : "None"
             }
           />
@@ -423,8 +392,7 @@ const historyColumns: GridColDef<ClinicalDataRecord>[] = [
 // ---- Main Component ----
 
 export function MedicalHistoryTab({ patientId }: { patientId: string }) {
-  const [selectedRecord, setSelectedRecord] =
-    useState<ClinicalDataRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ClinicalDataRecord | null>(null);
 
   const {
     data: latestData,
