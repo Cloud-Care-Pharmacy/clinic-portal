@@ -1,0 +1,62 @@
+{
+  "name": "Patient Portal",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Dev Server",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh && npm install",
+  "postAttachCommand": "npm run dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "ms-vscode.vscode-typescript-next"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "mcp": {
+          "servers": {
+            "vercel": {
+              "type": "http",
+              "url": "https://mcp.vercel.com"
+            },
+            "github": {
+              "type": "stdio",
+              "command": "gh",
+              "args": ["copilot", "mcp"]
+            },
+            "context7": {
+              "type": "stdio",
+              "command": "npx",
+              "args": ["-y", "@upstash/context7-mcp@latest"]
+            },
+            "next-docs": {
+              "type": "stdio",
+              "command": "npx",
+              "args": ["-y", "@nicepkg/gpt-runner-mcp@latest"],
+              "env": {
+                "DOCS_URL": "https://nextjs.org/docs"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
