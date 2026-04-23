@@ -4,7 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardAction,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,8 +161,12 @@ function DateOfBirthPicker({
   const handleSelect = useCallback(
     (date: Date | undefined) => {
       if (!date) return;
-      form.setValue("dobDay", String(date.getDate()).padStart(2, "0"), { shouldDirty: true });
-      form.setValue("dobMonth", String(date.getMonth() + 1).padStart(2, "0"), { shouldDirty: true });
+      form.setValue("dobDay", String(date.getDate()).padStart(2, "0"), {
+        shouldDirty: true,
+      });
+      form.setValue("dobMonth", String(date.getMonth() + 1).padStart(2, "0"), {
+        shouldDirty: true,
+      });
       form.setValue("dobYear", String(date.getFullYear()), { shouldDirty: true });
       form.clearErrors(["dobDay", "dobMonth", "dobYear"]);
       setOpen(false);
@@ -205,9 +215,7 @@ function DateOfBirthPicker({
           />
         </PopoverContent>
       </Popover>
-      {hasError && (
-        <p className="text-sm text-red-500">Date of birth is required</p>
-      )}
+      {hasError && <p className="text-sm text-red-500">Date of birth is required</p>}
     </div>
   );
 }
@@ -239,7 +247,7 @@ export function ProfileTab({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Patient Details</CardTitle>
+          <CardTitle className="text-sm font-semibold">Patient Details</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -288,13 +296,9 @@ export function ProfileTab({
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Patient Details</CardTitle>
+          <CardTitle className="text-sm font-semibold">Patient Details</CardTitle>
           <CardAction>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
               <Pencil className="h-4 w-4 mr-1" />
               Edit
             </Button>
@@ -355,9 +359,12 @@ export function ProfileTab({
         </CardContent>
       </Card>
 
-      <Sheet open={editing} onOpenChange={(open) => {
-        if (!open) handleCancel();
-      }}>
+      <Sheet
+        open={editing}
+        onOpenChange={(open) => {
+          if (!open) handleCancel();
+        }}
+      >
         <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Edit Patient Details</SheetTitle>
@@ -424,10 +431,7 @@ export function ProfileTab({
             {/* Address */}
             <div className="space-y-2">
               <Label htmlFor="streetAddress">Street Address *</Label>
-              <Input
-                id="streetAddress"
-                {...form.register("streetAddress")}
-              />
+              <Input id="streetAddress" {...form.register("streetAddress")} />
               {form.formState.errors.streetAddress && (
                 <p className="text-sm text-red-500">
                   {form.formState.errors.streetAddress.message}
@@ -467,10 +471,7 @@ export function ProfileTab({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="medicareNumber">Medicare Number</Label>
-                <Input
-                  id="medicareNumber"
-                  {...form.register("medicareNumber")}
-                />
+                <Input id="medicareNumber" {...form.register("medicareNumber")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="medicareIRN">Medicare IRN</Label>
@@ -489,11 +490,7 @@ export function ProfileTab({
             </div>
           </form>
           <SheetFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-            >
+            <Button type="button" variant="outline" onClick={handleCancel}>
               Cancel
             </Button>
             <Button
