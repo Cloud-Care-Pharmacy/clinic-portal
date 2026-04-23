@@ -6,6 +6,10 @@ import type {
   ParchmentPrescriptionsResponse,
   SubmissionResult,
   IntakeFormData,
+  UpdatePatientPayload,
+  ClinicalDataRecord,
+  ClinicalDataListResponse,
+  LatestClinicalDataResponse,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
@@ -59,6 +63,24 @@ class ApiClient {
 
   // ---- Patients ----
 
+  async getPatient(
+    patientId: string
+  ): Promise<{ success: boolean; data: { patient: PatientMapping } }> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}`
+    );
+  }
+
+  async updatePatient(
+    patientId: string,
+    data: UpdatePatientPayload
+  ): Promise<{ success: boolean; data: { patient: PatientMapping } }> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}`,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+  }
+
   async getPatients(
     entityId: string,
     opts?: { limit?: number; offset?: number }
@@ -76,6 +98,29 @@ class ApiClient {
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
       `/api/entities/${encodeURIComponent(entityId)}/patients${qs}`
+    );
+  }
+
+  // ---- Clinical Data ----
+
+  async getClinicalData(
+    patientId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<ClinicalDataListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/clinical-data${qs}`
+    );
+  }
+
+  async getLatestClinicalData(
+    patientId: string
+  ): Promise<LatestClinicalDataResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/clinical-data/latest`
     );
   }
 
