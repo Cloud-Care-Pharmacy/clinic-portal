@@ -149,9 +149,9 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
         </div>
         {!collapsed && (
           <div className="grid flex-1 text-sm leading-tight">
-            <span className="truncate font-semibold">Cloud Care</span>
+            <span className="truncate font-semibold">Quity</span>
             <span className="truncate text-xs text-sidebar-foreground/50">
-              Pharmacy Portal
+              Clinic Portal
             </span>
           </div>
         )}
