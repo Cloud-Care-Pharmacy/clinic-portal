@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx, cn } from "@/lib/utils";
 import type {
   PatientDocument,
   DocumentCategory,
@@ -63,7 +63,10 @@ import {
   Trash2,
   RefreshCw,
   FileText,
+  Calendar as CalendarIcon,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
 
 const CATEGORY_LABELS: Record<DocumentCategory, string> = {
@@ -608,13 +611,46 @@ function UploadDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="doc-expiry">Expiry Date (optional)</Label>
-            <Input
-              id="doc-expiry"
-              type="date"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-            />
+            <Label>Expiry Date (optional)</Label>
+            <Popover>
+              <PopoverTrigger
+                className={cn(
+                  "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  !expiryDate && "text-muted-foreground"
+                )}
+              >
+                <span>
+                  {expiryDate
+                    ? new Date(expiryDate + "T00:00:00").toLocaleDateString("en-AU", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : "Pick a date"}
+                </span>
+                <CalendarIcon className="h-4 w-4 opacity-50" />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarWidget
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={expiryDate ? new Date(expiryDate + "T00:00:00") : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      const yyyy = date.getFullYear();
+                      const mm = String(date.getMonth() + 1).padStart(2, "0");
+                      const dd = String(date.getDate()).padStart(2, "0");
+                      setExpiryDate(`${yyyy}-${mm}-${dd}`);
+                    } else {
+                      setExpiryDate("");
+                    }
+                  }}
+                  defaultMonth={expiryDate ? new Date(expiryDate + "T00:00:00") : new Date()}
+                  startMonth={new Date()}
+                  endMonth={new Date(2040, 11)}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <DialogFooter>

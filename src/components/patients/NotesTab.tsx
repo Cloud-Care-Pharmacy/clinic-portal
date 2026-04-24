@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -187,17 +187,19 @@ function AddNoteSheet({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="note-pinned"
+          <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold">Pin this note</p>
+              <p className="text-xs text-muted-foreground">
+                Pinned notes stay at the top of the notes list for quick access.
+              </p>
+            </div>
+            <Switch
               checked={isPinnedValue}
               onCheckedChange={(checked) =>
                 form.setValue("isPinned", checked === true)
               }
             />
-            <Label htmlFor="note-pinned" className="text-sm font-normal cursor-pointer">
-              Pin this note
-            </Label>
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
