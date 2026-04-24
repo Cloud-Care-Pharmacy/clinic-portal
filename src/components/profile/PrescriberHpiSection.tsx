@@ -14,24 +14,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile, UpdateUserProfilePayload } from "@/types";
 
-const GENDERS = ["Male", "Female", "Other"] as const;
-
 const hpiSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  gender: z.string().min(1, "Gender is required"),
   hpii: z
     .string()
     .refine((v) => v === "" || /^\d{16}$/.test(v), "HPII must be exactly 16 digits")
@@ -43,36 +30,18 @@ type HpiFormData = z.infer<typeof hpiSchema>;
 
 interface PrescriberHpiSectionProps {
   profile: UserProfile | null;
-  clerkFirstName: string;
-  clerkLastName: string;
 }
 
-export function PrescriberHpiSection({
-  profile,
-  clerkFirstName,
-  clerkLastName,
-}: PrescriberHpiSectionProps) {
+export function PrescriberHpiSection({ profile }: PrescriberHpiSectionProps) {
   const updateProfile = useUpdateProfile();
 
   const form = useForm<HpiFormData>({
-    defaultValues: {
-      firstName: clerkFirstName,
-      lastName: clerkLastName,
-      dateOfBirth: "",
-      gender: "",
-      hpii: "",
-    },
+    defaultValues: { hpii: "" },
   });
 
   useEffect(() => {
-    form.reset({
-      firstName: clerkFirstName,
-      lastName: clerkLastName,
-      dateOfBirth: profile?.date_of_birth ?? "",
-      gender: profile?.gender ?? "",
-      hpii: profile?.hpii ?? "",
-    });
-  }, [profile, clerkFirstName, clerkLastName, form]);
+    form.reset({ hpii: profile?.hpii ?? "" });
+  }, [profile, form]);
 
   function onSubmit(data: HpiFormData) {
     const result = hpiSchema.safeParse(data);
@@ -86,8 +55,6 @@ export function PrescriberHpiSection({
 
     const payload: UpdateUserProfilePayload = {
       hpii: result.data.hpii || undefined,
-      dateOfBirth: result.data.dateOfBirth || undefined,
-      gender: result.data.gender || undefined,
     };
 
     updateProfile.mutate(payload, {
@@ -108,60 +75,21 @@ export function PrescriberHpiSection({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="hpi-firstName">First name</Label>
+              <Label htmlFor="hpi-hpii">HPII number</Label>
               <Input
-                id="hpi-firstName"
-                readOnly
-                className="bg-muted/50"
-                {...form.register("firstName")}
+                id="hpi-hpii"
+                placeholder="16-digit identifier"
+                maxLength={16}
+                {...form.register("hpii")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hpi-lastName">Last name</Label>
-              <Input
-                id="hpi-lastName"
-                readOnly
-                className="bg-muted/50"
-                {...form.register("lastName")}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hpi-dob">Date of birth</Label>
-              <Input
-                id="hpi-dob"
-                placeholder="DD/MM/YYYY"
-                {...form.register("dateOfBirth")}
-              />
-              {form.formState.errors.dateOfBirth && (
+              {form.formState.errors.hpii && (
                 <p className="text-sm text-red-500">
-                  {form.formState.errors.dateOfBirth.message}
+                  {form.formState.errors.hpii.message}
                 </p>
               )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hpi-gender">Gender</Label>
-              <Select
-                value={form.watch("gender") || undefined}
-                onValueChange={(v) => {
-                  if (v) form.setValue("gender", v, { shouldDirty: true });
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  {GENDERS.map((g) => (
-                    <SelectItem key={g} value={g}>
-                      {g}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.gender && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.gender.message}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Healthcare Provider Identifier — Individual
+              </p>
             </div>
           </div>
 
