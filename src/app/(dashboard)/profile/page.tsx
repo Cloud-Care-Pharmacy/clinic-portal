@@ -23,6 +23,9 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { useProfile, useUpdateProfile } from "@/lib/hooks/use-profile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Mail, Shield } from "lucide-react";
+import { PrescriberHpiSection } from "@/components/profile/PrescriberHpiSection";
+import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
+import { BusinessAddressSection } from "@/components/profile/BusinessAddressSection";
 import type { UpdateUserProfilePayload, UserRole } from "@/types";
 
 const DAYS_OF_WEEK = [
@@ -39,21 +42,6 @@ const DAYS_OF_WEEK = [
 
 const profileSchema = z.object({
   phone: z.string().max(20, "Phone number too long").optional().or(z.literal("")),
-  hpii: z
-    .string()
-    .refine((v) => v === "" || /^\d{16}$/.test(v), "HPII must be exactly 16 digits")
-    .optional()
-    .or(z.literal("")),
-  prescriberNumber: z
-    .string()
-    .max(10, "Prescriber number too long")
-    .optional()
-    .or(z.literal("")),
-  qualifications: z
-    .string()
-    .max(500, "Qualifications too long")
-    .optional()
-    .or(z.literal("")),
   availabilityDays: z.array(z.string()).optional(),
 });
 
@@ -83,9 +71,6 @@ export default function ProfilePage() {
   const form = useForm<ProfileFormData>({
     defaultValues: {
       phone: "",
-      hpii: "",
-      prescriberNumber: "",
-      qualifications: "",
       availabilityDays: [],
     },
   });
@@ -95,9 +80,6 @@ export default function ProfilePage() {
     if (profile) {
       form.reset({
         phone: profile.phone ?? "",
-        hpii: profile.hpii ?? "",
-        prescriberNumber: profile.prescriber_number ?? "",
-        qualifications: profile.qualifications ?? "",
         availabilityDays: profile.availability_days ?? [],
       });
     }
@@ -125,12 +107,6 @@ export default function ProfilePage() {
       payload.role = role;
     }
 
-    if (isDoctor) {
-      payload.hpii = result.data.hpii || undefined;
-      payload.prescriberNumber = result.data.prescriberNumber || undefined;
-      payload.qualifications = result.data.qualifications || undefined;
-    }
-
     updateProfile.mutate(payload, {
       onSuccess: () => {
         toast.success("Profile updated successfully");
@@ -156,7 +132,7 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         <PageHeader title="My Profile" />
         <Card>
           <CardHeader>
@@ -186,7 +162,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       <PageHeader title="My Profile" />
 
       {/* Account Info — read-only */}
@@ -286,74 +262,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Professional Details — doctors only */}
-        {isDoctor && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Professional Details</CardTitle>
-              <CardDescription>
-                Your medical credentials and registration information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="hpii">HPII</Label>
-                  <Input
-                    id="hpii"
-                    placeholder="16-digit identifier"
-                    maxLength={16}
-                    {...form.register("hpii")}
-                  />
-                  {form.formState.errors.hpii && (
-                    <p className="text-sm text-red-500">
-                      {form.formState.errors.hpii.message}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Healthcare Provider Identifier — Individual
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prescriberNumber">Prescriber Number</Label>
-                  <Input
-                    id="prescriberNumber"
-                    placeholder="e.g. 1234567"
-                    maxLength={10}
-                    {...form.register("prescriberNumber")}
-                  />
-                  {form.formState.errors.prescriberNumber && (
-                    <p className="text-sm text-red-500">
-                      {form.formState.errors.prescriberNumber.message}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground">PBS prescriber number</p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="qualifications">Qualifications</Label>
-                <Input
-                  id="qualifications"
-                  placeholder="e.g. MBBS, FRACGP, Dip. Child Health"
-                  {...form.register("qualifications")}
-                />
-                {form.formState.errors.qualifications && (
-                  <p className="text-sm text-red-500">
-                    {form.formState.errors.qualifications.message}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Comma-separated list of your qualifications
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Save */}
+        {/* Save — contact + availability */}
         <div className="flex justify-end">
           <Button type="submit" disabled={updateProfile.isPending}>
             {updateProfile.isPending && (
@@ -363,6 +272,27 @@ export default function ProfilePage() {
           </Button>
         </div>
       </form>
+
+      {/* Doctor-specific sections — each has its own form/save */}
+      {isDoctor && (
+        <>
+          <Separator className="border-dashed border-red-300" />
+
+          <PrescriberHpiSection
+            profile={profile ?? null}
+            clerkFirstName={clerkUser?.firstName ?? ""}
+            clerkLastName={clerkUser?.lastName ?? ""}
+          />
+
+          <Separator className="border-dashed border-red-300" />
+
+          <PrescriberDetailsSection profile={profile ?? null} />
+
+          <Separator className="border-dashed border-red-300" />
+
+          <BusinessAddressSection profile={profile ?? null} />
+        </>
+      )}
     </div>
   );
 }
