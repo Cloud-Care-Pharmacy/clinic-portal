@@ -1,0 +1,198 @@
+/* =========================================================
+   Quity Clinic Portal — Colors & Type
+   Source: clinic-portal/src/app/globals.css (shadcn base-nova style)
+   Repo: github.com/Cloud-Care-Pharmacy/clinic-portal
+   ========================================================= */
+
+:root {
+  /* ---- Core surfaces ---- */
+  --background: #faf9f5;        /* warm off-white, app canvas */
+  --foreground: #3d3929;        /* dark warm ink */
+  --card: #f5f4ef;              /* cards sit slightly deeper than bg */
+  --card-foreground: #141413;
+  --popover: #ffffff;
+  --popover-foreground: #28261b;
+
+  /* ---- Brand ---- */
+  --primary: #c96442;           /* terracotta — the Quity / Claude-esque warm clay */
+  --primary-foreground: #ffffff;
+  --ring: #c96442;
+
+  /* ---- Neutrals (warm paper) ---- */
+  --secondary: #e9e6dc;
+  --secondary-foreground: #535146;
+  --muted: #ede9de;
+  --muted-foreground: #6e6d68;
+  --accent: #e9e6dc;
+  --accent-foreground: #28261b;
+  --border: #dad9d4;
+  --input: #b4b2a7;
+
+  /* ---- Semantic ---- */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* ---- Charts ---- */
+  --chart-1: #b05730;
+  --chart-2: #9c87f5;
+  --chart-3: #ded8c4;
+  --chart-4: #dbd3f0;
+  --chart-5: #b4552d;
+
+  /* ---- Sidebar (paper rail) ---- */
+  --sidebar: #f5f4ee;
+  --sidebar-foreground: #3d3d3a;
+  --sidebar-primary: #c96442;
+  --sidebar-primary-foreground: #fbfbfb;
+  --sidebar-accent: #e9e6dc;
+  --sidebar-accent-foreground: #343434;
+  --sidebar-border: #ebebeb;
+  --sidebar-ring: #b5b5b5;
+
+  /* ---- Status colours (soft fills / darker ink / matched border) ---- */
+  --status-success-bg: #dcfce7;     /* green-100  */
+  --status-success-fg: #166534;     /* green-800  */
+  --status-success-border: #bbf7d0; /* green-200  */
+  --status-warning-bg: #fef9c3;     /* yellow-100 */
+  --status-warning-fg: #854d0e;     /* yellow-800 */
+  --status-warning-border: #fef08a; /* yellow-200 */
+  --status-info-bg: #dbeafe;        /* blue-100   */
+  --status-info-fg: #1e40af;        /* blue-800   */
+  --status-info-border: #bfdbfe;    /* blue-200   */
+  --status-accent-bg: #f3e8ff;      /* purple-100 */
+  --status-accent-fg: #6b21a8;      /* purple-800 */
+  --status-accent-border: #e9d5ff;  /* purple-200 */
+  --status-danger-bg: #fee2e2;      /* red-100    */
+  --status-danger-fg: #991b1b;      /* red-800    */
+  --status-danger-border: #fecaca;  /* red-200    */
+  --status-neutral-bg: #f3f4f6;     /* gray-100   */
+  --status-neutral-fg: #4b5563;     /* gray-600   */
+  --status-neutral-border: #e5e7eb; /* gray-200   */
+
+  /* ---- Type ---- */
+  --font-sans: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---- Radius ---- */
+  --radius: 1rem;                      /* 16px */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ---- Shadow system (very restrained; 1–10% black) ---- */
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs:  0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow:     0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+  /* ---- Spacing base ---- */
+  --spacing: 0.25rem; /* 4px — all spacing is multiples of this */
+}
+
+.dark {
+  --background: #262624;
+  --foreground: #f1f1ef;
+  --card: #2c2c2b;
+  --card-foreground: #faf9f5;
+  --popover: #30302e;
+  --popover-foreground: #e5e5e2;
+  --primary: #d97757;
+  --primary-foreground: #141413;
+  --secondary: #faf9f5;
+  --secondary-foreground: #30302e;
+  --muted: #1b1b19;
+  --muted-foreground: #b7b5a9;
+  --accent: #1a1915;
+  --accent-foreground: #f5f4ee;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #3e3e38;
+  --input: #52514a;
+  --ring: #d97757;
+  --sidebar: #1f1e1d;
+  --sidebar-foreground: #c3c0b6;
+  --sidebar-primary: #343434;
+  --sidebar-primary-foreground: #fbfbfb;
+  --sidebar-accent: #0f0f0e;
+  --sidebar-accent-foreground: #c3c0b6;
+  --sidebar-border: #ebebeb;
+  --sidebar-ring: #b5b5b5;
+}
+
+/* =========================================================
+   Semantic typography (maps to Tailwind utility defaults)
+   The app is sans-only; serif is defined but unused in UI.
+   ========================================================= */
+
+html, body {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--background);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, .h1 {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;      /* 24px — page titles */
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+h2, .h2 {
+  font-size: 1.125rem;    /* 18px — card titles */
+  line-height: 1.35;
+  font-weight: 600;
+}
+h3, .h3 {
+  font-size: 1rem;        /* 16px — section titles */
+  line-height: 1.4;
+  font-weight: 600;
+}
+h4, .h4 {
+  font-size: 0.875rem;    /* 14px — small section label */
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+p, .body {
+  font-size: 0.875rem;    /* 14px */
+  line-height: 1.55;
+}
+.body-sm, small {
+  font-size: 0.8125rem;   /* 13px */
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+.caption {
+  font-size: 0.75rem;     /* 12px */
+  line-height: 1.3;
+  color: var(--muted-foreground);
+}
+.overline {
+  font-size: 0.6875rem;   /* 11px */
+  line-height: 1.2;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--sidebar-foreground) 40%, transparent);
+}
+.stat-number {
+  font-size: 1.875rem;    /* 30px — dashboard stat values */
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+code, kbd, pre, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
