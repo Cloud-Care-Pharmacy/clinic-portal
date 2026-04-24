@@ -484,6 +484,7 @@ export interface UserProfileResponse {
 
 /** Payload for PUT /api/users/me (camelCase for request body) */
 export interface UpdateUserProfilePayload {
+  role?: UserRole;
   phone?: string;
   hpii?: string;
   prescriberNumber?: string;
