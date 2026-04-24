@@ -234,7 +234,14 @@ export default function AdminPage() {
         }
       />
 
-      <div className="rounded-lg border p-4 text-sm" style={{ borderColor: 'var(--status-warning-border)', backgroundColor: 'var(--status-warning-bg)', color: 'var(--status-warning-fg)' }}>
+      <div
+        className="rounded-lg border p-4 text-sm"
+        style={{
+          borderColor: "var(--status-warning-border)",
+          backgroundColor: "var(--status-warning-bg)",
+          color: "var(--status-warning-fg)",
+        }}
+      >
         This page shows placeholder data. Connect the staff management backend to
         persist changes.
       </div>

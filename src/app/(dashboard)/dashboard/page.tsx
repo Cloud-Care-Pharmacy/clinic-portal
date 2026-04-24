@@ -75,8 +75,10 @@ export default function DashboardPage() {
                 key={stat.title}
                 className="overflow-hidden"
                 style={{
-                  background: 'linear-gradient(155deg, #faf8f2 0%, #f5f2e8 55%, #ede9dc 100%)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px rgba(61,57,41,0.04)',
+                  background:
+                    "linear-gradient(155deg, #faf8f2 0%, #f5f2e8 55%, #ede9dc 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px rgba(61,57,41,0.04)",
                 }}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -106,7 +108,9 @@ export default function DashboardPage() {
                         <TrendingDown className="h-4 w-4" />
                       )}
                     </p>
-                    <p className="text-[13px] text-foreground/55 mt-1">{stat.subtitle}</p>
+                    <p className="text-[13px] text-foreground/55 mt-1">
+                      {stat.subtitle}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
