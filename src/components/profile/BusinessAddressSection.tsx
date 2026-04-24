@@ -4,16 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -22,13 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile, UpdateUserProfilePayload } from "@/types";
 
 const AU_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 
-const addressSchema = z.object({
+const businessSchema = z.object({
+  businessPhone: z.string().min(1, "Business phone is required").max(20),
+  businessEmail: z.string().email("Invalid email").or(z.literal("")).optional(),
   businessStreetNumber: z.string().max(20).optional().or(z.literal("")),
   businessStreetName: z.string().max(100).optional().or(z.literal("")),
   businessSuburb: z.string().max(100).optional().or(z.literal("")),
@@ -36,7 +31,7 @@ const addressSchema = z.object({
   businessPostcode: z.string().max(10).optional().or(z.literal("")),
 });
 
-type AddressFormData = z.infer<typeof addressSchema>;
+type BusinessFormData = z.infer<typeof businessSchema>;
 
 interface BusinessAddressSectionProps {
   profile: UserProfile | null;
@@ -45,8 +40,10 @@ interface BusinessAddressSectionProps {
 export function BusinessAddressSection({ profile }: BusinessAddressSectionProps) {
   const updateProfile = useUpdateProfile();
 
-  const form = useForm<AddressFormData>({
+  const form = useForm<BusinessFormData>({
     defaultValues: {
+      businessPhone: "",
+      businessEmail: "",
       businessStreetNumber: "",
       businessStreetName: "",
       businessSuburb: "",
@@ -58,6 +55,8 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
   useEffect(() => {
     if (profile) {
       form.reset({
+        businessPhone: profile.business_phone ?? "",
+        businessEmail: profile.business_email ?? "",
         businessStreetNumber: profile.business_street_number ?? "",
         businessStreetName: profile.business_street_name ?? "",
         businessSuburb: profile.business_suburb ?? "",
@@ -67,17 +66,19 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
     }
   }, [profile, form]);
 
-  function onSubmit(data: AddressFormData) {
-    const result = addressSchema.safeParse(data);
+  function onSubmit(data: BusinessFormData) {
+    const result = businessSchema.safeParse(data);
     if (!result.success) {
       for (const issue of result.error.issues) {
-        const field = issue.path[0] as keyof AddressFormData;
+        const field = issue.path[0] as keyof BusinessFormData;
         form.setError(field, { message: issue.message });
       }
       return;
     }
 
     const payload: UpdateUserProfilePayload = {
+      businessPhone: result.data.businessPhone,
+      businessEmail: result.data.businessEmail || undefined,
       businessStreetNumber: result.data.businessStreetNumber || undefined,
       businessStreetName: result.data.businessStreetName || undefined,
       businessSuburb: result.data.businessSuburb || undefined,
@@ -86,28 +87,64 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
     };
 
     updateProfile.mutate(payload, {
-      onSuccess: () => toast.success("Business address updated"),
+      onSuccess: () => toast.success("Business details updated"),
       onError: (err) => toast.error(err.message),
     });
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-primary">Business address</CardTitle>
-        <CardDescription>Your business practice address.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Search placeholder */}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <h3 className="text-base font-semibold">Business details</h3>
+
+          {/* Business contact */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="ba-businessPhone">
+                Business phone <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="ba-businessPhone"
+                type="tel"
+                placeholder="e.g. 0434966529"
+                aria-invalid={!!form.formState.errors.businessPhone}
+                {...form.register("businessPhone")}
+              />
+              {form.formState.errors.businessPhone && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.businessPhone.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ba-businessEmail">Business email</Label>
+              <Input
+                id="ba-businessEmail"
+                type="email"
+                {...form.register("businessEmail")}
+              />
+              {form.formState.errors.businessEmail && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.businessEmail.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Address search placeholder */}
           <div className="space-y-2">
-            <Input placeholder="Search Address" disabled className="bg-muted/30" />
+            <Input
+              placeholder="Search Address"
+              disabled
+              className="bg-muted/30 text-muted-foreground"
+            />
             <p className="text-xs text-muted-foreground">
               Address autocomplete coming soon. Enter details manually below.
             </p>
           </div>
-
-          <Separator />
 
           {/* Address fields */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -155,17 +192,14 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
               />
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={updateProfile.isPending}>
-              {updateProfile.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Update
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <StickyFormBar
+        isDirty={form.formState.isDirty}
+        isPending={updateProfile.isPending}
+        onDiscard={() => form.reset()}
+      />
+    </form>
   );
 }

@@ -4,16 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -21,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile, UpdateUserProfilePayload } from "@/types";
 
@@ -37,14 +30,17 @@ const SPECIALTIES = [
 ] as const;
 
 const prescriberSchema = z.object({
+  hpii: z
+    .string()
+    .refine((v) => v === "" || /^\d{16}$/.test(v), "HPII must be exactly 16 digits")
+    .optional()
+    .or(z.literal("")),
   title: z.string().max(50).optional().or(z.literal("")),
   qualifications: z.string().min(1, "Qualifications are required").max(500),
   specialty: z.string().min(1, "Specialty is required"),
   prescriberNumber: z.string().min(1, "Prescriber number is required").max(10),
   ahpraNumber: z.string().max(20).optional().or(z.literal("")),
   hospitalProviderNumber: z.string().max(20).optional().or(z.literal("")),
-  businessPhone: z.string().min(1, "Business phone is required").max(20),
-  businessEmail: z.string().email("Invalid email").or(z.literal("")).optional(),
   providerNumber: z.string().max(20).optional().or(z.literal("")),
 });
 
@@ -59,14 +55,13 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
 
   const form = useForm<PrescriberFormData>({
     defaultValues: {
+      hpii: "",
       title: "",
       qualifications: "",
       specialty: "",
       prescriberNumber: "",
       ahpraNumber: "",
       hospitalProviderNumber: "",
-      businessPhone: "",
-      businessEmail: "",
       providerNumber: "",
     },
   });
@@ -74,14 +69,13 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
   useEffect(() => {
     if (profile) {
       form.reset({
+        hpii: profile.hpii ?? "",
         title: profile.title ?? "",
         qualifications: profile.qualifications ?? "",
         specialty: profile.specialty ?? "",
         prescriberNumber: profile.prescriber_number ?? "",
         ahpraNumber: profile.ahpra_number ?? "",
         hospitalProviderNumber: profile.hospital_provider_number ?? "",
-        businessPhone: profile.business_phone ?? "",
-        businessEmail: profile.business_email ?? "",
         providerNumber: profile.provider_number ?? "",
       });
     }
@@ -98,14 +92,13 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
     }
 
     const payload: UpdateUserProfilePayload = {
+      hpii: result.data.hpii || undefined,
       title: result.data.title || undefined,
       qualifications: result.data.qualifications,
       specialty: result.data.specialty,
       prescriberNumber: result.data.prescriberNumber,
       ahpraNumber: result.data.ahpraNumber || undefined,
       hospitalProviderNumber: result.data.hospitalProviderNumber || undefined,
-      businessPhone: result.data.businessPhone,
-      businessEmail: result.data.businessEmail || undefined,
       providerNumber: result.data.providerNumber || undefined,
     };
 
@@ -116,16 +109,12 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-primary">Prescriber details</CardTitle>
-        <CardDescription>
-          Your professional credentials and registration information.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Row 1 */}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <h3 className="text-base font-semibold">Prescriber details</h3>
+
+          {/* Row 1: Title, Qualifications*, Specialty*, Prescriber #* */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="pd-title">Title</Label>
@@ -196,75 +185,50 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
             </div>
           </div>
 
-          {/* Row 2 */}
+          {/* Row 2: AHPRA #, Hospital provider #, Provider #, HPI-I */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="pd-ahpra">AHPRA #</Label>
-              <Input id="pd-ahpra" placeholder="" {...form.register("ahpraNumber")} />
+              <Input id="pd-ahpra" {...form.register("ahpraNumber")} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="pd-hospitalProvider">Hospital provider #</Label>
               <Input
                 id="pd-hospitalProvider"
-                placeholder=""
                 {...form.register("hospitalProviderNumber")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pd-businessPhone">
-                Business phone <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="pd-businessPhone"
-                type="tel"
-                placeholder="e.g. 0434966529"
-                aria-invalid={!!form.formState.errors.businessPhone}
-                {...form.register("businessPhone")}
-              />
-              {form.formState.errors.businessPhone && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.businessPhone.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pd-businessEmail">Business email</Label>
-              <Input
-                id="pd-businessEmail"
-                type="email"
-                placeholder=""
-                {...form.register("businessEmail")}
-              />
-              {form.formState.errors.businessEmail && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.businessEmail.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Row 3 */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
               <Label htmlFor="pd-providerNumber">Provider #</Label>
+              <Input id="pd-providerNumber" {...form.register("providerNumber")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pd-hpii">HPI-I number</Label>
               <Input
-                id="pd-providerNumber"
-                placeholder=""
-                {...form.register("providerNumber")}
+                id="pd-hpii"
+                placeholder="16-digit identifier"
+                maxLength={16}
+                aria-invalid={!!form.formState.errors.hpii}
+                {...form.register("hpii")}
               />
+              {form.formState.errors.hpii && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.hpii.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Healthcare Provider Identifier — Individual
+              </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={updateProfile.isPending}>
-              {updateProfile.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Update
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <StickyFormBar
+        isDirty={form.formState.isDirty}
+        isPending={updateProfile.isPending}
+        onDiscard={() => form.reset()}
+      />
+    </form>
   );
 }
