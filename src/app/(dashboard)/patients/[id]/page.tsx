@@ -344,7 +344,7 @@ export default function PatientDetailPage({
                   <Copy className="size-3.5" />
                 </span>
                 {redFlags?.hasRedFlag && (
-                  <Badge variant="destructive" className="gap-1">
+                  <Badge variant="destructive" className="gap-1 h-8">
                     <ShieldAlert className="size-3" />
                     Red Flag — Doctor Review
                   </Badge>

@@ -1,19 +1,25 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SimpleEditor } from "@/components/shared/SimpleEditor";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select as UISelect,
+  SelectContent as UISelectContent,
+  SelectItem as UISelectItem,
+  SelectTrigger as UISelectTrigger,
+  SelectValue as UISelectValue,
 } from "@/components/ui/select";
+import { SimpleEditor } from "@/components/shared/SimpleEditor";
+import { cn } from "@/lib/utils";
+
 import {
   Sheet,
   SheetContent,
@@ -50,6 +56,12 @@ export function NewConsultationSheet({
   defaultPatientName,
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const [hour, setHour] = useState("09");
+  const [minute, setMinute] = useState("00");
+  const [period, setPeriod] = useState<"AM" | "PM">("AM");
+
   const form = useForm<FormData>({
     defaultValues: {
       patientName: defaultPatientName ?? "",
@@ -60,6 +72,40 @@ export function NewConsultationSheet({
       notes: "",
     },
   });
+
+  const updateScheduledAt = useCallback(
+    (date: Date | undefined, h: string, m: string, p: "AM" | "PM") => {
+      if (!date) {
+        form.setValue("scheduledAt", "");
+        return;
+      }
+      let hour24 = parseInt(h, 10);
+      if (p === "AM" && hour24 === 12) hour24 = 0;
+      if (p === "PM" && hour24 !== 12) hour24 += 12;
+      const d = new Date(date);
+      d.setHours(hour24, parseInt(m, 10), 0, 0);
+      form.setValue("scheduledAt", d.toISOString(), { shouldDirty: true });
+      form.clearErrors("scheduledAt");
+    },
+    [form]
+  );
+
+  const handleDateSelect = useCallback(
+    (date: Date | undefined) => {
+      setSelectedDate(date);
+      updateScheduledAt(date, hour, minute, period);
+      if (date) setCalendarOpen(false);
+    },
+    [hour, minute, period, updateScheduledAt]
+  );
+
+  const displayValue = selectedDate
+    ? `${selectedDate.toLocaleDateString("en-AU", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })} at ${hour}:${minute} ${period}`
+    : null;
 
   function onSubmit(data: FormData) {
     const result = schema.safeParse(data);
@@ -85,6 +131,10 @@ export function NewConsultationSheet({
         onSuccess: () => {
           toast.success("Consultation scheduled");
           form.reset();
+          setSelectedDate(undefined);
+          setHour("09");
+          setMinute("00");
+          setPeriod("AM");
           onOpenChange(false);
         },
         onError: (err) => {
@@ -142,30 +192,114 @@ export function NewConsultationSheet({
 
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
-            <Select
+            <UISelect
               value={form.watch("type")}
               onValueChange={(v) => {
                 if (v) form.setValue("type", v);
               }}
             >
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="initial">Initial Assessment</SelectItem>
-                <SelectItem value="follow-up">Follow-up</SelectItem>
-                <SelectItem value="renewal">Prescription Renewal</SelectItem>
-              </SelectContent>
-            </Select>
+              <UISelectTrigger id="type">
+                <UISelectValue placeholder="Select type" />
+              </UISelectTrigger>
+              <UISelectContent>
+                <UISelectItem value="initial">Initial Assessment</UISelectItem>
+                <UISelectItem value="follow-up">Follow-up</UISelectItem>
+                <UISelectItem value="renewal">Prescription Renewal</UISelectItem>
+              </UISelectContent>
+            </UISelect>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="scheduledAt">Date & Time</Label>
-            <Input
-              id="scheduledAt"
-              type="datetime-local"
-              {...form.register("scheduledAt")}
-            />
+            <Label>Date & Time</Label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger
+                className={cn(
+                  "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  !displayValue && "text-muted-foreground",
+                  form.formState.errors.scheduledAt &&
+                    "border-destructive ring-3 ring-destructive/20"
+                )}
+              >
+                <span>{displayValue ?? "Pick a date & time"}</span>
+                <CalendarIcon className="h-4 w-4 opacity-50" />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  defaultMonth={selectedDate ?? new Date()}
+                  startMonth={new Date()}
+                  endMonth={new Date(2030, 11)}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <div className="flex items-center gap-2">
+              <UISelect
+                value={hour}
+                onValueChange={(v) => {
+                  if (v) {
+                    setHour(v);
+                    updateScheduledAt(selectedDate, v, minute, period);
+                  }
+                }}
+              >
+                <UISelectTrigger className="w-17.5">
+                  <UISelectValue />
+                </UISelectTrigger>
+                <UISelectContent>
+                  {Array.from({ length: 12 }, (_, i) => {
+                    const val = String(i + 1).padStart(2, "0");
+                    return (
+                      <UISelectItem key={val} value={val}>
+                        {val}
+                      </UISelectItem>
+                    );
+                  })}
+                </UISelectContent>
+              </UISelect>
+              <span className="text-sm font-medium">:</span>
+              <UISelect
+                value={minute}
+                onValueChange={(v) => {
+                  if (v) {
+                    setMinute(v);
+                    updateScheduledAt(selectedDate, hour, v, period);
+                  }
+                }}
+              >
+                <UISelectTrigger className="w-17.5">
+                  <UISelectValue />
+                </UISelectTrigger>
+                <UISelectContent>
+                  {["00", "15", "30", "45"].map((val) => (
+                    <UISelectItem key={val} value={val}>
+                      {val}
+                    </UISelectItem>
+                  ))}
+                </UISelectContent>
+              </UISelect>
+              <UISelect
+                value={period}
+                onValueChange={(v) => {
+                  if (v) {
+                    setPeriod(v as "AM" | "PM");
+                    updateScheduledAt(selectedDate, hour, minute, v as "AM" | "PM");
+                  }
+                }}
+              >
+                <UISelectTrigger className="w-17.5">
+                  <UISelectValue />
+                </UISelectTrigger>
+                <UISelectContent>
+                  <UISelectItem value="AM">AM</UISelectItem>
+                  <UISelectItem value="PM">PM</UISelectItem>
+                </UISelectContent>
+              </UISelect>
+            </div>
+
             {form.formState.errors.scheduledAt && (
               <p className="text-sm text-red-500">
                 {form.formState.errors.scheduledAt.message}
@@ -199,6 +333,10 @@ export function NewConsultationSheet({
               variant="ghost"
               onClick={() => {
                 form.reset();
+                setSelectedDate(undefined);
+                setHour("09");
+                setMinute("00");
+                setPeriod("AM");
                 onOpenChange(false);
               }}
             >
