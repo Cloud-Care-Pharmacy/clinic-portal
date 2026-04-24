@@ -462,6 +462,35 @@ export interface PatientNotesResponse {
 }
 
 // ============================================
+// User Profile types (from prescription-gateway users table)
+// ============================================
+
+/** User profile record — matches GET /api/users/me response (snake_case from D1) */
+export interface UserProfile {
+  id: string;
+  hpii: string | null;
+  prescriber_number: string | null;
+  qualifications: string | null;
+  phone: string | null;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserProfileResponse {
+  success: boolean;
+  data: { profile: UserProfile | null };
+}
+
+/** Payload for PUT /api/users/me (camelCase for request body) */
+export interface UpdateUserProfilePayload {
+  phone?: string;
+  hpii?: string;
+  prescriberNumber?: string;
+  qualifications?: string;
+}
+
+// ============================================
 // Session types
 // ============================================
 

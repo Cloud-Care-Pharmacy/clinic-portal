@@ -16,6 +16,7 @@ const routeTitles: Record<string, string> = {
   "/prescriptions": "Prescriptions",
   "/consultations": "Consultations",
   "/admin": "Administration",
+  "/profile": "My Profile",
 };
 
 export function Header() {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import {
   LayoutDashboard,
@@ -13,6 +13,7 @@ import {
   Menu,
   ChevronsUpDown,
   Pill,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -124,6 +125,7 @@ function NavGroup({
 
 function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean }) {
   const { signOut } = useClerk();
+  const router = useRouter();
   const filteredAdmin = adminNav.filter(
     (item) => !item.roles || item.roles.includes(user.role)
   );
@@ -207,6 +209,11 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
                 </div>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => router.push("/profile")}>
+              <User className="mr-2 h-4 w-4" />
+              My Profile
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
