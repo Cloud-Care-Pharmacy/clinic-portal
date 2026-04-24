@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx } from "@/lib/utils";
+import { cn, dataGridSx } from "@/lib/utils";
 import {
   Cigarette,
   Wind,
@@ -291,9 +291,9 @@ function ClinicalDetailSheet({
   );
 }
 
-// ---- Red Flag Status Card ----
+// ---- Medical Summary Card (with integrated Red Flag alert) ----
 
-function RedFlagCard({
+function MedicalSummaryCard({
   record,
   patientId,
 }: {
@@ -302,13 +302,11 @@ function RedFlagCard({
 }) {
   const storageKey = `red-flag-reviewed-${patientId}`;
 
-  // Derive initial reviewed state — auto-reset if a new submission has come in
   const [reviewed, setReviewed] = useState(() => {
     if (typeof window === "undefined") return false;
     const isReviewed = localStorage.getItem(storageKey) === "true";
     const storedAt = localStorage.getItem(`${storageKey}-at`);
     if (isReviewed && storedAt && storedAt !== record.submitted_at) {
-      // New clinical data submitted since last review — reset
       localStorage.removeItem(storageKey);
       localStorage.removeItem(`${storageKey}-at`);
       return false;
@@ -331,97 +329,6 @@ function RedFlagCard({
     });
   }, [storageKey, record.submitted_at]);
 
-  if (!redFlags.hasRedFlag) {
-    return (
-      <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
-        <CardContent className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-            <div>
-              <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                No Red Flags
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400">
-                All medical history questions answered negatively — no doctor review
-                required.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card
-      className={
-        reviewed
-          ? "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
-          : "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
-      }
-    >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {reviewed ? (
-              <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            ) : (
-              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            )}
-            <CardTitle
-              className={
-                reviewed
-                  ? "text-sm font-semibold text-amber-800 dark:text-amber-300"
-                  : "text-sm font-semibold text-red-800 dark:text-red-300"
-              }
-            >
-              {reviewed ? "Red Flag — Reviewed" : "Red Flag — Doctor Review Required"}
-            </CardTitle>
-          </div>
-          <Button
-            variant={reviewed ? "outline" : "destructive"}
-            size="sm"
-            onClick={toggleReviewed}
-          >
-            {reviewed ? "Mark Unreviewed" : "Mark as Reviewed"}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <p
-          className={
-            reviewed
-              ? "text-xs text-amber-600 dark:text-amber-400 mb-3"
-              : "text-xs text-red-600 dark:text-red-400 mb-3"
-          }
-        >
-          {reviewed
-            ? "This patient's medical history has been reviewed by a doctor."
-            : "One or more medical history answers require doctor review before proceeding."}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {redFlags.triggers.map((trigger) => (
-            <Badge
-              key={trigger}
-              variant="outline"
-              className={
-                reviewed
-                  ? "border-amber-300 text-amber-700 bg-amber-100/50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/30"
-                  : "border-red-300 text-red-700 bg-red-100/50 dark:border-red-800 dark:text-red-300 dark:bg-red-900/30"
-              }
-            >
-              {trigger}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---- Latest Clinical Data Summary ----
-
-function LatestSummary({ record }: { record: ClinicalDataRecord }) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -434,7 +341,91 @@ function LatestSummary({ record }: { record: ClinicalDataRecord }) {
           </span>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {/* Red Flag Alert */}
+        {redFlags.hasRedFlag ? (
+          <div
+            className={cn(
+              "rounded-lg border p-4",
+              reviewed
+                ? "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
+                : "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
+            )}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {reviewed ? (
+                  <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                )}
+                <span
+                  className={cn(
+                    "text-sm font-semibold",
+                    reviewed
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-red-800 dark:text-red-300"
+                  )}
+                >
+                  {reviewed
+                    ? "Red Flag — Reviewed"
+                    : "Red Flag — Doctor Review Required"}
+                </span>
+              </div>
+              <Button
+                variant={reviewed ? "outline" : "destructive"}
+                size="sm"
+                onClick={toggleReviewed}
+              >
+                {reviewed ? "Mark Unreviewed" : "Mark as Reviewed"}
+              </Button>
+            </div>
+            <p
+              className={cn(
+                "text-xs mb-3",
+                reviewed
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-red-600 dark:text-red-400"
+              )}
+            >
+              {reviewed
+                ? "This patient's medical history has been reviewed by a doctor."
+                : "One or more medical history answers require doctor review before proceeding."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {redFlags.triggers.map((trigger) => (
+                <Badge
+                  key={trigger}
+                  variant="outline"
+                  className={cn(
+                    reviewed
+                      ? "border-amber-300 text-amber-700 bg-amber-100/50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/30"
+                      : "border-red-300 text-red-700 bg-red-100/50 dark:border-red-800 dark:text-red-300 dark:bg-red-900/30"
+                  )}
+                >
+                  {trigger}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-900 dark:bg-green-950/20">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div>
+                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                  No Red Flags
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  All medical history questions answered negatively — no doctor review
+                  required.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Summary Fields */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SummaryField
             icon={<Cigarette className="h-4 w-4" />}
@@ -583,11 +574,8 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Red Flag Status */}
-      {latest && <RedFlagCard record={latest} patientId={patientId} />}
-
-      {/* Latest Summary */}
-      {latest && <LatestSummary record={latest} />}
+      {/* Medical Summary with Red Flag status */}
+      {latest && <MedicalSummaryCard record={latest} patientId={patientId} />}
 
       {/* History Table */}
       {records.length > 0 && (
