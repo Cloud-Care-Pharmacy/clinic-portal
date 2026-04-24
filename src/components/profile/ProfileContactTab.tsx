@@ -4,10 +4,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -15,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Lock } from "lucide-react";
+import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UserProfile, UpdateUserProfilePayload, UserRole } from "@/types";
 
@@ -95,26 +95,30 @@ export function ProfileContactTab({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Contact Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="pt-6 space-y-4">
+          <h3 className="text-base font-semibold">Contact Details</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="ct-firstName">First name</Label>
+              <Label htmlFor="ct-firstName" className="flex items-center gap-1.5">
+                First name
+                <Lock className="h-3 w-3 text-muted-foreground opacity-60" />
+              </Label>
               <Input
                 id="ct-firstName"
                 readOnly
-                className="bg-muted/50"
+                className="bg-muted/50 text-muted-foreground"
                 {...form.register("firstName")}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ct-lastName">Last name</Label>
+              <Label htmlFor="ct-lastName" className="flex items-center gap-1.5">
+                Last name
+                <Lock className="h-3 w-3 text-muted-foreground opacity-60" />
+              </Label>
               <Input
                 id="ct-lastName"
                 readOnly
-                className="bg-muted/50"
+                className="bg-muted/50 text-muted-foreground"
                 {...form.register("lastName")}
               />
             </div>
@@ -177,12 +181,11 @@ export function ProfileContactTab({
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={updateProfile.isPending}>
-          {updateProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Changes
-        </Button>
-      </div>
+      <StickyFormBar
+        isDirty={form.formState.isDirty}
+        isPending={updateProfile.isPending}
+        onDiscard={() => form.reset()}
+      />
     </form>
   );
 }
