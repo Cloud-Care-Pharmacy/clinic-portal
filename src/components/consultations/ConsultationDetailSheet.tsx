@@ -13,7 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -162,7 +162,10 @@ export function ConsultationDetailSheet({
 
           {consultation.notes && (
             <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
-              {consultation.notes}
+              <div
+                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                dangerouslySetInnerHTML={{ __html: consultation.notes }}
+              />
             </DetailRow>
           )}
 
@@ -180,7 +183,10 @@ export function ConsultationDetailSheet({
 
           {consultation.outcome && (
             <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
-              {consultation.outcome}
+              <div
+                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                dangerouslySetInnerHTML={{ __html: consultation.outcome }}
+              />
             </DetailRow>
           )}
 
@@ -192,11 +198,10 @@ export function ConsultationDetailSheet({
               {showOutcomeInput && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Outcome / Summary</p>
-                  <Textarea
-                    value={outcomeText}
-                    onChange={(e) => setOutcomeText(e.target.value)}
+                  <SimpleEditor
+                    content={outcomeText}
+                    onChange={setOutcomeText}
                     placeholder="Enter consultation outcome…"
-                    rows={3}
                   />
                 </div>
               )}

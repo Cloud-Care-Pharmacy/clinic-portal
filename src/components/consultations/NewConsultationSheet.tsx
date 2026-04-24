@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import {
   Select,
   SelectContent,
@@ -185,12 +185,11 @@ export function NewConsultationSheet({
           </div>
 
           <div className="flex-1 space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
+            <Label>Notes</Label>
+            <SimpleEditor
+              content={form.watch("notes") ?? ""}
+              onChange={(html) => form.setValue("notes", html)}
               placeholder="Optional notes for this consultation…"
-              rows={3}
-              {...form.register("notes")}
             />
           </div>
 
