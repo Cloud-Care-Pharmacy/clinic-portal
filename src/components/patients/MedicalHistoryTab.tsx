@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -22,7 +22,6 @@ import {
   HeartPulse,
   Pill,
   ShieldAlert,
-  Clock,
   Baby,
   CheckCircle2,
   AlertTriangle,
@@ -238,12 +237,15 @@ function ClinicalDetailSheet({
                 <span className="text-muted-foreground">Takes medication:</span>{" "}
                 {record.takes_medication === "yes" ? "Yes" : "No"}
               </p>
-              {record.high_risk_medications && record.high_risk_medications.length > 0 && (
-                <p>
-                  <span className="text-muted-foreground">High-risk medications:</span>{" "}
-                  {formatList(record.high_risk_medications)}
-                </p>
-              )}
+              {record.high_risk_medications &&
+                record.high_risk_medications.length > 0 && (
+                  <p>
+                    <span className="text-muted-foreground">
+                      High-risk medications:
+                    </span>{" "}
+                    {formatList(record.high_risk_medications)}
+                  </p>
+                )}
               {record.medications_list && (
                 <p>
                   <span className="text-muted-foreground">Medications list:</span>{" "}
@@ -299,9 +301,19 @@ function RedFlagCard({
   patientId: string;
 }) {
   const storageKey = `red-flag-reviewed-${patientId}`;
+
+  // Derive initial reviewed state — auto-reset if a new submission has come in
   const [reviewed, setReviewed] = useState(() => {
     if (typeof window === "undefined") return false;
-    return localStorage.getItem(storageKey) === "true";
+    const isReviewed = localStorage.getItem(storageKey) === "true";
+    const storedAt = localStorage.getItem(`${storageKey}-at`);
+    if (isReviewed && storedAt && storedAt !== record.submitted_at) {
+      // New clinical data submitted since last review — reset
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(`${storageKey}-at`);
+      return false;
+    }
+    return isReviewed;
   });
 
   const redFlags = computeRedFlags(record);
@@ -310,22 +322,14 @@ function RedFlagCard({
     setReviewed((prev) => {
       const next = !prev;
       localStorage.setItem(storageKey, String(next));
+      if (next) {
+        localStorage.setItem(`${storageKey}-at`, record.submitted_at);
+      } else {
+        localStorage.removeItem(`${storageKey}-at`);
+      }
       return next;
     });
-  }, [storageKey]);
-
-  // Reset the reviewed state if flags change (new submission)
-  useEffect(() => {
-    const storedAt = localStorage.getItem(`${storageKey}-at`);
-    if (storedAt && storedAt !== record.submitted_at) {
-      localStorage.removeItem(storageKey);
-      localStorage.removeItem(`${storageKey}-at`);
-      setReviewed(false);
-    }
-    if (reviewed) {
-      localStorage.setItem(`${storageKey}-at`, record.submitted_at);
-    }
-  }, [record.submitted_at, storageKey, reviewed]);
+  }, [storageKey, record.submitted_at]);
 
   if (!redFlags.hasRedFlag) {
     return (
@@ -338,7 +342,8 @@ function RedFlagCard({
                 No Red Flags
               </p>
               <p className="text-xs text-green-600 dark:text-green-400">
-                All medical history questions answered negatively — no doctor review required.
+                All medical history questions answered negatively — no doctor review
+                required.
               </p>
             </div>
           </div>
