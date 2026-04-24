@@ -9,11 +9,12 @@ description: "Next.js best practices for this Patient Portal. Use when writing o
 
 - Pages: `src/app/(dashboard)/<feature>/page.tsx`
 - Auth pages: `src/app/(auth)/<feature>/page.tsx`
-- Layouts: `layout.tsx` wraps child routes
+- Layouts: `layout.tsx` wraps child routes; also used for per-route `metadata` exports
 - Route groups: `(name)/` organize without URL segments
-- Middleware: `src/middleware.ts` — auth + role checks
-- Error boundary: `error.tsx` per route
-- Not found: `not-found.tsx` per route
+- Proxy: `src/proxy.ts` with `export const proxy` (Next.js 16 — `middleware.ts` is deprecated)
+- Error boundary: `error.tsx` per route group (must be `'use client'`)
+- Loading UI: `loading.tsx` per route group for streaming/Suspense
+- Not found: `not-found.tsx` per route group and at app root
 
 ## RSC Boundaries
 
@@ -47,7 +48,12 @@ export default async function Page() {
 
 ## Auth Patterns
 
-- Server: `const session = await auth()` from `src/lib/auth.ts`
-- Client: `useSession()` from `next-auth/react`
-- Middleware: auto-redirects unauthenticated to `/login`
-- Admin routes: middleware checks `session.user.role === "admin"`
+- Server: `const { userId } = await auth()` from `@clerk/nextjs/server`
+- Client: `useClerk()` / `useUser()` from `@clerk/nextjs`
+- Proxy: `src/proxy.ts` auto-redirects unauthenticated to `/sign-in`
+- Admin routes: proxy checks `sessionClaims?.metadata?.role === "admin"`
+
+## Metadata
+
+- `"use client"` pages cannot export `metadata` — add a `layout.tsx` sibling instead
+- Each feature route should have `layout.tsx` with `export const metadata: Metadata`

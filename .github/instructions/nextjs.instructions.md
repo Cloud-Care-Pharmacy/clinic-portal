@@ -36,13 +36,21 @@ applyTo: "src/**/*.{ts,tsx}"
 
 ## Error Handling
 
-- `error.tsx` for route-level error boundaries
+- `error.tsx` for route-level error boundaries (must be `'use client'`)
+- `loading.tsx` for streaming/Suspense loading states
 - `not-found.tsx` for 404 pages
 - Call `notFound()` to trigger not-found boundary
+- Every route group (`(auth)/`, `(dashboard)/`) must have `error.tsx` and `loading.tsx`
 
 ## Auth
 
-- `auth()` from `src/lib/auth.ts` for session in Server Components
-- `useSession()` from `next-auth/react` for Client Components
+- `auth()` from `@clerk/nextjs/server` for session in Server Components and Route Handlers
+- `useClerk()` / `useUser()` from `@clerk/nextjs` for Client Components
+- Proxy: `src/proxy.ts` with `export const proxy` (Next.js 16 — `middleware.ts` is deprecated)
 - All API routes must check auth via `auth()` before processing
-- Role check: `session.user.role === "admin"` for admin-only features
+- Role check: `sessionClaims?.metadata?.role === "admin"` for admin-only features
+
+## Metadata
+
+- `"use client"` pages cannot export `metadata` — use a sibling `layout.tsx` for metadata instead
+- Every feature route should have a `layout.tsx` with a `metadata` export for proper page titles
