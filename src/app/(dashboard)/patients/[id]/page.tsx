@@ -12,11 +12,12 @@ import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx, cn } from "@/lib/utils";
 import type { ParchmentPrescription } from "@/types";
-import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
+import { usePatient, useLatestClinicalData, useClinicalData } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
 import { ProfileTab } from "@/components/patients/ProfileTab";
 import { MedicalHistoryTab } from "@/components/patients/MedicalHistoryTab";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
+import { usePatientDocuments } from "@/lib/hooks/use-documents";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -295,6 +296,18 @@ export default function PatientDetailPage({
   const { data: patientData, isLoading } = usePatient(id);
   const patient = patientData?.data?.patient;
   const { data: latestClinical } = useLatestClinicalData(id);
+
+  // Counts for tab badges
+  const { data: consultationsData } = useConsultations(id);
+  const consultationsCount = (consultationsData?.data?.consultations ?? []).length;
+  const { data: prescriptionsData } = usePrescriptions(id);
+  const prescriptionsCount = (prescriptionsData?.data?.prescriptions ?? []).filter(
+    (p) => p.status === "active"
+  ).length;
+  const { data: clinicalListData } = useClinicalData(id);
+  const clinicalCount = clinicalListData?.data?.pagination?.total ?? 0;
+  const { data: documentsData } = usePatientDocuments(id);
+  const documentsCount = documentsData?.data?.pagination?.total ?? 0;
   const redFlags = latestClinical?.data?.clinicalData
     ? computeRedFlags(latestClinical.data.clinicalData)
     : null;
@@ -387,11 +400,23 @@ export default function PatientDetailPage({
       <Tabs defaultValue="notes" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="medical-history">Medical History</TabsTrigger>
+          <TabsTrigger value="medical-history">
+            Clinical History
+            {clinicalCount > 0 && <span className="count">{clinicalCount}</span>}
+          </TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="consultations">Consultations</TabsTrigger>
+          <TabsTrigger value="prescriptions">
+            Prescriptions
+            {prescriptionsCount > 0 && <span className="count">{prescriptionsCount}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="documents">
+            Documents
+            {documentsCount > 0 && <span className="count">{documentsCount}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="consultations">
+            Consultations
+            {consultationsCount > 0 && <span className="count">{consultationsCount}</span>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
