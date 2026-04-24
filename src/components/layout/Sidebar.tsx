@@ -91,7 +91,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-4 mx-3 px-4 py-2 text-sm rounded-lg transition-colors",
+        "flex items-center gap-4 mx-3 my-1.5 px-4 py-2.5 text-sm rounded-lg transition-colors",
         isActive
           ? "bg-primary text-primary-foreground font-medium"
           : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
