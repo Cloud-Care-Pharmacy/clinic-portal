@@ -474,6 +474,22 @@ export interface UserProfile {
   phone: string | null;
   role: UserRole;
   availability_days: string[] | null;
+  // Prescriber details (doctor-only)
+  title: string | null;
+  specialty: string | null;
+  ahpra_number: string | null;
+  hospital_provider_number: string | null;
+  business_phone: string | null;
+  business_email: string | null;
+  provider_number: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  // Business address
+  business_street_number: string | null;
+  business_street_name: string | null;
+  business_suburb: string | null;
+  business_state: string | null;
+  business_postcode: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -491,6 +507,22 @@ export interface UpdateUserProfilePayload {
   prescriberNumber?: string;
   qualifications?: string;
   availabilityDays?: string[];
+  // Prescriber details (doctor-only)
+  title?: string;
+  specialty?: string;
+  ahpraNumber?: string;
+  hospitalProviderNumber?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  providerNumber?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  // Business address
+  businessStreetNumber?: string;
+  businessStreetName?: string;
+  businessSuburb?: string;
+  businessState?: string;
+  businessPostcode?: string;
 }
 
 // ============================================
