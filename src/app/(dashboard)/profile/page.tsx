@@ -1,51 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { useProfile, useUpdateProfile } from "@/lib/hooks/use-profile";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Mail, Shield } from "lucide-react";
+import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
+import { useProfile } from "@/lib/hooks/use-profile";
+import { Mail, Phone, User } from "lucide-react";
+import { ProfileContactTab } from "@/components/profile/ProfileContactTab";
+import { ProfileAvailabilityTab } from "@/components/profile/ProfileAvailabilityTab";
 import { PrescriberHpiSection } from "@/components/profile/PrescriberHpiSection";
 import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
 import { BusinessAddressSection } from "@/components/profile/BusinessAddressSection";
-import type { UpdateUserProfilePayload, UserRole } from "@/types";
-
-const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-
-// ---- Zod schema (manual safeParse — no @hookform/resolvers) ----
-
-const profileSchema = z.object({
-  phone: z.string().max(20, "Phone number too long").optional().or(z.literal("")),
-  availabilityDays: z.array(z.string()).optional(),
-});
-
-type ProfileFormData = z.infer<typeof profileSchema>;
+import type { UserRole } from "@/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
@@ -53,74 +21,25 @@ const ROLE_LABELS: Record<UserRole, string> = {
   staff: "Staff",
 };
 
-const ROLE_VARIANTS: Record<UserRole, "default" | "secondary" | "outline"> = {
-  admin: "default",
-  doctor: "secondary",
-  staff: "outline",
+const ROLE_COLORS: Record<UserRole, string> = {
+  admin: "bg-primary/10 text-primary border-primary/20",
+  doctor: "bg-blue-100 text-blue-800 border-blue-200",
+  staff: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 export default function ProfilePage() {
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const { data: profileData, isLoading: profileLoading } = useProfile();
-  const updateProfile = useUpdateProfile();
 
-  const profile = profileData?.data?.profile;
+  const profile = profileData?.data?.profile ?? null;
   const role = (clerkUser?.publicMetadata?.role as UserRole) ?? "staff";
   const isDoctor = role === "doctor";
-
-  const form = useForm<ProfileFormData>({
-    defaultValues: {
-      phone: "",
-      availabilityDays: [],
-    },
-  });
-
-  // Populate form when profile data loads
-  useEffect(() => {
-    if (profile) {
-      form.reset({
-        phone: profile.phone ?? "",
-        availabilityDays: profile.availability_days ?? [],
-      });
-    }
-  }, [profile, form]);
-
-  function onSubmit(data: ProfileFormData) {
-    const result = profileSchema.safeParse(data);
-    if (!result.success) {
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as keyof ProfileFormData;
-        form.setError(field, { message: issue.message });
-      }
-      return;
-    }
-
-    const payload: UpdateUserProfilePayload = {
-      phone: result.data.phone || undefined,
-      availabilityDays: result.data.availabilityDays?.length
-        ? result.data.availabilityDays
-        : undefined,
-    };
-
-    // Include role so backend knows the user's role (especially on first save)
-    if (!profile) {
-      payload.role = role;
-    }
-
-    updateProfile.mutate(payload, {
-      onSuccess: () => {
-        toast.success("Profile updated successfully");
-      },
-      onError: (err) => {
-        toast.error(err.message);
-      },
-    });
-  }
 
   const fullName = clerkUser
     ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || "User"
     : "";
   const email = clerkUser?.emailAddresses[0]?.emailAddress ?? "";
+  const phone = profile?.phone ?? "";
   const initials = fullName
     .split(" ")
     .map((n) => n[0])
@@ -132,167 +51,125 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <PageHeader title="My Profile" />
+      <div className="space-y-6">
         <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-16 w-16 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-48" />
-                <Skeleton className="h-4 w-64" />
-              </div>
+          <CardContent className="px-6 py-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-6 w-20 rounded-full" />
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-32" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-40 w-full" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <PageHeader title="My Profile" />
-
-      {/* Account Info — read-only */}
+    <div className="space-y-6">
+      {/* Compact Profile Header — matches patient detail design */}
       <Card>
-        <CardHeader>
-          <CardTitle>Account Information</CardTitle>
-          <CardDescription>
-            Managed by your Google account. Contact an admin to change your role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={clerkUser?.imageUrl} alt={fullName} />
-              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="space-y-1">
-              <p className="text-lg font-semibold">{fullName}</p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-3.5 w-3.5" />
-                {email}
+        <CardContent className="px-6 py-4">
+          <div className="flex flex-col gap-3">
+            {/* Row 1: avatar, name, role badge, contact icons */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                  {clerkUser?.imageUrl ? (
+                    <img
+                      src={clerkUser.imageUrl}
+                      alt={fullName}
+                      className="h-10 w-10 rounded-full object-cover"
+                    />
+                  ) : initials ? (
+                    initials
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
+                </div>
+                <h2 className="text-lg font-semibold leading-tight">{fullName}</h2>
+                <Badge variant="outline" className={ROLE_COLORS[role]}>
+                  {ROLE_LABELS[role]}
+                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <ExpandableIconButton
+                    icon={<Mail className="size-4" />}
+                    label={email}
+                    ariaLabel={`Email: ${email}`}
+                    disabled={!email}
+                  />
+                  <ExpandableIconButton
+                    icon={<Phone className="size-4" />}
+                    label={phone || "Not set"}
+                    ariaLabel={`Phone: ${phone || "Not set"}`}
+                    disabled={!phone}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-3.5 w-3.5 text-muted-foreground" />
-                <Badge variant={ROLE_VARIANTS[role]}>{ROLE_LABELS[role]}</Badge>
-              </div>
+            </div>
+
+            {/* Row 2: specialty, joined date */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {isDoctor && profile?.specialty && <span>{profile.specialty}</span>}
+              {isDoctor && profile?.prescriber_number && (
+                <span className="font-mono text-xs">
+                  Prescriber #{profile.prescriber_number}
+                </span>
+              )}
+              {profile?.created_at && (
+                <span className="text-xs">
+                  Joined {new Date(profile.created_at).toLocaleDateString("en-AU")}
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Editable form */}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Contact Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Details</CardTitle>
-            <CardDescription>Your direct contact information.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+61 4XX XXX XXX"
-                {...form.register("phone")}
-              />
-              {form.formState.errors.phone && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.phone.message}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tabs */}
+      <Tabs defaultValue="contact" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="contact">Contact</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
+          {isDoctor && <TabsTrigger value="hpi">HPI-I</TabsTrigger>}
+          {isDoctor && <TabsTrigger value="prescriber">Prescriber Details</TabsTrigger>}
+          {isDoctor && <TabsTrigger value="address">Business Address</TabsTrigger>}
+        </TabsList>
 
-        {/* Availability Days */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Availability</CardTitle>
-            <CardDescription>
-              Select the days you are available for consultations.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {DAYS_OF_WEEK.map((day) => {
-                const selected = form.watch("availabilityDays") ?? [];
-                return (
-                  <label
-                    key={day}
-                    className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors has-checked:border-primary has-checked:bg-primary/5"
-                  >
-                    <Checkbox
-                      checked={selected.includes(day)}
-                      onCheckedChange={(checked) => {
-                        const current = form.getValues("availabilityDays") ?? [];
-                        if (checked) {
-                          form.setValue("availabilityDays", [...current, day], {
-                            shouldDirty: true,
-                          });
-                        } else {
-                          form.setValue(
-                            "availabilityDays",
-                            current.filter((d) => d !== day),
-                            { shouldDirty: true }
-                          );
-                        }
-                      }}
-                    />
-                    <span className="text-sm font-medium">{day}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="contact">
+          <ProfileContactTab profile={profile} role={role} />
+        </TabsContent>
 
-        {/* Save — contact + availability */}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={updateProfile.isPending}>
-            {updateProfile.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Save Changes
-          </Button>
-        </div>
-      </form>
+        <TabsContent value="availability">
+          <ProfileAvailabilityTab profile={profile} />
+        </TabsContent>
 
-      {/* Doctor-specific sections — each has its own form/save */}
-      {isDoctor && (
-        <>
-          <Separator className="border-dashed border-red-300" />
+        {isDoctor && (
+          <TabsContent value="hpi">
+            <PrescriberHpiSection
+              profile={profile}
+              clerkFirstName={clerkUser?.firstName ?? ""}
+              clerkLastName={clerkUser?.lastName ?? ""}
+            />
+          </TabsContent>
+        )}
 
-          <PrescriberHpiSection
-            profile={profile ?? null}
-            clerkFirstName={clerkUser?.firstName ?? ""}
-            clerkLastName={clerkUser?.lastName ?? ""}
-          />
+        {isDoctor && (
+          <TabsContent value="prescriber">
+            <PrescriberDetailsSection profile={profile} />
+          </TabsContent>
+        )}
 
-          <Separator className="border-dashed border-red-300" />
-
-          <PrescriberDetailsSection profile={profile ?? null} />
-
-          <Separator className="border-dashed border-red-300" />
-
-          <BusinessAddressSection profile={profile ?? null} />
-        </>
-      )}
+        {isDoctor && (
+          <TabsContent value="address">
+            <BusinessAddressSection profile={profile} />
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }
