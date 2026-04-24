@@ -141,7 +141,12 @@ export default function ProfilePage() {
         </TabsList>
 
         <TabsContent value="contact">
-          <ProfileContactTab profile={profile} role={role} />
+          <ProfileContactTab
+            profile={profile}
+            role={role}
+            clerkFirstName={clerkUser?.firstName ?? ""}
+            clerkLastName={clerkUser?.lastName ?? ""}
+          />
         </TabsContent>
 
         <TabsContent value="availability">
@@ -150,11 +155,7 @@ export default function ProfilePage() {
 
         {isDoctor && (
           <TabsContent value="hpi">
-            <PrescriberHpiSection
-              profile={profile}
-              clerkFirstName={clerkUser?.firstName ?? ""}
-              clerkLastName={clerkUser?.lastName ?? ""}
-            />
+            <PrescriberHpiSection profile={profile} />
           </TabsContent>
         )}
 
