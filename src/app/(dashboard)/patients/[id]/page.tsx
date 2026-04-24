@@ -12,14 +12,20 @@ import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/utils";
 import type { ParchmentPrescription } from "@/types";
-import { usePatient } from "@/lib/hooks/use-patients";
+import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
 import { ProfileTab } from "@/components/patients/ProfileTab";
 import { MedicalHistoryTab } from "@/components/patients/MedicalHistoryTab";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
-import { Mail, Phone, MapPin, User, Copy } from "lucide-react";
+import { computeRedFlags } from "@/components/patients/red-flag-utils";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Phone, MapPin, User, Copy, ShieldAlert, CalendarCheck, Stethoscope } from "lucide-react";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
-import { useEffect } from "react";
+import { useConsultations, useUpdateConsultation } from "@/lib/hooks/use-consultations";
+import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { ConsultationDetailSheet } from "@/components/consultations/ConsultationDetailSheet";
+import type { Consultation, ConsultationType } from "@/types";
+import { useEffect, useState } from "react";
 
 const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
   { field: "product", headerName: "Product", flex: 1, minWidth: 180 },
@@ -108,6 +114,10 @@ export default function PatientDetailPage({
   const { id } = use(params);
   const { data: patientData, isLoading } = usePatient(id);
   const patient = patientData?.data?.patient;
+  const { data: latestClinical } = useLatestClinicalData(id);
+  const redFlags = latestClinical?.data?.clinicalData
+    ? computeRedFlags(latestClinical.data.clinicalData)
+    : null;
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
 
   const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
@@ -153,6 +163,12 @@ export default function PatientDetailPage({
                   {patient?.halaxy_patient_id ?? id.slice(0, 8)}
                   <Copy className="size-3.5" />
                 </span>
+                {redFlags?.hasRedFlag && (
+                  <Badge variant="destructive" className="gap-1">
+                    <ShieldAlert className="size-3" />
+                    Red Flag — Doctor Review
+                  </Badge>
+                )}
                 <div className="flex items-center gap-1.5">
                   <ExpandableIconButton
                     icon={<Mail className="size-4" />}

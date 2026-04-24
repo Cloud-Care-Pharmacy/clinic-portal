@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/utils";
 import {
@@ -23,9 +24,12 @@ import {
   ShieldAlert,
   Clock,
   Baby,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { useLatestClinicalData, useClinicalData } from "@/lib/hooks/use-patients";
 import type { ClinicalDataRecord } from "@/types";
+import { computeRedFlags } from "@/components/patients/red-flag-utils";
 
 // ---- Helpers ----
 
@@ -285,6 +289,131 @@ function ClinicalDetailSheet({
   );
 }
 
+// ---- Red Flag Status Card ----
+
+function RedFlagCard({
+  record,
+  patientId,
+}: {
+  record: ClinicalDataRecord;
+  patientId: string;
+}) {
+  const storageKey = `red-flag-reviewed-${patientId}`;
+  const [reviewed, setReviewed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(storageKey) === "true";
+  });
+
+  const redFlags = computeRedFlags(record);
+
+  const toggleReviewed = useCallback(() => {
+    setReviewed((prev) => {
+      const next = !prev;
+      localStorage.setItem(storageKey, String(next));
+      return next;
+    });
+  }, [storageKey]);
+
+  // Reset the reviewed state if flags change (new submission)
+  useEffect(() => {
+    const storedAt = localStorage.getItem(`${storageKey}-at`);
+    if (storedAt && storedAt !== record.submitted_at) {
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(`${storageKey}-at`);
+      setReviewed(false);
+    }
+    if (reviewed) {
+      localStorage.setItem(`${storageKey}-at`, record.submitted_at);
+    }
+  }, [record.submitted_at, storageKey, reviewed]);
+
+  if (!redFlags.hasRedFlag) {
+    return (
+      <Card className="border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20">
+        <CardContent className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div>
+              <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                No Red Flags
+              </p>
+              <p className="text-xs text-green-600 dark:text-green-400">
+                All medical history questions answered negatively — no doctor review required.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card
+      className={
+        reviewed
+          ? "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
+          : "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
+      }
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {reviewed ? (
+              <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            ) : (
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+            )}
+            <CardTitle
+              className={
+                reviewed
+                  ? "text-sm font-semibold text-amber-800 dark:text-amber-300"
+                  : "text-sm font-semibold text-red-800 dark:text-red-300"
+              }
+            >
+              {reviewed ? "Red Flag — Reviewed" : "Red Flag — Doctor Review Required"}
+            </CardTitle>
+          </div>
+          <Button
+            variant={reviewed ? "outline" : "destructive"}
+            size="sm"
+            onClick={toggleReviewed}
+          >
+            {reviewed ? "Mark Unreviewed" : "Mark as Reviewed"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <p
+          className={
+            reviewed
+              ? "text-xs text-amber-600 dark:text-amber-400 mb-3"
+              : "text-xs text-red-600 dark:text-red-400 mb-3"
+          }
+        >
+          {reviewed
+            ? "This patient's medical history has been reviewed by a doctor."
+            : "One or more medical history answers require doctor review before proceeding."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {redFlags.triggers.map((trigger) => (
+            <Badge
+              key={trigger}
+              variant="outline"
+              className={
+                reviewed
+                  ? "border-amber-300 text-amber-700 bg-amber-100/50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/30"
+                  : "border-red-300 text-red-700 bg-red-100/50 dark:border-red-800 dark:text-red-300 dark:bg-red-900/30"
+              }
+            >
+              {trigger}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ---- Latest Clinical Data Summary ----
 
 function LatestSummary({ record }: { record: ClinicalDataRecord }) {
@@ -449,6 +578,9 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Red Flag Status */}
+      {latest && <RedFlagCard record={latest} patientId={patientId} />}
+
       {/* Latest Summary */}
       {latest && <LatestSummary record={latest} />}
 
