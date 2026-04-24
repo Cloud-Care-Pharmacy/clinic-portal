@@ -28,7 +28,7 @@ export function ProfileSecurityTab() {
           <div>
             <div className="text-sm font-medium flex items-center gap-2">
               Two-factor authentication
-              <Badge className="bg-green-100 text-green-800 border-green-200">
+              <Badge className="bg-status-success-bg text-status-success-fg border-status-success-border">
                 Enabled
               </Badge>
             </div>
@@ -49,11 +49,7 @@ export function ProfileSecurityTab() {
               You&apos;re signed in on 2 devices.
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-destructive/30 text-destructive hover:bg-destructive/10"
-          >
+          <Button variant="outline-destructive" size="sm">
             Sign out other devices
           </Button>
         </div>
@@ -66,11 +62,7 @@ export function ProfileSecurityTab() {
               Permanently remove your account and all associated data.
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-destructive/30 text-destructive hover:bg-destructive/10"
-          >
+          <Button variant="outline-destructive" size="sm">
             Delete account
           </Button>
         </div>

@@ -28,9 +28,9 @@ interface ConsultationTableProps {
 }
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-blue-100 text-blue-800 border-blue-200",
-  "follow-up": "bg-purple-100 text-purple-800 border-purple-200",
-  renewal: "bg-green-100 text-green-800 border-green-200",
+  initial: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  "follow-up": "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
+  renewal: "bg-status-success-bg text-status-success-fg border-status-success-border",
 };
 
 type StatusFilterOption = ConsultationStatus;

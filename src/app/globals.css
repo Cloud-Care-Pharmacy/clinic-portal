@@ -58,6 +58,26 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+
+  /* ---- Status colours (soft fills / darker ink / matched border) ---- */
+  --status-success-bg: #dcfce7;
+  --status-success-fg: #166534;
+  --status-success-border: #bbf7d0;
+  --status-warning-bg: #fef9c3;
+  --status-warning-fg: #854d0e;
+  --status-warning-border: #fef08a;
+  --status-info-bg: #dbeafe;
+  --status-info-fg: #1e40af;
+  --status-info-border: #bfdbfe;
+  --status-accent-bg: #f3e8ff;
+  --status-accent-fg: #6b21a8;
+  --status-accent-border: #e9d5ff;
+  --status-danger-bg: #fee2e2;
+  --status-danger-fg: #991b1b;
+  --status-danger-border: #fecaca;
+  --status-neutral-bg: #f3f4f6;
+  --status-neutral-fg: #4b5563;
+  --status-neutral-border: #e5e7eb;
 }
 
 .dark {
@@ -111,6 +131,28 @@
   --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
   --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+}
+
+/* ---- Status colour Tailwind mappings ---- */
+@theme inline {
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-fg: var(--status-success-fg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-accent-bg: var(--status-accent-bg);
+  --color-status-accent-fg: var(--status-accent-fg);
+  --color-status-accent-border: var(--status-accent-border);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-fg: var(--status-danger-fg);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-neutral-bg: var(--status-neutral-bg);
+  --color-status-neutral-fg: var(--status-neutral-fg);
+  --color-status-neutral-border: var(--status-neutral-border);
 }
 
 @theme inline {
@@ -190,5 +232,43 @@
     textarea {
       font-size: 16px !important;
     }
+  }
+}
+
+/* =========================================================
+   Typography utilities (from design system)
+   ========================================================= */
+
+@layer base {
+  .font-heading {
+    font-weight: 500;
+  }
+
+  .overline {
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: color-mix(in srgb, var(--sidebar-foreground) 40%, transparent);
+  }
+
+  .stat-number {
+    font-size: 1.875rem;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .caption {
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: var(--muted-foreground);
+  }
+
+  .body-sm {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--muted-foreground);
   }
 }

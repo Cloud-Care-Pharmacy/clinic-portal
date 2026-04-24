@@ -19,21 +19,21 @@ type StatusType =
   | "no-show";
 
 const statusStyles: Record<StatusType, string> = {
-  active: "bg-green-100 text-green-800 border-green-200",
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  flagged: "bg-red-100 text-red-800 border-red-200",
-  expired: "bg-red-100 text-red-800 border-red-200",
-  inactive: "bg-gray-100 text-gray-600 border-gray-200",
-  received: "bg-blue-100 text-blue-800 border-blue-200",
-  processed: "bg-green-100 text-green-800 border-green-200",
-  failed: "bg-red-100 text-red-800 border-red-200",
-  uploaded: "bg-blue-100 text-blue-800 border-blue-200",
-  verified: "bg-green-100 text-green-800 border-green-200",
-  rejected: "bg-red-100 text-red-800 border-red-200",
-  scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-  completed: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-gray-100 text-gray-600 border-gray-200",
-  "no-show": "bg-red-100 text-red-800 border-red-200",
+  active: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  pending: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
+  flagged: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  expired: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  inactive: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
+  received: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  processed: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  failed: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  uploaded: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  verified: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  rejected: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
+  scheduled: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  completed: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  cancelled: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
+  "no-show": "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
 };
 
 interface StatusBadgeProps {

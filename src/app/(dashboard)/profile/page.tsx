@@ -24,8 +24,8 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 const ROLE_COLORS: Record<UserRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
-  doctor: "bg-blue-100 text-blue-800 border-blue-200",
-  staff: "bg-gray-100 text-gray-600 border-gray-200",
+  doctor: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  staff: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
 };
 
 function computeCompleteness(profile: UserProfile | null, isDoctor: boolean) {

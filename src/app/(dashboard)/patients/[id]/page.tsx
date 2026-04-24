@@ -108,9 +108,9 @@ function PrescriptionsTab({ patientId }: { patientId: string }) {
 }
 
 const CONSULT_TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-blue-100 text-blue-800 border-blue-200",
-  "follow-up": "bg-purple-100 text-purple-800 border-purple-200",
-  renewal: "bg-green-100 text-green-800 border-green-200",
+  initial: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  "follow-up": "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
+  renewal: "bg-status-success-bg text-status-success-fg border-status-success-border",
 };
 
 function ConsultationsTab({
@@ -186,7 +186,7 @@ function ConsultationsTab({
               >
                 <CardContent className="px-4 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-bg text-status-info-fg">
                       <Stethoscope className="h-4 w-4" />
                     </div>
                     <div>
@@ -232,8 +232,8 @@ function ConsultationsTab({
                       className={cn(
                         "flex h-9 w-9 items-center justify-center rounded-lg",
                         c.status === "completed"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-gray-100 text-gray-500"
+                          ? "bg-status-success-bg text-status-success-fg"
+                          : "bg-status-neutral-bg text-status-neutral-fg"
                       )}
                     >
                       <Stethoscope className="h-4 w-4" />

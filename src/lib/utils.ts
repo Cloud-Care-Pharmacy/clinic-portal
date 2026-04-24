@@ -1,9 +1,9 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-import type { SxProps, Theme } from "@mui/material/styles"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { SxProps, Theme } from "@mui/material/styles";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /** Shared sx styles for all MUI DataGrid instances */
@@ -32,8 +32,12 @@ export const dataGridSx: SxProps<Theme> = {
   "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
     outline: "none",
   },
+  "& .MuiDataGrid-row:nth-of-type(odd)": {
+    backgroundColor: "color-mix(in srgb, var(--muted) 50%, transparent)",
+  },
   "& .MuiDataGrid-row:hover": {
-    backgroundColor: "var(--muted)",
+    backgroundColor:
+      "color-mix(in srgb, var(--muted) 80%, color-mix(in srgb, var(--primary) 8%, transparent))",
   },
   "& .MuiDataGrid-row.Mui-selected": {
     backgroundColor: "var(--muted)",
@@ -63,4 +67,4 @@ export const dataGridSx: SxProps<Theme> = {
   "& .MuiDataGrid-columnSeparator": {
     display: "none",
   },
-}
+};

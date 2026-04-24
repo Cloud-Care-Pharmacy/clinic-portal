@@ -71,14 +71,23 @@ export default function DashboardPage() {
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {statCards.map((stat) => (
-              <Card key={stat.title}>
+              <Card
+                key={stat.title}
+                className="overflow-hidden"
+                style={{
+                  background:
+                    "linear-gradient(155deg, #faf8f2 0%, #f5f2e8 55%, #ede9dc 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px rgba(61,57,41,0.04)",
+                }}
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <CardTitle className="text-[15px] font-medium text-foreground/75">
                     {stat.title}
                   </CardTitle>
                   <Badge
-                    variant="secondary"
-                    className="gap-1 rounded-full text-xs font-medium"
+                    variant="outline"
+                    className="gap-1 rounded-full text-xs font-medium bg-white/70 border-foreground/10"
                   >
                     {stat.trend === "up" ? (
                       <TrendingUp className="h-3 w-3" />
@@ -89,17 +98,19 @@ export default function DashboardPage() {
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
+                  <div className="stat-number">{stat.value}</div>
                   <div>
-                    <p className="text-sm font-medium flex items-center gap-1">
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
                       {stat.description}
                       {stat.trend === "up" ? (
-                        <TrendingUp className="h-3.5 w-3.5" />
+                        <TrendingUp className="h-4 w-4" />
                       ) : (
-                        <TrendingDown className="h-3.5 w-3.5" />
+                        <TrendingDown className="h-4 w-4" />
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
+                    <p className="text-[13px] text-foreground/55 mt-1">
+                      {stat.subtitle}
+                    </p>
                   </div>
                 </CardContent>
               </Card>

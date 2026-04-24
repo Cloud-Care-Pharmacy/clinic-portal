@@ -174,7 +174,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
                       : "border-border bg-background hover:bg-muted"
                   )}
                 >
-                  <Icon className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
+                  <Icon className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">{t.name}</div>
                     <div className="text-xs text-muted-foreground">{t.desc}</div>

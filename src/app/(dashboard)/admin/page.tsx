@@ -122,7 +122,7 @@ export default function AdminPage() {
       renderCell: (params) => (
         <AlertDialog>
           <AlertDialogTrigger className="inline-flex items-center justify-center rounded-lg p-2 hover:bg-accent">
-            <Trash2 className="h-4 w-4 text-red-500" />
+            <Trash2 className="h-4 w-4 text-destructive" />
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -139,7 +139,7 @@ export default function AdminPage() {
                   setStaff((prev) => prev.filter((s) => s.id !== params.row.id));
                   toast.success(`${params.row.name} removed`);
                 }}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
                 Remove
               </AlertDialogAction>
@@ -234,7 +234,14 @@ export default function AdminPage() {
         }
       />
 
-      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+      <div
+        className="rounded-lg border p-4 text-sm"
+        style={{
+          borderColor: "var(--status-warning-border)",
+          backgroundColor: "var(--status-warning-bg)",
+          color: "var(--status-warning-fg)",
+        }}
+      >
         This page shows placeholder data. Connect the staff management backend to
         persist changes.
       </div>
