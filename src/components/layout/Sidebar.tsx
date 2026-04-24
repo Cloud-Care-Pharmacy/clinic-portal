@@ -117,7 +117,7 @@ function NavGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      {!collapsed && <p className="overline px-5 pb-2">{title}</p>}
+      {!collapsed && <p className="px-5 pb-2 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/40">{title}</p>}
       {items.map((item) => (
         <NavLink key={item.href} item={item} collapsed={collapsed} />
       ))}
