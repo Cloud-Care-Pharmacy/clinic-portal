@@ -28,6 +28,7 @@ function getOrCreateProfile(userId: string): UserProfile {
     qualifications: null,
     phone: null,
     role: "staff",
+    availability_days: null,
     created_at: now,
     updated_at: now,
   };
@@ -43,6 +44,7 @@ const updateSchema = z.object({
     .optional(),
   prescriberNumber: z.string().max(10).optional(),
   qualifications: z.string().max(500).optional(),
+  availabilityDays: z.array(z.string()).optional(),
 });
 
 export async function GET() {
@@ -90,7 +92,7 @@ export async function PUT(req: NextRequest) {
     profile.role = role;
   }
 
-  const { phone, hpii, prescriberNumber, qualifications } = result.data;
+  const { phone, hpii, prescriberNumber, qualifications, availabilityDays } = result.data;
 
   // Doctor-specific fields: only doctors can write these
   const hasDoctorFields =
@@ -109,6 +111,8 @@ export async function PUT(req: NextRequest) {
   if (prescriberNumber !== undefined)
     profile.prescriber_number = prescriberNumber || null;
   if (qualifications !== undefined) profile.qualifications = qualifications || null;
+  if (availabilityDays !== undefined)
+    profile.availability_days = availabilityDays.length ? availabilityDays : null;
   profile.updated_at = new Date().toISOString();
 
   store.set(userId, profile);
