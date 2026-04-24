@@ -20,8 +20,9 @@ export function computeRedFlags(record: ClinicalDataRecord): RedFlagResult {
   }
 
   if (record.takes_medication === "yes") {
-    const meds = record.medications_list
-      ?? (record.high_risk_medications?.length
+    const meds =
+      record.medications_list ??
+      (record.high_risk_medications?.length
         ? record.high_risk_medications.join(", ")
         : "Yes");
     triggers.push(`Takes medication: ${meds}`);
@@ -32,9 +33,7 @@ export function computeRedFlags(record: ClinicalDataRecord): RedFlagResult {
     record.high_risk_medications.length > 0 &&
     record.takes_medication !== "yes"
   ) {
-    triggers.push(
-      `High-risk medications: ${record.high_risk_medications.join(", ")}`
-    );
+    triggers.push(`High-risk medications: ${record.high_risk_medications.join(", ")}`);
   }
 
   if (record.cardiovascular === "yes") {

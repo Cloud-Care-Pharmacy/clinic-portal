@@ -12,43 +12,48 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overview } from "@/components/dashboard/Overview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-
-const statCards = [
-  {
-    title: "Total Patients",
-    value: "127",
-    badge: "+8.2%",
-    trend: "up" as const,
-    description: "Growing steadily",
-    subtitle: "Patients for the last 6 months",
-  },
-  {
-    title: "Pending Consultations",
-    value: "8",
-    badge: "-20%",
-    trend: "down" as const,
-    description: "Down 20% this period",
-    subtitle: "Needs scheduling attention",
-  },
-  {
-    title: "Active Prescriptions",
-    value: "43",
-    badge: "+12.5%",
-    trend: "up" as const,
-    description: "Strong prescription rate",
-    subtitle: "Activity exceeds targets",
-  },
-  {
-    title: "New This Week",
-    value: "5",
-    badge: "+4.5%",
-    trend: "up" as const,
-    description: "Steady performance",
-    subtitle: "Meets growth projections",
-  },
-];
+import { useConsultations } from "@/lib/hooks/use-consultations";
 
 export default function DashboardPage() {
+  const { data: consultationsData } = useConsultations();
+  const pendingCount = (consultationsData?.data?.consultations ?? []).filter(
+    (c) => c.status === "scheduled"
+  ).length;
+
+  const statCards = [
+    {
+      title: "Total Patients",
+      value: "127",
+      badge: "+8.2%",
+      trend: "up" as const,
+      description: "Growing steadily",
+      subtitle: "Patients for the last 6 months",
+    },
+    {
+      title: "Pending Consultations",
+      value: String(pendingCount),
+      badge: pendingCount > 0 ? `${pendingCount} scheduled` : "None",
+      trend: "down" as const,
+      description: pendingCount > 0 ? "Needs scheduling attention" : "All caught up",
+      subtitle: "Consultations awaiting completion",
+    },
+    {
+      title: "Active Prescriptions",
+      value: "43",
+      badge: "+12.5%",
+      trend: "up" as const,
+      description: "Strong prescription rate",
+      subtitle: "Activity exceeds targets",
+    },
+    {
+      title: "New This Week",
+      value: "5",
+      badge: "+4.5%",
+      trend: "up" as const,
+      description: "Steady performance",
+      subtitle: "Meets growth projections",
+    },
+  ];
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="space-y-4">
@@ -84,9 +89,7 @@ export default function DashboardPage() {
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="text-3xl font-bold tracking-tight">
-                    {stat.value}
-                  </div>
+                  <div className="text-3xl font-bold tracking-tight">{stat.value}</div>
                   <div>
                     <p className="text-sm font-medium flex items-center gap-1">
                       {stat.description}
@@ -96,9 +99,7 @@ export default function DashboardPage() {
                         <TrendingDown className="h-3.5 w-3.5" />
                       )}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stat.subtitle}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
                   </div>
                 </CardContent>
               </Card>

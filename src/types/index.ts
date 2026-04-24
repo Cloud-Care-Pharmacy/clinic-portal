@@ -353,6 +353,9 @@ export interface Patient {
   updatedAt: string;
 }
 
+export type ConsultationStatus = "scheduled" | "completed" | "cancelled" | "no-show";
+export type ConsultationType = "initial" | "follow-up" | "renewal";
+
 export interface Consultation {
   id: string;
   patientId: string;
@@ -361,9 +364,23 @@ export interface Consultation {
   doctorName: string;
   scheduledAt: string;
   completedAt?: string;
-  type: "initial" | "follow-up" | "renewal";
+  type: ConsultationType;
+  status: ConsultationStatus;
+  duration?: number;
   notes?: string;
   outcome?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsultationResponse {
+  success: boolean;
+  data: { consultation: Consultation };
+}
+
+export interface ConsultationsListResponse {
+  success: boolean;
+  data: { consultations: Consultation[] };
 }
 
 export interface Staff {

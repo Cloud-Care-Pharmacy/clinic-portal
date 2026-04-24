@@ -10,7 +10,7 @@ import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx, cn } from "@/lib/utils";
 import type { ParchmentPrescription } from "@/types";
 import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
 import { NotesTab } from "@/components/patients/NotesTab";
@@ -19,9 +19,19 @@ import { MedicalHistoryTab } from "@/components/patients/MedicalHistoryTab";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, MapPin, User, Copy, ShieldAlert, CalendarCheck, Stethoscope } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  User,
+  Copy,
+  ShieldAlert,
+  CalendarCheck,
+  Stethoscope,
+} from "lucide-react";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
-import { useConsultations, useUpdateConsultation } from "@/lib/hooks/use-consultations";
+import { useConsultations } from "@/lib/hooks/use-consultations";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { ConsultationDetailSheet } from "@/components/consultations/ConsultationDetailSheet";
 import type { Consultation, ConsultationType } from "@/types";
@@ -97,12 +107,182 @@ function PrescriptionsTab({ patientId }: { patientId: string }) {
   );
 }
 
-function ConsultationsTab() {
+const CONSULT_TYPE_COLORS: Record<ConsultationType, string> = {
+  initial: "bg-blue-100 text-blue-800 border-blue-200",
+  "follow-up": "bg-purple-100 text-purple-800 border-purple-200",
+  renewal: "bg-green-100 text-green-800 border-green-200",
+};
+
+function ConsultationsTab({
+  patientId,
+  patientName,
+}: {
+  patientId: string;
+  patientName: string;
+}) {
+  const { data, isLoading } = useConsultations(patientId);
+  const consultations = data?.data?.consultations ?? [];
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selected, setSelected] = useState<Consultation | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full" />
+        ))}
+      </div>
+    );
+  }
+
+  if (consultations.length === 0 && !sheetOpen) {
+    return (
+      <>
+        <EmptyState
+          title="No consultations"
+          description="This patient has no consultations on record."
+          actionLabel="Schedule Consultation"
+          onAction={() => setSheetOpen(true)}
+        />
+        <NewConsultationSheet
+          open={sheetOpen}
+          onOpenChange={setSheetOpen}
+          defaultPatientId={patientId}
+          defaultPatientName={patientName}
+        />
+      </>
+    );
+  }
+
+  const upcoming = consultations.filter((c) => c.status === "scheduled");
+  const past = consultations.filter((c) => c.status !== "scheduled");
+
   return (
-    <EmptyState
-      title="Consultations coming soon"
-      description="Connect the consultation backend to see real data here."
-    />
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Consultations
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSheetOpen(true)}
+            className="gap-1.5"
+          >
+            <CalendarCheck className="h-4 w-4" />
+            Schedule
+          </Button>
+        </div>
+
+        {upcoming.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Upcoming</p>
+            {upcoming.map((c) => (
+              <Card
+                key={c.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setSelected(c)}
+              >
+                <CardContent className="px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                      <Stethoscope className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{c.doctorName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(c.scheduledAt).toLocaleString("en-AU", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn("capitalize text-xs", CONSULT_TYPE_COLORS[c.type])}
+                    >
+                      {c.type}
+                    </Badge>
+                    <StatusBadge status={c.status} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {past.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Past</p>
+            {past.map((c) => (
+              <Card
+                key={c.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setSelected(c)}
+              >
+                <CardContent className="px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-lg",
+                        c.status === "completed"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-gray-100 text-gray-500"
+                      )}
+                    >
+                      <Stethoscope className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{c.doctorName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(c.scheduledAt).toLocaleString("en-AU", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      {c.outcome && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {c.outcome}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={cn("capitalize text-xs", CONSULT_TYPE_COLORS[c.type])}
+                    >
+                      {c.type}
+                    </Badge>
+                    <StatusBadge status={c.status} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <NewConsultationSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        defaultPatientId={patientId}
+        defaultPatientName={patientName}
+      />
+      <ConsultationDetailSheet
+        consultation={selected}
+        onClose={() => setSelected(null)}
+      />
+    </>
   );
 }
 
@@ -243,7 +423,7 @@ export default function PatientDetailPage({
         </TabsContent>
 
         <TabsContent value="consultations">
-          <ConsultationsTab />
+          <ConsultationsTab patientId={id} patientName={displayName} />
         </TabsContent>
       </Tabs>
     </div>
