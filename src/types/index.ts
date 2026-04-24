@@ -473,6 +473,7 @@ export interface UserProfile {
   qualifications: string | null;
   phone: string | null;
   role: UserRole;
+  availability_days: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -489,6 +490,7 @@ export interface UpdateUserProfilePayload {
   hpii?: string;
   prescriberNumber?: string;
   qualifications?: string;
+  availabilityDays?: string[];
 }
 
 // ============================================

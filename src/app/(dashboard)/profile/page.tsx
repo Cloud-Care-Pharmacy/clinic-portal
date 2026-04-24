@@ -21,8 +21,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useProfile, useUpdateProfile } from "@/lib/hooks/use-profile";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Mail, Shield } from "lucide-react";
 import type { UpdateUserProfilePayload, UserRole } from "@/types";
+
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
 
 // ---- Zod schema (manual safeParse — no @hookform/resolvers) ----
 
@@ -43,6 +54,7 @@ const profileSchema = z.object({
     .max(500, "Qualifications too long")
     .optional()
     .or(z.literal("")),
+  availabilityDays: z.array(z.string()).optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -74,6 +86,7 @@ export default function ProfilePage() {
       hpii: "",
       prescriberNumber: "",
       qualifications: "",
+      availabilityDays: [],
     },
   });
 
@@ -85,6 +98,7 @@ export default function ProfilePage() {
         hpii: profile.hpii ?? "",
         prescriberNumber: profile.prescriber_number ?? "",
         qualifications: profile.qualifications ?? "",
+        availabilityDays: profile.availability_days ?? [],
       });
     }
   }, [profile, form]);
@@ -101,6 +115,9 @@ export default function ProfilePage() {
 
     const payload: UpdateUserProfilePayload = {
       phone: result.data.phone || undefined,
+      availabilityDays: result.data.availabilityDays?.length
+        ? result.data.availabilityDays
+        : undefined,
     };
 
     // Include role so backend knows the user's role (especially on first save)
@@ -223,6 +240,48 @@ export default function ProfilePage() {
                   {form.formState.errors.phone.message}
                 </p>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Availability Days */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Availability</CardTitle>
+            <CardDescription>
+              Select the days you are available for consultations.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {DAYS_OF_WEEK.map((day) => {
+                const selected = form.watch("availabilityDays") ?? [];
+                return (
+                  <label
+                    key={day}
+                    className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 transition-colors has-checked:border-primary has-checked:bg-primary/5"
+                  >
+                    <Checkbox
+                      checked={selected.includes(day)}
+                      onCheckedChange={(checked) => {
+                        const current = form.getValues("availabilityDays") ?? [];
+                        if (checked) {
+                          form.setValue("availabilityDays", [...current, day], {
+                            shouldDirty: true,
+                          });
+                        } else {
+                          form.setValue(
+                            "availabilityDays",
+                            current.filter((d) => d !== day),
+                            { shouldDirty: true }
+                          );
+                        }
+                      }}
+                    />
+                    <span className="text-sm font-medium">{day}</span>
+                  </label>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
