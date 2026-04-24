@@ -103,6 +103,11 @@ export default function ProfilePage() {
       phone: result.data.phone || undefined,
     };
 
+    // Include role so backend knows the user's role (especially on first save)
+    if (!profile) {
+      payload.role = role;
+    }
+
     if (isDoctor) {
       payload.hpii = result.data.hpii || undefined;
       payload.prescriberNumber = result.data.prescriberNumber || undefined;

@@ -28,6 +28,7 @@ async function handler(
 
   const headers: Record<string, string> = {
     "X-API-Key": API_SECRET,
+    "X-Clerk-User-Id": userId,
   };
 
   const contentType = req.headers.get("content-type");
