@@ -8,23 +8,32 @@ import {
   CardAction,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Stethoscope, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PatientMapping } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientNotes } from "@/lib/hooks/use-notes";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
-import type { ConsultationType } from "@/types";
-import Link from "next/link";
+import type { ConsultationType, ConsultationStatus } from "@/types";
 
-const CONSULT_TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-status-info-bg text-status-info-fg border-status-info-border",
-  "follow-up": "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
-  renewal: "bg-status-success-bg text-status-success-fg border-status-success-border",
+const STATUS_DOT_COLORS: Record<ConsultationStatus, string> = {
+  completed: "bg-status-success-fg",
+  scheduled: "bg-status-info-fg",
+  cancelled: "bg-status-danger-fg",
+  "no-show": "bg-status-warning-fg",
 };
+
+const STATUS_LABELS: Record<ConsultationStatus, string> = {
+  completed: "Completed",
+  scheduled: "Scheduled",
+  cancelled: "Cancelled",
+  "no-show": "No show",
+};
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ");
+}
 
 interface OverviewTabProps {
   patient: PatientMapping | undefined;
@@ -88,23 +97,33 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
   const activeMeds = prescriptions.filter((p) => p.status === "active");
   const recentNotes = notes.slice(0, 3);
 
-  const formatDob = (dob: string | null) => {
+  const formatDobWithAge = (dob: string | null) => {
     if (!dob) return "—";
-    return new Date(dob).toLocaleDateString("en-AU", {
+    const date = new Date(dob);
+    const formatted = date.toLocaleDateString("en-AU", {
       day: "2-digit",
-      month: "long",
+      month: "short",
       year: "numeric",
     });
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const m = today.getMonth() - date.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
+    return `${formatted} (${age}y)`;
   };
 
-  const getAge = (dob: string | null) => {
-    if (!dob) return "—";
-    const birth = new Date(dob);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return `${age}`;
+  const formatMedicare = (number: string | null, irn: string | null) => {
+    if (!number) return "—";
+    // Format as "2428  89123  4  1" style
+    const clean = number.replace(/\s/g, "");
+    const formatted = clean.replace(/(\d{4})(\d{5})(\d)/, "$1  $2  $3");
+    return irn ? `${formatted}  ${irn}` : formatted;
+  };
+
+  const formatAddress = (p: PatientMapping | undefined) => {
+    if (!p) return "—";
+    const parts = [p.city, p.state].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "—";
   };
 
   return (
@@ -137,26 +156,27 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
             <div className="divide-y">
               {recentConsults.map((c) => (
                 <div key={c.id} className="flex items-center gap-3 py-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+                  <span
+                    className={cn(
+                      "h-2.5 w-2.5 shrink-0 rounded-full mt-0.5",
+                      STATUS_DOT_COLORS[c.status]
+                    )}
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{c.doctorName}</p>
+                    <p className="text-sm font-medium truncate">
+                      {c.doctorName} · {capitalize(c.type)}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(c.scheduledAt).toLocaleDateString("en-AU", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {STATUS_LABELS[c.status]}
                     </p>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={cn("capitalize text-xs", CONSULT_TYPE_COLORS[c.type])}
-                  >
-                    {c.type}
-                  </Badge>
-                  <StatusBadge status={c.status} />
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {new Date(c.scheduledAt).toLocaleDateString("en-AU", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
                 </div>
               ))}
             </div>
@@ -171,7 +191,7 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
               onClick={() => onTabChange("prescriptions")}
               className="text-xs text-primary hover:underline"
             >
-              View all →
+              + New prescription
             </button>
           }
         >
@@ -262,34 +282,21 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
       {/* Right column — demographics + alerts */}
       <div className="space-y-6">
         {/* Demographics */}
-        <SectionCard title="Demographics">
-          <DemoField label="DOB" value={formatDob(patient?.date_of_birth ?? null)} />
-          <DemoField label="Age" value={getAge(patient?.date_of_birth ?? null)} />
+        <SectionCard
+          title="Demographics"
+          action={
+            <button className="text-xs text-primary hover:underline">
+              Edit
+            </button>
+          }
+        >
+          <DemoField label="DOB" value={formatDobWithAge(patient?.date_of_birth ?? null)} />
           <DemoField label="Gender" value={patient?.gender} />
-          <DemoField label="Medicare" value={patient?.medicare_number} />
-          <DemoField label="GP" value="—" />
-        </SectionCard>
-
-        {/* Allergies */}
-        <SectionCard title="Allergies">
-          {clinical?.has_medical_conditions === "yes" &&
-          clinical?.medical_conditions?.length ? (
-            <div className="flex flex-wrap gap-1.5 py-2">
-              {clinical.medical_conditions.map((c) => (
-                <Badge
-                  key={c}
-                  variant="outline"
-                  className="bg-status-danger-bg text-status-danger-fg border-status-danger-border text-xs"
-                >
-                  {c}
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No allergies recorded
-            </p>
-          )}
+          <DemoField label="Mobile" value={patient?.mobile} />
+          <DemoField label="Email" value={patient?.original_email} />
+          <DemoField label="Address" value={formatAddress(patient)} />
+          <DemoField label="Medicare" value={formatMedicare(patient?.medicare_number ?? null, patient?.medicare_irn ?? null)} />
+          <DemoField label="PMS ID" value={patient?.halaxy_patient_id} />
         </SectionCard>
 
         {/* Conditions */}

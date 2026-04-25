@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { RedFlagResult } from "@/components/patients/red-flag-utils";
 
@@ -19,19 +19,19 @@ export function RedFlagAlert({ redFlags }: RedFlagAlertProps) {
       }}
     >
       <div className="flex items-start gap-3">
-        <AlertTriangle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
+        <ShieldAlert className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-destructive">
+          <p className="text-sm font-semibold">
             Red flag — doctor review required
           </p>
           <p className="text-sm text-muted-foreground mt-0.5">{redFlags.triggers[0]}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm">
-            Review
-          </Button>
           <Button variant="ghost" size="sm">
             Dismiss
+          </Button>
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            Review
           </Button>
         </div>
       </div>
