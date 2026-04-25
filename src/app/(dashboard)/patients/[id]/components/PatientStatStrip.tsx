@@ -15,9 +15,9 @@ interface StatItemProps {
 
 function StatItem({ icon, iconBg, label, value, subText }: StatItemProps) {
   return (
-    <div className="flex items-center gap-3 flex-1 px-4 py-3">
+    <div className="flex items-center gap-3.5 flex-1 px-5 py-4">
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconBg}`}
       >
         {icon}
       </div>
@@ -25,7 +25,7 @@ function StatItem({ icon, iconBg, label, value, subText }: StatItemProps) {
         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           {label}
         </p>
-        <p className="text-sm font-semibold leading-tight">{value}</p>
+        <p className="text-base font-bold leading-tight">{value}</p>
         <p className="text-xs text-muted-foreground truncate" title={subText}>
           {subText}
         </p>
@@ -65,9 +65,9 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
 
   if (!patientId || loadingConsults || loadingRx) {
     return (
-      <div className="flex rounded-lg border divide-x">
+      <div className="flex border-t divide-x">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex-1 px-4 py-3">
+          <div key={i} className="flex-1 px-5 py-4">
             <Skeleton className="h-14 w-full" />
           </div>
         ))}
@@ -76,9 +76,9 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
   }
 
   return (
-    <div className="flex rounded-lg border divide-x">
+    <div className="flex border-t divide-x">
       <StatItem
-        icon={<CalendarCheck className="h-4 w-4 text-status-info-fg" />}
+        icon={<CalendarCheck className="h-5 w-5 text-status-info-fg" />}
         iconBg="bg-status-info-bg"
         label="Last consult"
         value={
@@ -93,7 +93,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         subText={lastConsult?.doctorName ?? "No consultations"}
       />
       <StatItem
-        icon={<CalendarClock className="h-4 w-4 text-status-accent-fg" />}
+        icon={<CalendarClock className="h-5 w-5 text-status-accent-fg" />}
         iconBg="bg-status-accent-bg"
         label="Next appointment"
         value={
@@ -113,7 +113,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         subText={nextAppt?.doctorName ?? "None scheduled"}
       />
       <StatItem
-        icon={<Pill className="h-4 w-4 text-status-success-fg" />}
+        icon={<Pill className="h-5 w-5 text-status-success-fg" />}
         iconBg="bg-status-success-bg"
         label="Active meds"
         value={String(activeMeds)}
