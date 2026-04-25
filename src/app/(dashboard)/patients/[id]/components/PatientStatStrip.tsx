@@ -49,9 +49,11 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
 
   const activeMeds = prescriptions.filter((p) => p.status === "active").length;
 
+  // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
+  const now = Date.now();
   const nextAppt = consultations
     .filter(
-      (c) => c.status === "scheduled" && new Date(c.scheduledAt).getTime() > Date.now()
+      (c) => c.status === "scheduled" && new Date(c.scheduledAt).getTime() > now
     )
     .sort(
       (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
