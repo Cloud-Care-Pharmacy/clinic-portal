@@ -2,7 +2,6 @@
 
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -76,9 +75,11 @@ export function PatientHeader({
           {/* Row 1: Avatar · Name · Age/Gender · contact chips · PMS-ID · Actions */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Avatar */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-base font-semibold">
               {patient?.first_name ? (
-                patient.first_name.charAt(0).toUpperCase()
+                (
+                  patient.first_name.charAt(0) + (patient.last_name?.charAt(0) ?? "")
+                ).toUpperCase()
               ) : patient?.original_email ? (
                 patient.original_email.charAt(0).toUpperCase()
               ) : (
@@ -117,8 +118,9 @@ export function PatientHeader({
             {pmsId && (
               <button
                 onClick={() => copyToClipboard(pmsId)}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 h-8 font-mono text-xs text-muted-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 h-8 font-mono text-xs text-muted-foreground hover:bg-muted transition-colors"
               >
+                <span className="text-muted-foreground/60">#</span>
                 {pmsId}
                 <Copy className="size-3.5" />
               </button>
@@ -128,10 +130,7 @@ export function PatientHeader({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button
-                    size="sm"
-                    className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
+                  <Button className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
                     <Sparkles className="size-3.5" />
                     Actions
                     <ChevronDown className="size-3.5" />
@@ -172,7 +171,7 @@ export function PatientHeader({
             </DropdownMenu>
           </div>
 
-          {/* Row 2: Location · Created date */}
+          {/* Row 2: Location · Patient since */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <MapPin className="h-3.5 w-3.5" />
@@ -180,7 +179,7 @@ export function PatientHeader({
             </span>
             {patient?.created_at && (
               <span className="text-xs">
-                Created{" "}
+                Patient since{" "}
                 {new Date(patient.created_at).toLocaleDateString("en-AU", {
                   day: "2-digit",
                   month: "short",

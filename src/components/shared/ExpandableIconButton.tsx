@@ -18,7 +18,7 @@ export function ExpandableIconButton({
   return (
     <button
       className={cn(
-        "group relative inline-flex h-8 items-center gap-1.5 overflow-hidden rounded-full border bg-background px-2 text-muted-foreground transition-all duration-250 ease-in-out",
+        "group relative inline-flex h-8 items-center justify-center gap-1.5 overflow-hidden rounded-full border bg-background px-2 text-muted-foreground transition-all duration-200 ease-in-out",
         disabled
           ? "cursor-default opacity-50"
           : "hover:bg-muted hover:pr-3 hover:text-foreground"
@@ -27,9 +27,9 @@ export function ExpandableIconButton({
       disabled={disabled}
       type="button"
     >
-      <span className="shrink-0">{icon}</span>
+      <span className="flex shrink-0 items-center justify-center size-4">{icon}</span>
       {!disabled && (
-        <span className="max-w-0 overflow-hidden whitespace-nowrap font-mono text-xs text-muted-foreground opacity-0 transition-all duration-250 ease-in-out group-hover:max-w-64 group-hover:opacity-100">
+        <span className="max-w-0 overflow-hidden whitespace-nowrap font-mono text-xs text-muted-foreground opacity-0 transition-all duration-200 ease-in-out group-hover:max-w-64 group-hover:opacity-100">
           {label}
         </span>
       )}

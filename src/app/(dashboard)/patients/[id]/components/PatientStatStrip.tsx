@@ -8,11 +8,12 @@ import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 interface StatItemProps {
   icon: React.ReactNode;
   iconBg: string;
-  value: string;
   label: string;
+  value: string;
+  subText: string;
 }
 
-function StatItem({ icon, iconBg, value, label }: StatItemProps) {
+function StatItem({ icon, iconBg, label, value, subText }: StatItemProps) {
   return (
     <div className="flex items-center gap-3 flex-1 px-4 py-3">
       <div
@@ -20,9 +21,14 @@ function StatItem({ icon, iconBg, value, label }: StatItemProps) {
       >
         {icon}
       </div>
-      <div>
-        <p className="text-lg font-semibold leading-tight">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className="text-sm font-semibold leading-tight">{value}</p>
+        <p className="text-xs text-muted-foreground truncate" title={subText}>
+          {subText}
+        </p>
       </div>
     </div>
   );
@@ -62,7 +68,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       <div className="flex rounded-lg border divide-x">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex-1 px-4 py-3">
-            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-14 w-full" />
           </div>
         ))}
       </div>
@@ -74,6 +80,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       <StatItem
         icon={<CalendarCheck className="h-4 w-4 text-status-info-fg" />}
         iconBg="bg-status-info-bg"
+        label="Last consult"
         value={
           lastConsult
             ? new Date(lastConsult.scheduledAt).toLocaleDateString("en-AU", {
@@ -83,17 +90,12 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
               })
             : "—"
         }
-        label="Last consult"
-      />
-      <StatItem
-        icon={<Pill className="h-4 w-4 text-status-success-fg" />}
-        iconBg="bg-status-success-bg"
-        value={String(activeMeds)}
-        label="Active meds"
+        subText={lastConsult?.doctorName ?? "No consultations"}
       />
       <StatItem
         icon={<CalendarClock className="h-4 w-4 text-status-accent-fg" />}
         iconBg="bg-status-accent-bg"
+        label="Next appointment"
         value={
           nextAppt
             ? new Date(nextAppt.scheduledAt).toLocaleDateString("en-AU", {
@@ -108,7 +110,14 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
               })
             : "—"
         }
-        label="Next appointment"
+        subText={nextAppt?.doctorName ?? "None scheduled"}
+      />
+      <StatItem
+        icon={<Pill className="h-4 w-4 text-status-success-fg" />}
+        iconBg="bg-status-success-bg"
+        label="Active meds"
+        value={String(activeMeds)}
+        subText={`${activeMeds} prescription${activeMeds !== 1 ? "s" : ""}`}
       />
     </div>
   );
