@@ -34,7 +34,6 @@ import {
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
-import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import type { PatientMapping } from "@/types";
 
