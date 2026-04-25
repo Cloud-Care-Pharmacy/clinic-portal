@@ -1,0 +1,2304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quity Clinic Portal — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+/* =========================================================
+   Tokens — inlined from colors_and_type.css for portability
+   ========================================================= */
+:root {
+  --background: #faf9f5;
+  --foreground: #3d3929;
+  --card: #f5f4ef;
+  --card-foreground: #141413;
+  --popover: #ffffff;
+  --popover-foreground: #28261b;
+  --primary: #c96442;
+  --primary-foreground: #ffffff;
+  --ring: #c96442;
+  --secondary: #e9e6dc;
+  --secondary-foreground: #535146;
+  --muted: #ede9de;
+  --muted-foreground: #6e6d68;
+  --accent: #e9e6dc;
+  --accent-foreground: #28261b;
+  --border: #dad9d4;
+  --input: #b4b2a7;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --sidebar: #f5f4ee;
+  --sidebar-foreground: #3d3d3a;
+  --sidebar-primary: #c96442;
+  --sidebar-primary-foreground: #fbfbfb;
+  --sidebar-accent: #e9e6dc;
+  --sidebar-accent-foreground: #343434;
+  --sidebar-border: #ebebeb;
+  --table-header: #efede3;
+  --table-row: var(--background);
+  --table-row-alt: #f3f1e8;
+  --table-row-hover: var(--accent);
+  --table-separator: var(--border);
+  --status-success-bg: #dcfce7; --status-success-fg: #166534; --status-success-border: #bbf7d0;
+  --status-warning-bg: #fef9c3; --status-warning-fg: #854d0e; --status-warning-border: #fef08a;
+  --status-info-bg: #dbeafe;    --status-info-fg: #1e40af;    --status-info-border: #bfdbfe;
+  --status-accent-bg: #f3e8ff;  --status-accent-fg: #6b21a8;  --status-accent-border: #e9d5ff;
+  --status-danger-bg: #fee2e2;  --status-danger-fg: #991b1b;  --status-danger-border: #fecaca;
+  --status-neutral-bg: #f3f4f6; --status-neutral-fg: #4b5563; --status-neutral-border: #e5e7eb;
+  /* Solid feedback colors (toasts, banners that need full-bleed surfaces) */
+  --feedback-success: #16a34a;
+  --feedback-success-foreground: #ffffff;
+  --feedback-info: #1f1e1d;
+  --feedback-info-foreground: #fbfbfb;
+  --feedback-danger: var(--destructive);
+  --feedback-danger-foreground: var(--destructive-foreground);
+  --font-sans: "Outfit", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 1rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-xs:  0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+  --shadow-md:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+  --shadow-lg:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+  --shadow-xl:  0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+}
+
+html, body {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, .h1 { font-family: var(--font-sans); font-size: 1.5rem;   line-height: 1.2;  font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+h2, .h2 { font-size: 1.125rem; line-height: 1.35; font-weight: 600; margin: 0; }
+h3, .h3 { font-size: 1rem;     line-height: 1.4;  font-weight: 600; margin: 0; }
+h4, .h4 { font-size: 0.875rem; line-height: 1.4;  font-weight: 600; margin: 0; }
+p, .body { font-size: 0.875rem; line-height: 1.55; margin: 0; }
+.body-sm, small { font-size: 0.8125rem; line-height: 1.45; color: var(--muted-foreground); }
+.caption { font-size: 0.75rem; line-height: 1.3; color: var(--muted-foreground); }
+.overline { font-size: 0.6875rem; line-height: 1.2; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
+.stat-number { font-size: 1.875rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
+code, kbd, pre, .mono { font-family: var(--font-mono); font-size: 0.8125rem; }
+
+/* ============== Page chrome ============== */
+  :root {
+    --gutter: 64px;
+    --max: 1100px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .page {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 64px var(--gutter) 120px;
+  }
+
+  /* ============== Top of page ============== */
+  .doc-header { padding-bottom: 48px; border-bottom: 1px solid var(--border); margin-bottom: 56px; }
+  .doc-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin: 0 0 12px;
+  }
+  .doc-title {
+    font-size: 44px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 0 0 16px;
+  }
+  .doc-lead {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--muted-foreground);
+    max-width: 56ch;
+    margin: 0;
+  }
+  .doc-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+  .doc-meta strong { color: var(--foreground); font-weight: 600; }
+
+  /* ============== Section structure ============== */
+  section { margin-bottom: 80px; }
+  section.tight { margin-bottom: 56px; }
+  .sec-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .sec-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    margin: 0 0 12px;
+  }
+  .sec-lead {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+    max-width: 60ch;
+    margin: 0 0 32px;
+  }
+  .sub-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 32px 0 16px;
+    letter-spacing: -0.005em;
+  }
+
+  /* ============== Reusable bits ============== */
+  .row-block { display: grid; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card); }
+  .row-block .r {
+    display: grid;
+    grid-template-columns: 200px 1fr 160px;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .row-block .r:last-child { border-bottom: 0; }
+  .row-block .r .k {
+    font-family: var(--font-mono);
+    color: var(--foreground);
+    font-size: 12px;
+  }
+  .row-block .r .v {
+    color: var(--muted-foreground);
+  }
+  .row-block .r .hex {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted-foreground);
+    text-align: right;
+  }
+
+  /* ============== Color swatches ============== */
+  .swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 880px) { .swatch-grid { grid-template-columns: repeat(2, 1fr); } }
+  .sw {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card);
+  }
+  .sw .chip { height: 80px; border-bottom: 1px solid var(--border); }
+  .sw .meta { padding: 10px 12px; }
+  .sw .role { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-foreground); }
+  .sw .token { font-family: var(--font-mono); font-size: 12px; color: var(--foreground); margin-top: 4px; }
+  .sw .hex { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); margin-top: 2px; }
+
+  /* ============== Typography demo ============== */
+  .type-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 32px;
+    align-items: baseline;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .type-row:last-child { border-bottom: 0; }
+  .type-spec { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); line-height: 1.6; }
+  .type-spec strong { color: var(--foreground); font-weight: 600; }
+  .type-sample { color: var(--foreground); }
+
+  /* ============== Spacing demo ============== */
+  .space-rows { display: grid; gap: 8px; }
+  .space-row {
+    display: grid;
+    grid-template-columns: 80px 80px 1fr;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .space-bar { height: 16px; background: var(--primary); border-radius: 2px; }
+
+  /* ============== Radii demo ============== */
+  .radii-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .radii-cell {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    height: 100px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted-foreground);
+    padding: 12px;
+  }
+  .radii-cell strong { display: block; color: var(--foreground); font-size: 13px; margin-bottom: 4px; font-weight: 600; }
+
+  /* ============== Shadow demo ============== */
+  .shadow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .shadow-cell {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    height: 110px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .shadow-cell strong { display: block; color: var(--foreground); font-size: 12px; margin-bottom: 4px; font-weight: 600; }
+
+  /* ============== Buttons demo ============== */
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 36px; padding: 0 16px;
+    border-radius: 12px; border: 1px solid transparent;
+    font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background-color .12s, border-color .12s, opacity .12s;
+  }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+  .btn-primary:hover { background: color-mix(in srgb, var(--primary) 90%, black); }
+  .btn-outline { background: var(--background); color: var(--foreground); border-color: var(--border); }
+  .btn-outline:hover { background: var(--muted); }
+  .btn-ghost { background: transparent; color: var(--foreground); }
+  .btn-ghost:hover { background: var(--muted); }
+  .btn-secondary { background: var(--secondary); color: var(--secondary-foreground); }
+  .btn-secondary:hover { background: color-mix(in srgb, var(--secondary) 80%, black); }
+  .btn-destructive { background: var(--destructive); color: var(--destructive-foreground); }
+  .btn-destructive:hover { background: color-mix(in srgb, var(--destructive) 90%, black); }
+  .btn-sm { height: 28px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  .btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 8px; justify-content: center; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn svg { width: 16px; height: 16px; }
+
+  /* Standalone helper button classes (used in modals, sheets, empty states, etc.) */
+  .btn-primary-sm, .btn-ghost-sm, .btn-destructive-sm {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 14px;
+    border-radius: 10px;
+    font: 500 13px/1 var(--font-sans);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color .12s, color .12s, border-color .12s;
+  }
+  .btn-primary-sm { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .btn-primary-sm:hover { background: color-mix(in srgb, var(--primary) 90%, black); }
+  .btn-ghost-sm { background: transparent; color: var(--foreground); border-color: var(--border); }
+  .btn-ghost-sm:hover { background: var(--accent); }
+  .btn-destructive-sm { background: var(--destructive); color: var(--destructive-foreground); border-color: var(--destructive); }
+  .btn-destructive-sm:hover { background: color-mix(in srgb, var(--destructive) 90%, black); }
+  button.btn-icon, .btn-icon {
+    display: inline-grid; place-items: center;
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--muted-foreground);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button.btn-icon:hover { background: var(--accent); color: var(--foreground); }
+
+  /* ============== Inputs ============== */
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 500; color: var(--foreground); }
+  .input {
+    height: 36px; padding: 0 12px;
+    border: 1px solid var(--input);
+    border-radius: 10px;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans); font-size: 14px;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  .input::placeholder { color: var(--muted-foreground); }
+  .input:focus-visible { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 40%, transparent); }
+  .input-group { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 720px) { .input-group { grid-template-columns: 1fr; } }
+
+  /* ============== Badges ============== */
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 22px; padding: 0 10px;
+    font-size: 12px; font-weight: 500;
+    border-radius: 999px; border: 1px solid transparent;
+    font-family: var(--font-sans);
+  }
+  .badge-success { background: var(--status-success-bg); color: var(--status-success-fg); border-color: var(--status-success-border); }
+  .badge-warning { background: var(--status-warning-bg); color: var(--status-warning-fg); border-color: var(--status-warning-border); }
+  .badge-danger  { background: var(--status-danger-bg);  color: var(--status-danger-fg);  border-color: var(--status-danger-border); }
+  .badge-info    { background: var(--status-info-bg);    color: var(--status-info-fg);    border-color: var(--status-info-border); }
+  .badge-accent  { background: var(--status-accent-bg);  color: var(--status-accent-fg);  border-color: var(--status-accent-border); }
+  .badge-neutral { background: var(--status-neutral-bg); color: var(--status-neutral-fg); border-color: var(--status-neutral-border); }
+
+  /* ============== Table demo (the canonical one) ============== */
+  .demo-table {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--background);
+    font-size: 14px;
+  }
+  .dt-row { display: grid; grid-template-columns: 40px 1.4fr 1.6fr 1fr 100px 60px; align-items: center; }
+  .dt-th {
+    background: var(--table-header);
+    height: 44px;
+    font-size: 12px; font-weight: 600;
+    color: var(--foreground);
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+  }
+  .dt-th:first-child { padding-left: 16px; }
+  .dt-td {
+    background: var(--background);
+    height: 56px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    color: var(--foreground);
+  }
+  .dt-row:last-child .dt-td { border-bottom: 0; }
+  .dt-row.hover .dt-td { background: var(--accent); }
+  .dt-row.selected .dt-td { background: color-mix(in srgb, var(--primary) 8%, var(--background)); }
+  /* Opt-in zebra variant — dense reference tables only (audit logs, raw data exports). */
+  .demo-table.zebra .dt-row:nth-of-type(odd) .dt-td { background: var(--table-row-alt); }
+  .demo-table.zebra .dt-row.hover .dt-td { background: var(--accent); }
+  .demo-table.zebra .dt-row.selected .dt-td { background: color-mix(in srgb, var(--primary) 8%, var(--background)); }
+  /* Dense modifier — pairs naturally with zebra for log-style tables. */
+  .demo-table.dense .dt-td { height: 40px; font-size: 13px; }
+  .demo-table.dense .dt-th { height: 36px; }
+  /* Log-style grid for dense reference tables — 4 equal columns, no checkbox/action gutters. */
+  .demo-table.log .dt-row { grid-template-columns: 140px 1fr 1.4fr 90px; }
+  .demo-table.log .dt-th:first-child,
+  .demo-table.log .dt-td:first-child { padding-left: 16px; }
+  .dt-checkbox {
+    width: 16px; height: 16px;
+    flex: 0 0 auto;
+    border: 1.5px solid var(--input);
+    border-radius: 4px;
+    background: var(--background);
+    display: inline-block;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .dt-checkbox.checked { background: var(--primary); border-color: var(--primary); }
+  .dt-checkbox.checked::after {
+    content: ""; position: absolute;
+    left: 4.5px; top: 1px;
+    width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .dt-state-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground);
+    background: var(--card); border: 1px dashed var(--border);
+    padding: 2px 6px; border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--muted-foreground); margin-top: 12px;
+  }
+  .legend span::before {
+    content: ""; display: inline-block;
+    width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 6px; vertical-align: -1px;
+    border: 1px solid var(--border);
+  }
+  .legend .h::before { background: var(--table-header); }
+  .legend .b::before { background: var(--background); }
+  .legend .a::before { background: var(--accent); }
+  .legend .s::before { background: color-mix(in srgb, var(--primary) 8%, var(--background)); }
+  .legend .z::before { background: var(--table-row-alt); }
+
+  /* ============== Icon grid ============== */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .icon-tile {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 16px 8px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+  }
+  .icon-tile svg { width: 20px; height: 20px; color: var(--foreground); stroke-width: 1.8; }
+  .icon-tile .name { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+  .icon-sizes { display: flex; align-items: end; gap: 24px; padding: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+  .icon-sizes > div { display: grid; justify-items: center; gap: 8px; }
+  .icon-sizes svg { color: var(--foreground); stroke-width: 1.8; }
+  .icon-sizes .lbl { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+  .icon-treatments { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .icon-treatments { grid-template-columns: repeat(2, 1fr); } }
+  .icon-treatment { display: grid; gap: 12px; padding: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; text-align: center; }
+  .icon-treatment .demo { display: grid; place-items: center; height: 56px; }
+  .icon-treatment .label { font-size: 12px; font-weight: 600; color: var(--foreground); }
+  .icon-treatment .note { font-size: 11px; color: var(--muted-foreground); font-family: var(--font-mono); }
+  .icon-treatment.muted .demo svg { color: var(--muted-foreground); }
+  .icon-treatment.primary .demo svg { color: var(--primary); }
+  .icon-treatment.foreground .demo svg { color: var(--foreground); }
+  .icon-treatment.danger .demo svg { color: var(--destructive); }
+
+  /* ============== Card demo ============== */
+  .demo-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .demo-card .c-title { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+  .demo-card .c-desc { font-size: 14px; color: var(--muted-foreground); margin: 0; }
+
+  /* ============== Rules block ============== */
+  .rules { display: grid; gap: 12px; }
+  .rule {
+    display: grid; grid-template-columns: 24px 1fr; gap: 12px;
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .rule.do { border-left: 3px solid #16a34a; }
+  .rule.dont { border-left: 3px solid var(--destructive); }
+  .rule .mark { font-weight: 700; font-family: var(--font-mono); font-size: 12px; }
+  .rule.do .mark { color: #16a34a; }
+  .rule.dont .mark { color: var(--destructive); }
+
+  /* ============== Dropdown menu (live demo) ============== */
+  .menu-demo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  @media (max-width: 720px) { .menu-demo-grid { grid-template-columns: 1fr; } }
+  .menu-stage {
+    position: relative;
+    background: repeating-linear-gradient(135deg, var(--card) 0 8px, color-mix(in srgb, var(--muted) 50%, var(--card)) 8px 16px);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 56px 16px 32px;
+    display: grid;
+    place-items: center;
+    min-height: 240px;
+  }
+  .menu {
+    background: var(--popover);
+    color: var(--popover-foreground);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: var(--shadow-md);
+    width: 220px;
+    font-size: 14px;
+  }
+  .menu.wide { width: 240px; }
+  .menu-item {
+    display: flex; align-items: center; gap: 10px;
+    height: 36px; padding: 0 8px;
+    border-radius: 8px;
+    color: var(--foreground);
+    cursor: pointer;
+    user-select: none;
+  }
+  .menu-item:hover { background: var(--accent); }
+  .menu-item .grow { flex: 1; }
+  .menu-item svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--muted-foreground); }
+  .menu-item.danger { color: var(--destructive); }
+  .menu-item.danger svg { color: var(--destructive); }
+  .menu-item.danger:hover { background: color-mix(in srgb, var(--destructive) 10%, var(--popover)); }
+  .menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+  .menu-check { width: 14px; height: 14px; flex: 0 0 auto; color: var(--primary); }
+  .menu-stage-label {
+    position: absolute;
+    top: 16px; left: 16px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.04em;
+  }
+
+  /* ============== Checkboxes & toggles ============== */
+  .check-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+  .check-label {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 14px; color: var(--foreground);
+    cursor: pointer;
+  }
+  .check {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--input);
+    border-radius: 4px;
+    background: var(--background);
+    flex: 0 0 auto;
+    position: relative;
+    box-sizing: border-box;
+    transition: background-color .12s, border-color .12s;
+  }
+  .check.checked { background: var(--primary); border-color: var(--primary); }
+  .check.checked::after {
+    content: ""; position: absolute;
+    left: 4.5px; top: 1px;
+    width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .check.indeterminate { background: var(--primary); border-color: var(--primary); }
+  .check.indeterminate::after {
+    content: ""; position: absolute;
+    left: 3px; top: 6px; width: 8px; height: 2px;
+    background: #fff;
+    border-radius: 1px;
+  }
+  .check.disabled {
+    border-color: color-mix(in srgb, var(--input) 50%, var(--background));
+    cursor: not-allowed;
+    background: color-mix(in srgb, var(--muted) 60%, var(--background));
+  }
+  .check.disabled.checked {
+    background: color-mix(in srgb, var(--primary) 35%, var(--background));
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--background));
+    opacity: 1;
+  }
+  .check-label.disabled { color: var(--muted-foreground); cursor: not-allowed; }
+
+  /* ============== Alerts & banners ============== */
+  .alert {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    column-gap: 12px;
+    align-items: start;
+    padding: 14px 16px;
+    border: 1px solid;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+  .alert .ico { width: 20px; height: 20px; margin-top: 1px; }
+  .alert .body strong { display: block; font-weight: 600; line-height: 1.35; margin-bottom: 2px; }
+  .alert .body p { margin: 0; line-height: 1.5; opacity: 0.9; }
+  .alert .close {
+    background: transparent; border: 0; cursor: pointer;
+    width: 24px; height: 24px;
+    color: inherit; opacity: 0.6;
+    display: grid; place-items: center;
+    border-radius: 6px;
+  }
+  .alert .close:hover { opacity: 1; background: rgb(0 0 0 / 0.05); }
+  .alert.info     { background: var(--status-info-bg);    color: var(--status-info-fg);    border-color: var(--status-info-border); }
+  .alert.success  { background: var(--status-success-bg); color: var(--status-success-fg); border-color: var(--status-success-border); }
+  .alert.warning  { background: var(--status-warning-bg); color: var(--status-warning-fg); border-color: var(--status-warning-border); }
+  .alert.danger   { background: var(--status-danger-bg);  color: var(--status-danger-fg);  border-color: var(--status-danger-border); }
+  .alert.neutral  { background: var(--status-neutral-bg); color: var(--status-neutral-fg); border-color: var(--status-neutral-border); }
+
+  /* Inline banner — full width, square corners on the sides for header strips */
+  .banner {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid;
+    font-size: 13px;
+  }
+  .banner.warning { background: var(--status-warning-bg); color: var(--status-warning-fg); border-color: var(--status-warning-border); }
+  .banner.danger  { background: var(--status-danger-bg);  color: var(--status-danger-fg);  border-color: var(--status-danger-border); }
+  .banner .ico { width: 16px; height: 16px; flex: 0 0 auto; }
+  .banner .grow { flex: 1; }
+  .banner a { color: inherit; text-decoration: underline; font-weight: 500; }
+
+  /* Inline form-error / helper text */
+  .input-error-row { display: flex; gap: 6px; align-items: center; color: var(--destructive); font-size: 12px; margin-top: 6px; }
+  .input-error-row svg { width: 12px; height: 12px; }
+
+  .radio {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--input);
+    border-radius: 999px;
+    background: var(--background);
+    flex: 0 0 auto;
+    position: relative;
+    box-sizing: border-box;
+  }
+  .radio.checked { border-color: var(--primary); }
+  .radio.checked::after {
+    content: ""; position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 8px; height: 8px;
+    background: var(--primary); border-radius: 999px;
+  }
+
+  .switch {
+    width: 36px; height: 20px;
+    background: var(--input);
+    border-radius: 999px;
+    position: relative;
+    flex: 0 0 auto;
+    transition: background-color .15s;
+    cursor: pointer;
+  }
+  .switch::after {
+    content: ""; position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 999px;
+    transition: transform .15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .switch.on { background: var(--primary); }
+  .switch.on::after { transform: translateX(16px); }
+
+  /* ============== Expandable buttons ============== */
+  .expandable-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .expandable {
+    display: inline-flex; align-items: center; gap: 0;
+    height: 32px;
+    padding: 0;
+    width: 32px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--background);
+    color: var(--muted-foreground);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width .25s ease, padding .25s ease, background-color .15s, color .15s, border-color .15s;
+  }
+  .expandable svg { width: 16px; height: 16px; margin-left: 8px; flex: 0 0 auto; }
+  .expandable .lbl {
+    opacity: 0;
+    margin-left: 6px;
+    margin-right: 12px;
+    transition: opacity .15s ease;
+  }
+  .expandable:hover {
+    width: 200px;
+    background: var(--muted);
+    color: var(--foreground);
+  }
+  .expandable:hover .lbl { opacity: 1; }
+  .expandable.danger:hover { background: color-mix(in srgb, var(--destructive) 10%, var(--background)); color: var(--destructive); border-color: color-mix(in srgb, var(--destructive) 30%, var(--border)); }
+
+  /* ============== Tabs ============== */
+  .tabs { display: flex; gap: 4px; padding: 4px; background: var(--muted); border-radius: 10px; width: fit-content; }
+  .tab { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border-radius: 8px; background: transparent; border: 0; color: var(--muted-foreground); font: 500 13px/1 var(--font-sans); cursor: pointer; }
+  .tab:hover { color: var(--foreground); }
+  .tab.active { background: var(--background); color: var(--foreground); box-shadow: var(--shadow-sm); }
+  .tab .count { display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted-foreground) 18%, transparent); color: var(--muted-foreground); font: 600 11px/1 var(--font-sans); }
+  .tab.active .count { background: var(--primary); color: var(--primary-foreground); }
+  .tabs-underline { display: flex; gap: 24px; border-bottom: 1px solid var(--border); }
+  .tab-u { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 2px; background: transparent; border: 0; color: var(--muted-foreground); font: 500 14px/1 var(--font-sans); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab-u.active { color: var(--foreground); border-bottom-color: var(--primary); }
+  .tab-u:hover { color: var(--foreground); }
+
+  /* ============== Tooltips & popovers ============== */
+  .tip-stage { position: relative; padding: 60px 32px 16px; background: repeating-linear-gradient(135deg, var(--card) 0 8px, color-mix(in srgb, var(--muted) 50%, var(--card)) 8px 16px); border: 1px dashed var(--border); border-radius: 12px; display: flex; gap: 32px; align-items: center; flex-wrap: wrap; min-height: 140px; }
+  .tip-stage-label { position: absolute; top: 16px; left: 16px; font-family: var(--font-mono); font-size: 10px; color: var(--muted-foreground); letter-spacing: 0.04em; }
+  .tip { position: relative; display: inline-flex; }
+  .tip-bubble { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 6px 10px; background: #1f1e1d; color: #fbfbfb; font: 500 12px/1.3 var(--font-sans); border-radius: 6px; white-space: nowrap; }
+  .tip-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #1f1e1d; }
+  .pop { width: 280px; background: var(--popover); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md); padding: 14px; font-size: 13px; }
+  .pop strong { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--foreground); }
+  .pop p { margin: 0; color: var(--muted-foreground); line-height: 1.5; }
+
+  /* ============== Modal / Dialog ============== */
+  .modal-stage { position: relative; padding: 56px 24px 24px; background: rgba(0,0,0,0.4); border-radius: 12px; min-height: 280px; display: grid; place-items: center; }
+  .modal-stage-label { position: absolute; top: 16px; left: 16px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.7); letter-spacing: 0.04em; }
+  .modal { width: 100%; max-width: 440px; background: var(--popover); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-xl); overflow: hidden; }
+  .modal-head { padding: 20px 24px 12px; }
+  .modal-head h3 { font-size: 18px; font-weight: 600; margin: 0 0 4px; color: var(--foreground); }
+  .modal-head p { font-size: 14px; color: var(--muted-foreground); margin: 0; line-height: 1.5; }
+  .modal-body { padding: 4px 24px 20px; font-size: 14px; color: var(--foreground); line-height: 1.5; }
+  .modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; background: var(--muted); border-top: 1px solid var(--border); }
+
+  /* ============== Side sheet / Drawer ============== */
+  .sheet-stage { position: relative; padding-top: 40px; background: rgba(0,0,0,0.35); border-radius: 12px; height: 380px; overflow: hidden; }
+  .sheet-stage-label { position: absolute; top: 16px; left: 16px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.7); letter-spacing: 0.04em; }
+  .sheet { position: absolute; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card); border-left: 1px solid var(--border); box-shadow: var(--shadow-xl); display: flex; flex-direction: column; }
+  .sheet-head { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .sheet-head h3 { font-size: 16px; font-weight: 600; margin: 0 0 2px; }
+  .sheet-head p { font-size: 13px; color: var(--muted-foreground); margin: 0; }
+  .sheet-body { flex: 1; padding: 20px 24px; font-size: 14px; line-height: 1.55; overflow: auto; }
+  .sheet-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; background: var(--background); }
+
+  /* ============== Empty state ============== */
+  .empty { display: grid; place-items: center; gap: 14px; padding: 56px 24px; text-align: center; background: var(--card); border: 1px dashed var(--border); border-radius: 12px; }
+  .empty .ico-bg { width: 56px; height: 56px; border-radius: 999px; background: var(--muted); display: grid; place-items: center; color: var(--muted-foreground); }
+  .empty .ico-bg svg { width: 24px; height: 24px; }
+  .empty h3 { font-size: 16px; font-weight: 600; margin: 0; }
+  .empty p { font-size: 14px; color: var(--muted-foreground); max-width: 360px; margin: 0; line-height: 1.5; }
+
+  /* ============== Loading / Skeleton ============== */
+  @keyframes shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skel { display: inline-block; background: linear-gradient(90deg, var(--muted) 0%, color-mix(in srgb, var(--muted) 50%, var(--background)) 50%, var(--muted) 100%); background-size: 800px 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; height: 12px; }
+  .skel.line { display: block; height: 12px; margin: 8px 0; }
+  .skel.circle { width: 32px; height: 32px; border-radius: 999px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid color-mix(in srgb, var(--primary) 25%, transparent); border-top-color: var(--primary); border-radius: 999px; animation: spin .8s linear infinite; }
+  .spinner.lg { width: 28px; height: 28px; border-width: 3px; }
+  .progress { width: 100%; height: 6px; background: var(--muted); border-radius: 999px; overflow: hidden; }
+  .progress > span { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width .3s; }
+
+  /* ============== Avatars ============== */
+  .ava { display: inline-grid; place-items: center; border-radius: 999px; font-weight: 600; font-family: var(--font-sans); position: relative; flex: 0 0 auto; }
+  .ava.xs { width: 24px; height: 24px; font-size: 10px; }
+  .ava.sm { width: 32px; height: 32px; font-size: 12px; }
+  .ava.md { width: 40px; height: 40px; font-size: 14px; }
+  .ava.lg { width: 64px; height: 64px; font-size: 22px; }
+  .ava.c1 { background: #e9d5ff; color: #6b21a8; }
+  .ava.c2 { background: #dbeafe; color: #1e40af; }
+  .ava.c3 { background: #dcfce7; color: #166534; }
+  .ava.c4 { background: #fef9c3; color: #854d0e; }
+  .ava.c5 { background: #fee2e2; color: #991b1b; }
+  .ava.c6 { background: #f3f4f6; color: #4b5563; }
+  .ava .dot { position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 999px; border: 2px solid var(--background); background: #16a34a; }
+  .ava.online .dot { background: #16a34a; }
+  .ava.busy .dot { background: #dc2626; }
+  .ava.away .dot { background: #ca8a04; }
+  .ava-stack { display: inline-flex; }
+  .ava-stack .ava { box-shadow: 0 0 0 2px var(--background); margin-left: -8px; }
+  .ava-stack .ava:first-child { margin-left: 0; }
+
+  /* ============== Date picker ============== */
+  .cal { width: 280px; background: var(--popover); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-md); padding: 12px; font-size: 13px; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 8px; }
+  .cal-head .month { font-weight: 600; }
+  .cal-nav { width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; border-radius: 6px; color: var(--muted-foreground); }
+  .cal-nav:hover { background: var(--accent); color: var(--foreground); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { font-size: 11px; color: var(--muted-foreground); text-align: center; padding: 4px 0; font-weight: 500; }
+  .cal-day { aspect-ratio: 1; display: grid; place-items: center; border-radius: 6px; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .cal-day:hover { background: var(--accent); }
+  .cal-day.muted { color: var(--muted-foreground); opacity: 0.4; }
+  .cal-day.today { color: var(--primary); font-weight: 600; }
+  .cal-day.selected { background: var(--primary); color: var(--primary-foreground); font-weight: 600; }
+  .cal-day.in-range { background: color-mix(in srgb, var(--primary) 15%, transparent); border-radius: 0; }
+  .cal-day.in-range.start { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+  .cal-day.in-range.end { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+
+  /* ============== Search input ============== */
+  .search { position: relative; display: inline-flex; align-items: center; width: 320px; }
+  .search input { width: 100%; height: 36px; padding: 0 80px 0 36px; border: 1px solid var(--input); border-radius: 10px; background: var(--background); font: 14px/1 var(--font-sans); color: var(--foreground); }
+  .search input:focus { outline: 2px solid var(--ring); outline-offset: -1px; border-color: var(--ring); }
+  .search .ico { position: absolute; left: 12px; width: 14px; height: 14px; color: var(--muted-foreground); pointer-events: none; }
+  .search .clear { position: absolute; right: 44px; width: 18px; height: 18px; display: grid; place-items: center; border: 0; background: var(--muted); border-radius: 999px; cursor: pointer; color: var(--muted-foreground); }
+  .search .kbd { position: absolute; right: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); }
+
+  /* ============== Pagination ============== */
+  .pagi { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; font-size: 13px; }
+  .pagi .info { color: var(--muted-foreground); }
+  .pagi .nums { display: inline-flex; gap: 2px; }
+  .pagi-btn { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--border); background: var(--background); color: var(--foreground); border-radius: 8px; cursor: pointer; font: 500 13px/1 var(--font-sans); }
+  .pagi-btn:hover { background: var(--accent); }
+  .pagi-btn.active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+  .pagi-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .pagi-ellipsis { display: grid; place-items: center; width: 32px; height: 32px; color: var(--muted-foreground); }
+
+  /* ============== Breadcrumbs ============== */
+  .crumbs { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted-foreground); }
+  .crumbs a { color: var(--muted-foreground); text-decoration: none; padding: 4px 6px; border-radius: 6px; }
+  .crumbs a:hover { color: var(--foreground); background: var(--accent); }
+  .crumbs .sep { color: var(--border); }
+  .crumbs .current { color: var(--foreground); font-weight: 500; padding: 4px 6px; }
+
+  /* ============== Form layout ============== */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; max-width: 720px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font: 500 13px/1 var(--font-sans); color: var(--foreground); display: flex; align-items: center; gap: 4px; }
+  .field label .req { color: var(--destructive); }
+  .field .helper { font-size: 12px; color: var(--muted-foreground); line-height: 1.4; }
+  .field input, .field select, .field textarea { width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--input); border-radius: 10px; background: var(--background); font: 14px/1 var(--font-sans); color: var(--foreground); box-sizing: border-box; }
+  .field textarea { height: auto; padding: 10px 12px; resize: vertical; line-height: 1.5; }
+
+  /* ============== Filter bar ============== */
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 0; }
+  .fpill { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 12px; border: 1px solid var(--border); background: var(--background); border-radius: 999px; font-size: 13px; color: var(--foreground); cursor: pointer; }
+  .fpill .v { color: var(--muted-foreground); }
+  .fpill.active { background: var(--accent); border-color: var(--primary); }
+  .fpill svg { width: 12px; height: 12px; opacity: 0.6; }
+  .fpill .x { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 999px; background: color-mix(in srgb, var(--foreground) 12%, transparent); color: var(--foreground); margin-left: 2px; }
+  .fpill .x:hover { background: var(--destructive); color: white; }
+  .filter-bar .clear-all { font-size: 13px; color: var(--muted-foreground); cursor: pointer; padding: 0 6px; background: transparent; border: 0; }
+  .filter-bar .clear-all:hover { color: var(--destructive); text-decoration: underline; }
+  .filter-bar .count { font-size: 13px; color: var(--muted-foreground); margin-left: auto; }
+
+  /* ============== Toast / Snackbar ============== */
+  .toast-stage { position: relative; padding: 40px 16px 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; min-height: 180px; display: grid; gap: 8px; align-content: start; }
+  .toast { display: grid; grid-template-columns: 18px 1fr auto; column-gap: 10px; align-items: center; padding: 10px 12px; background: var(--feedback-info); color: var(--feedback-info-foreground); border-radius: 10px; box-shadow: var(--shadow-lg); font-size: 13px; max-width: 360px; }
+  .toast.success { background: var(--feedback-success); color: var(--feedback-success-foreground); }
+  .toast.danger { background: var(--feedback-danger); color: var(--feedback-danger-foreground); }
+  .toast .ico { width: 18px; height: 18px; }
+  .toast .undo { background: transparent; border: 0; color: inherit; font-weight: 600; cursor: pointer; padding: 4px 8px; opacity: 0.95; text-decoration: underline; }
+
+  /* ============== File upload ============== */
+  .dropzone { display: grid; place-items: center; gap: 10px; padding: 32px 24px; border: 2px dashed var(--border); border-radius: 12px; background: var(--card); text-align: center; }
+  .dropzone:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 4%, var(--card)); }
+  .dropzone .ico-bg { width: 44px; height: 44px; border-radius: 12px; background: var(--muted); color: var(--muted-foreground); display: grid; place-items: center; }
+  .dropzone .ico-bg svg { width: 20px; height: 20px; }
+  .dropzone p { margin: 0; font-size: 14px; }
+  .dropzone p strong { color: var(--primary); font-weight: 600; cursor: pointer; }
+  .dropzone .meta { font-size: 12px; color: var(--muted-foreground); margin: 0; }
+  .file-row { display: grid; grid-template-columns: 32px 1fr auto auto; column-gap: 12px; align-items: center; padding: 10px 12px; background: var(--background); border: 1px solid var(--border); border-radius: 10px; }
+  .file-row .ico-bg { width: 32px; height: 32px; border-radius: 8px; background: var(--muted); display: grid; place-items: center; color: var(--muted-foreground); }
+  .file-row .name { font-size: 13px; font-weight: 500; }
+  .file-row .size { font-size: 12px; color: var(--muted-foreground); }
+  .file-row .x { width: 24px; height: 24px; display: grid; place-items: center; border: 0; background: transparent; color: var(--muted-foreground); cursor: pointer; border-radius: 6px; }
+  .file-row .x:hover { color: var(--destructive); background: color-mix(in srgb, var(--destructive) 10%, transparent); }
+
+  /* ============== Stepper ============== */
+  .stepper { display: flex; align-items: center; gap: 0; }
+  .stepper .step { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .stepper .num { width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; font: 600 13px/1 var(--font-sans); border: 1.5px solid var(--border); background: var(--background); color: var(--muted-foreground); }
+  .stepper .step.done .num { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
+  .stepper .step.active .num { background: var(--background); border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent); }
+  .stepper .lbl { font: 500 13px/1.2 var(--font-sans); color: var(--muted-foreground); }
+  .stepper .step.done .lbl, .stepper .step.active .lbl { color: var(--foreground); }
+  .stepper .bar { flex: 1; height: 1.5px; background: var(--border); margin: 0 12px; min-width: 24px; }
+  .stepper .step.done + .bar { background: var(--primary); }
+
+  /* ============== Tag / Chip ============== */
+  .tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 10px; background: var(--muted); color: var(--foreground); border-radius: 999px; font-size: 12px; font-weight: 500; }
+  .tag .x { width: 14px; height: 14px; display: grid; place-items: center; border: 0; background: transparent; color: var(--muted-foreground); cursor: pointer; border-radius: 999px; }
+  .tag .x:hover { background: color-mix(in srgb, var(--foreground) 12%, transparent); color: var(--foreground); }
+
+  /* ============== Kbd ============== */
+  kbd.k { display: inline-grid; place-items: center; min-width: 18px; height: 20px; padding: 0 5px; background: var(--background); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; font: 500 11px/1 var(--font-mono); color: var(--foreground); }
+
+  /* ============== Page ToC ============== */
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 64px;
+  }
+  .toc h3 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted-foreground);
+    margin: 0 0 10px;
+  }
+  .toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; font-size: 13px; line-height: 1.9; }
+  .toc a { color: var(--foreground); text-decoration: none; }
+  .toc a:hover { color: var(--primary); }
+
+  /* ============== Misc ============== */
+  hr.div { border: 0; border-top: 1px solid var(--border); margin: 48px 0; }
+  code.inline { font-family: var(--font-mono); font-size: 12px; background: var(--muted); color: var(--foreground); padding: 1px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ========== HEADER ========== -->
+  <header class="doc-header">
+    <p class="doc-eyebrow">Quity Clinic Portal · Design System v1.0</p>
+    <h1 class="doc-title">A warm, paper-grade clinical portal.</h1>
+    <p class="doc-lead">
+      One source of truth for color, type, surfaces, components, and the rules
+      that hold them together. Every value below is a token. If you find
+      yourself reaching for a hex, stop — there's a token for that, or there
+      should be.
+    </p>
+    <div class="doc-meta">
+      <span><strong>Stack</strong> · Next.js 16 · shadcn (base-nova) · Tailwind · MUI X DataGrid v9</span>
+      <span><strong>Repo</strong> · clinic-portal/src/app/globals.css</span>
+    </div>
+  </header>
+
+  <!-- ========== ToC ========== -->
+  <nav class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#principles">Principles</a></li>
+      <li><a href="#color">Color</a></li>
+      <li><a href="#type">Typography</a></li>
+      <li><a href="#spacing">Spacing &amp; layout</a></li>
+      <li><a href="#radii">Radii</a></li>
+      <li><a href="#shadows">Shadows</a></li>
+      <li><a href="#surfaces">Surfaces</a></li>
+      <li><a href="#icons">Icons</a></li>
+      <li><a href="#tables">Tables</a></li>
+      <li><a href="#buttons">Buttons</a></li>
+      <li><a href="#inputs">Inputs</a></li>
+      <li><a href="#badges">Status badges</a></li>
+      <li><a href="#alerts">Alerts &amp; banners</a></li>
+      <li><a href="#dropdowns">Dropdowns</a></li>
+      <li><a href="#checkboxes">Checkboxes &amp; toggles</a></li>
+      <li><a href="#expandable">Expandable buttons</a></li>
+      <li><a href="#tabs">Tabs</a></li>
+      <li><a href="#tooltips">Tooltips &amp; popovers</a></li>
+      <li><a href="#modals">Modal / dialog</a></li>
+      <li><a href="#sheet">Side sheet</a></li>
+      <li><a href="#empty">Empty states</a></li>
+      <li><a href="#loading">Loading &amp; skeleton</a></li>
+      <li><a href="#avatars">Avatars</a></li>
+      <li><a href="#datepicker">Date picker</a></li>
+      <li><a href="#search">Search input</a></li>
+      <li><a href="#pagination">Pagination</a></li>
+      <li><a href="#breadcrumbs">Breadcrumbs</a></li>
+      <li><a href="#forms">Form layout</a></li>
+      <li><a href="#filters">Filter bar</a></li>
+      <li><a href="#toast">Toast / snackbar</a></li>
+      <li><a href="#upload">File upload</a></li>
+      <li><a href="#stepper">Stepper</a></li>
+      <li><a href="#tags">Tags / chips</a></li>
+      <li><a href="#kbd">Keyboard hints</a></li>
+      <li><a href="#cards">Cards</a></li>
+      <li><a href="#rules">Non-negotiables</a></li>
+    </ol>
+  </nav>
+
+  <!-- ========== PRINCIPLES ========== -->
+  <section id="principles">
+    <p class="sec-num">01 · PRINCIPLES</p>
+    <h2 class="sec-title">Five rules, in order.</h2>
+    <p class="sec-lead">When a decision is ambiguous, walk these top to bottom.</p>
+    <div class="rules">
+      <div class="rule do"><span class="mark">1</span><span><strong>Tokens, not values.</strong> Every color, radius, shadow, and font reference goes through a CSS variable. New surfaces get new tokens — they don't get hardcoded hexes. If you can't pick a token, the system is incomplete; tell the design lead.</span></div>
+      <div class="rule do"><span class="mark">2</span><span><strong>Calm before contrast.</strong> The product is clinical software for staff who use it for hours a day. Tints over fills, hairlines over heavy borders, sentence case over caps. Save the punch for a single primary action per screen.</span></div>
+      <div class="rule do"><span class="mark">3</span><span><strong>One of everything.</strong> One button family, one input style, one dropdown component, one table style. If you need a variant, add it to the system — don't fork it on a page.</span></div>
+      <div class="rule do"><span class="mark">4</span><span><strong>Density is fixed.</strong> 36px controls. 56px table rows. 44px table headers. 16px gutter inside cards. These don't change to "fit more in" — if a screen is crowded, the screen is wrong, not the density.</span></div>
+      <div class="rule do"><span class="mark">5</span><span><strong>The page color flows through everything that isn't a card.</strong> Tables dissolve into the background. Section headers tint just enough to anchor. The card surface (<code class="inline">--card</code>) is for things that genuinely sit on top of the page — modals, popovers, sidebar, patient panels.</span></div>
+    </div>
+  </section>
+
+  <!-- ========== COLOR ========== -->
+  <section id="color">
+    <p class="sec-num">02 · COLOR</p>
+    <h2 class="sec-title">Warm paper, terracotta primary, restrained semantics.</h2>
+    <p class="sec-lead">
+      The palette is intentionally narrow. One brand color, four neutrals,
+      six status families. Everything else is built from these.
+    </p>
+
+    <h3 class="sub-title">Surfaces (light mode)</h3>
+    <div class="swatch-grid">
+      <div class="sw"><div class="chip" style="background: var(--background);"></div><div class="meta"><div class="role">Background</div><div class="token">--background</div><div class="hex">#faf9f5</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--card);"></div><div class="meta"><div class="role">Card</div><div class="token">--card</div><div class="hex">#f5f4ef</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--popover);"></div><div class="meta"><div class="role">Popover</div><div class="token">--popover</div><div class="hex">#ffffff</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--sidebar);"></div><div class="meta"><div class="role">Sidebar</div><div class="token">--sidebar</div><div class="hex">#f5f4ee</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--muted);"></div><div class="meta"><div class="role">Muted</div><div class="token">--muted</div><div class="hex">#ede9de</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--accent);"></div><div class="meta"><div class="role">Accent (hover)</div><div class="token">--accent</div><div class="hex">#e9e6dc</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--secondary);"></div><div class="meta"><div class="role">Secondary</div><div class="token">--secondary</div><div class="hex">#e9e6dc</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--table-header);"></div><div class="meta"><div class="role">Table header</div><div class="token">--table-header</div><div class="hex">#efede3</div></div></div>
+    </div>
+
+    <h3 class="sub-title">Brand &amp; ink</h3>
+    <div class="swatch-grid">
+      <div class="sw"><div class="chip" style="background: var(--primary);"></div><div class="meta"><div class="role">Primary</div><div class="token">--primary</div><div class="hex">#c96442</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--foreground);"></div><div class="meta"><div class="role">Foreground</div><div class="token">--foreground</div><div class="hex">#3d3929</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--muted-foreground);"></div><div class="meta"><div class="role">Muted ink</div><div class="token">--muted-foreground</div><div class="hex">#6e6d68</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--border);"></div><div class="meta"><div class="role">Border</div><div class="token">--border</div><div class="hex">#dad9d4</div></div></div>
+    </div>
+
+    <h3 class="sub-title">Status (badge bg / fg / border)</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">--status-success-*</span><span class="v"><span class="badge badge-success">Linked</span> &nbsp; Success / linked / completed</span><span class="hex">#dcfce7 / #166534</span></div>
+      <div class="r"><span class="k">--status-warning-*</span><span class="v"><span class="badge badge-warning">Pending</span> &nbsp; Pending / awaiting</span><span class="hex">#fef9c3 / #854d0e</span></div>
+      <div class="r"><span class="k">--status-danger-*</span><span class="v"><span class="badge badge-danger">Cancelled</span> &nbsp; Cancelled / failed</span><span class="hex">#fee2e2 / #991b1b</span></div>
+      <div class="r"><span class="k">--status-info-*</span><span class="v"><span class="badge badge-info">In review</span> &nbsp; Informational / in progress</span><span class="hex">#dbeafe / #1e40af</span></div>
+      <div class="r"><span class="k">--status-accent-*</span><span class="v"><span class="badge badge-accent">Priority</span> &nbsp; Priority / highlighted</span><span class="hex">#f3e8ff / #6b21a8</span></div>
+      <div class="r"><span class="k">--status-neutral-*</span><span class="v"><span class="badge badge-neutral">Archived</span> &nbsp; Archived / inactive</span><span class="hex">#f3f4f6 / #4b5563</span></div>
+    </div>
+
+    <h3 class="sub-title">Feedback (solid surfaces — toasts, snackbars)</h3>
+    <p class="sec-lead" style="margin-top: -4px;">Use solid feedback colors only on full-bleed surfaces where the soft status palette would lack contrast. Pair each with its <code>-foreground</code>.</p>
+    <div class="swatch-grid">
+      <div class="sw"><div class="chip" style="background: var(--feedback-success);"></div><div class="meta"><div class="role">Success</div><div class="token">--feedback-success</div><div class="hex">#16a34a</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--feedback-info);"></div><div class="meta"><div class="role">Info / neutral</div><div class="token">--feedback-info</div><div class="hex">#1f1e1d</div></div></div>
+      <div class="sw"><div class="chip" style="background: var(--feedback-danger);"></div><div class="meta"><div class="role">Danger</div><div class="token">--feedback-danger</div><div class="hex">#dc2626</div></div></div>
+    </div>
+  </section>
+
+  <!-- ========== TYPOGRAPHY ========== -->
+  <section id="type">
+    <p class="sec-num">03 · TYPOGRAPHY</p>
+    <h2 class="sec-title">Outfit for everything. Geist Mono for code.</h2>
+    <p class="sec-lead">
+      One sans family, one weight scale (400 / 500 / 600 / 700), one ink color
+      (foreground or muted-foreground). The serif token exists but is unused
+      in the UI — keep it that way unless you have a documented reason.
+    </p>
+
+    <div class="type-row">
+      <div class="type-spec"><strong>Page title · h1</strong><br/>24px / 700 / -0.01em</div>
+      <div class="type-sample h1">Patients</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Card title · h2</strong><br/>18px / 600</div>
+      <div class="type-sample h2">Recent activity</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Section title · h3</strong><br/>16px / 600</div>
+      <div class="type-sample h3">Medical history</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Small label · h4</strong><br/>14px / 600</div>
+      <div class="type-sample h4">Allergies</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Body</strong><br/>14px / 400 / 1.55</div>
+      <div class="type-sample body">A 64-year-old patient presenting with persistent lower back pain, requesting a script renewal for tramadol 50mg. Last consult: 14 days ago.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Small body</strong><br/>13px / 400 / muted</div>
+      <div class="type-sample body-sm">Last updated 30 minutes ago by Dr. Margaret Walsh.</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Caption</strong><br/>12px / 400 / muted</div>
+      <div class="type-sample caption">Generated email · auto-routed to PMS inbox</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Overline</strong><br/>11px / 500 / 0.08em / uppercase</div>
+      <div class="type-sample overline">Section header</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Stat number</strong><br/>30px / 700 / -0.02em</div>
+      <div class="type-sample stat-number">12,408</div>
+    </div>
+    <div class="type-row">
+      <div class="type-spec"><strong>Mono</strong><br/>13px / 400 / Geist Mono</div>
+      <div class="type-sample mono">PMS-2024-038271</div>
+    </div>
+  </section>
+
+  <!-- ========== SPACING ========== -->
+  <section id="spacing">
+    <p class="sec-num">04 · SPACING &amp; LAYOUT</p>
+    <h2 class="sec-title">Multiples of 4px. Always.</h2>
+    <p class="sec-lead">
+      The base unit is <code class="inline">--spacing</code> = 4px. Every gap,
+      padding, and margin in the app is a multiple of it. If you find yourself
+      writing <code class="inline">17px</code> or <code class="inline">23px</code>,
+      round to the nearest 4.
+    </p>
+    <div class="space-rows">
+      <div class="space-row"><span>4px</span><span>·1</span><div class="space-bar" style="width: 4px;"></div></div>
+      <div class="space-row"><span>8px</span><span>·2</span><div class="space-bar" style="width: 8px;"></div></div>
+      <div class="space-row"><span>12px</span><span>·3</span><div class="space-bar" style="width: 12px;"></div></div>
+      <div class="space-row"><span>16px</span><span>·4</span><div class="space-bar" style="width: 16px;"></div></div>
+      <div class="space-row"><span>20px</span><span>·5</span><div class="space-bar" style="width: 20px;"></div></div>
+      <div class="space-row"><span>24px</span><span>·6</span><div class="space-bar" style="width: 24px;"></div></div>
+      <div class="space-row"><span>32px</span><span>·8</span><div class="space-bar" style="width: 32px;"></div></div>
+      <div class="space-row"><span>48px</span><span>·12</span><div class="space-bar" style="width: 48px;"></div></div>
+      <div class="space-row"><span>64px</span><span>·16</span><div class="space-bar" style="width: 64px;"></div></div>
+    </div>
+
+    <h3 class="sub-title">Layout grid</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Sidebar width</span><span class="v">Collapsed and expanded states</span><span class="hex">240px / 64px</span></div>
+      <div class="r"><span class="k">Header height</span><span class="v">Top bar with breadcrumb &amp; actions</span><span class="hex">56px</span></div>
+      <div class="r"><span class="k">Page padding</span><span class="v">Outer gutter on dashboard pages</span><span class="hex">32px</span></div>
+      <div class="r"><span class="k">Content max-width</span><span class="v">Tables are full width; forms cap out</span><span class="hex">1280px</span></div>
+      <div class="r"><span class="k">Card padding</span><span class="v">Inside dashboard cards &amp; panels</span><span class="hex">20px</span></div>
+      <div class="r"><span class="k">Field spacing</span><span class="v">Vertical gap between form rows</span><span class="hex">16px</span></div>
+    </div>
+  </section>
+
+  <!-- ========== RADII ========== -->
+  <section id="radii">
+    <p class="sec-num">05 · RADII</p>
+    <h2 class="sec-title">Rounded, but not rounded-rounded.</h2>
+    <p class="sec-lead">
+      Generous corners — the system is built around <code class="inline">--radius</code>
+      = 16px and scales up and down from there.
+    </p>
+    <div class="radii-grid">
+      <div class="radii-cell" style="border-radius: 12px;"><strong>--radius-sm</strong>12px · inputs, badges, sub-pills</div>
+      <div class="radii-cell" style="border-radius: 14px;"><strong>--radius-md</strong>14px · buttons, small cards</div>
+      <div class="radii-cell" style="border-radius: 16px;"><strong>--radius-lg</strong>16px · cards, dropdowns, popovers</div>
+      <div class="radii-cell" style="border-radius: 20px;"><strong>--radius-xl</strong>20px · hero cards, sheet headers</div>
+    </div>
+  </section>
+
+  <!-- ========== SHADOWS ========== -->
+  <section id="shadows">
+    <p class="sec-num">06 · SHADOWS</p>
+    <h2 class="sec-title">Whisper-soft. Often, none at all.</h2>
+    <p class="sec-lead">
+      Most surfaces in the app sit on the page with a 1px border, no shadow.
+      Shadows are reserved for things that genuinely float — popovers,
+      dropdowns, modals, sheets.
+    </p>
+    <div class="shadow-grid">
+      <div class="shadow-cell" style="box-shadow: var(--shadow-xs);"><strong>--shadow-xs</strong>resting cards</div>
+      <div class="shadow-cell" style="box-shadow: var(--shadow-sm);"><strong>--shadow-sm</strong>elevated cards</div>
+      <div class="shadow-cell" style="box-shadow: var(--shadow-md);"><strong>--shadow-md</strong>dropdowns, popovers</div>
+      <div class="shadow-cell" style="box-shadow: var(--shadow-lg);"><strong>--shadow-lg</strong>modals, sheets</div>
+    </div>
+  </section>
+
+  <!-- ========== SURFACES ========== -->
+  <section id="surfaces">
+    <p class="sec-num">07 · SURFACES</p>
+    <h2 class="sec-title">Where each color goes.</h2>
+    <p class="sec-lead">
+      The most common cause of off-spec work is "I just used a tinted
+      neutral." Every surface in the app maps to exactly one token. Use this
+      table.
+    </p>
+    <div class="row-block">
+      <div class="r"><span class="k">--background</span><span class="v">App canvas. Page body. <strong>Table rows.</strong> Footer of any table.</span><span class="hex">#faf9f5</span></div>
+      <div class="r"><span class="k">--card</span><span class="v">Anything that genuinely sits on top of the page: dashboard cards, patient detail panels, form sections.</span><span class="hex">#f5f4ef</span></div>
+      <div class="r"><span class="k">--popover</span><span class="v">Floating: dropdowns, menus, tooltips, modals, sheets.</span><span class="hex">#ffffff</span></div>
+      <div class="r"><span class="k">--sidebar</span><span class="v">Left navigation rail only. Don't reuse elsewhere.</span><span class="hex">#f5f4ee</span></div>
+      <div class="r"><span class="k">--muted</span><span class="v">Disabled inputs, ghost button hover, tab-list backgrounds, sidebar item hover.</span><span class="hex">#ede9de</span></div>
+      <div class="r"><span class="k">--accent</span><span class="v">Hover states on rows and list items. Selected tab background. Reserved for interaction.</span><span class="hex">#e9e6dc</span></div>
+      <div class="r"><span class="k">--secondary</span><span class="v">Secondary button background. Quiet chip backgrounds. Don't paint surfaces with this.</span><span class="hex">#e9e6dc</span></div>
+      <div class="r"><span class="k">--table-header</span><span class="v">Just the column header band of every DataGrid in the app. Nothing else.</span><span class="hex">#efede3</span></div>
+    </div>
+  </section>
+
+  <!-- ========== ICONS ========== -->
+  <section id="icons">
+    <p class="sec-num">08 · ICONS</p>
+    <h2 class="sec-title">Lucide. One stroke weight. Three sizes.</h2>
+    <p class="sec-lead">
+      Every icon in the portal comes from <a href="https://lucide.dev" target="_blank" rel="noopener">lucide-react</a>.
+      No mixing libraries, no SVG one-offs. The library is in <code class="inline">package.json</code> already —
+      if a glyph isn't in lucide, the answer is usually "use words instead."
+    </p>
+
+    <h3 class="sub-title">Sizes</h3>
+    <p class="sec-lead" style="margin-top: -4px;">
+      Three sizes only. Most of the UI uses 16px. Buttons, list items, table cells, dropdown items —
+      all 16px. 14px is for inline-with-12px-text contexts (badges, micro-meta). 20px is for empty-state
+      heroes and the sidebar nav.
+    </p>
+    <div class="icon-sizes">
+      <div>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="lbl">14px · size-3.5</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="lbl">16px · size-4 · default</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="lbl">20px · size-5</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="lbl">32px · empty-state hero</span>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Color treatments</h3>
+    <p class="sec-lead" style="margin-top: -4px;">
+      Icons take their color from <code class="inline">currentColor</code>. Set the color on the parent —
+      never hardcode a fill or stroke.
+    </p>
+    <div class="icon-treatments">
+      <div class="icon-treatment muted">
+        <div class="demo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="label">Muted (default)</div>
+        <div class="note">--muted-foreground</div>
+      </div>
+      <div class="icon-treatment foreground">
+        <div class="demo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="label">Active / hovered</div>
+        <div class="note">--foreground</div>
+      </div>
+      <div class="icon-treatment primary">
+        <div class="demo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="label">On primary surface</div>
+        <div class="note">--primary-foreground or --primary</div>
+      </div>
+      <div class="icon-treatment danger">
+        <div class="demo"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></div>
+        <div class="label">Destructive only</div>
+        <div class="note">--destructive</div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">The library — in-product glyphs we actually use</h3>
+    <p class="sec-lead" style="margin-top: -4px;">
+      Not exhaustive — these are the icons that appear in the live portal today. Hover the import name
+      to copy. <strong>Imported from <code class="inline">lucide-react</code></strong>.
+    </p>
+    <div class="icon-grid">
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span class="name">LayoutDashboard</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="name">User</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="name">Users</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="14" x2="19" y2="20"/><line x1="22" y1="17" x2="16" y2="17"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span class="name">UserPlus</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="name">CalendarDays</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span class="name">FileText</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/></svg><span class="name">Pill (Heart)</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="name">Search</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg><span class="name">Filter</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="name">Plus</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span class="name">X</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="name">Check</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg><span class="name">ChevronRight</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg><span class="name">ChevronDown</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="name">MoreHorizontal</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="name">Pencil</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="name">Trash2</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="name">Download</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span class="name">Upload</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="name">Settings</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 5c0 1.66 4 3 9 3s9-1.34 9-3-4-3-9-3-9 1.34-9 3"/></svg><span class="name">Database</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="name">Activity</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span class="name">TrendingUp</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="name">AlertTriangle</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="name">AlertCircle</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span class="name">Info</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/></svg><span class="name">CheckCircle2</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span class="name">XCircle</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="name">Clock</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="name">ShieldCheck</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="name">MessageSquare</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span class="name">Phone</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span class="name">Mail</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg><span class="name">UserCheck</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="name">CheckSquare</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg><span class="name">Menu</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="name">ChevronLeft</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 17h7v-7"/><path d="M21 17l-7-7-4 4-7-7"/></svg><span class="name">PanelLeftOpen</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg><span class="name">RefreshCw</span></div>
+      <div class="icon-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 6-7-6"/></svg><span class="name">ChevronDownNav</span></div>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Library</span><span class="v">lucide-react · pinned via package.json. No Heroicons, no Material Icons, no inline SVGs.</span><span class="hex">lucide-react</span></div>
+      <div class="r"><span class="k">Stroke weight</span><span class="v">1.8 (lucide default). Don't override per icon.</span><span class="hex">stroke-width: 1.8</span></div>
+      <div class="r"><span class="k">Sizes</span><span class="v">14 / 16 / 20 / 32. Default 16. Use Tailwind <code class="inline">size-*</code> utilities, never width/height in CSS.</span><span class="hex">size-3.5 / 4 / 5 / 8</span></div>
+      <div class="r"><span class="k">Color</span><span class="v">Always currentColor. Set the parent's color and the icon follows. No inline fill or stroke colors.</span><span class="hex">currentColor</span></div>
+      <div class="r"><span class="k">Spacing from text</span><span class="v">8px gap (gap-2 in flex). Icon left of label by default.</span><span class="hex">gap-2</span></div>
+      <div class="r"><span class="k">Decorative icons</span><span class="v">Add <code class="inline">aria-hidden="true"</code> when label exists nearby.</span><span class="hex">aria-hidden</span></div>
+      <div class="r"><span class="k">Standalone (icon-only) buttons</span><span class="v">Always pair with <code class="inline">aria-label</code>. The visible icon is not a label.</span><span class="hex">aria-label</span></div>
+      <div class="r"><span class="k">Filled glyphs</span><span class="v">Don't. Lucide icons are line-style — keep them line-style. If you need filled, that's a bug.</span><span class="hex">stroked only</span></div>
+    </div>
+  </section>
+
+  <!-- ========== TABLES ========== -->
+  <section id="tables">
+    <p class="sec-num">09 · TABLES</p>
+    <h2 class="sec-title">Two surfaces. One separator.</h2>
+    <p class="sec-lead">
+      Tables in this app are content, not containers. The header is the only
+      tinted band. Rows are page-colored. Hairlines do all the structural work.
+    </p>
+
+    <div class="demo-table">
+      <div class="dt-row">
+        <div class="dt-th"><span class="dt-checkbox"></span></div>
+        <div class="dt-th">Name</div>
+        <div class="dt-th">Email</div>
+        <div class="dt-th">Date of birth</div>
+        <div class="dt-th">Status</div>
+        <div class="dt-th"></div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td"><span class="dt-checkbox"></span></div>
+        <div class="dt-td">John Smith</div>
+        <div class="dt-td">john.smith@gmail.com</div>
+        <div class="dt-td">14 Mar 1986</div>
+        <div class="dt-td"><span class="badge badge-success">Linked</span></div>
+        <div class="dt-td">···</div>
+      </div>
+      <div class="dt-row hover">
+        <div class="dt-td"><span class="dt-checkbox"></span></div>
+        <div class="dt-td">Margaret Walsh <span class="dt-state-label">hover</span></div>
+        <div class="dt-td">margaret.walsh@bigpond.net.au</div>
+        <div class="dt-td">30 Nov 1945</div>
+        <div class="dt-td"><span class="badge badge-warning">Pending</span></div>
+        <div class="dt-td">···</div>
+      </div>
+      <div class="dt-row selected">
+        <div class="dt-td"><span class="dt-checkbox checked"></span></div>
+        <div class="dt-td">Sam Nguyen <span class="dt-state-label">selected</span></div>
+        <div class="dt-td">sam.nguyen03@gmail.com</div>
+        <div class="dt-td">20 Sept 2007</div>
+        <div class="dt-td"><span class="badge badge-warning">Pending</span></div>
+        <div class="dt-td">···</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td"><span class="dt-checkbox"></span></div>
+        <div class="dt-td">Rachel Greene</div>
+        <div class="dt-td">rachel.greene@outlook.com</div>
+        <div class="dt-td">2 Jul 1992</div>
+        <div class="dt-td"><span class="badge badge-success">Linked</span></div>
+        <div class="dt-td">···</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="h">header · #efede3 · --table-header</span>
+      <span class="b">row · #faf9f5 · --background</span>
+      <span class="a">hover · #e9e6dc · --accent</span>
+      <span class="s">selected · 8% --primary on --background</span>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Header height</span><span class="v">Shorter than rows on purpose</span><span class="hex">44px</span></div>
+      <div class="r"><span class="k">Header text</span><span class="v">12px / 600 / foreground / sentence case (no caps, no tracking)</span><span class="hex">--foreground</span></div>
+      <div class="r"><span class="k">Row height</span><span class="v">Single density. No compact toggle.</span><span class="hex">56px</span></div>
+      <div class="r"><span class="k">Row text</span><span class="v">14px / 400 / foreground / centered vertically</span><span class="hex">--foreground</span></div>
+      <div class="r"><span class="k">Cell padding</span><span class="v">Horizontal only; height controls vertical</span><span class="hex">0 16px</span></div>
+      <div class="r"><span class="k">Separator</span><span class="v">Hairline below every row. Last row has none.</span><span class="hex">1px --border</span></div>
+      <div class="r"><span class="k">Hover</span><span class="v">Whole row, including the action menu cell</span><span class="hex">--accent</span></div>
+      <div class="r"><span class="k">Selected</span><span class="v">8% primary mixed into background. Subtle.</span><span class="hex">color-mix</span></div>
+      <div class="r"><span class="k">Action column</span><span class="v">Far right. Hidden by default, reveals on row hover.</span><span class="hex">60px</span></div>
+      <div class="r"><span class="k">Checkbox column</span><span class="v">Far left. 14×14 checkbox.</span><span class="hex">40px</span></div>
+      <div class="r"><span class="k">Date format</span><span class="v">Day, three-letter month, four-digit year. No slashes.</span><span class="hex">30 Nov 1945</span></div>
+    </div>
+
+    <h3 class="sub-title">Variant · zebra + dense (opt-in)</h3>
+    <p class="sec-lead" style="margin-top: -4px;">
+      <strong>Use only for dense reference tables</strong> — audit logs, sync history, raw exports, anything log-shaped where a row's identity
+      is the row itself (not a clickable record). Default DataGrids stay quiet. Combine <code class="inline">.zebra</code> with
+      <code class="inline">.dense</code> and <code class="inline">.log</code> grid for the full effect.
+    </p>
+
+    <div class="demo-table zebra dense log">
+      <div class="dt-row">
+        <div class="dt-th">Time</div>
+        <div class="dt-th">Actor</div>
+        <div class="dt-th">Event</div>
+        <div class="dt-th">Result</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:42:18</div>
+        <div class="dt-td">dr.chen@quity</div>
+        <div class="dt-td">Updated patient #P-2041 medications</div>
+        <div class="dt-td">200 OK</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:42:09</div>
+        <div class="dt-td">system</div>
+        <div class="dt-td">PBS gateway sync · 14 prescriptions</div>
+        <div class="dt-td">200 OK</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:41:55</div>
+        <div class="dt-td">dr.chen@quity</div>
+        <div class="dt-td">Issued prescription #RX-8821</div>
+        <div class="dt-td">201 Created</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:41:42</div>
+        <div class="dt-td">system</div>
+        <div class="dt-td">PBS gateway sync</div>
+        <div class="dt-td"><span style="color: var(--destructive); font-weight: 500;">502 Bad Gateway</span></div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:41:30</div>
+        <div class="dt-td">nurse.kelly@quity</div>
+        <div class="dt-td">Created consultation #C-2042</div>
+        <div class="dt-td">201 Created</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:41:14</div>
+        <div class="dt-td">dr.chen@quity</div>
+        <div class="dt-td">Logged in (SSO · Clerk)</div>
+        <div class="dt-td">200 OK</div>
+      </div>
+      <div class="dt-row">
+        <div class="dt-td">10:40:58</div>
+        <div class="dt-td">system</div>
+        <div class="dt-td">Cron · expired-script cleanup · 3 records</div>
+        <div class="dt-td">200 OK</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="b">odd row · #faf9f5 · --background</span>
+      <span class="z">even row · #f3f1e8 · --table-row-alt</span>
+      <span class="a">hover · #e9e6dc · --accent</span>
+    </div>
+
+    <div class="row-block" style="margin-top: 16px;">
+      <div class="r"><span class="k">When to use</span><span class="v">Audit logs, webhook history, raw API responses, anything where rows aren't navigable records.</span><span class="hex">log-shaped only</span></div>
+      <div class="r"><span class="k">When NOT to use</span><span class="v">Patients list, prescriptions list, consultations — any DataGrid where rows are clickable records. Stay quiet.</span><span class="hex">default</span></div>
+      <div class="r"><span class="k">Row height</span><span class="v">Compresses to 40px so more data fits in view.</span><span class="hex">40px</span></div>
+      <div class="r"><span class="k">Even-row tint</span><span class="v">A tiny step warmer than background. Visible but not loud.</span><span class="hex">--table-row-alt</span></div>
+      <div class="r"><span class="k">Hover behaviour</span><span class="v">Same hover as default tables — overrides the zebra tint.</span><span class="hex">--accent</span></div>
+    </div>
+  </section>
+
+  <!-- ========== BUTTONS ========== -->
+  <section id="buttons">
+    <p class="sec-num">10 · BUTTONS</p>
+    <h2 class="sec-title">One family. Five variants.</h2>
+    <p class="sec-lead">
+      All buttons are 36px tall, 12px corner radius, medium weight. Variants
+      change color, never shape or size.
+    </p>
+
+    <h3 class="sub-title">Variants · 36px (default)</h3>
+    <div class="btn-row">
+      <button class="btn btn-primary">Add patient</button>
+      <button class="btn btn-secondary">Save draft</button>
+      <button class="btn btn-outline">Cancel</button>
+      <button class="btn btn-ghost">Skip</button>
+      <button class="btn btn-destructive">Delete</button>
+      <button class="btn btn-outline" disabled>Disabled</button>
+    </div>
+
+    <h3 class="sub-title">Sizes</h3>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-primary">Small · 28px</button>
+      <button class="btn btn-primary">Default · 36px</button>
+      <button class="btn btn-icon btn-outline" title="Icon button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5v14"/></svg>
+      </button>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Height</span><span class="v">36px default · 28px small · 32px icon-only</span><span class="hex">h-9 / h-7 / size-8</span></div>
+      <div class="r"><span class="k">Padding</span><span class="v">Horizontal: 16px (default) · 12px (small)</span><span class="hex">px-4 / px-3</span></div>
+      <div class="r"><span class="k">Radius</span><span class="v">12px default · 10px small</span><span class="hex">rounded-xl / rounded-lg</span></div>
+      <div class="r"><span class="k">Type</span><span class="v">14px / 500 / Outfit</span><span class="hex">--font-sans</span></div>
+      <div class="r"><span class="k">Icon</span><span class="v">16px lucide, gap-2 from label</span><span class="hex">size-4</span></div>
+      <div class="r"><span class="k">Disabled</span><span class="v">opacity 0.5, no events. Don't grayscale.</span><span class="hex">opacity-50</span></div>
+    </div>
+  </section>
+
+  <!-- ========== INPUTS ========== -->
+  <section id="inputs">
+    <p class="sec-num">11 · INPUTS</p>
+    <h2 class="sec-title">Outlined, 36px, 10px corners.</h2>
+    <p class="sec-lead">
+      Match button height. Focus ring is a 3px halo of <code class="inline">--ring</code>
+      at 40% — soft, not laser-bright.
+    </p>
+
+    <div class="input-group">
+      <div class="field">
+        <label>Patient name</label>
+        <input class="input" placeholder="Margaret Walsh"/>
+      </div>
+      <div class="field">
+        <label>Email address</label>
+        <input class="input" placeholder="margaret@example.com" value="margaret.walsh@bigpond.net.au"/>
+      </div>
+      <div class="field">
+        <label>Date of birth</label>
+        <input class="input" placeholder="DD MMM YYYY"/>
+      </div>
+      <div class="field">
+        <label>Mobile</label>
+        <input class="input" placeholder="04xx xxx xxx" disabled/>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BADGES ========== -->
+  <section id="badges">
+    <p class="sec-num">12 · STATUS BADGES</p>
+    <h2 class="sec-title">Pills. Pastel fill, dark ink, matched border.</h2>
+    <p class="sec-lead">
+      Six families, one shape. Always reference the <code class="inline">--status-*</code>
+      tokens — never <code class="inline">bg-green-100</code> or any Tailwind
+      palette color.
+    </p>
+    <div class="badge-row">
+      <span class="badge badge-success">Linked</span>
+      <span class="badge badge-warning">Pending</span>
+      <span class="badge badge-danger">Cancelled</span>
+      <span class="badge badge-info">In review</span>
+      <span class="badge badge-accent">Priority</span>
+      <span class="badge badge-neutral">Archived</span>
+    </div>
+  </section>
+
+  <!-- ========== ALERTS & BANNERS ========== -->
+  <section id="alerts">
+    <p class="sec-num">13 · ALERTS &amp; BANNERS</p>
+    <h2 class="sec-title">Five families. Pastel fill, dark ink, matched border.</h2>
+    <p class="sec-lead">
+      Same color families as status badges, scaled up for inline messages. Use the
+      block alert for in-card / in-form messaging. Use the banner strip for full-width
+      app-level notices (page tops, header bars).
+    </p>
+
+    <h3 class="sub-title">Block alerts</h3>
+    <div style="display: grid; gap: 12px; max-width: 720px;">
+      <div class="alert info">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <div class="body"><strong>New script template available</strong><p>The PBS authority template has been updated for 2026. Existing drafts are unaffected.</p></div>
+        <button class="close" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="alert success">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        <div class="body"><strong>Profile saved</strong><p>Your prescriber details have been updated.</p></div>
+        <button class="close" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="alert warning">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div class="body"><strong>AHPRA registration expires soon</strong><p>Your registration expires on 30 June 2026. Renew to keep prescribing.</p></div>
+        <button class="close" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="alert danger">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div class="body"><strong>Prescription submission failed</strong><p>The PBS gateway returned an error. Check the patient’s Medicare number and try again.</p></div>
+        <button class="close" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="alert neutral">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div class="body"><strong>You’re viewing an archived patient</strong><p>This patient was archived on 12 March 2026. Reactivate to continue care.</p></div>
+      </div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Banner strips</h3>
+    <p class="sec-lead">Full-bleed, sit at the top of a page or section. No rounded corners.</p>
+    <div style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--card);">
+      <div class="banner warning">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div class="grow">Scheduled maintenance Sunday 03:00–05:00 AEST. Plan around it. <a href="#">Details</a></div>
+      </div>
+      <div class="banner danger">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div class="grow">PBS connection lost — e-prescriptions queued. <a href="#">Retry now</a></div>
+      </div>
+      <div style="padding: 16px;">
+        <p class="caption" style="margin: 0;">Page content sits below the banner.</p>
+      </div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Inline form errors</h3>
+    <p class="sec-lead">For per-field validation. 12px text, destructive ink, sits directly under the input.</p>
+    <div style="max-width: 320px;">
+      <label class="caption" style="display: block; margin-bottom: 6px; color: var(--foreground); font-weight: 500;">AHPRA registration number</label>
+      <input class="di" value="MED000" style="width: 100%; height: 36px; padding: 0 12px; border: 1px solid var(--destructive); border-radius: 10px; background: var(--background); font-size: 14px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--destructive) 12%, transparent);" />
+      <div class="input-error-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Must be 13 characters starting with MED.
+      </div>
+    </div>
+
+    <hr class="div" />
+
+    <h3 class="sub-title">Variant usage</h3>
+    <div class="row-block">
+      <div class="r"><span class="k"><span class="badge badge-info">Info</span></span><span class="v">Neutral notices, what's new, tips. The default when in doubt.</span><span class="hex">--status-info-*</span></div>
+      <div class="r"><span class="k"><span class="badge badge-success">Success</span></span><span class="v">Confirm a save / submission completed. Linked / synced records.</span><span class="hex">--status-success-*</span></div>
+      <div class="r"><span class="k"><span class="badge badge-warning">Warning</span></span><span class="v">Reversible problems, expiry warnings, soft errors. Action recommended.</span><span class="hex">--status-warning-*</span></div>
+      <div class="r"><span class="k"><span class="badge badge-danger">Danger</span></span><span class="v">Destructive results, hard failures, blocked actions. Action required.</span><span class="hex">--status-danger-*</span></div>
+      <div class="r"><span class="k"><span class="badge badge-neutral">Neutral</span></span><span class="v">Read-only states, archived data, info-as-context.</span><span class="hex">--status-neutral-*</span></div>
+    </div>
+  </section>
+
+  <!-- ========== DROPDOWNS ========== -->
+  <section id="dropdowns">
+    <p class="sec-num">14 · DROPDOWNS</p>
+    <h2 class="sec-title">One menu component. No exceptions.</h2>
+    <p class="sec-lead">
+      Action menus, column menus, filters, view toggles — all use the same
+      shadcn DropdownMenu primitive. MUI's built-in column menu must be
+      replaced via the DataGrid v9 slots API so the table has a single visual
+      vocabulary.
+    </p>
+
+    <h3 class="sub-title">Live examples</h3>
+    <div class="menu-demo-grid">
+      <div class="menu-stage">
+        <div class="menu">
+          <div class="menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="grow">View details</span>
+          </div>
+          <div class="menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span class="grow">Copy email</span>
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            <span class="grow">Delete</span>
+          </div>
+        </div>
+        <div class="menu-stage-label">Action menu · 220px</div>
+      </div>
+
+      <div class="menu-stage">
+        <div class="menu wide">
+          <div class="menu-item">
+            <span class="grow">Name</span>
+            <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="menu-item">
+            <span class="grow">Email</span>
+            <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="menu-item">
+            <span class="grow">Date of birth</span>
+            <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="menu-item"><span class="grow">Mobile</span></div>
+          <div class="menu-item"><span class="grow">Location</span></div>
+          <div class="menu-item"><span class="grow">PMS ID</span></div>
+          <div class="menu-item">
+            <span class="grow">Status</span>
+            <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+        </div>
+        <div class="menu-stage-label">Toggle menu · 240px</div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Width</span><span class="v">Action menus 220px · Filter menus 240px · Never wider than 280px</span><span class="hex">220 / 240 / 280</span></div>
+      <div class="r"><span class="k">Item height</span><span class="v">Same as button height. No 56px rows.</span><span class="hex">36px</span></div>
+      <div class="r"><span class="k">Padding</span><span class="v">Container 4px around items · Item 8px horizontal</span><span class="hex">p-1 / px-2</span></div>
+      <div class="r"><span class="k">Background</span><span class="v">Popover surface, with shadow-md and 1px border</span><span class="hex">--popover</span></div>
+      <div class="r"><span class="k">Item icon</span><span class="v">16px lucide, muted ink, 8px gap from label</span><span class="hex">size-4</span></div>
+      <div class="r"><span class="k">Toggle indicator</span><span class="v">Right-side checkmark (primary color) for active items. No left icon when toggle.</span><span class="hex">size-3.5</span></div>
+      <div class="r"><span class="k">Separator</span><span class="v">1px border, 4px margin top &amp; bottom. Only between distinct groups.</span><span class="hex">--border</span></div>
+      <div class="r"><span class="k">Destructive</span><span class="v">Always last. Always preceded by a separator. Hover bg = 10% destructive.</span><span class="hex">--destructive</span></div>
+      <div class="r"><span class="k">Section header</span><span class="v">Skip when there's only one group. Trigger label is enough context.</span><span class="hex">—</span></div>
+    </div>
+  </section>
+
+  <!-- ========== CHECKBOXES & TOGGLES ========== -->
+  <section id="checkboxes">
+    <p class="sec-num">15 · CHECKBOXES &amp; TOGGLES</p>
+    <h2 class="sec-title">Square for selection. Pill for state.</h2>
+    <p class="sec-lead">
+      Checkboxes are 16×16, 4px corners, terracotta when checked. Radios are
+      circles for one-of-many choices. Switches are pill toggles for
+      instant-apply settings.
+    </p>
+
+    <h3 class="sub-title">Checkbox states</h3>
+    <div class="check-row">
+      <label class="check-label"><span class="check"></span>Unchecked</label>
+      <label class="check-label"><span class="check checked"></span>Checked</label>
+      <label class="check-label"><span class="check indeterminate"></span>Indeterminate</label>
+      <label class="check-label"><span class="check disabled"></span>Disabled</label>
+      <label class="check-label"><span class="check checked disabled"></span>Disabled checked</label>
+    </div>
+
+    <h3 class="sub-title">Radio</h3>
+    <div class="check-row">
+      <label class="check-label"><span class="radio"></span>Option one</label>
+      <label class="check-label"><span class="radio checked"></span>Option two</label>
+      <label class="check-label"><span class="radio"></span>Option three</label>
+    </div>
+
+    <h3 class="sub-title">Switch</h3>
+    <div class="check-row">
+      <label class="check-label"><span class="switch"></span>Email notifications</label>
+      <label class="check-label"><span class="switch on"></span>Auto-save drafts</label>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Checkbox size</span><span class="v">16px square, 4px corner radius</span><span class="hex">size-4</span></div>
+      <div class="r"><span class="k">Checkbox border (resting)</span><span class="v">1.5px solid input ink, on background</span><span class="hex">--input</span></div>
+      <div class="r"><span class="k">Checkbox checked</span><span class="v">Filled with primary, white tick</span><span class="hex">--primary</span></div>
+      <div class="r"><span class="k">Indeterminate</span><span class="v">Filled with primary, horizontal white bar (used for "select all" partial)</span><span class="hex">--primary</span></div>
+      <div class="r"><span class="k">Radio size</span><span class="v">16px circle, 8px inner dot when selected</span><span class="hex">size-4</span></div>
+      <div class="r"><span class="k">Switch dimensions</span><span class="v">36×20 track, 16×16 thumb, 2px inset</span><span class="hex">36×20</span></div>
+      <div class="r"><span class="k">Switch on</span><span class="v">Track fills primary, thumb slides right</span><span class="hex">--primary</span></div>
+      <div class="r"><span class="k">Label gap</span><span class="v">10px between control and label text</span><span class="hex">gap-2.5</span></div>
+      <div class="r"><span class="k">Disabled</span><span class="v">opacity 0.5, cursor not-allowed</span><span class="hex">opacity-50</span></div>
+    </div>
+  </section>
+
+  <!-- ========== EXPANDABLE BUTTONS ========== -->
+  <section id="expandable">
+    <p class="sec-num">16 · EXPANDABLE BUTTONS</p>
+    <h2 class="sec-title">Icon at rest. Label on hover.</h2>
+    <p class="sec-lead">
+      Used in dense surfaces — table headers, sticky toolbars, patient detail
+      tabs — where every pixel of horizontal space matters. The icon is the
+      handle; the label appears on hover or focus to confirm intent. <strong>Hover the buttons below to see the reveal.</strong>
+    </p>
+
+    <h3 class="sub-title">Variants</h3>
+    <div class="expandable-row">
+      <button class="expandable">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span class="lbl">Export to CSV</span>
+      </button>
+      <button class="expandable">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        <span class="lbl">Mark as reviewed</span>
+      </button>
+      <button class="expandable">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="lbl">Add patient</span>
+      </button>
+      <button class="expandable danger">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        <span class="lbl">Delete selected</span>
+      </button>
+    </div>
+
+    <h3 class="sub-title">Spec</h3>
+    <div class="row-block">
+      <div class="r"><span class="k">Resting</span><span class="v">32×32 circle, 1px border, muted icon, transparent bg</span><span class="hex">size-8</span></div>
+      <div class="r"><span class="k">Hover</span><span class="v">Width animates to fit label · 200ms ease · bg fills muted, icon switches to foreground</span><span class="hex">.25s ease</span></div>
+      <div class="r"><span class="k">Icon</span><span class="v">16px lucide, 8px from left edge of pill</span><span class="hex">size-4</span></div>
+      <div class="r"><span class="k">Label</span><span class="v">14px Outfit medium, 6px gap from icon, 12px right padding</span><span class="hex">px-3</span></div>
+      <div class="r"><span class="k">Border</span><span class="v">1px solid border, full pill (rounded-full)</span><span class="hex">--border</span></div>
+      <div class="r"><span class="k">Destructive variant</span><span class="v">Border &amp; icon flip to destructive on hover, bg = 10% destructive</span><span class="hex">--destructive</span></div>
+      <div class="r"><span class="k">When to use</span><span class="v">Tertiary actions in toolbars, table headers, patient detail tabs. Never as a primary CTA.</span><span class="hex">—</span></div>
+      <div class="r"><span class="k">When NOT to use</span><span class="v">Primary actions, mobile (no hover), forms (use real labels)</span><span class="hex">—</span></div>
+    </div>
+  </section>
+
+  <!-- ========== TABS ========== -->
+  <section id="tabs">
+    <p class="sec-num">17 · TABS</p>
+    <h2 class="sec-title">Pill-on-muted for in-card switching. Underline for page-level.</h2>
+    <p class="sec-lead">Two patterns. Pill tabs sit inside cards or panels and switch between sibling content. Underline tabs sit at page level (e.g. patient detail) and switch between major sub-views.</p>
+
+    <h3 class="sub-title">Pill tabs (in-card)</h3>
+    <div class="tabs">
+      <button class="tab active">Overview <span class="count">12</span></button>
+      <button class="tab">Consultations <span class="count">4</span></button>
+      <button class="tab">Prescriptions <span class="count">23</span></button>
+      <button class="tab">Documents</button>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Underline tabs (page-level)</h3>
+    <div class="tabs-underline">
+      <button class="tab-u active">Overview</button>
+      <button class="tab-u">Consultations</button>
+      <button class="tab-u">Prescriptions</button>
+      <button class="tab-u">Documents</button>
+      <button class="tab-u">History</button>
+    </div>
+
+    <hr class="div" />
+    <div class="row-block">
+      <div class="r"><span class="k">Pill height</span><span class="v">In-card switcher</span><span class="hex">32px</span></div>
+      <div class="r"><span class="k">Underline height</span><span class="v">Page-level switcher</span><span class="hex">40px</span></div>
+      <div class="r"><span class="k">Active indicator</span><span class="v">Pill: card surface + sm shadow / Underline: 2px primary border-bottom</span><span class="hex">var(--primary)</span></div>
+      <div class="r"><span class="k">Count badge</span><span class="v">Inactive: muted grey / Active: primary</span><span class="hex">11px / 18px tall</span></div>
+    </div>
+  </section>
+
+  <!-- ========== TOOLTIPS & POPOVERS ========== -->
+  <section id="tooltips">
+    <p class="sec-num">18 · TOOLTIPS &amp; POPOVERS</p>
+    <h2 class="sec-title">Dark for hints. Light for content.</h2>
+    <p class="sec-lead">Tooltips are tiny dark labels that surface on hover for icon-only controls. Popovers are full content surfaces that open on click — definitions, mini-forms, "what does this mean".</p>
+
+    <h3 class="sub-title">Tooltip — dark, transient</h3>
+    <div class="tip-stage">
+      <div class="tip-stage-label">Tooltip · 12px text · 6px radius</div>
+      <div class="tip">
+        <button class="btn-icon" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+        <span class="tip-bubble">Edit patient</span>
+      </div>
+      <div class="tip">
+        <button class="btn-icon" aria-label="Archive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></button>
+        <span class="tip-bubble">Archive (⌘⇧A)</span>
+      </div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 24px;">Popover — light, with content</h3>
+    <div class="tip-stage" style="display: grid; place-items: center;">
+      <div class="tip-stage-label">Popover · 280px · 12px radius</div>
+      <div class="pop">
+        <strong>What is the PMS ID?</strong>
+        <p>The unique identifier from your Practice Management System. Used to sync demographic and visit data automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MODAL / DIALOG ========== -->
+  <section id="modals">
+    <p class="sec-num">19 · MODAL / DIALOG</p>
+    <h2 class="sec-title">For confirms, edits-in-place, and "are you sure".</h2>
+    <p class="sec-lead">440px max-width. Title + body + foot bar with primary action right-most. Backdrop is 40% black. For destructive actions, the primary button is destructive variant.</p>
+
+    <div class="modal-stage">
+      <div class="modal-stage-label">Modal · 440px · 16px radius · backdrop rgba(0,0,0,0.4)</div>
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Archive patient?</h3>
+          <p>Sarah Chen will be moved to archived patients. You can reactivate her record at any time.</p>
+        </div>
+        <div class="modal-body">
+          <label class="check-label" style="margin-top: 4px;"><span class="check"></span>Send a final summary to the patient's GP</label>
+        </div>
+        <div class="modal-foot">
+          <button class="btn-ghost-sm">Cancel</button>
+          <button class="btn-destructive-sm">Archive patient</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SIDE SHEET ========== -->
+  <section id="sheet">
+    <p class="sec-num">20 · SIDE SHEET / DRAWER</p>
+    <h2 class="sec-title">For deep detail without losing the list behind it.</h2>
+    <p class="sec-lead">380–520px wide, slides from the right. Use for showing a row's full detail (consultation, note, document) when you don't want a full page navigation. Header has title + close. Footer has primary action right-most.</p>
+
+    <div class="sheet-stage">
+      <div class="sheet-stage-label">Side sheet · 380px · slides from right</div>
+      <aside class="sheet">
+        <div class="sheet-head">
+          <div>
+            <h3>Consultation #C-2042</h3>
+            <p>Sarah Chen · 24 Apr 2026, 10:30am</p>
+          </div>
+          <button class="btn-icon" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <p style="font-weight: 600; margin: 0 0 6px;">Reason for visit</p>
+          <p style="margin: 0 0 16px; color: var(--muted-foreground);">Follow-up for hypertension management. BP elevated last reading.</p>
+          <p style="font-weight: 600; margin: 0 0 6px;">Notes</p>
+          <p style="margin: 0; color: var(--muted-foreground);">Patient reports better adherence to medication. Increased activity. Discussed dietary changes.</p>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn-ghost-sm">Cancel</button>
+          <button class="btn-primary-sm">Save changes</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ========== EMPTY STATES ========== -->
+  <section id="empty">
+    <p class="sec-num">21 · EMPTY STATES</p>
+    <h2 class="sec-title">Icon · Headline · Body · CTA.</h2>
+    <p class="sec-lead">For first-use, zero-results, and post-clear states. Always offer the next action — never a dead end.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+      <div class="empty">
+        <div class="ico-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+        <h3>No patients yet</h3>
+        <p>Add your first patient to start managing consultations and prescriptions.</p>
+        <button class="btn-primary-sm">+ Add patient</button>
+      </div>
+      <div class="empty">
+        <div class="ico-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <h3>No matches for "tylenol"</h3>
+        <p>Try checking spelling, removing filters, or searching by patient name instead.</p>
+        <button class="btn-ghost-sm">Clear filters</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== LOADING / SKELETON ========== -->
+  <section id="loading">
+    <p class="sec-num">22 · LOADING &amp; SKELETON</p>
+    <h2 class="sec-title">Skeletons for tables. Spinners for buttons. Progress for long jobs.</h2>
+    <p class="sec-lead">Tables and cards get skeleton placeholders while loading. Buttons get an inline spinner. Long tasks (uploads, exports) get a determinate progress bar.</p>
+
+    <h3 class="sub-title">Skeleton row</h3>
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; grid-template-columns: 32px 1fr 80px 120px; gap: 16px; align-items: center;">
+      <span class="skel circle"></span>
+      <div><span class="skel" style="width: 60%;"></span><span class="skel line" style="width: 40%; margin-top: 6px;"></span></div>
+      <span class="skel" style="width: 100%;"></span>
+      <span class="skel" style="width: 100%; height: 24px; border-radius: 12px;"></span>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Spinners</h3>
+    <div style="display: flex; gap: 24px; align-items: center;">
+      <span class="spinner"></span>
+      <span class="spinner lg"></span>
+      <button class="btn-primary-sm" disabled style="opacity: 0.7;"><span class="spinner" style="border-color: rgba(255,255,255,0.4); border-top-color: white; margin-right: 8px;"></span>Saving…</button>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Progress bar</h3>
+    <div style="max-width: 320px;">
+      <div class="progress"><span style="width: 64%;"></span></div>
+      <p class="caption" style="margin-top: 6px;">Uploading scan_results.pdf · 2.4 MB of 3.8 MB</p>
+    </div>
+  </section>
+
+  <!-- ========== AVATARS ========== -->
+  <section id="avatars">
+    <p class="sec-num">23 · AVATARS</p>
+    <h2 class="sec-title">Pastel fill, dark ink. Initials when no photo.</h2>
+    <p class="sec-lead">Use the same six pastel families as status badges. Hash the patient ID to a stable color so the same person always gets the same swatch. Never use the brand terracotta — keep it for actionable surfaces.</p>
+
+    <h3 class="sub-title">Sizes</h3>
+    <div style="display: flex; gap: 16px; align-items: end;">
+      <div style="text-align: center;"><span class="ava xs c1">JL</span><p class="caption" style="margin-top: 6px;">xs · 24px</p></div>
+      <div style="text-align: center;"><span class="ava sm c2">SC</span><p class="caption" style="margin-top: 6px;">sm · 32px</p></div>
+      <div style="text-align: center;"><span class="ava md c3">MR</span><p class="caption" style="margin-top: 6px;">md · 40px</p></div>
+      <div style="text-align: center;"><span class="ava lg c4">DT</span><p class="caption" style="margin-top: 6px;">lg · 64px</p></div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Color rotation</h3>
+    <div style="display: flex; gap: 8px;">
+      <span class="ava md c1">JL</span>
+      <span class="ava md c2">SC</span>
+      <span class="ava md c3">MR</span>
+      <span class="ava md c4">DT</span>
+      <span class="ava md c5">PB</span>
+      <span class="ava md c6">AK</span>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">With status dot</h3>
+    <div style="display: flex; gap: 16px;">
+      <span class="ava md c1 online">JL<span class="dot"></span></span>
+      <span class="ava md c2 busy">SC<span class="dot"></span></span>
+      <span class="ava md c3 away">MR<span class="dot"></span></span>
+    </div>
+
+    <h3 class="sub-title" style="margin-top: 32px;">Stack (care team)</h3>
+    <div class="ava-stack">
+      <span class="ava sm c1">JL</span>
+      <span class="ava sm c2">SC</span>
+      <span class="ava sm c3">MR</span>
+      <span class="ava sm c6">+4</span>
+    </div>
+  </section>
+
+  <!-- ========== DATE PICKER ========== -->
+  <section id="datepicker">
+    <p class="sec-num">24 · DATE PICKER</p>
+    <h2 class="sec-title">Calendar popover. Single-date and range.</h2>
+    <p class="sec-lead">280px wide. Today is bold + primary ink. Selected day is filled primary. Range fills the in-between days with a 15% primary tint.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(2, max-content); gap: 32px;">
+      <div>
+        <h3 class="sub-title">Single date</h3>
+        <div class="cal">
+          <div class="cal-head">
+            <button class="cal-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <span class="month">April 2026</span>
+            <button class="cal-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+          <div class="cal-grid">
+            <span class="cal-dow">Mo</span><span class="cal-dow">Tu</span><span class="cal-dow">We</span><span class="cal-dow">Th</span><span class="cal-dow">Fr</span><span class="cal-dow">Sa</span><span class="cal-dow">Su</span>
+            <span class="cal-day muted">30</span><span class="cal-day muted">31</span><span class="cal-day">1</span><span class="cal-day">2</span><span class="cal-day">3</span><span class="cal-day">4</span><span class="cal-day">5</span>
+            <span class="cal-day">6</span><span class="cal-day">7</span><span class="cal-day">8</span><span class="cal-day">9</span><span class="cal-day">10</span><span class="cal-day">11</span><span class="cal-day">12</span>
+            <span class="cal-day">13</span><span class="cal-day">14</span><span class="cal-day">15</span><span class="cal-day">16</span><span class="cal-day">17</span><span class="cal-day">18</span><span class="cal-day">19</span>
+            <span class="cal-day">20</span><span class="cal-day">21</span><span class="cal-day">22</span><span class="cal-day">23</span><span class="cal-day">24</span><span class="cal-day today">25</span><span class="cal-day">26</span>
+            <span class="cal-day">27</span><span class="cal-day">28</span><span class="cal-day selected">29</span><span class="cal-day">30</span><span class="cal-day muted">1</span><span class="cal-day muted">2</span><span class="cal-day muted">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="sub-title">Range</h3>
+        <div class="cal">
+          <div class="cal-head">
+            <button class="cal-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <span class="month">April 2026</span>
+            <button class="cal-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+          <div class="cal-grid">
+            <span class="cal-dow">Mo</span><span class="cal-dow">Tu</span><span class="cal-dow">We</span><span class="cal-dow">Th</span><span class="cal-dow">Fr</span><span class="cal-dow">Sa</span><span class="cal-dow">Su</span>
+            <span class="cal-day muted">30</span><span class="cal-day muted">31</span><span class="cal-day">1</span><span class="cal-day">2</span><span class="cal-day">3</span><span class="cal-day">4</span><span class="cal-day">5</span>
+            <span class="cal-day">6</span><span class="cal-day">7</span><span class="cal-day">8</span><span class="cal-day">9</span><span class="cal-day">10</span><span class="cal-day">11</span><span class="cal-day">12</span>
+            <span class="cal-day">13</span><span class="cal-day">14</span><span class="cal-day selected">15</span><span class="cal-day in-range">16</span><span class="cal-day in-range">17</span><span class="cal-day in-range">18</span><span class="cal-day in-range">19</span>
+            <span class="cal-day in-range">20</span><span class="cal-day in-range">21</span><span class="cal-day selected">22</span><span class="cal-day">23</span><span class="cal-day">24</span><span class="cal-day today">25</span><span class="cal-day">26</span>
+            <span class="cal-day">27</span><span class="cal-day">28</span><span class="cal-day">29</span><span class="cal-day">30</span><span class="cal-day muted">1</span><span class="cal-day muted">2</span><span class="cal-day muted">3</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== SEARCH INPUT ========== -->
+  <section id="search">
+    <p class="sec-num">25 · SEARCH INPUT</p>
+    <h2 class="sec-title">Search icon left. Clear-X and ⌘K hint right.</h2>
+    <p class="sec-lead">36px tall like all other inputs. Use ⌘K (Mac) / Ctrl+K (Windows) as the canonical global-search shortcut. Clear-X appears only when there's a query.</p>
+
+    <div style="display: flex; gap: 16px; flex-direction: column;">
+      <div class="search">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search patients, prescriptions, documents…" />
+        <span class="kbd">⌘ K</span>
+      </div>
+      <div class="search">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input value="sarah chen" />
+        <button class="clear" aria-label="Clear"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <span class="kbd">⌘ K</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== PAGINATION ========== -->
+  <section id="pagination">
+    <p class="sec-num">26 · PAGINATION</p>
+    <h2 class="sec-title">"1–25 of 247" left. Page numbers right.</h2>
+    <p class="sec-lead">Sits below every paginated table. Always show the range info — users want to know where they are. Show ellipsis if more than 7 pages.</p>
+
+    <div class="pagi">
+      <span class="info">Showing 1–25 of 247 patients</span>
+      <div class="nums">
+        <button class="pagi-btn" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="pagi-btn active">1</button>
+        <button class="pagi-btn">2</button>
+        <button class="pagi-btn">3</button>
+        <button class="pagi-btn">4</button>
+        <span class="pagi-ellipsis">…</span>
+        <button class="pagi-btn">10</button>
+        <button class="pagi-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== BREADCRUMBS ========== -->
+  <section id="breadcrumbs">
+    <p class="sec-num">27 · BREADCRUMBS</p>
+    <h2 class="sec-title">Above the page title. Last item is current.</h2>
+    <p class="sec-lead">For pages 2+ levels deep. Skip on dashboard and top-level list pages. Separator is a chevron, not a slash.</p>
+
+    <div class="crumbs">
+      <a href="#">Patients</a>
+      <span class="sep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <a href="#">Sarah Chen</a>
+      <span class="sep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></span>
+      <span class="current">Consultation #C-2042</span>
+    </div>
+  </section>
+
+  <!-- ========== FORM LAYOUT ========== -->
+  <section id="forms">
+    <p class="sec-num">28 · FORM LAYOUT</p>
+    <h2 class="sec-title">Two columns. 16px row gap. 20px column gap.</h2>
+    <p class="sec-lead">Labels above inputs. Required fields get a red asterisk. Helper text sits below the input, 12px muted ink. Group related fields into card sections.</p>
+
+    <div class="form-grid">
+      <div class="field">
+        <label>First name <span class="req">*</span></label>
+        <input value="Sarah" />
+      </div>
+      <div class="field">
+        <label>Last name <span class="req">*</span></label>
+        <input value="Chen" />
+      </div>
+      <div class="field">
+        <label>Date of birth <span class="req">*</span></label>
+        <input value="1985-03-12" />
+        <span class="helper">Format: YYYY-MM-DD</span>
+      </div>
+      <div class="field">
+        <label>Medicare number</label>
+        <input placeholder="0000 00000 0" />
+        <span class="helper">10 digits including IRN</span>
+      </div>
+      <div class="field full">
+        <label>Email <span class="req">*</span></label>
+        <input value="sarah.chen@example.com" />
+      </div>
+      <div class="field full">
+        <label>Notes</label>
+        <textarea rows="3" placeholder="Optional context…"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FILTER BAR ========== -->
+  <section id="filters">
+    <p class="sec-num">29 · FILTER BAR</p>
+    <h2 class="sec-title">Pills above tables. Active count + clear-all.</h2>
+    <p class="sec-lead">Each filter is a pill. Active filters show their value and a remove-X. The "+ Filter" pill opens a menu of fields to filter by. Right side shows result count.</p>
+
+    <div class="filter-bar">
+      <button class="fpill active">Status: <span class="v">Active</span><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="9" height="9"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button>
+      <button class="fpill active">Last visit: <span class="v">Past 30 days</span><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="9" height="9"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></button>
+      <button class="fpill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Filter</button>
+      <button class="clear-all">Clear all</button>
+      <span class="count">142 results</span>
+    </div>
+  </section>
+
+  <!-- ========== TOAST ========== -->
+  <section id="toast">
+    <p class="sec-num">30 · TOAST / SNACKBAR</p>
+    <h2 class="sec-title">Transient confirmations. Bottom-right corner. 4s auto-dismiss.</h2>
+    <p class="sec-lead">For "saved", "deleted", "sent" — non-blocking acknowledgements. Stack vertically with 8px gap. Critical errors should use modals, not toasts.</p>
+
+    <div class="toast-stage">
+      <div class="toast success">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Patient profile saved</span>
+        <button class="undo">Undo</button>
+      </div>
+      <div class="toast">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>3 prescriptions queued for review</span>
+        <button class="undo">View</button>
+      </div>
+      <div class="toast danger">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span>Failed to send to PBS gateway</span>
+        <button class="undo">Retry</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FILE UPLOAD ========== -->
+  <section id="upload">
+    <p class="sec-num">31 · FILE UPLOAD</p>
+    <h2 class="sec-title">Dashed dropzone. List of uploaded files below.</h2>
+    <p class="sec-lead">Click anywhere on the dropzone to open the picker, or drag files in. Hovering with files shows the active border. Uploaded files appear as rows below with name, size, and remove-X.</p>
+
+    <div style="display: grid; gap: 12px; max-width: 540px;">
+      <div class="dropzone">
+        <div class="ico-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        <p><strong>Click to upload</strong> or drag and drop</p>
+        <p class="meta">PDF, JPG, PNG up to 10 MB</p>
+      </div>
+      <div class="file-row">
+        <span class="ico-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        <div><div class="name">scan_results_2026-04-25.pdf</div><div class="size">2.4 MB</div></div>
+        <span class="badge badge-success" style="font-size: 11px;">Uploaded</span>
+        <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="file-row">
+        <span class="ico-bg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+        <div><div class="name">referral_letter.pdf</div><div class="size">1.1 MB · uploading…</div><div class="progress" style="margin-top: 6px;"><span style="width: 64%;"></span></div></div>
+        <span></span>
+        <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== STEPPER ========== -->
+  <section id="stepper">
+    <p class="sec-num">32 · STEPPER</p>
+    <h2 class="sec-title">Numbered. Connecting bar fills as steps complete.</h2>
+    <p class="sec-lead">For multi-step intake forms or onboarding. Done steps are filled primary. Active step is hollow primary with halo. Future steps are muted.</p>
+
+    <div class="stepper">
+      <div class="step done"><span class="num">1</span><span class="lbl">Patient details</span></div>
+      <span class="bar"></span>
+      <div class="step done"><span class="num">2</span><span class="lbl">Medical history</span></div>
+      <span class="bar"></span>
+      <div class="step active"><span class="num">3</span><span class="lbl">Consent</span></div>
+      <span class="bar"></span>
+      <div class="step"><span class="num">4</span><span class="lbl">Review</span></div>
+    </div>
+  </section>
+
+  <!-- ========== TAGS ========== -->
+  <section id="tags">
+    <p class="sec-num">33 · TAGS / CHIPS</p>
+    <h2 class="sec-title">For multi-select inputs and removable categories.</h2>
+    <p class="sec-lead">Smaller and quieter than badges. Used inside form fields to represent selected options. Always have a remove-X.</p>
+
+    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; padding: 8px 8px 8px 12px; border: 1px solid var(--input); border-radius: 10px; max-width: 540px;">
+      <span class="tag">Diabetes <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="9" height="9"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span>
+      <span class="tag">Hypertension <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="9" height="9"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span>
+      <span class="tag">Asthma <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="9" height="9"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></span>
+      <input style="border: 0; outline: 0; background: transparent; flex: 1; min-width: 100px; height: 24px; font-size: 13px;" placeholder="Add condition…" />
+    </div>
+  </section>
+
+  <!-- ========== KBD ========== -->
+  <section id="kbd">
+    <p class="sec-num">34 · KEYBOARD HINTS</p>
+    <h2 class="sec-title">For shortcuts in tooltips, menus, and search hints.</h2>
+    <p class="sec-lead">Mono font. 1px border with thicker bottom border for the keycap effect. Use Mac symbols (⌘ ⌥ ⇧ ⌃) by default; we'll handle Windows display swap at runtime.</p>
+
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+      <span><kbd class="k">⌘</kbd> <kbd class="k">K</kbd> &nbsp;<span class="caption" style="color: var(--foreground);">Global search</span></span>
+      <span><kbd class="k">⌘</kbd> <kbd class="k">⇧</kbd> <kbd class="k">N</kbd> &nbsp;<span class="caption" style="color: var(--foreground);">New patient</span></span>
+      <span><kbd class="k">/</kbd> &nbsp;<span class="caption" style="color: var(--foreground);">Focus search</span></span>
+      <span><kbd class="k">Esc</kbd> &nbsp;<span class="caption" style="color: var(--foreground);">Close dialog</span></span>
+    </div>
+  </section>
+
+  <!-- ========== CARDS ========== -->
+  <section id="cards">
+    <p class="sec-num">35 · CARDS</p>
+    <h2 class="sec-title">Card surface, 1px border, 14px radius, soft shadow.</h2>
+    <p class="sec-lead">
+      Cards are for content that genuinely sits on the page — dashboard
+      stats, patient panels, form sections. They are <em>not</em> wrappers
+      around tables (tables dissolve into the page).
+    </p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+      <div class="demo-card">
+        <p class="c-title">Active patients</p>
+        <p class="c-desc" style="margin-top: 12px;"><span class="stat-number" style="font-size: 28px;">2,847</span></p>
+        <p class="c-desc" style="margin-top: 4px;">+12.4% vs last month</p>
+      </div>
+      <div class="demo-card">
+        <p class="c-title">Pending consultations</p>
+        <p class="c-desc" style="margin-top: 12px;"><span class="stat-number" style="font-size: 28px;">38</span></p>
+        <p class="c-desc" style="margin-top: 4px;">14 awaiting prescriber review</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== NON-NEGOTIABLES ========== -->
+  <section id="rules" class="tight">
+    <p class="sec-num">36 · NON-NEGOTIABLES</p>
+    <h2 class="sec-title">The things we don't litigate per PR.</h2>
+    <p class="sec-lead">
+      If any of these show up in a diff, the PR gets reverted. They're not
+      preferences — they're the rails that keep the system intact.
+    </p>
+    <div class="rules">
+      <div class="rule dont"><span class="mark">×</span><span><strong>No hardcoded hexes outside <code class="inline">globals.css</code>.</strong> Every color reference goes through a token. <code class="inline">grep -rE '#[0-9a-fA-F]{6}' src/</code> outside the tokens file should return zero new hits in any PR.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No Tailwind palette colors.</strong> No <code class="inline">bg-blue-500</code>, <code class="inline">text-slate-600</code>, <code class="inline">border-gray-200</code>. Use semantic tokens — <code class="inline">bg-primary</code>, <code class="inline">text-foreground</code>, <code class="inline">border-border</code> — and the <code class="inline">--status-*</code> family.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No alternating row fills on record tables.</strong> No <code class="inline">nth-child(even)</code>, no zebra on the patients / prescriptions / consultations grids. Tables are quiet. The opt-in <code class="inline">.zebra .dense .log</code> variant is only for log-shaped reference tables (audit history, sync logs).</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No uppercase &amp; tracking on table headers.</strong> Sentence case. Zero letter-spacing. Always.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No per-page DataGrid styling.</strong> One shared style object, used by every grid. If a screen genuinely needs to differ, it gets a documented variant in the shared file.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No emoji in product UI.</strong> Use lucide icons. (Internal tools like docs, this page, changelogs are fine.)</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No new tokens without sign-off.</strong> If you find yourself wanting a new color, ask first. Most "new" needs are an existing token misused.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Every UI claim ships with a screenshot.</strong> Especially for AI-generated PRs. "Implementation matches spec" is not verification — pixels are.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Use the right surface.</strong> Page background for tables and the canvas. Card surface for things that sit on top. Popover surface for things that float. When in doubt, look at section 07.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>One primary action per screen.</strong> Multiple terracotta buttons in the same view = pick the most important and demote the rest to secondary or outline.</span></div>
+
+      <div class="rule dont"><span class="mark">×</span><span><strong>No color-only status.</strong> A green dot or red pill is never the only signal. Every status has a label, every destructive button has a verb, every error has text. Color is the second channel — never the first.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No clinical data in toasts.</strong> Toasts dismiss in 4s. If the user needs to read a name, dose, MRN, or appointment time to verify their action — use a modal or inline confirmation. "Saved" is fine. "Sent prescription for amoxicillin 500mg to John Doe" is not.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No destructive actions without a verb.</strong> "Delete patient", "Cancel consultation", "Revoke access" — never "Confirm" or "OK" on a destructive modal. The button label is the last thing the user reads before committing.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No motion over 200ms on UI feedback.</strong> Hover, focus, dropdown open, toast slide — all under 200ms. Page-level transitions can go to 300ms. Anything longer feels broken in a clinical workflow where users are clicking through dozens of records.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No data loss on browser back.</strong> If a form has unsaved changes, intercept navigation and confirm. Clinical staff lose work to accidental back-button hits more than any other cause.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No truncation without a tooltip.</strong> If text is cut with ellipsis, the full value must be available on hover. This is non-negotiable for names, MRNs, medication names, and dates.</span></div>
+      <div class="rule dont"><span class="mark">×</span><span><strong>No focus rings stripped.</strong> Never <code class="inline">outline: none</code> without a replacement. The terracotta focus ring is the system's accessibility contract.</span></div>
+
+      <div class="rule do"><span class="mark">✓</span><span><strong>Empty states earn their keep.</strong> Every empty state explains <em>why</em> it's empty and offers the next action. "No consultations yet" is a placeholder; "No consultations yet — book the first one" is a design.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Loading states match the shape of what's loading.</strong> Skeleton rows for tables. Skeleton cards for cards. Spinners only for buttons and small inline waits. Never a full-page spinner if the layout is knowable.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Numbers right-align. Text left-aligns. Dates left-align.</strong> Numerical columns (counts, amounts, IDs) are right-aligned with tabular numerals. Everything else is left-aligned. No center-aligned table cells, ever.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Dates use a single format per surface.</strong> Tables get <code class="inline">14 Jan 2025</code>. Timestamps get <code class="inline">14 Jan 2025, 09:42</code>. Relative times (<code class="inline">2h ago</code>) only in activity feeds. Never mix formats in one column.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>44px minimum hit target on touch surfaces.</strong> Even though we're desktop-first, clinicians use tablets at point of care. Icon buttons, row actions, and checkboxes all hit 44×44 minimum.</span></div>
+      <div class="rule do"><span class="mark">✓</span><span><strong>Read the screen aloud.</strong> Before merging a new screen, read the headline, primary action, and first row aloud as if to a busy GP. If it doesn't make sense in 5 seconds, the design isn't done.</span></div>
+    </div>
+  </section>
+
+  <hr class="div"/>
+  <p style="font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); text-align: center;">
+    Quity Clinic Portal · Design System v1.0 · Source of truth: <code class="inline">src/app/globals.css</code>
+  </p>
+
+</div>
+</body>
+</html>

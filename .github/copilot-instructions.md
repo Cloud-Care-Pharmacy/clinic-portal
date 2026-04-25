@@ -1,5 +1,18 @@
 # Project Guidelines
 
+## Design System
+
+**IMPORTANT:** Before creating or modifying any UI component, page, or layout, always consult the design system reference files in `.github/design/`:
+
+- `.github/design/README.md` — Overview and quick-start
+- `.github/design/IMPLEMENTATION_GUIDE.md` — Detailed implementation patterns
+- `.github/design/NON_NEGOTIABLES.md` — Hard rules that must never be violated
+- `.github/design/globals.css.reference` — CSS tokens and variables reference
+- `.github/design/tokens.json` — Design tokens (colors, spacing, typography)
+- `.github/design/design_system.html` — Visual reference for all components
+
+All UI work must follow the design system. When in doubt, check the design files first.
+
 ## Overview
 
 Patient Management System for Cloud Care Pharmacy. Next.js 16 frontend connecting to the `prescription-gateway` Cloudflare Worker API via a server-side auth proxy.
@@ -86,6 +99,7 @@ npx tsc --noEmit     # Type check
 - New route groups must include `error.tsx` and `loading.tsx`
 - New API endpoints under `src/app/api/` — always check auth via `auth()`
 - Never store secrets in client code or `NEXT_PUBLIC_` env vars
+
 # Patient Portal — Project Guidelines
 
 ## Stack
