@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
@@ -9,14 +9,11 @@ import { readTokens } from "@/lib/mui-tokens";
 
 const emotionCache = createCache({ key: "mui", prepend: true });
 
-// Subscribe is a no-op — tokens are read once on mount and don't change at runtime
-const subscribe = () => () => {};
-const getSnapshot = () => readTokens();
-const getServerSnapshot = () => readTokens();
+// Tokens are static (CSS custom properties don't change at runtime in this app).
+// Read once at module level so the reference is stable and MUI theme is created once.
+const tokens = readTokens();
 
 export function MuiThemeProvider({ children }: { children: ReactNode }) {
-  const tokens = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
   const muiTheme = useMemo(
     () =>
       createTheme({
