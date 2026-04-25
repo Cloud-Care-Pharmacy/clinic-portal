@@ -371,18 +371,20 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
           description="No documents found. Upload a document or sync email attachments."
         />
       ) : (
-        <DataGrid
-          rows={documents}
-          columns={columns}
-          autoHeight
-          disableRowSelectionOnClick
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          density="compact"
-          sx={dataGridSx}
-        />
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <DataGrid
+            rows={documents}
+            columns={columns}
+            autoHeight
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50]}
+            rowHeight={56}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10 } },
+            }}
+            sx={dataGridSx}
+          />
+        </div>
       )}
 
       {/* Upload Dialog */}

@@ -246,7 +246,7 @@ export default function AdminPage() {
         persist changes.
       </div>
 
-      <div style={{ width: "100%" }}>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
           rows={staff}
           columns={columns}
@@ -254,6 +254,7 @@ export default function AdminPage() {
           checkboxSelection
           disableRowSelectionOnClick
           pageSizeOptions={[10, 25]}
+          rowHeight={56}
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
           }}

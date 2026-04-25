@@ -287,34 +287,25 @@ export function ConsultationTable({
         typeFilters={typeFilters}
         onTypeFiltersChange={setTypeFilters}
       />
-      <DataGrid
-        rows={filtered}
-        columns={columns}
-        loading={loading}
-        autoHeight
-        disableRowSelectionOnClick
-        pageSizeOptions={[10, 25, 50]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
-          sorting: {
-            sortModel: [{ field: "scheduledAt", sort: "desc" }],
-          },
-        }}
-        onRowClick={(params: GridRowParams<Consultation>) => onRowClick(params.row)}
-        sx={{
-          ...dataGridSx,
-          cursor: "pointer",
-          "& .MuiDataGrid-row:nth-of-type(odd)": {
-            backgroundColor: "var(--muted)",
-          },
-          "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "var(--background)",
-          },
-          "& .MuiDataGrid-row:hover": {
-            backgroundColor: "color-mix(in srgb, var(--muted) 80%, var(--primary) 8%)",
-          },
-        }}
-      />
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <DataGrid
+          rows={filtered}
+          columns={columns}
+          loading={loading}
+          autoHeight
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25, 50]}
+          rowHeight={56}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+            sorting: {
+              sortModel: [{ field: "scheduledAt", sort: "desc" }],
+            },
+          }}
+          onRowClick={(params: GridRowParams<Consultation>) => onRowClick(params.row)}
+          sx={dataGridSx}
+        />
+      </div>
     </div>
   );
 }

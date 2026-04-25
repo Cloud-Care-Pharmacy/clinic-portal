@@ -71,20 +71,22 @@ export function PrescriptionsTab({ patientId }: PrescriptionsTabProps) {
   }
 
   return (
-    <DataGrid
-      rows={prescriptions}
-      columns={prescriptionColumns}
-      autoHeight
-      disableRowSelectionOnClick
-      pageSizeOptions={[10, 25]}
-      initialState={{
-        pagination: { paginationModel: { pageSize: 10 } },
-        sorting: {
-          sortModel: [{ field: "issuedAt", sort: "desc" }],
-        },
-      }}
-      density="compact"
-      sx={dataGridSx}
-    />
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <DataGrid
+        rows={prescriptions}
+        columns={prescriptionColumns}
+        autoHeight
+        disableRowSelectionOnClick
+        pageSizeOptions={[10, 25]}
+        rowHeight={56}
+        initialState={{
+          pagination: { paginationModel: { pageSize: 10 } },
+          sorting: {
+            sortModel: [{ field: "issuedAt", sort: "desc" }],
+          },
+        }}
+        sx={dataGridSx}
+      />
+    </div>
   );
 }
