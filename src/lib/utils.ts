@@ -26,7 +26,7 @@ export const dataGridSx: SxProps<Theme> = {
     padding: "0 16px",
   },
   "& .MuiDataGrid-columnHeaderTitle": {
-    fontWeight: 600,
+    fontWeight: 700,
     fontSize: 12,
     color: "var(--foreground)",
     textTransform: "none",
