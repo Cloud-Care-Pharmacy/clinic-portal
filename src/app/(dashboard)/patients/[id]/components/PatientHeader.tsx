@@ -128,7 +128,10 @@ export function PatientHeader({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
                     <Sparkles className="size-3.5" />
                     Actions
                     <ChevronDown className="size-3.5" />

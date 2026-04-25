@@ -15,8 +15,16 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { label: "Overview", segment: "", countKey: null },
-  { label: "Consultations", segment: "consultations", countKey: "consultations" as const },
-  { label: "Prescriptions", segment: "prescriptions", countKey: "prescriptions" as const },
+  {
+    label: "Consultations",
+    segment: "consultations",
+    countKey: "consultations" as const,
+  },
+  {
+    label: "Prescriptions",
+    segment: "prescriptions",
+    countKey: "prescriptions" as const,
+  },
   { label: "Documents", segment: "documents", countKey: null },
   { label: "Clinical History", segment: "clinical", countKey: "clinical" as const },
   { label: "Activity", segment: "activity", countKey: null },
@@ -51,9 +59,7 @@ export default function PatientLayoutClient({
     clinical: undefined, // no easy count endpoint
   };
 
-  const fullName = [patient?.first_name, patient?.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
   const displayName =
     fullName ||
     (patient?.original_email
@@ -69,9 +75,10 @@ export default function PatientLayoutClient({
 
   // Determine active tab from pathname
   const basePath = `/patients/${id}`;
-  const activeSegment = pathname === basePath || pathname === `${basePath}/`
-    ? ""
-    : pathname.replace(`${basePath}/`, "");
+  const activeSegment =
+    pathname === basePath || pathname === `${basePath}/`
+      ? ""
+      : pathname.replace(`${basePath}/`, "");
 
   if (isLoading) {
     return (

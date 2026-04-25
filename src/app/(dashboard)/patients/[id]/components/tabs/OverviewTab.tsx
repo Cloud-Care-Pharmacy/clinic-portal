@@ -285,17 +285,24 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
         <SectionCard
           title="Demographics"
           action={
-            <button className="text-xs text-primary hover:underline">
-              Edit
-            </button>
+            <button className="text-xs text-primary hover:underline">Edit</button>
           }
         >
-          <DemoField label="DOB" value={formatDobWithAge(patient?.date_of_birth ?? null)} />
+          <DemoField
+            label="DOB"
+            value={formatDobWithAge(patient?.date_of_birth ?? null)}
+          />
           <DemoField label="Gender" value={patient?.gender} />
           <DemoField label="Mobile" value={patient?.mobile} />
           <DemoField label="Email" value={patient?.original_email} />
           <DemoField label="Address" value={formatAddress(patient)} />
-          <DemoField label="Medicare" value={formatMedicare(patient?.medicare_number ?? null, patient?.medicare_irn ?? null)} />
+          <DemoField
+            label="Medicare"
+            value={formatMedicare(
+              patient?.medicare_number ?? null,
+              patient?.medicare_irn ?? null
+            )}
+          />
           <DemoField label="PMS ID" value={patient?.halaxy_patient_id} />
         </SectionCard>
 
