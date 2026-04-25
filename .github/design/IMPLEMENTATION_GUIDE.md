@@ -36,19 +36,20 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** One `<StatusBadge>` API for the six families, replacing every ad-hoc colored pill.
 
 **Files to touch:**
+
 - `src/components/shared/StatusBadge.tsx` — exists, refactor to expose explicit variants
 - `src/components/ui/badge.tsx` — leave alone; this is the primitive
 
 **Spec (from §12):**
 
-| Variant | When to use | Token family |
-|---|---|---|
-| `success` | Linked / synced / completed | `--status-success-*` |
+| Variant   | When to use                      | Token family         |
+| --------- | -------------------------------- | -------------------- |
+| `success` | Linked / synced / completed      | `--status-success-*` |
 | `warning` | Pending / awaiting / soft errors | `--status-warning-*` |
-| `danger` | Cancelled / failed / blocked | `--status-danger-*` |
-| `info` | In progress / informational | `--status-info-*` |
-| `accent` | Special / featured / highlighted | `--status-accent-*` |
-| `neutral` | Default / unspecified state | `--status-neutral-*` |
+| `danger`  | Cancelled / failed / blocked     | `--status-danger-*`  |
+| `info`    | In progress / informational      | `--status-info-*`    |
+| `accent`  | Special / featured / highlighted | `--status-accent-*`  |
+| `neutral` | Default / unspecified state      | `--status-neutral-*` |
 
 **API:**
 
@@ -58,6 +59,7 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 ```
 
 **Acceptance:**
+
 - ✓ Pill geometry: 22px tall, 10px horizontal padding, 999px radius
 - ✓ Pastel fill, dark ink, matched border — never a saturated fill
 - ✓ Optional leading dot via `dot` prop (8px, same fg color)
@@ -65,6 +67,7 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 - ✓ A `<dl>`-style stories file in `__stories__/StatusBadge.stories.tsx` covering all six
 
 **Replace usages in:**
+
 - `PatientTable.tsx` — sync status column
 - `ConsultationTable.tsx` — appointment state column
 - `prescriptions/page.tsx` — Rx status column
@@ -77,9 +80,11 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Inline notice banners. Same six families as StatusBadge.
 
 **Files:**
+
 - `src/components/ui/alert.tsx` — new (or extend if exists)
 
 **Spec (from §13):**
+
 - 12px padding, 10px radius, 1px border
 - Leading icon (Lucide, 16px, matched fg color) — `Info` / `CheckCircle2` / `AlertTriangle` / `AlertOctagon` / `Sparkles` / `Circle`
 - Optional close-X (Lucide `X`, 14px, opacity 0.5 → 1 on hover)
@@ -105,10 +110,12 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Decision needed:** Use [sonner](https://sonner.emilkowal.ski/) (recommended — minimal, headless, customisable to match) or write a thin wrapper around Base UI's `Toast`. Default recommendation: **sonner**, themed via tokens.
 
 **Files:**
+
 - `src/components/ui/toast.tsx` — new (sonner re-export with token-themed defaults)
 - `src/app/layout.tsx` — mount `<Toaster />` once at the root
 
 **Spec (from §30):**
+
 - Bottom-right anchor, 8px gap between stacked toasts
 - 4s auto-dismiss (configurable)
 - 3 visual variants: `default` (dark bg, light text), `success` (green), `danger` (red)
@@ -124,9 +131,11 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Standardise the existing shadcn dialog into the spec.
 
 **Files:**
+
 - `src/components/ui/dialog.tsx` — extend with the `<DialogShell>` opinionated wrapper
 
 **Spec (from §19):**
+
 - 440px max-width
 - Title + body + footer bar layout
 - Primary action right-most in the footer
@@ -141,7 +150,11 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
   onOpenChange={setOpen}
   title="Delete patient?"
   body="This permanently removes their record and cannot be undone."
-  primaryAction={{ label: "Delete patient", variant: "destructive", onClick: handleDelete }}
+  primaryAction={{
+    label: "Delete patient",
+    variant: "destructive",
+    onClick: handleDelete,
+  }}
   secondaryAction={{ label: "Cancel", onClick: () => setOpen(false) }}
 />
 ```
@@ -155,15 +168,18 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Right-anchored panel for row detail without losing the list behind.
 
 **Files:**
+
 - `src/components/ui/sheet.tsx` — exists in shadcn base-nova, theme to match
 
 **Spec (from §20):**
+
 - 380–520px wide (responsive within range)
 - Header: title + close-X
 - Body scrolls, footer pinned (when applicable)
 - Slide from right, 200ms ease-out
 
 **Use cases:**
+
 - Consultation row → sheet with full notes + linked Rx
 - Document row → sheet with file preview + metadata
 - Audit log row → sheet with full diff
@@ -177,9 +193,11 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** A reusable component for first-use, zero-results, post-clear states.
 
 **Files:**
+
 - `src/components/shared/EmptyState.tsx` — new
 
 **Spec (from §21):**
+
 - Centered: icon (40px, muted), headline (16px / 500), body (14px / muted), CTA button
 - Card surface, dashed border optional for "drop something here" cases
 
@@ -203,17 +221,20 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Loading states that match the shape of what's loading.
 
 **Files:**
+
 - `src/components/ui/skeleton.tsx` — exists, extend with shape primitives
 - `src/components/skeletons/TableSkeleton.tsx` — new
 - `src/components/skeletons/CardSkeleton.tsx` — new
 
 **Spec (from §22):**
+
 - Skeletons for tables and cards
 - Inline spinner for buttons (use Lucide `Loader2` with `animate-spin`)
 - Determinate progress bar for long jobs (uploads, exports)
 - **Never a full-page spinner if the layout is knowable.**
 
 **Replace** every `if (loading) return <Spinner />` in:
+
 - `usePatients` consumer
 - `useConsultations` consumer
 - `usePrescriptions` consumer
@@ -225,15 +246,18 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Consistent filter UI above every paginated table.
 
 **Files:**
+
 - `src/components/shared/FilterBar.tsx` — new
 
 **Spec (from §29):**
+
 - Active filters render as pills with value + remove-X
 - "+ Filter" pill opens menu of fields to filter by
 - Right side shows result count ("247 patients")
 - Sits above the table, below the page header
 
 **Pages to wire:**
+
 - `patients/page.tsx`
 - `consultations/page.tsx`
 - `prescriptions/page.tsx`
@@ -246,13 +270,15 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Kill per-page `sx` blocks. One shared theme.
 
 **Files:**
+
 - `src/lib/datagrid-theme.ts` — new
 - `src/app/(dashboard)/prescriptions/page.tsx` — remove inline sx, use shared
 - `src/app/(dashboard)/admin/page.tsx` — same
 - `PatientTable.tsx`, `ConsultationTable.tsx` — same
 
 **Spec (from §09):**
-- Header: `--table-header` bg, sentence case, no letter-spacing, weight 500
+
+- Header: `--table-header` bg, 14px, sentence case, no letter-spacing, weight 600
 - Row: `--background` surface, **no zebra**, hover-tint via `--accent`
 - Borders: 1px `--border` between rows; no vertical column dividers
 - Cell padding: 12px vertical, 16px horizontal
@@ -267,11 +293,13 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 **Goal:** Make the rules enforceable.
 
 **Files:**
+
 - `.eslintrc.cjs` — add custom rule banning Tailwind palette utilities (regex match)
 - `.github/pull_request_template.md` — add screenshot requirement + non-negotiables checklist
 - `docs/non-negotiables.md` — copy from this bundle's `NON_NEGOTIABLES.md`
 
 **Acceptance:**
+
 - ✓ Lint fails on any `bg-blue-500` / `text-slate-600` / etc.
 - ✓ PR template requires "Screenshot attached" check before merge
 - ✓ Link to `docs/non-negotiables.md` in the PR template
@@ -280,31 +308,31 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 
 ## Component inventory (status check)
 
-| Section | Component | Repo state | Action |
-|---|---|---|---|
-| §10 Buttons | `Button` | ✅ Already shadcn base-nova, matches spec | None |
-| §11 Inputs | `Input` | ✅ Already shadcn base-nova, matches spec | None |
-| §12 Status badges | `StatusBadge` | ⚠️ Exists, needs API refactor | **Phase 1** |
-| §13 Alerts | `Alert` | ❌ Missing | **Phase 2** |
-| §14 Dropdowns | `DropdownMenu` | ✅ Already shadcn | None |
-| §15 Checkboxes | `Checkbox`, `Switch` | ✅ Already shadcn | None |
-| §17 Tabs | `Tabs` | ✅ Already shadcn | Verify both pill + underline variants exist |
-| §18 Tooltips | `Tooltip`, `Popover` | ✅ Already shadcn | None |
-| §19 Modal | `Dialog` | ⚠️ Primitive exists, no shell wrapper | **Phase 4** |
-| §20 Side sheet | `Sheet` | ⚠️ Primitive exists, no opinionated usage | **Phase 5** |
-| §21 Empty states | `EmptyState` | ❌ Missing | **Phase 6** |
-| §22 Loading | `Skeleton`, `TableSkeleton`, etc. | ⚠️ Primitive only | **Phase 7** |
-| §23 Avatars | `Avatar` | ✅ Already shadcn | Add hash-to-color helper |
-| §24 Date picker | `Calendar`, `DatePicker` | ⚠️ Verify | Confirm in Phase 0 |
-| §25 Search | `SearchInput` | ❌ Missing as a wrapper | Bundle into Phase 8 |
-| §26 Pagination | `Pagination` | ⚠️ Verify | Confirm in Phase 0 |
-| §27 Breadcrumbs | `Breadcrumb` | ⚠️ Verify | Confirm in Phase 0 |
-| §29 Filter bar | `FilterBar` | ❌ Missing | **Phase 8** |
-| §30 Toast | `Toast`, `Toaster` | ❌ Missing | **Phase 3** |
-| §31 File upload | `FileUpload` | ❌ Missing | Defer (no current consumer) |
-| §32 Stepper | `Stepper` | ❌ Missing | Defer (no current consumer) |
-| §33 Tags / chips | `Tag` | ❌ Missing | Defer (no current consumer) |
-| §34 Kbd | `Kbd` | ❌ Missing | Defer (no current consumer) |
+| Section           | Component                         | Repo state                                | Action                                      |
+| ----------------- | --------------------------------- | ----------------------------------------- | ------------------------------------------- |
+| §10 Buttons       | `Button`                          | ✅ Already shadcn base-nova, matches spec | None                                        |
+| §11 Inputs        | `Input`                           | ✅ Already shadcn base-nova, matches spec | None                                        |
+| §12 Status badges | `StatusBadge`                     | ⚠️ Exists, needs API refactor             | **Phase 1**                                 |
+| §13 Alerts        | `Alert`                           | ❌ Missing                                | **Phase 2**                                 |
+| §14 Dropdowns     | `DropdownMenu`                    | ✅ Already shadcn                         | None                                        |
+| §15 Checkboxes    | `Checkbox`, `Switch`              | ✅ Already shadcn                         | None                                        |
+| §17 Tabs          | `Tabs`                            | ✅ Already shadcn                         | Verify both pill + underline variants exist |
+| §18 Tooltips      | `Tooltip`, `Popover`              | ✅ Already shadcn                         | None                                        |
+| §19 Modal         | `Dialog`                          | ⚠️ Primitive exists, no shell wrapper     | **Phase 4**                                 |
+| §20 Side sheet    | `Sheet`                           | ⚠️ Primitive exists, no opinionated usage | **Phase 5**                                 |
+| §21 Empty states  | `EmptyState`                      | ❌ Missing                                | **Phase 6**                                 |
+| §22 Loading       | `Skeleton`, `TableSkeleton`, etc. | ⚠️ Primitive only                         | **Phase 7**                                 |
+| §23 Avatars       | `Avatar`                          | ✅ Already shadcn                         | Add hash-to-color helper                    |
+| §24 Date picker   | `Calendar`, `DatePicker`          | ⚠️ Verify                                 | Confirm in Phase 0                          |
+| §25 Search        | `SearchInput`                     | ❌ Missing as a wrapper                   | Bundle into Phase 8                         |
+| §26 Pagination    | `Pagination`                      | ⚠️ Verify                                 | Confirm in Phase 0                          |
+| §27 Breadcrumbs   | `Breadcrumb`                      | ⚠️ Verify                                 | Confirm in Phase 0                          |
+| §29 Filter bar    | `FilterBar`                       | ❌ Missing                                | **Phase 8**                                 |
+| §30 Toast         | `Toast`, `Toaster`                | ❌ Missing                                | **Phase 3**                                 |
+| §31 File upload   | `FileUpload`                      | ❌ Missing                                | Defer (no current consumer)                 |
+| §32 Stepper       | `Stepper`                         | ❌ Missing                                | Defer (no current consumer)                 |
+| §33 Tags / chips  | `Tag`                             | ❌ Missing                                | Defer (no current consumer)                 |
+| §34 Kbd           | `Kbd`                             | ❌ Missing                                | Defer (no current consumer)                 |
 
 ---
 
