@@ -78,7 +78,7 @@
   --status-neutral-bg: var(--muted);
   --status-neutral-fg: var(--muted-foreground);
   --status-neutral-border: var(--border);
-  --table-header: #efede3;
+  --table-header: #eee9de;
 }
 
 .dark {
