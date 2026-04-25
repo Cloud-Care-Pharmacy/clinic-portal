@@ -1,25 +1,25 @@
-import { use, Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import PatientDetailClient from "./PatientDetailClient";
+"use client";
 
-export default function PatientDetailPage({
+import { use } from "react";
+import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
+import { OverviewTab } from "./components/tabs/OverviewTab";
+import { useRouter } from "next/navigation";
+
+export default function PatientOverviewPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { data: patientData } = usePatient(id);
+  const patient = patientData?.data?.patient;
+  const router = useRouter();
 
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <Skeleton className="h-40 w-full rounded-lg" />
-          <Skeleton className="h-10 w-96" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-        </div>
-      }
-    >
-      <PatientDetailClient id={id} />
-    </Suspense>
+    <OverviewTab
+      patient={patient}
+      patientId={id}
+      onTabChange={(tab) => router.push(`/patients/${id}/${tab}`, { scroll: false })}
+    />
   );
 }
