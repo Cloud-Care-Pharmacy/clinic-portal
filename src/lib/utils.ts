@@ -95,6 +95,11 @@ export const dataGridSx: SxProps<Theme> = {
     "&.Mui-checked": { color: "var(--primary)" },
   },
   "& .MuiDataGrid-columnSeparator": {
-    display: "none",
+    color: "var(--border)",
+    opacity: 0,
+    transition: "opacity .15s",
+  },
+  "& .MuiDataGrid-columnHeader:hover .MuiDataGrid-columnSeparator": {
+    opacity: 1,
   },
 };
