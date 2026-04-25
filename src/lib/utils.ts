@@ -13,11 +13,11 @@ export const dataGridSx: SxProps<Theme> = {
   overflow: "hidden",
   fontFamily: "Outfit, sans-serif",
   fontSize: 14,
-  backgroundColor: "var(--card)",
+  backgroundColor: "var(--background)",
 
   /* ---- Header row ---- */
   "& .MuiDataGrid-columnHeaders": {
-    backgroundColor: "var(--muted)",
+    backgroundColor: "var(--table-header)",
     borderBottom: "1px solid var(--border)",
     minHeight: "44px !important",
     maxHeight: "44px !important",
@@ -38,7 +38,7 @@ export const dataGridSx: SxProps<Theme> = {
 
   /* ---- Body rows ---- */
   "& .MuiDataGrid-row": {
-    backgroundColor: "var(--card)",
+    backgroundColor: "var(--background)",
     cursor: "pointer",
     transition: "background-color .12s",
   },
@@ -46,8 +46,10 @@ export const dataGridSx: SxProps<Theme> = {
     backgroundColor: "var(--accent)",
   },
   "& .MuiDataGrid-row.Mui-selected": {
-    backgroundColor: "var(--muted)",
-    "&:hover": { backgroundColor: "var(--muted)" },
+    backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--background))",
+    "&:hover": {
+      backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--background))",
+    },
   },
 
   /* ---- Cells ---- */
