@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,14 +9,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import {
   Mail,
   Phone,
   MapPin,
   User,
-  Copy,
-  Sparkles,
+  Calendar,
+  Zap,
   ChevronDown,
   CalendarPlus,
   Pill,
@@ -26,16 +24,14 @@ import {
   Pencil,
   Flag,
   Archive,
+  Copy,
 } from "lucide-react";
 import type { PatientMapping } from "@/types";
-import type { RedFlagResult } from "@/components/patients/red-flag-utils";
 import { PatientStatStrip } from "./PatientStatStrip";
 
 interface PatientHeaderProps {
   patient: PatientMapping | undefined;
   displayName: string;
-  redFlags: RedFlagResult | null;
-  isLoading: boolean;
 }
 
 function getAge(dob: string | null): string {
@@ -53,12 +49,7 @@ function copyToClipboard(text: string) {
   toast.success("PMS ID copied");
 }
 
-export function PatientHeader({
-  patient,
-  displayName,
-  redFlags,
-  isLoading,
-}: PatientHeaderProps) {
+export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
   const age = getAge(patient?.date_of_birth ?? null);
   const gender = patient?.gender ?? "";
   const ageGender = [age, gender].filter(Boolean).join(" · ");
@@ -69,134 +60,131 @@ export function PatientHeader({
     locationParts.length > 0 ? locationParts.join(", ") : "Not available";
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col gap-4">
-          {/* Top: Avatar beside content block */}
-          <div className="flex gap-4">
-            {/* Avatar */}
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-base font-semibold">
-              {patient?.first_name ? (
-                (
-                  patient.first_name.charAt(0) + (patient.last_name?.charAt(0) ?? "")
-                ).toUpperCase()
-              ) : patient?.original_email ? (
-                patient.original_email.charAt(0).toUpperCase()
-              ) : (
-                <User className="h-5 w-5" />
-              )}
-            </div>
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      {/* Identity row */}
+      <div className="flex items-start gap-4">
+        {/* Avatar — 56×56 */}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-lg font-semibold">
+          {patient?.first_name ? (
+            (
+              patient.first_name.charAt(0) + (patient.last_name?.charAt(0) ?? "")
+            ).toUpperCase()
+          ) : patient?.original_email ? (
+            patient.original_email.charAt(0).toUpperCase()
+          ) : (
+            <User className="h-5 w-5" />
+          )}
+        </div>
 
-            {/* Content column */}
-            <div className="flex flex-1 flex-col gap-1.5 min-w-0">
-              {/* Line 1: Name · Age/Gender · contact chips · PMS-ID · Actions */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <h2 className="text-xl font-semibold leading-tight">{displayName}</h2>
+        {/* Identity + meta */}
+        <div className="flex-1 min-w-0">
+          {/* Name row — name/age left, PMS ID + Actions right */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-[22px] font-semibold leading-[1.2] tracking-[-0.01em]">
+              {displayName}
+            </h2>
 
-                {ageGender && (
-                  <span className="text-sm text-muted-foreground">{ageGender}</span>
-                )}
+            {ageGender && (
+              <span className="text-sm text-muted-foreground">{ageGender}</span>
+            )}
 
-                {/* Email chip */}
-                <ExpandableIconButton
-                  icon={<Mail className="size-4" />}
-                  label={patient?.original_email ?? ""}
-                  ariaLabel={`Email: ${patient?.original_email ?? "Not available"}`}
-                  disabled={!patient?.original_email}
-                />
+            {/* Spacer */}
+            <div className="flex-1" />
 
-                {/* Phone chip */}
-                <ExpandableIconButton
-                  icon={<Phone className="size-4" />}
-                  label={patient?.mobile ?? "Not available"}
-                  ariaLabel={`Phone: ${patient?.mobile ?? "Not available"}`}
-                  disabled={!patient?.mobile}
-                />
+            {/* PMS ID pill — top right */}
+            {pmsId && (
+              <button
+                onClick={() => copyToClipboard(pmsId)}
+                className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 font-mono text-xs font-medium text-foreground hover:bg-accent transition-colors"
+              >
+                #{pmsId}
+                <Copy className="size-3.5 text-muted-foreground" />
+              </button>
+            )}
 
-                {/* Spacer */}
-                <div className="flex-1" />
-
-                {/* PMS ID pill */}
-                {pmsId && (
-                  <button
-                    onClick={() => copyToClipboard(pmsId)}
-                    className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 h-8 font-mono text-xs text-muted-foreground hover:bg-muted transition-colors"
+            {/* Actions dropdown — top right */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    size="sm"
+                    className="h-9 gap-2 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
                   >
-                    <span className="text-muted-foreground/60">#</span>
-                    {pmsId}
-                    <Copy className="size-3.5" />
-                  </button>
-                )}
+                    <Zap className="size-3.5" />
+                    Actions
+                    <ChevronDown className="size-3.5" />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-[220px]">
+                <DropdownMenuItem>
+                  <CalendarPlus className="mr-2 size-4" />
+                  New consultation
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Pill className="mr-2 size-4" />
+                  New prescription
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <StickyNote className="mr-2 size-4" />
+                  Add note
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Upload className="mr-2 size-4" />
+                  Upload document
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <Pencil className="mr-2 size-4" />
+                  Edit patient details
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Flag className="mr-2 size-4" />
+                  Flag for review
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive">
+                  <Archive className="mr-2 size-4" />
+                  Archive patient
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-                {/* Actions dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Sparkles className="size-3.5" />
-                        Actions
-                        <ChevronDown className="size-3.5" />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <CalendarPlus className="mr-2 size-4" />
-                      New consultation
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Pill className="mr-2 size-4" />
-                      New prescription
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <StickyNote className="mr-2 size-4" />
-                      Add note
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Upload className="mr-2 size-4" />
-                      Upload document
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Pencil className="mr-2 size-4" />
-                      Edit patient details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Flag className="mr-2 size-4" />
-                      Flag for review
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Archive className="mr-2 size-4" />
-                      Archive patient
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              {/* Line 2: Location · Patient since (aligned under name) */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {locationText}
-                </span>
-                {patient?.created_at && (
-                  <span>
-                    Patient since{" "}
-                    {new Date(patient.created_at).toLocaleDateString("en-AU", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                )}
-              </div>
-            </div>
+          {/* Meta row — all contact/location info as inline text */}
+          <div className="flex flex-wrap items-center gap-4 mt-2 text-[13px] text-muted-foreground">
+            {patient?.original_email && (
+              <span className="inline-flex items-center gap-1.5">
+                <Mail className="size-3.5" />
+                {patient.original_email}
+              </span>
+            )}
+            {patient?.mobile && (
+              <span className="inline-flex items-center gap-1.5">
+                <Phone className="size-3.5" />
+                {patient.mobile}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin className="size-3.5" />
+              {locationText}
+            </span>
+            {patient?.created_at && (
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="size-3.5" />
+                Patient since{" "}
+                {new Date(patient.created_at).toLocaleDateString("en-AU", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            )}
           </div>
         </div>
-      </CardContent>
+      </div>
 
-      {/* Stat strip — flush to card edges, separated by border-top */}
+      {/* Stat strip — separated by border-top */}
       <PatientStatStrip patientId={patient?.id} />
-    </Card>
+    </div>
   );
 }

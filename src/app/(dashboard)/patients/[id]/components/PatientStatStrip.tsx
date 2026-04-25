@@ -1,32 +1,38 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarCheck, Pill, CalendarClock } from "lucide-react";
+import { Activity, Pill, CalendarClock, Heart } from "lucide-react";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
+import { useLatestClinicalData } from "@/lib/hooks/use-patients";
 
-interface StatItemProps {
+interface StatCellProps {
   icon: React.ReactNode;
-  iconBg: string;
+  tileClass: string;
   label: string;
   value: string;
   subText: string;
 }
 
-function StatItem({ icon, iconBg, label, value, subText }: StatItemProps) {
+function StatCell({ icon, tileClass, label, value, subText }: StatCellProps) {
   return (
-    <div className="flex items-center gap-3.5 flex-1 px-5 py-4">
+    <div className="flex flex-1 gap-3 px-5 first:pl-0 last:pr-0 [&:not(:last-child)]:border-r border-border">
       <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconBg}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border ${tileClass}`}
       >
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+      <div className="min-w-0 pt-0.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1.5 truncate">
           {label}
         </p>
-        <p className="text-base font-bold leading-tight">{value}</p>
-        <p className="text-xs text-muted-foreground truncate" title={subText}>
+        <p
+          className="text-lg font-semibold leading-[1.2] truncate tabular-nums"
+          title={value}
+        >
+          {value}
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate" title={subText}>
           {subText}
         </p>
       </div>
@@ -43,6 +49,8 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
     patientId ?? ""
   );
   const { data: rxData, isLoading: loadingRx } = usePrescriptions(patientId ?? "");
+  const { data: clinicalData } = useLatestClinicalData(patientId ?? "");
+  const clinical = clinicalData?.data?.clinicalData;
 
   const consultations = consultsData?.data?.consultations ?? [];
   const prescriptions = rxData?.data?.prescriptions ?? [];
@@ -53,7 +61,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
     )[0];
 
-  const activeMeds = prescriptions.filter((p) => p.status === "active").length;
+  const activeMeds = prescriptions.filter((p) => p.status === "active");
 
   // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
   const now = Date.now();
@@ -63,11 +71,14 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
     )[0];
 
+  // Conditions count (since no allergies)
+  const conditions = clinical?.medical_conditions ?? [];
+
   if (!patientId || loadingConsults || loadingRx) {
     return (
-      <div className="flex border-t divide-x">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex-1 px-5 py-4">
+      <div className="flex border-t border-border mt-4 pt-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex-1 px-5 first:pl-0 last:pr-0">
             <Skeleton className="h-14 w-full" />
           </div>
         ))}
@@ -76,15 +87,15 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
   }
 
   return (
-    <div className="flex border-t divide-x">
-      <StatItem
-        icon={<CalendarCheck className="h-5 w-5 text-status-info-fg" />}
-        iconBg="bg-status-info-bg"
+    <div className="flex border-t border-border mt-4 pt-4">
+      <StatCell
+        icon={<Activity className="size-[18px] text-status-info-fg" />}
+        tileClass="bg-status-info-bg text-status-info-fg border-status-info-border"
         label="Last consult"
         value={
           lastConsult
             ? new Date(lastConsult.scheduledAt).toLocaleDateString("en-AU", {
-                day: "2-digit",
+                day: "numeric",
                 month: "short",
                 year: "numeric",
               })
@@ -92,14 +103,14 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         }
         subText={lastConsult?.doctorName ?? "No consultations"}
       />
-      <StatItem
-        icon={<CalendarClock className="h-5 w-5 text-status-accent-fg" />}
-        iconBg="bg-status-accent-bg"
+      <StatCell
+        icon={<CalendarClock className="size-[18px] text-status-success-fg" />}
+        tileClass="bg-status-success-bg text-status-success-fg border-status-success-border"
         label="Next appointment"
         value={
           nextAppt
             ? new Date(nextAppt.scheduledAt).toLocaleDateString("en-AU", {
-                day: "2-digit",
+                day: "numeric",
                 month: "short",
               }) +
               ", " +
@@ -112,12 +123,25 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         }
         subText={nextAppt?.doctorName ?? "None scheduled"}
       />
-      <StatItem
-        icon={<Pill className="h-5 w-5 text-status-success-fg" />}
-        iconBg="bg-status-success-bg"
+      <StatCell
+        icon={<Pill className="size-[18px] text-status-accent-fg" />}
+        tileClass="bg-status-accent-bg text-status-accent-fg border-status-accent-border"
         label="Active meds"
-        value={String(activeMeds)}
-        subText={`${activeMeds} prescription${activeMeds !== 1 ? "s" : ""}`}
+        value={activeMeds.length > 0 ? String(activeMeds.length) : "—"}
+        subText={
+          activeMeds.length > 0
+            ? `${prescriptions.length} prescriptions`
+            : "No prescriptions"
+        }
+      />
+      <StatCell
+        icon={<Heart className="size-[18px] text-status-danger-fg" />}
+        tileClass="bg-status-danger-bg text-status-danger-fg border-status-danger-border"
+        label="Conditions"
+        value={conditions.length > 0 ? String(conditions.length) : "—"}
+        subText={
+          conditions.length > 0 ? conditions.slice(0, 2).join(", ") : "None recorded"
+        }
       />
     </div>
   );

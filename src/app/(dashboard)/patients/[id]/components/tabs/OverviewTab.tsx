@@ -1,79 +1,116 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardAction,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Stethoscope, RotateCw, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PatientMapping } from "@/types";
+import type { PatientMapping, ConsultationType } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientNotes } from "@/lib/hooks/use-notes";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
-import type { ConsultationType, ConsultationStatus } from "@/types";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
-const STATUS_DOT_COLORS: Record<ConsultationStatus, string> = {
-  completed: "bg-status-success-fg",
-  scheduled: "bg-status-info-fg",
-  cancelled: "bg-status-danger-fg",
-  "no-show": "bg-status-warning-fg",
-};
+/* ── Helpers ── */
 
-const STATUS_LABELS: Record<ConsultationStatus, string> = {
-  completed: "Completed",
-  scheduled: "Scheduled",
-  cancelled: "Cancelled",
-  "no-show": "No show",
-};
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1).replace("-", " ");
+function relTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays <= 30) return `${diffDays} days ago`;
+  return date.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: diffDays > 365 ? "numeric" : undefined,
+  });
 }
+
+function fmtDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+const CONSULT_TYPE_CONFIG: Record<
+  ConsultationType,
+  { icon: typeof Stethoscope; tileClass: string }
+> = {
+  initial: {
+    icon: Stethoscope,
+    tileClass: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  },
+  "follow-up": {
+    icon: RotateCw,
+    tileClass: "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
+  },
+  renewal: {
+    icon: RefreshCw,
+    tileClass:
+      "bg-status-success-bg text-status-success-fg border-status-success-border",
+  },
+};
+
+/* ── Shared section-card-head ── */
+
+function SectionHead({
+  title,
+  count,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  count?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 mb-4">
+      <h3 className="text-base font-semibold leading-[1.25] tracking-[-0.01em]">
+        {title}
+      </h3>
+      <div className="inline-flex items-center gap-2">
+        {count && (
+          <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+        )}
+        {actionLabel && onAction && (
+          <button
+            onClick={onAction}
+            className="text-[13px] font-medium text-primary hover:underline"
+          >
+            {actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Card shell ── */
+
+function OverviewCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-2xl border border-border/60 bg-card p-5", className)}>
+      {children}
+    </div>
+  );
+}
+
+/* ── Main component ── */
 
 interface OverviewTabProps {
   patient: PatientMapping | undefined;
   patientId: string;
   onTabChange: (tab: string) => void;
-}
-
-function SectionCard({
-  title,
-  action,
-  children,
-}: {
-  title: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
-        {action && <CardAction>{action}</CardAction>}
-      </CardHeader>
-      <CardContent className="space-y-0">{children}</CardContent>
-    </Card>
-  );
-}
-
-function DemoField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <div className="flex items-center justify-between py-2 border-b last:border-b-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm">{value || "—"}</span>
-    </div>
-  );
 }
 
 export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProps) {
@@ -88,250 +125,336 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
   const notes = notesData?.data?.notes ?? [];
   const clinical = clinicalData?.data?.clinicalData;
 
-  const recentConsults = consultations
+  const recentConsults = [...consultations]
     .sort(
       (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
     )
-    .slice(0, 3);
+    .slice(0, 4);
 
   const activeMeds = prescriptions.filter((p) => p.status === "active");
   const recentNotes = notes.slice(0, 3);
 
-  const formatDobWithAge = (dob: string | null) => {
-    if (!dob) return "—";
-    const date = new Date(dob);
-    const formatted = date.toLocaleDateString("en-AU", {
-      day: "2-digit",
+  const conditions = clinical?.medical_conditions ?? [];
+
+  // Unique care team from consultations
+  const careTeamMap = new Map<string, { name: string; role: string }>();
+  for (const c of consultations) {
+    if (c.doctorName && !careTeamMap.has(c.doctorId)) {
+      careTeamMap.set(c.doctorId, { name: c.doctorName, role: "Doctor" });
+    }
+  }
+  const careTeam = Array.from(careTeamMap.values()).slice(0, 4);
+
+  function getInitials(name: string): string {
+    return name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  function formatDobWithAge(dob: string | null): { date: string; age: string } | null {
+    if (!dob) return null;
+    const d = new Date(dob);
+    const formatted = d.toLocaleDateString("en-AU", {
+      day: "numeric",
       month: "short",
       year: "numeric",
     });
     const today = new Date();
-    let age = today.getFullYear() - date.getFullYear();
-    const m = today.getMonth() - date.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < date.getDate())) age--;
-    return `${formatted} (${age}y)`;
-  };
+    let age = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+    return { date: formatted, age: `(${age}y)` };
+  }
 
-  const formatMedicare = (number: string | null, irn: string | null) => {
+  function formatMedicare(number: string | null, irn: string | null): string {
     if (!number) return "—";
-    // Format as "2428  89123  4  1" style
     const clean = number.replace(/\s/g, "");
-    const formatted = clean.replace(/(\d{4})(\d{5})(\d)/, "$1  $2  $3");
-    return irn ? `${formatted}  ${irn}` : formatted;
-  };
-
-  const formatAddress = (p: PatientMapping | undefined) => {
-    if (!p) return "—";
-    const parts = [p.city, p.state].filter(Boolean);
-    return parts.length > 0 ? parts.join(", ") : "—";
-  };
+    const formatted = clean.replace(/(\d{4})(\d{5})(\d)/, "$1 $2 $3");
+    return irn ? `${formatted} ${irn}` : formatted;
+  }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
-      {/* Left column — clinical */}
-      <div className="space-y-6">
-        {/* Recent consultations */}
-        <SectionCard
-          title="Recent consultations"
-          action={
-            <button
-              onClick={() => onTabChange("consultations")}
-              className="text-xs text-primary hover:underline"
-            >
-              View all →
-            </button>
-          }
-        >
-          {loadingConsults ? (
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : recentConsults.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No consultations yet
-            </p>
-          ) : (
-            <div className="divide-y">
-              {recentConsults.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 py-2.5">
-                  <span
-                    className={cn(
-                      "h-2.5 w-2.5 shrink-0 rounded-full mt-0.5",
-                      STATUS_DOT_COLORS[c.status]
-                    )}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {c.doctorName} · {capitalize(c.type)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {STATUS_LABELS[c.status]}
-                    </p>
-                  </div>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    {new Date(c.scheduledAt).toLocaleDateString("en-AU", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+    <div className="grid grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
+      {/* ── LEFT COLUMN ── */}
 
-        {/* Active medications */}
-        <SectionCard
-          title="Active medications"
-          action={
-            <button
-              onClick={() => onTabChange("prescriptions")}
-              className="text-xs text-primary hover:underline"
-            >
-              + New prescription
-            </button>
-          }
-        >
-          {loadingRx ? (
-            <div className="space-y-2">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : activeMeds.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No active medications
-            </p>
-          ) : (
-            <div className="divide-y">
-              {activeMeds.slice(0, 5).map((m) => (
-                <div key={m.id} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {m.product}{" "}
-                      <span className="text-muted-foreground font-normal">
-                        {m.dosage}
+      {/* Recent consultations — span-8 */}
+      <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">
+        <SectionHead
+          title="Recent consultations"
+          count={`${consultations.length} total`}
+          actionLabel="View all"
+          onAction={() => onTabChange("consultations")}
+        />
+        {loadingConsults ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : recentConsults.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground py-4">No consultations yet</p>
+        ) : (
+          <div className="flex flex-col">
+            {recentConsults.map((c, i) => {
+              const config = CONSULT_TYPE_CONFIG[c.type] ?? CONSULT_TYPE_CONFIG.initial;
+              const Icon = config.icon;
+              return (
+                <div
+                  key={c.id}
+                  className={cn(
+                    "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-[120ms] -mx-3 px-3 rounded-lg hover:bg-muted",
+                    i === 0 && "pt-0",
+                    i === recentConsults.length - 1 ? "pb-0" : "border-b border-border"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                      config.tileClass
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">
+                      {c.doctorName}{" "}
+                      <span className="font-normal text-muted-foreground capitalize">
+                        · {c.type.replace("-", " ")}
                       </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {m.prescriberName ?? "Unknown prescriber"}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {c.outcome ?? c.notes ?? c.status}
                     </p>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {m.repeats ?? 0} refills
-                  </Badge>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 tabular-nums">
+                    {fmtDate(c.scheduledAt)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+              );
+            })}
+          </div>
+        )}
+      </OverviewCard>
 
-        {/* Latest notes */}
-        <SectionCard
-          title="Latest notes"
-          action={
-            <button
-              onClick={() => onTabChange("notes")}
-              className="text-xs text-primary hover:underline"
-            >
-              + Add note
-            </button>
-          }
-        >
-          {loadingNotes ? (
-            <div className="space-y-2">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : recentNotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No notes yet
+      {/* Conditions — span-4 (no allergies) */}
+      <OverviewCard className="col-span-12 min-[1100px]:col-span-4 min-w-0">
+        <SectionHead
+          title="Conditions"
+          actionLabel="Edit"
+          onAction={() => onTabChange("clinical")}
+        />
+        {conditions.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {conditions.map((c) => (
+              <span
+                key={c}
+                className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-status-neutral-bg text-status-neutral-fg border border-status-neutral-border"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted-foreground">None recorded</p>
+        )}
+      </OverviewCard>
+
+      {/* Active medications — span-8 */}
+      <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">
+        <SectionHead
+          title="Active medications"
+          count={`${activeMeds.length} active`}
+          actionLabel="+ New prescription"
+          onAction={() => onTabChange("prescriptions")}
+        />
+        {loadingRx ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : activeMeds.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground py-4">
+            No active medications
+          </p>
+        ) : (
+          <div className="flex flex-col">
+            {activeMeds.map((m, i) => (
+              <div
+                key={m.id}
+                className={cn(
+                  "grid grid-cols-[minmax(0,1fr)_auto_auto] gap-3 items-center py-3",
+                  i === 0 && "pt-0",
+                  i === activeMeds.length - 1 ? "pb-0" : "border-b border-border"
+                )}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">
+                    {m.product} {m.dosage}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {m.dosage} · since {fmtDate(m.issuedAt)}
+                  </p>
+                </div>
+                <StatusBadge status={m.status} />
+                <span className="font-mono text-[11px] text-muted-foreground tracking-[0.02em]">
+                  RX-{m.id.slice(-3)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </OverviewCard>
+
+      {/* Latest vitals — span-4 */}
+      <OverviewCard className="col-span-12 min-[1100px]:col-span-4 min-w-0">
+        <SectionHead title="Latest vitals" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-[10px] border border-border bg-background p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
+              Blood pressure
             </p>
+            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
+          </div>
+          <div className="rounded-[10px] border border-border bg-background p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
+              Heart rate
+            </p>
+            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
+          </div>
+          <div className="rounded-[10px] border border-border bg-background p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
+              BMI
+            </p>
+            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
+          </div>
+          <div className="rounded-[10px] border border-border bg-background p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
+              Recorded
+            </p>
+            <p className="text-[13px] font-medium">—</p>
+          </div>
+        </div>
+      </OverviewCard>
+
+      {/* Latest notes — span-8 */}
+      <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">
+        <SectionHead
+          title="Latest notes"
+          actionLabel="+ Add note"
+          onAction={() => onTabChange("notes")}
+        />
+        {loadingNotes ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : recentNotes.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground py-4">No notes yet</p>
+        ) : (
+          <div className="flex flex-col">
+            {recentNotes.map((n, i) => (
+              <div
+                key={n.id}
+                className={cn(
+                  "py-3",
+                  i === 0 && "pt-0",
+                  i === recentNotes.length - 1 ? "pb-0" : "border-b border-border"
+                )}
+              >
+                <p className="text-[13px] leading-[1.55] text-foreground font-medium">
+                  {n.title}
+                </p>
+                <div
+                  className="text-[13px] leading-[1.55] text-foreground line-clamp-2 mt-0.5"
+                  dangerouslySetInnerHTML={{ __html: n.content }}
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {n.authorName} · {relTime(n.createdAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </OverviewCard>
+
+      {/* Right column stack: Demographics + Care team — span-4 */}
+      <div className="col-span-12 min-[1100px]:col-span-4 min-w-0 flex flex-col gap-6">
+        {/* Demographics */}
+        <OverviewCard>
+          <SectionHead title="Demographics" actionLabel="Edit" onAction={() => {}} />
+          <dl className="grid grid-cols-[96px_1fr] gap-x-4 gap-y-2.5 text-[13px]">
+            <dt className="text-muted-foreground">DOB</dt>
+            <dd className="font-medium min-w-0 break-words">
+              {(() => {
+                const dob = formatDobWithAge(patient?.date_of_birth ?? null);
+                if (!dob) return "—";
+                return (
+                  <>
+                    {dob.date}{" "}
+                    <span className="font-normal text-muted-foreground">{dob.age}</span>
+                  </>
+                );
+              })()}
+            </dd>
+            <dt className="text-muted-foreground">Gender</dt>
+            <dd className="font-medium">{patient?.gender ?? "—"}</dd>
+            <dt className="text-muted-foreground">Mobile</dt>
+            <dd className="font-medium">{patient?.mobile ?? "—"}</dd>
+            <dt className="text-muted-foreground">Email</dt>
+            <dd className="font-medium text-xs min-w-0 break-words">
+              {patient?.original_email ?? "—"}
+            </dd>
+            <dt className="text-muted-foreground">Address</dt>
+            <dd className="font-medium">
+              {[patient?.city, patient?.state].filter(Boolean).join(", ") || "—"}
+            </dd>
+            <dt className="text-muted-foreground">Medicare</dt>
+            <dd className="font-mono text-xs font-normal tracking-[0.01em]">
+              {formatMedicare(
+                patient?.medicare_number ?? null,
+                patient?.medicare_irn ?? null
+              )}
+            </dd>
+          </dl>
+
+          {/* Emergency contact sub-block */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-2">
+              Emergency contact
+            </p>
+            <p className="text-[13px] font-medium text-foreground">—</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Not recorded</p>
+          </div>
+        </OverviewCard>
+
+        {/* Care team */}
+        <OverviewCard>
+          <SectionHead title="Care team" />
+          {careTeam.length === 0 ? (
+            <p className="text-[13px] text-muted-foreground">No care team assigned</p>
           ) : (
-            <div className="divide-y">
-              {recentNotes.map((n) => (
-                <div key={n.id} className="py-2.5">
-                  <p className="text-sm font-medium">{n.title}</p>
-                  <div
-                    className="text-xs text-muted-foreground line-clamp-2 mt-0.5"
-                    dangerouslySetInnerHTML={{ __html: n.content }}
-                  />
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">
-                      {n.authorName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(n.createdAt).toLocaleDateString("en-AU", {
-                        day: "2-digit",
-                        month: "short",
-                      })}
-                    </span>
+            <div className="flex flex-col gap-3">
+              {careTeam.map((member, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-xs font-semibold">
+                    {getInitials(member.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium text-foreground">
+                      {member.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-px">{member.role}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </SectionCard>
-      </div>
-
-      {/* Right column — demographics + alerts */}
-      <div className="space-y-6">
-        {/* Demographics */}
-        <SectionCard
-          title="Demographics"
-          action={
-            <button className="text-xs text-primary hover:underline">Edit</button>
-          }
-        >
-          <DemoField
-            label="DOB"
-            value={formatDobWithAge(patient?.date_of_birth ?? null)}
-          />
-          <DemoField label="Gender" value={patient?.gender} />
-          <DemoField label="Mobile" value={patient?.mobile} />
-          <DemoField label="Email" value={patient?.original_email} />
-          <DemoField label="Address" value={formatAddress(patient)} />
-          <DemoField
-            label="Medicare"
-            value={formatMedicare(
-              patient?.medicare_number ?? null,
-              patient?.medicare_irn ?? null
-            )}
-          />
-          <DemoField label="PMS ID" value={patient?.halaxy_patient_id} />
-        </SectionCard>
-
-        {/* Conditions */}
-        <SectionCard title="Conditions">
-          {clinical?.has_medical_conditions === "yes" ? (
-            <div className="divide-y">
-              {(clinical.medical_conditions ?? []).map((c) => (
-                <div key={c} className="flex items-center justify-between py-2">
-                  <span className="text-sm">{c}</span>
-                  <Badge variant="outline" className="text-xs">
-                    Active
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              No conditions recorded
-            </p>
-          )}
-        </SectionCard>
-
-        {/* Care team */}
-        <SectionCard title="Care team">
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No care team assigned
-          </p>
-        </SectionCard>
+        </OverviewCard>
       </div>
     </div>
   );
