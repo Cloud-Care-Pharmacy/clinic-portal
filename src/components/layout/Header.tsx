@@ -26,11 +26,17 @@ export function Header() {
 
   const segments = pathname.split("/").filter(Boolean);
 
-  const breadcrumbs = segments.map((seg, i) => {
+  // Prepend Dashboard as parent breadcrumb for all dashboard-area routes
+  const rawBreadcrumbs = segments.map((seg, i) => {
     const href = "/" + segments.slice(0, i + 1).join("/");
     const label = overrides[href] ?? routeTitles[href] ?? seg.replace(/-/g, " ");
     return { label, href };
   });
+
+  const breadcrumbs =
+    segments[0] !== "dashboard"
+      ? [{ label: "Dashboard", href: "/dashboard" }, ...rawBreadcrumbs]
+      : rawBreadcrumbs;
 
   return (
     <header className="z-50 h-14">
@@ -49,14 +55,14 @@ export function Header() {
         </Button>
         <div className="h-4 w-px shrink-0 bg-border" />
         {breadcrumbs.length > 0 && (
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground">
+          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             {breadcrumbs.map((crumb, i) => (
-              <span key={crumb.href} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3 w-3" />}
+              <span key={crumb.href} className="flex items-center gap-2">
+                {i > 0 && <ChevronRight size={14} className="text-muted-foreground" />}
                 {i < breadcrumbs.length - 1 ? (
                   <Link
                     href={crumb.href}
-                    className="hover:text-foreground transition-colors capitalize"
+                    className="text-muted-foreground hover:text-foreground transition-colors capitalize"
                   >
                     {crumb.label}
                   </Link>

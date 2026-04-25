@@ -15,13 +15,14 @@ export const dataGridSx: SxProps<Theme> = {
   fontSize: 14,
   backgroundColor: "var(--card)",
   "& .MuiDataGrid-columnHeaders": {
-    backgroundColor: "color-mix(in srgb, var(--muted) 70%, transparent)",
+    backgroundColor: "var(--muted)",
     borderBottom: "1px solid var(--border)",
   },
   "& .MuiDataGrid-columnHeaderTitle": {
-    fontWeight: 600,
-    fontSize: 13,
-    color: "var(--foreground)",
+    fontWeight: 500,
+    fontSize: 12,
+    color: "var(--muted-foreground)",
+    textTransform: "none",
   },
   "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": {
     outline: "none",
@@ -44,7 +45,7 @@ export const dataGridSx: SxProps<Theme> = {
     transition: "background-color .12s",
   },
   "& .MuiDataGrid-row:hover": {
-    backgroundColor: "color-mix(in srgb, var(--muted) 60%, transparent)",
+    backgroundColor: "var(--accent)",
   },
   "& .MuiDataGrid-row.Mui-selected": {
     backgroundColor: "var(--muted)",

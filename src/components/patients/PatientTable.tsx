@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn, dataGridSx } from "@/lib/utils";
 import type { PatientMapping } from "@/types";
 
@@ -39,19 +40,7 @@ interface PatientTableProps {
 
 function PmsStatusCell({ value }: { value: string | null }) {
   const linked = Boolean(value);
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "capitalize font-medium text-xs",
-        linked
-          ? "bg-status-success-bg text-status-success-fg border-status-success-border"
-          : "bg-status-warning-bg text-status-warning-fg border-status-warning-border"
-      )}
-    >
-      {linked ? "Linked" : "Pending"}
-    </Badge>
-  );
+  return <StatusBadge status={linked ? "linked" : "pending"} />;
 }
 
 function ActionsCell({
@@ -264,10 +253,6 @@ function FilterBar({
 
 export function PatientTable({ patients, loading }: PatientTableProps) {
   const router = useRouter();
-  const [paginationModel, setPaginationModel] = useState({
-    pageSize: 10,
-    page: 0,
-  });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<StatusFilter[]>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
@@ -433,33 +418,29 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
       />
-      <DataGrid
-        rows={filteredPatients}
-        columns={visibleColumns}
-        loading={loading}
-        autoHeight
-        checkboxSelection
-        disableRowSelectionOnClick
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-        pageSizeOptions={[10, 25, 50]}
-        onRowClick={(params: GridRowParams<PatientMapping>) =>
-          router.push(`/patients/${params.row.id}`)
-        }
-        sx={{
-          ...dataGridSx,
-          cursor: "pointer",
-          "& .MuiDataGrid-row:nth-of-type(odd)": {
-            backgroundColor: "var(--muted)",
-          },
-          "& .MuiDataGrid-row:nth-of-type(even)": {
-            backgroundColor: "var(--background)",
-          },
-          "& .MuiDataGrid-row:hover": {
-            backgroundColor: "color-mix(in srgb, var(--muted) 80%, var(--primary) 8%)",
-          },
-        }}
-      />
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <DataGrid
+          rows={filteredPatients}
+          columns={visibleColumns}
+          loading={loading}
+          autoHeight
+          pagination
+          checkboxSelection
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+          rowHeight={56}
+          onRowClick={(params: GridRowParams<PatientMapping>) =>
+            router.push(`/patients/${params.row.id}`)
+          }
+          sx={{
+            ...dataGridSx,
+            border: "none",
+            borderRadius: 0,
+            cursor: "pointer",
+          }}
+        />
+      </div>
     </div>
   );
 }

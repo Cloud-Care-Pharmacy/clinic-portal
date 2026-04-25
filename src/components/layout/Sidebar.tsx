@@ -16,7 +16,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -117,7 +117,11 @@ function NavGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      {!collapsed && <p className="px-5 pb-2 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/40">{title}</p>}
+      {!collapsed && (
+        <p className="px-5 pb-2 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/40">
+          {title}
+        </p>
+      )}
       {items.map((item) => (
         <NavLink key={item.href} item={item} collapsed={collapsed} />
       ))}
@@ -178,9 +182,10 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
               collapsed && "justify-center"
             )}
           >
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
-              <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
+                {initials}
+              </AvatarFallback>
             </Avatar>
             {!collapsed && (
               <>
@@ -198,9 +203,8 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.image ?? undefined} alt={user.name ?? ""} />
-                    <AvatarFallback className="rounded-lg text-xs">
+                  <Avatar className="size-8">
+                    <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>

@@ -1,8 +1,8 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type StatusType =
   | "active"
+  | "linked"
   | "pending"
   | "flagged"
   | "expired"
@@ -20,6 +20,7 @@ type StatusType =
 
 const statusStyles: Record<StatusType, string> = {
   active: "bg-status-success-bg text-status-success-fg border-status-success-border",
+  linked: "bg-status-success-bg text-status-success-fg border-status-success-border",
   pending: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
   flagged: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
   expired: "bg-status-danger-bg text-status-danger-fg border-status-danger-border",
@@ -42,13 +43,17 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const style = statusStyles[status as StatusType] ?? statusStyles.inactive;
+  const style =
+    statusStyles[status.toLowerCase() as StatusType] ?? statusStyles.inactive;
   return (
-    <Badge
-      variant="outline"
-      className={cn("capitalize font-medium text-xs", style, className)}
+    <span
+      className={cn(
+        "inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 rounded-sm border px-2.5 py-0.5 text-xs font-medium capitalize whitespace-nowrap",
+        style,
+        className
+      )}
     >
       {status}
-    </Badge>
+    </span>
   );
 }
