@@ -32,13 +32,16 @@ export const dataGridSx: SxProps<Theme> = {
     justifyContent: "center",
   },
   "& .MuiDataGrid-columnHeaderTitle": {
-    fontWeight: 500,
+    fontWeight: 600,
     fontSize: 12,
     color: "var(--foreground)",
     textTransform: "none",
     letterSpacing: 0,
   },
-  "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": {
+  "& .MuiDataGrid-columnHeader:focus": {
+    outline: "none",
+  },
+  "& .MuiDataGrid-columnHeader:focus-visible": {
     outline: "2px solid var(--ring)",
     outlineOffset: -2,
   },
@@ -50,7 +53,7 @@ export const dataGridSx: SxProps<Theme> = {
     transition: "background-color .12s",
   },
   "& .MuiDataGrid-row:hover": {
-    backgroundColor: "var(--table-hover)",
+    backgroundColor: "var(--table-row-hover)",
   },
   "& .MuiDataGrid-row.Mui-selected": {
     backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--table-row))",
@@ -66,10 +69,13 @@ export const dataGridSx: SxProps<Theme> = {
     color: "var(--foreground)",
     display: "flex",
     alignItems: "center",
-    padding: "12px 16px",
+    padding: "0 16px",
     minWidth: 0,
   },
-  "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
+  "& .MuiDataGrid-cell:focus": {
+    outline: "none",
+  },
+  "& .MuiDataGrid-cell:focus-visible": {
     outline: "2px solid var(--ring)",
     outlineOffset: -2,
   },
