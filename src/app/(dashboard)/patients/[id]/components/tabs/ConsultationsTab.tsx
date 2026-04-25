@@ -228,22 +228,24 @@ export function ConsultationsTab({ patientId, patientName }: ConsultationsTabPro
         </Button>
       </div>
 
-      <DataGrid
-        rows={consultations}
-        columns={consultationColumns}
-        autoHeight
-        disableRowSelectionOnClick
-        pageSizeOptions={[10, 25]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
-          sorting: {
-            sortModel: [{ field: "scheduledAt", sort: "desc" }],
-          },
-        }}
-        density="compact"
-        onRowClick={(params) => setSelected(params.row)}
-        sx={{ ...dataGridSx, cursor: "pointer" }}
-      />
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <DataGrid
+          rows={consultations}
+          columns={consultationColumns}
+          autoHeight
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25]}
+          rowHeight={56}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+            sorting: {
+              sortModel: [{ field: "scheduledAt", sort: "desc" }],
+            },
+          }}
+          onRowClick={(params) => setSelected(params.row)}
+          sx={dataGridSx}
+        />
+      </div>
 
       <NewConsultationSheet
         open={newSheetOpen}

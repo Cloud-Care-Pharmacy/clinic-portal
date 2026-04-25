@@ -586,22 +586,24 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <DataGrid
-              rows={records}
-              columns={historyColumns}
-              autoHeight
-              disableRowSelectionOnClick
-              pageSizeOptions={[10, 25]}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-                sorting: {
-                  sortModel: [{ field: "submitted_at", sort: "desc" }],
-                },
-              }}
-              density="compact"
-              onRowClick={(params) => setSelectedRecord(params.row)}
-              sx={{ ...dataGridSx, cursor: "pointer" }}
-            />
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <DataGrid
+                rows={records}
+                columns={historyColumns}
+                autoHeight
+                disableRowSelectionOnClick
+                pageSizeOptions={[10, 25]}
+                rowHeight={56}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10 } },
+                  sorting: {
+                    sortModel: [{ field: "submitted_at", sort: "desc" }],
+                  },
+                }}
+                onRowClick={(params) => setSelectedRecord(params.row)}
+                sx={dataGridSx}
+              />
+            </div>
           </CardContent>
         </Card>
       )}

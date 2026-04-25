@@ -134,24 +134,24 @@ function PrescriptionGrid({ patientId }: { patientId: string }) {
 
   return (
     <>
-      <DataGrid
-        rows={prescriptions}
-        columns={prescriptionColumns}
-        autoHeight
-        checkboxSelection
-        disableRowSelectionOnClick
-        pageSizeOptions={[10, 25]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10 } },
-        }}
-        onRowClick={(params: GridRowParams<ParchmentPrescription>) =>
-          setSelected(params.row)
-        }
-        sx={{
-          ...dataGridSx,
-          cursor: "pointer",
-        }}
-      />
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <DataGrid
+          rows={prescriptions}
+          columns={prescriptionColumns}
+          autoHeight
+          checkboxSelection
+          disableRowSelectionOnClick
+          pageSizeOptions={[10, 25]}
+          rowHeight={56}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          onRowClick={(params: GridRowParams<ParchmentPrescription>) =>
+            setSelected(params.row)
+          }
+          sx={dataGridSx}
+        />
+      </div>
       <PrescriptionDetail prescription={selected} onClose={() => setSelected(null)} />
     </>
   );
