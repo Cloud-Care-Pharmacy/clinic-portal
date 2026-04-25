@@ -1,41 +1,41 @@
 "use client";
 
-import { ShieldAlert } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertBody } from "@/components/ui/alert";
 import type { RedFlagResult } from "@/components/patients/red-flag-utils";
 
 interface RedFlagAlertProps {
   redFlags: RedFlagResult;
+  onReview?: () => void;
 }
 
-export function RedFlagAlert({ redFlags }: RedFlagAlertProps) {
-  if (!redFlags.hasRedFlag) return null;
+export function RedFlagAlert({ redFlags, onReview }: RedFlagAlertProps) {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!redFlags.hasRedFlag || dismissed) return null;
 
   return (
-    <div
-      className="rounded-lg border-l-[3px] border-l-destructive px-4 py-3"
-      style={{
-        background: "color-mix(in srgb, var(--destructive) 8%, transparent)",
-      }}
-    >
-      <div className="flex items-start gap-3">
-        <ShieldAlert className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Red flag — doctor review required</p>
-          <p className="text-sm text-muted-foreground mt-0.5">{redFlags.triggers[0]}</p>
+    <Alert variant="danger">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <AlertTitle>Doctor review required</AlertTitle>
+          <AlertBody>{redFlags.triggers.join(". ")}</AlertBody>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="ghost" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-status-danger-border text-status-danger-fg hover:bg-status-danger-bg/80"
+            onClick={() => setDismissed(true)}
+          >
             Dismiss
           </Button>
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            Review
+          <Button size="sm" onClick={onReview}>
+            Review now
           </Button>
         </div>
       </div>
-    </div>
+    </Alert>
   );
 }
