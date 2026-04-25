@@ -25,6 +25,12 @@ export const dataGridSx: SxProps<Theme> = {
   "& .MuiDataGrid-columnHeader": {
     padding: "0 16px",
   },
+  "& .MuiDataGrid-columnHeaderCheckbox": {
+    padding: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   "& .MuiDataGrid-columnHeaderTitle": {
     fontWeight: 500,
     fontSize: 12,

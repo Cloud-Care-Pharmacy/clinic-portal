@@ -498,6 +498,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           checkboxSelection
           disableRowSelectionOnClick
           disableColumnMenu
+          columnHeaderHeight={44}
           sortModel={sortModel}
           onSortModelChange={setSortModel}
           pageSizeOptions={[10, 25, 50]}
