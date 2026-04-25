@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatients } from "@/lib/hooks/use-patients";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import type { PatientMapping, ParchmentPrescription } from "@/types";
 
 const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
@@ -117,7 +117,7 @@ function PrescriptionGrid({ patientId }: { patientId: string }) {
 
   if (error)
     return (
-      <div className="text-red-600 text-sm">
+      <div className="text-destructive text-sm">
         Failed to load prescriptions: {error.message}
       </div>
     );

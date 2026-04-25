@@ -9,10 +9,7 @@ import {
   Eye,
   Trash2,
   Copy,
-  Search,
   SlidersHorizontal,
-  X,
-  CirclePlus,
   ArrowUp,
   ArrowDown,
   Funnel,
@@ -26,7 +23,6 @@ import {
   type GridSortModel,
 } from "@mui/x-data-grid";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -35,10 +31,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { cn, dataGridSx } from "@/lib/utils";
+import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
+import { cn } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import type { PatientMapping } from "@/types";
 
 interface PatientTableProps {
@@ -196,133 +193,6 @@ const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
   created_at: "Created",
 };
 
-function FilterBar({
-  searchQuery,
-  onSearchChange,
-  statusFilters,
-  onStatusFiltersChange,
-  columnVisibility,
-  onColumnVisibilityChange,
-  viewMenuOpen,
-  onViewMenuOpenChange,
-}: {
-  searchQuery: string;
-  onSearchChange: (value: string) => void;
-  statusFilters: StatusFilter[];
-  onStatusFiltersChange: (filters: StatusFilter[]) => void;
-  columnVisibility: ColumnVisibility;
-  onColumnVisibilityChange: (visibility: ColumnVisibility) => void;
-  viewMenuOpen: boolean;
-  onViewMenuOpenChange: (open: boolean) => void;
-}) {
-  const toggleStatus = (status: StatusFilter) => {
-    if (statusFilters.includes(status)) {
-      onStatusFiltersChange(statusFilters.filter((s) => s !== status));
-    } else {
-      onStatusFiltersChange([...statusFilters, status]);
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-3 mb-4">
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Filter patients..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-8 w-[250px] h-9"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Status filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
-              statusFilters.length > 0
-                ? "border-primary/50 bg-primary/5"
-                : "border-border"
-            )}
-          >
-            <CirclePlus className="size-4 text-muted-foreground" />
-            Status
-            {statusFilters.length > 0 && (
-              <Badge
-                variant="outline"
-                className="ml-1 rounded-md px-1.5 py-0 text-xs font-normal bg-primary/10 border-primary/20"
-              >
-                {statusFilters.length}
-              </Badge>
-            )}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" sideOffset={4} className="w-[240px]">
-            {STATUS_OPTIONS.map((status) => (
-              <DropdownMenuCheckboxItem
-                key={status}
-                checked={statusFilters.includes(status)}
-                onClick={() => toggleStatus(status)}
-              >
-                {status}
-              </DropdownMenuCheckboxItem>
-            ))}
-            {statusFilters.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onStatusFiltersChange([])}>
-                  Clear filters
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* Column visibility (View) */}
-        <DropdownMenu open={viewMenuOpen} onOpenChange={onViewMenuOpenChange}>
-          <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
-            <SlidersHorizontal className="size-4 text-muted-foreground" />
-            View
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" sideOffset={4} className="w-[240px]">
-            {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map((key) => (
-              <DropdownMenuCheckboxItem
-                key={key}
-                checked={columnVisibility[key]}
-                onClick={() =>
-                  onColumnVisibilityChange({
-                    ...columnVisibility,
-                    [key]: !columnVisibility[key],
-                  })
-                }
-              >
-                {COLUMN_LABELS[key]}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Link href="/patients/new">
-          <Button size="sm" className="h-9">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Patient
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 export function PatientTable({ patients, loading }: PatientTableProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -332,6 +202,19 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
   );
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+
+  const statusFilterDefs: FilterDefinition[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        options: STATUS_OPTIONS as string[],
+        value: statusFilters as string[],
+        onChange: (v: string[]) => setStatusFilters(v as StatusFilter[]),
+      },
+    ],
+    [statusFilters]
+  );
 
   const handleCopyEmail = useCallback((email: string) => {
     navigator.clipboard.writeText(email);
@@ -391,7 +274,13 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       headerName: "Name",
       flex: 1,
       minWidth: 160,
-      renderHeader: () => <ColumnHeaderMenu field="patient_name" headerName="Name" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="patient_name"
+          headerName="Name"
+          {...columnHeaderProps}
+        />
+      ),
       valueGetter: (_value: unknown, row: PatientMapping) => {
         const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
         return name || "—";
@@ -402,13 +291,25 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       headerName: "Email",
       flex: 1,
       minWidth: 220,
-      renderHeader: () => <ColumnHeaderMenu field="original_email" headerName="Email" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="original_email"
+          headerName="Email"
+          {...columnHeaderProps}
+        />
+      ),
     },
     {
       field: "date_of_birth",
       headerName: "Date of Birth",
       width: 130,
-      renderHeader: () => <ColumnHeaderMenu field="date_of_birth" headerName="Date of Birth" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="date_of_birth"
+          headerName="Date of Birth"
+          {...columnHeaderProps}
+        />
+      ),
       valueFormatter: (value: string | null) =>
         value
           ? new Date(value).toLocaleDateString("en-AU", {
@@ -422,14 +323,22 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       field: "mobile",
       headerName: "Mobile",
       width: 140,
-      renderHeader: () => <ColumnHeaderMenu field="mobile" headerName="Mobile" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu field="mobile" headerName="Mobile" {...columnHeaderProps} />
+      ),
       valueFormatter: (value: string | null) => value ?? "—",
     },
     {
       field: "location",
       headerName: "Location",
       width: 160,
-      renderHeader: () => <ColumnHeaderMenu field="location" headerName="Location" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="location"
+          headerName="Location"
+          {...columnHeaderProps}
+        />
+      ),
       valueGetter: (_value: unknown, row: PatientMapping) => {
         const parts = [row.city, row.state].filter(Boolean);
         return parts.length > 0 ? parts.join(", ") : "—";
@@ -440,13 +349,25 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       headerName: "Generated Email",
       flex: 1,
       minWidth: 250,
-      renderHeader: () => <ColumnHeaderMenu field="generated_email" headerName="Generated Email" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="generated_email"
+          headerName="Generated Email"
+          {...columnHeaderProps}
+        />
+      ),
     },
     {
       field: "halaxy_patient_id",
       headerName: "PMS ID",
       width: 140,
-      renderHeader: () => <ColumnHeaderMenu field="halaxy_patient_id" headerName="PMS ID" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="halaxy_patient_id"
+          headerName="PMS ID"
+          {...columnHeaderProps}
+        />
+      ),
       valueFormatter: (value: string | null) => value ?? "—",
     },
     {
@@ -456,7 +377,13 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       sortable: true,
       type: "singleSelect",
       valueOptions: ["Linked", "Pending"],
-      renderHeader: () => <ColumnHeaderMenu field="pms_status" headerName="Status" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="pms_status"
+          headerName="Status"
+          {...columnHeaderProps}
+        />
+      ),
       valueGetter: (_value: unknown, row: PatientMapping) =>
         row.halaxy_patient_id ? "Linked" : "Pending",
       renderCell: (params) => <PmsStatusCell value={params.row.halaxy_patient_id} />,
@@ -465,7 +392,13 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       field: "created_at",
       headerName: "Created",
       width: 140,
-      renderHeader: () => <ColumnHeaderMenu field="created_at" headerName="Created" {...columnHeaderProps} />,
+      renderHeader: () => (
+        <ColumnHeaderMenu
+          field="created_at"
+          headerName="Created"
+          {...columnHeaderProps}
+        />
+      ),
       valueFormatter: (value: string) =>
         new Date(value).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -515,14 +448,46 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
   return (
     <div style={{ width: "100%" }}>
       <FilterBar
+        searchPlaceholder="Filter patients…"
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        statusFilters={statusFilters}
-        onStatusFiltersChange={setStatusFilters}
-        columnVisibility={columnVisibility}
-        onColumnVisibilityChange={setColumnVisibility}
-        viewMenuOpen={viewMenuOpen}
-        onViewMenuOpenChange={setViewMenuOpen}
+        filters={statusFilterDefs}
+        resultCount={filteredPatients.length}
+        resultLabel="patients"
+        trailing={
+          <>
+            <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
+              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
+                <SlidersHorizontal className="size-4 text-muted-foreground" />
+                View
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={4} className="w-[240px]">
+                {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
+                  (key) => (
+                    <DropdownMenuCheckboxItem
+                      key={key}
+                      checked={columnVisibility[key]}
+                      onClick={() =>
+                        setColumnVisibility((prev) => ({
+                          ...prev,
+                          [key]: !prev[key],
+                        }))
+                      }
+                    >
+                      {COLUMN_LABELS[key]}
+                    </DropdownMenuCheckboxItem>
+                  )
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Link href="/patients/new">
+              <Button size="sm" className="h-9">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Patient
+              </Button>
+            </Link>
+          </>
+        }
       />
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
@@ -544,9 +509,6 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           }
           sx={{
             ...dataGridSx,
-            border: "none",
-            borderRadius: 0,
-            cursor: "pointer",
             "& .MuiDataGrid-menuIcon": { display: "none" },
             "& .MuiDataGrid-sortIcon": { display: "none" },
             "& .MuiDataGrid-iconButtonContainer": { display: "none" },

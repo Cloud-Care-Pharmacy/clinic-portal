@@ -1,31 +1,42 @@
-import { Inbox } from "lucide-react";
+import { Inbox, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface EmptyStateProps {
-  icon?: React.ReactNode;
+  /** Lucide icon component (not a rendered element) */
+  icon?: LucideIcon;
   title: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Show a dashed border card surface (for drop-zone or first-use) */
+  dashed?: boolean;
+  className?: string;
 }
 
 export function EmptyState({
-  icon,
+  icon: Icon = Inbox,
   title,
   description,
   actionLabel,
   onAction,
+  dashed,
+  className,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="mx-auto mb-4 text-muted-foreground">
-        {icon ?? <Inbox className="h-12 w-12" />}
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center rounded-xl px-4 py-14 text-center",
+        dashed && "border border-dashed border-border bg-card",
+        className
+      )}
+    >
+      <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
+        <Icon className="size-6 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h3 className="text-base font-medium">{title}</h3>
       {description && (
-        <p className="text-sm text-muted-foreground mt-1 max-w-md">
-          {description}
-        </p>
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
       )}
       {actionLabel && onAction && (
         <Button onClick={onAction} className="mt-4">

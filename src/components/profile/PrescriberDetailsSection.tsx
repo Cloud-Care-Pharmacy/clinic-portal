@@ -122,7 +122,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
             </div>
             <div className="space-y-2">
               <Label htmlFor="pd-qualifications">
-                Qualifications <span className="text-red-500">*</span>
+                Qualifications <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="pd-qualifications"
@@ -131,14 +131,14 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                 {...form.register("qualifications")}
               />
               {form.formState.errors.qualifications && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.qualifications.message}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="pd-specialty">
-                Specialty <span className="text-red-500">*</span>
+                Specialty <span className="text-destructive">*</span>
               </Label>
               <Select
                 value={form.watch("specialty") || undefined}
@@ -161,14 +161,14 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                 </SelectContent>
               </Select>
               {form.formState.errors.specialty && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.specialty.message}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="pd-prescriberNumber">
-                Prescriber # <span className="text-red-500">*</span>
+                Prescriber # <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="pd-prescriberNumber"
@@ -178,7 +178,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                 {...form.register("prescriberNumber")}
               />
               {form.formState.errors.prescriberNumber && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.prescriberNumber.message}
                 </p>
               )}
@@ -212,7 +212,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                 {...form.register("hpii")}
               />
               {form.formState.errors.hpii && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.hpii.message}
                 </p>
               )}

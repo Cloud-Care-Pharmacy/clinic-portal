@@ -83,7 +83,7 @@ export function PrescriberHpiSection({ profile }: PrescriberHpiSectionProps) {
                 {...form.register("hpii")}
               />
               {form.formState.errors.hpii && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.hpii.message}
                 </p>
               )}

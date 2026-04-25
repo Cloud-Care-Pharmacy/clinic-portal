@@ -170,7 +170,7 @@ export function NewConsultationSheet({
               disabled={!!defaultPatientName}
             />
             {form.formState.errors.patientName && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {form.formState.errors.patientName.message}
               </p>
             )}
@@ -184,7 +184,7 @@ export function NewConsultationSheet({
               {...form.register("doctorName")}
             />
             {form.formState.errors.doctorName && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {form.formState.errors.doctorName.message}
               </p>
             )}
@@ -301,7 +301,7 @@ export function NewConsultationSheet({
             </div>
 
             {form.formState.errors.scheduledAt && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {form.formState.errors.scheduledAt.message}
               </p>
             )}

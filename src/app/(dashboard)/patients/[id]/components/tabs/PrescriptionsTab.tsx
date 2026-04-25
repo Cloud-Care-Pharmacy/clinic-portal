@@ -1,7 +1,7 @@
 "use client";
 
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";

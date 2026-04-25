@@ -215,7 +215,9 @@ function DateOfBirthPicker({
           />
         </PopoverContent>
       </Popover>
-      {hasError && <p className="text-sm text-red-500">Date of birth is required</p>}
+      {hasError && (
+        <p className="text-sm text-destructive">Date of birth is required</p>
+      )}
     </div>
   );
 }
@@ -383,7 +385,7 @@ export function ProfileTab({
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input id="firstName" {...form.register("firstName")} />
                 {form.formState.errors.firstName && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.firstName.message}
                   </p>
                 )}
@@ -392,7 +394,7 @@ export function ProfileTab({
                 <Label htmlFor="lastName">Last Name *</Label>
                 <Input id="lastName" {...form.register("lastName")} />
                 {form.formState.errors.lastName && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.lastName.message}
                   </p>
                 )}
@@ -412,7 +414,7 @@ export function ProfileTab({
                   {...form.register("gender")}
                 />
                 {form.formState.errors.gender && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.gender.message}
                   </p>
                 )}
@@ -421,7 +423,7 @@ export function ProfileTab({
                 <Label htmlFor="mobile">Mobile *</Label>
                 <Input id="mobile" type="tel" {...form.register("mobile")} />
                 {form.formState.errors.mobile && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.mobile.message}
                   </p>
                 )}
@@ -433,7 +435,7 @@ export function ProfileTab({
               <Label htmlFor="streetAddress">Street Address *</Label>
               <Input id="streetAddress" {...form.register("streetAddress")} />
               {form.formState.errors.streetAddress && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.streetAddress.message}
                 </p>
               )}
@@ -443,7 +445,7 @@ export function ProfileTab({
                 <Label htmlFor="city">City *</Label>
                 <Input id="city" {...form.register("city")} />
                 {form.formState.errors.city && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.city.message}
                   </p>
                 )}
@@ -456,7 +458,7 @@ export function ProfileTab({
                 <Label htmlFor="postcode">Postcode *</Label>
                 <Input id="postcode" {...form.register("postcode")} />
                 {form.formState.errors.postcode && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {form.formState.errors.postcode.message}
                   </p>
                 )}

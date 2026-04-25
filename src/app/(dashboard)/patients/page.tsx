@@ -25,7 +25,7 @@ export default function PatientsPage() {
             ))}
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
             Failed to load patients: {error.message}
           </div>
         ) : (

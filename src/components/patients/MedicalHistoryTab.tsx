@@ -15,7 +15,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { cn, dataGridSx } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import {
   Cigarette,
   Wind,
@@ -348,23 +349,21 @@ function MedicalSummaryCard({
             className={cn(
               "rounded-lg border p-4",
               reviewed
-                ? "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
-                : "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
+                ? "border-status-warning-border bg-status-warning-bg"
+                : "border-status-danger-border bg-status-danger-bg"
             )}
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {reviewed ? (
-                  <CheckCircle2 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <CheckCircle2 className="h-5 w-5 text-status-warning-fg" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                  <AlertTriangle className="h-5 w-5 text-status-danger-fg" />
                 )}
                 <span
                   className={cn(
                     "text-sm font-semibold",
-                    reviewed
-                      ? "text-amber-800 dark:text-amber-300"
-                      : "text-red-800 dark:text-red-300"
+                    reviewed ? "text-status-warning-fg" : "text-status-danger-fg"
                   )}
                 >
                   {reviewed
@@ -383,9 +382,7 @@ function MedicalSummaryCard({
             <p
               className={cn(
                 "text-xs mb-3",
-                reviewed
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-red-600 dark:text-red-400"
+                reviewed ? "text-status-warning-fg" : "text-status-danger-fg"
               )}
             >
               {reviewed
@@ -399,8 +396,8 @@ function MedicalSummaryCard({
                   variant="outline"
                   className={cn(
                     reviewed
-                      ? "border-amber-300 text-amber-700 bg-amber-100/50 dark:border-amber-800 dark:text-amber-300 dark:bg-amber-900/30"
-                      : "border-red-300 text-red-700 bg-red-100/50 dark:border-red-800 dark:text-red-300 dark:bg-red-900/30"
+                      ? "border-status-warning-border text-status-warning-fg bg-status-warning-bg"
+                      : "border-status-danger-border text-status-danger-fg bg-status-danger-bg"
                   )}
                 >
                   {trigger}
@@ -409,14 +406,14 @@ function MedicalSummaryCard({
             </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-900 dark:bg-green-950/20">
+          <div className="rounded-lg border border-status-success-border bg-status-success-bg p-4">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <CheckCircle2 className="h-5 w-5 text-status-success-fg" />
               <div>
-                <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                <p className="text-sm font-medium text-status-success-fg">
                   No Red Flags
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-400">
+                <p className="text-xs text-status-success-fg">
                   All medical history questions answered negatively — no doctor review
                   required.
                 </p>

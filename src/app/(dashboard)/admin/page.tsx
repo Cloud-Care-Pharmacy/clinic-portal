@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Staff } from "@/types";
@@ -137,7 +137,7 @@ export default function AdminPage() {
               <AlertDialogAction
                 onClick={() => {
                   setStaff((prev) => prev.filter((s) => s.id !== params.row.id));
-                  toast.success(`${params.row.name} removed`);
+                  toast.success("Staff member removed");
                 }}
                 className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               >
@@ -167,7 +167,7 @@ export default function AdminPage() {
     setNewEmail("");
     setNewRole("staff");
     setAddOpen(false);
-    toast.success(`${newName} added as ${newRole}`);
+    toast.success("Staff member added");
   };
 
   return (

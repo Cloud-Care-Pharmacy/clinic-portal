@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";

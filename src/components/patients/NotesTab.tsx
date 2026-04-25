@@ -4,7 +4,17 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pin, PinOff, Trash2, StickyNote, Stethoscope, Pill, CalendarCheck, FileText, User } from "lucide-react";
+import {
+  Pin,
+  PinOff,
+  Trash2,
+  StickyNote,
+  Stethoscope,
+  Pill,
+  CalendarCheck,
+  FileText,
+  User,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,10 +73,10 @@ const CATEGORY_LABELS: Record<NoteCategory, string> = {
 };
 
 const CATEGORY_COLORS: Record<NoteCategory, string> = {
-  clinical: "bg-blue-100 text-blue-800",
-  pharmacy: "bg-green-100 text-green-800",
-  "follow-up": "bg-amber-100 text-amber-800",
-  general: "bg-gray-100 text-gray-800",
+  clinical: "bg-status-info-bg text-status-info-fg",
+  pharmacy: "bg-status-success-bg text-status-success-fg",
+  "follow-up": "bg-status-warning-bg text-status-warning-fg",
+  general: "bg-status-neutral-bg text-status-neutral-fg",
 };
 
 // ---- AddNoteSheet ----
@@ -146,7 +156,7 @@ function AddNoteSheet({
               {...form.register("title")}
             />
             {form.formState.errors.title && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {form.formState.errors.title.message}
               </p>
             )}
@@ -181,7 +191,7 @@ function AddNoteSheet({
               }
             />
             {form.formState.errors.content && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 {form.formState.errors.content.message}
               </p>
             )}
@@ -196,9 +206,7 @@ function AddNoteSheet({
             </div>
             <Switch
               checked={isPinnedValue}
-              onCheckedChange={(checked) =>
-                form.setValue("isPinned", checked === true)
-              }
+              onCheckedChange={(checked) => form.setValue("isPinned", checked === true)}
             />
           </div>
 
@@ -272,7 +280,7 @@ function NoteCard({
       {/* Left icon */}
       <div
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground ${
-          note.isPinned ? "border-amber-300 text-amber-600" : ""
+          note.isPinned ? "border-status-warning-border text-status-warning-fg" : ""
         }`}
       >
         {CATEGORY_ICONS[note.category]}
@@ -281,7 +289,7 @@ function NoteCard({
       {/* Card */}
       <Card
         className={`flex-1 ${
-          note.isPinned ? "border-amber-300 bg-amber-50/50" : ""
+          note.isPinned ? "border-status-warning-border bg-status-warning-bg" : ""
         }`}
       >
         <CardContent className="p-4">
@@ -297,7 +305,7 @@ function NoteCard({
                 <p className="text-sm font-semibold leading-tight">
                   {note.title}
                   {note.isPinned && (
-                    <Pin className="inline-block ml-1.5 h-3 w-3 text-amber-600" />
+                    <Pin className="inline-block ml-1.5 h-3 w-3 text-status-warning-fg" />
                   )}
                 </p>
 
@@ -351,7 +359,7 @@ function NoteCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 text-red-500 hover:text-red-700"
+                className="h-7 w-7 text-destructive hover:text-destructive"
                 onClick={onDelete}
                 disabled={isDeleting}
                 title="Delete note"
@@ -399,7 +407,9 @@ export function NotesTab({ patientId }: { patientId: string }) {
 
   if (error) {
     return (
-      <div className="text-red-600 text-sm">Failed to load notes: {error.message}</div>
+      <div className="text-destructive text-sm">
+        Failed to load notes: {error.message}
+      </div>
     );
   }
 
@@ -417,7 +427,7 @@ export function NotesTab({ patientId }: { patientId: string }) {
 
       {notes.length === 0 ? (
         <EmptyState
-          icon={<StickyNote className="h-12 w-12" />}
+          icon={StickyNote}
           title="No notes yet"
           description="Add your first note to start documenting patient interactions."
           actionLabel="Add Note"

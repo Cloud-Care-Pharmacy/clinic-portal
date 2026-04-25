@@ -18,14 +18,14 @@ export default function DashboardError({
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <Card className="max-w-md w-full border-red-200 bg-red-50">
+      <Card className="max-w-md w-full border-status-danger-border bg-status-danger-bg">
         <CardContent className="flex flex-col items-center justify-center py-10 gap-4 text-center">
-          <AlertCircle className="h-10 w-10 text-red-500" />
+          <AlertCircle className="h-10 w-10 text-destructive" />
           <div>
-            <p className="text-lg font-semibold text-red-800">
+            <p className="text-lg font-semibold text-status-danger-fg">
               Something went wrong
             </p>
-            <p className="text-sm text-red-600 mt-1">
+            <p className="text-sm text-status-danger-fg mt-1">
               {error.message || "An unexpected error occurred."}
             </p>
           </div>

@@ -71,16 +71,7 @@ export default function DashboardPage() {
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {statCards.map((stat) => (
-              <Card
-                key={stat.title}
-                className="overflow-hidden"
-                style={{
-                  background:
-                    "linear-gradient(155deg, #faf8f2 0%, #f5f2e8 55%, #ede9dc 100%)",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.55), 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent), 0 1px 2px rgba(61,57,41,0.04)",
-                }}
-              >
+              <Card key={stat.title} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-[15px] font-medium text-foreground/75">
                     {stat.title}

@@ -15,8 +15,8 @@ export default function AuthError({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl bg-white px-8 py-10 shadow-xl gap-4">
-      <p className="text-lg font-semibold text-red-800">
+    <div className="flex flex-col items-center justify-center rounded-[20px] bg-card border border-border px-8 py-10 shadow-lg gap-4">
+      <p className="text-lg font-semibold text-status-danger-fg">
         Authentication error
       </p>
       <p className="text-sm text-muted-foreground">

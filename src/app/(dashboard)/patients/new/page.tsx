@@ -149,14 +149,14 @@ function Step1PersonalInfo() {
           <Label htmlFor="firstName">First Name *</Label>
           <Input id="firstName" {...register("firstName")} />
           {errors.firstName && (
-            <p className="text-sm text-red-500">{errors.firstName.message}</p>
+            <p className="text-sm text-destructive">{errors.firstName.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName">Last Name *</Label>
           <Input id="lastName" {...register("lastName")} />
           {errors.lastName && (
-            <p className="text-sm text-red-500">{errors.lastName.message}</p>
+            <p className="text-sm text-destructive">{errors.lastName.message}</p>
           )}
         </div>
       </div>
@@ -165,14 +165,14 @@ function Step1PersonalInfo() {
           <Label htmlFor="email">Email *</Label>
           <Input id="email" type="email" {...register("email")} />
           {errors.email && (
-            <p className="text-sm text-red-500">{errors.email.message}</p>
+            <p className="text-sm text-destructive">{errors.email.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="mobile">Mobile *</Label>
           <Input id="mobile" type="tel" {...register("mobile")} />
           {errors.mobile && (
-            <p className="text-sm text-red-500">{errors.mobile.message}</p>
+            <p className="text-sm text-destructive">{errors.mobile.message}</p>
           )}
         </div>
       </div>
@@ -181,21 +181,21 @@ function Step1PersonalInfo() {
           <Label htmlFor="dobDay">Day *</Label>
           <Input id="dobDay" placeholder="DD" {...register("dobDay")} />
           {errors.dobDay && (
-            <p className="text-sm text-red-500">{errors.dobDay.message}</p>
+            <p className="text-sm text-destructive">{errors.dobDay.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="dobMonth">Month *</Label>
           <Input id="dobMonth" placeholder="MM" {...register("dobMonth")} />
           {errors.dobMonth && (
-            <p className="text-sm text-red-500">{errors.dobMonth.message}</p>
+            <p className="text-sm text-destructive">{errors.dobMonth.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="dobYear">Year *</Label>
           <Input id="dobYear" placeholder="YYYY" {...register("dobYear")} />
           {errors.dobYear && (
-            <p className="text-sm text-red-500">{errors.dobYear.message}</p>
+            <p className="text-sm text-destructive">{errors.dobYear.message}</p>
           )}
         </div>
       </div>
@@ -207,21 +207,23 @@ function Step1PersonalInfo() {
           placeholder="e.g. Male, Female, Other"
         />
         {errors.gender && (
-          <p className="text-sm text-red-500">{errors.gender.message}</p>
+          <p className="text-sm text-destructive">{errors.gender.message}</p>
         )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="streetAddress">Street Address *</Label>
         <Input id="streetAddress" {...register("streetAddress")} />
         {errors.streetAddress && (
-          <p className="text-sm text-red-500">{errors.streetAddress.message}</p>
+          <p className="text-sm text-destructive">{errors.streetAddress.message}</p>
         )}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="city">City *</Label>
           <Input id="city" {...register("city")} />
-          {errors.city && <p className="text-sm text-red-500">{errors.city.message}</p>}
+          {errors.city && (
+            <p className="text-sm text-destructive">{errors.city.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="state">State</Label>
@@ -231,7 +233,7 @@ function Step1PersonalInfo() {
           <Label htmlFor="postcode">Postcode *</Label>
           <Input id="postcode" {...register("postcode")} />
           {errors.postcode && (
-            <p className="text-sm text-red-500">{errors.postcode.message}</p>
+            <p className="text-sm text-destructive">{errors.postcode.message}</p>
           )}
         </div>
       </div>
@@ -239,7 +241,7 @@ function Step1PersonalInfo() {
         <Label htmlFor="country">Country *</Label>
         <Input id="country" {...register("country")} defaultValue="Australia" />
         {errors.country && (
-          <p className="text-sm text-red-500">{errors.country.message}</p>
+          <p className="text-sm text-destructive">{errors.country.message}</p>
         )}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -284,7 +286,7 @@ function Step2SmokingStatus() {
         ))}
       </RadioGroup>
       {errors.smokingStatus && (
-        <p className="text-sm text-red-500">{errors.smokingStatus.message}</p>
+        <p className="text-sm text-destructive">{errors.smokingStatus.message}</p>
       )}
     </div>
   );
@@ -348,7 +350,7 @@ function Step4VapingStatus() {
         ))}
       </RadioGroup>
       {errors.vapingStatus && (
-        <p className="text-sm text-red-500">{errors.vapingStatus.message}</p>
+        <p className="text-sm text-destructive">{errors.vapingStatus.message}</p>
       )}
     </div>
   );
@@ -429,7 +431,9 @@ function Step6MedicalHistory() {
           </div>
         </RadioGroup>
         {errors.hasMedicalConditions && (
-          <p className="text-sm text-red-500">{errors.hasMedicalConditions.message}</p>
+          <p className="text-sm text-destructive">
+            {errors.hasMedicalConditions.message}
+          </p>
         )}
       </div>
 
@@ -483,7 +487,7 @@ function Step6MedicalHistory() {
           </div>
         </RadioGroup>
         {errors.takesMedication && (
-          <p className="text-sm text-red-500">{errors.takesMedication.message}</p>
+          <p className="text-sm text-destructive">{errors.takesMedication.message}</p>
         )}
       </div>
 
@@ -537,7 +541,7 @@ function Step6MedicalHistory() {
           </div>
         </RadioGroup>
         {errors.cardiovascular && (
-          <p className="text-sm text-red-500">{errors.cardiovascular.message}</p>
+          <p className="text-sm text-destructive">{errors.cardiovascular.message}</p>
         )}
       </div>
 
@@ -561,7 +565,7 @@ function Step6MedicalHistory() {
           </div>
         </RadioGroup>
         {errors.pregnancy && (
-          <p className="text-sm text-red-500">{errors.pregnancy.message}</p>
+          <p className="text-sm text-destructive">{errors.pregnancy.message}</p>
         )}
       </div>
 
@@ -623,17 +627,19 @@ function Step7IDVerification() {
     <div className="space-y-4">
       <Label>Upload your proof of age document *</Label>
       <p className="text-sm text-muted-foreground">
-        Please upload a photo of your driver&apos;s licence or other government-issued ID.
-        Accepted formats: JPEG, PNG, HEIC, WebP, PDF. Max 10 MB.
+        Please upload a photo of your driver&apos;s licence or other government-issued
+        ID. Accepted formats: JPEG, PNG, HEIC, WebP, PDF. Max 10 MB.
       </p>
       <Input
         type="file"
         accept=".jpg,.jpeg,.png,.heic,.heif,.webp,.pdf"
         onChange={handleFile}
       />
-      {fileName && <p className="text-sm text-green-600">✓ Uploaded: {fileName}</p>}
+      {fileName && (
+        <p className="text-sm text-status-success-fg">Uploaded: {fileName}</p>
+      )}
       {errors.proofOfAge && (
-        <p className="text-sm text-red-500">{errors.proofOfAge.message}</p>
+        <p className="text-sm text-destructive">{errors.proofOfAge.message}</p>
       )}
     </div>
   );
@@ -685,7 +691,9 @@ function Step8Consent() {
         </Label>
       </div>
       {errors.safetyAcknowledgment && (
-        <p className="text-sm text-red-500">{errors.safetyAcknowledgment.message}</p>
+        <p className="text-sm text-destructive">
+          {errors.safetyAcknowledgment.message}
+        </p>
       )}
     </div>
   );

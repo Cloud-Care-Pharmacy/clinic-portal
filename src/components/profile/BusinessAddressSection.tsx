@@ -102,7 +102,7 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="ba-businessPhone">
-                Business phone <span className="text-red-500">*</span>
+                Business phone <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="ba-businessPhone"
@@ -112,7 +112,7 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
                 {...form.register("businessPhone")}
               />
               {form.formState.errors.businessPhone && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.businessPhone.message}
                 </p>
               )}
@@ -125,7 +125,7 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
                 {...form.register("businessEmail")}
               />
               {form.formState.errors.businessEmail && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.businessEmail.message}
                 </p>
               )}

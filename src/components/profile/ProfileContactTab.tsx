@@ -130,7 +130,7 @@ export function ProfileContactTab({
                 {...form.register("dateOfBirth")}
               />
               {form.formState.errors.dateOfBirth && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.dateOfBirth.message}
                 </p>
               )}
@@ -155,7 +155,7 @@ export function ProfileContactTab({
                 </SelectContent>
               </Select>
               {form.formState.errors.gender && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.gender.message}
                 </p>
               )}
@@ -172,7 +172,7 @@ export function ProfileContactTab({
                 {...form.register("phone")}
               />
               {form.formState.errors.phone && (
-                <p className="text-sm text-red-500">
+                <p className="text-sm text-destructive">
                   {form.formState.errors.phone.message}
                 </p>
               )}

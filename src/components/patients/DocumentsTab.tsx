@@ -2,12 +2,9 @@
 
 import { useState, useRef } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { dataGridSx, cn } from "@/lib/utils";
-import type {
-  PatientDocument,
-  DocumentCategory,
-  DocumentStatus,
-} from "@/types";
+import { cn } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
+import type { PatientDocument, DocumentCategory, DocumentStatus } from "@/types";
 import {
   usePatientDocuments,
   useUploadDocument,
@@ -105,19 +102,11 @@ interface DocumentsTabProps {
 }
 
 export function DocumentsTab({ patientId }: DocumentsTabProps) {
-  const [categoryFilter, setCategoryFilter] = useState<
-    DocumentCategory | "all"
-  >("all");
-  const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">(
-    "all"
-  );
+  const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(
-    null
-  );
-  const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(
-    null
-  );
+  const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const queryOpts: {
@@ -127,10 +116,7 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
   if (categoryFilter !== "all") queryOpts.category = categoryFilter;
   if (statusFilter !== "all") queryOpts.status = statusFilter;
 
-  const { data, isLoading, error } = usePatientDocuments(
-    patientId,
-    queryOpts
-  );
+  const { data, isLoading, error } = usePatientDocuments(patientId, queryOpts);
   const deleteMutation = useDeleteDocument(patientId);
   const verifyMutation = useVerifyDocument(patientId);
   const syncMutation = useSyncEmailAttachments(patientId);
@@ -182,7 +168,9 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
   const handleSync = () => {
     syncMutation.mutate(undefined, {
       onSuccess: (res) => {
-        toast.success(`Synced ${res.data.synced} attachment(s), skipped ${res.data.skipped}`);
+        toast.success(
+          `Synced ${res.data.synced} attachment(s), skipped ${res.data.skipped}`
+        );
       },
       onError: (err) => toast.error(err.message),
     });
@@ -205,8 +193,7 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
       field: "category",
       headerName: "Category",
       width: 160,
-      valueFormatter: (value: DocumentCategory) =>
-        CATEGORY_LABELS[value] ?? value,
+      valueFormatter: (value: DocumentCategory) => CATEGORY_LABELS[value] ?? value,
     },
     {
       field: "file_size",
@@ -405,8 +392,8 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete &ldquo;{deleteTarget?.filename}&rdquo;. This
-              action cannot be undone.
+              This will delete &ldquo;{deleteTarget?.filename}&rdquo;. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -462,9 +449,7 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
             <Button
               variant="destructive"
               onClick={handleReject}
-              disabled={
-                !rejectionReason.trim() || verifyMutation.isPending
-              }
+              disabled={!rejectionReason.trim() || verifyMutation.isPending}
             >
               Reject
             </Button>
@@ -511,9 +496,7 @@ function UploadDialog({
       return;
     }
     if (!ALLOWED_TYPES.includes(selected.type)) {
-      setFileError(
-        "Unsupported file type. Allowed: PDF, JPEG, PNG, HEIC, HEIF, WebP"
-      );
+      setFileError("Unsupported file type. Allowed: PDF, JPEG, PNG, HEIC, HEIF, WebP");
       setFile(null);
       return;
     }
@@ -570,9 +553,7 @@ function UploadDialog({
               accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,.webp"
               onChange={handleFileChange}
             />
-            {fileError && (
-              <p className="text-sm text-destructive">{fileError}</p>
-            )}
+            {fileError && <p className="text-sm text-destructive">{fileError}</p>}
             {file && (
               <p className="text-xs text-muted-foreground">
                 {file.name} ({formatFileSize(file.size)})
@@ -647,7 +628,9 @@ function UploadDialog({
                       setExpiryDate("");
                     }
                   }}
-                  defaultMonth={expiryDate ? new Date(expiryDate + "T00:00:00") : new Date()}
+                  defaultMonth={
+                    expiryDate ? new Date(expiryDate + "T00:00:00") : new Date()
+                  }
                   startMonth={new Date()}
                   endMonth={new Date(2040, 11)}
                 />
@@ -665,10 +648,7 @@ function UploadDialog({
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleUpload}
-            disabled={!file || uploadMutation.isPending}
-          >
+          <Button onClick={handleUpload} disabled={!file || uploadMutation.isPending}>
             {uploadMutation.isPending ? "Uploading…" : "Upload"}
           </Button>
         </DialogFooter>

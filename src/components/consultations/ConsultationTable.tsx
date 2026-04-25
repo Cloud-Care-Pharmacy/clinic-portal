@@ -2,22 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
-import { Search, X, CirclePlus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { cn, dataGridSx } from "@/lib/utils";
+import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
 
 interface ConsultationTableProps {
@@ -44,144 +34,6 @@ const STATUS_OPTIONS: StatusFilterOption[] = [
 ];
 const TYPE_OPTIONS: TypeFilterOption[] = ["initial", "follow-up", "renewal"];
 
-function FilterBar({
-  searchQuery,
-  onSearchChange,
-  statusFilters,
-  onStatusFiltersChange,
-  typeFilters,
-  onTypeFiltersChange,
-}: {
-  searchQuery: string;
-  onSearchChange: (v: string) => void;
-  statusFilters: StatusFilterOption[];
-  onStatusFiltersChange: (f: StatusFilterOption[]) => void;
-  typeFilters: TypeFilterOption[];
-  onTypeFiltersChange: (f: TypeFilterOption[]) => void;
-}) {
-  const toggleStatus = (s: StatusFilterOption) =>
-    statusFilters.includes(s)
-      ? onStatusFiltersChange(statusFilters.filter((x) => x !== s))
-      : onStatusFiltersChange([...statusFilters, s]);
-
-  const toggleType = (t: TypeFilterOption) =>
-    typeFilters.includes(t)
-      ? onTypeFiltersChange(typeFilters.filter((x) => x !== t))
-      : onTypeFiltersChange([...typeFilters, t]);
-
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search consultations…"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-8 w-[250px] h-9"
-        />
-        {searchQuery && (
-          <button
-            onClick={() => onSearchChange("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
-
-      {/* Status filter */}
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 h-9 text-sm font-medium transition-colors hover:bg-muted",
-            statusFilters.length > 0
-              ? "border-primary/50 bg-primary/5"
-              : "border-border"
-          )}
-        >
-          <CirclePlus className="h-4 w-4 text-muted-foreground" />
-          Status
-          {statusFilters.length > 0 && (
-            <Badge
-              variant="outline"
-              className="ml-1 rounded-md px-1.5 py-0 text-xs font-normal bg-primary/10 border-primary/20"
-            >
-              {statusFilters.length}
-            </Badge>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={4}>
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {STATUS_OPTIONS.map((s) => (
-              <DropdownMenuCheckboxItem
-                key={s}
-                checked={statusFilters.includes(s)}
-                onClick={() => toggleStatus(s)}
-              >
-                <span className="capitalize">{s}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-            {statusFilters.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onStatusFiltersChange([])}>
-                  Clear filters
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Type filter */}
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg border border-dashed px-3 h-9 text-sm font-medium transition-colors hover:bg-muted",
-            typeFilters.length > 0 ? "border-primary/50 bg-primary/5" : "border-border"
-          )}
-        >
-          <CirclePlus className="h-4 w-4 text-muted-foreground" />
-          Type
-          {typeFilters.length > 0 && (
-            <Badge
-              variant="outline"
-              className="ml-1 rounded-md px-1.5 py-0 text-xs font-normal bg-primary/10 border-primary/20"
-            >
-              {typeFilters.length}
-            </Badge>
-          )}
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={4}>
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Filter by type</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {TYPE_OPTIONS.map((t) => (
-              <DropdownMenuCheckboxItem
-                key={t}
-                checked={typeFilters.includes(t)}
-                onClick={() => toggleType(t)}
-              >
-                <span className="capitalize">{t}</span>
-              </DropdownMenuCheckboxItem>
-            ))}
-            {typeFilters.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onTypeFiltersChange([])}>
-                  Clear filters
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
-
 export function ConsultationTable({
   consultations,
   loading,
@@ -191,6 +43,26 @@ export function ConsultationTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<StatusFilterOption[]>([]);
   const [typeFilters, setTypeFilters] = useState<TypeFilterOption[]>([]);
+
+  const filters: FilterDefinition[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        options: STATUS_OPTIONS as string[],
+        value: statusFilters as string[],
+        onChange: (v: string[]) => setStatusFilters(v as StatusFilterOption[]),
+      },
+      {
+        key: "type",
+        label: "Type",
+        options: TYPE_OPTIONS as string[],
+        value: typeFilters as string[],
+        onChange: (v: string[]) => setTypeFilters(v as TypeFilterOption[]),
+      },
+    ],
+    [statusFilters, typeFilters]
+  );
 
   const filtered = useMemo(() => {
     let result = consultations;
@@ -280,12 +152,12 @@ export function ConsultationTable({
   return (
     <div style={{ width: "100%" }}>
       <FilterBar
+        searchPlaceholder="Search consultations…"
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        statusFilters={statusFilters}
-        onStatusFiltersChange={setStatusFilters}
-        typeFilters={typeFilters}
-        onTypeFiltersChange={setTypeFilters}
+        filters={filters}
+        resultCount={filtered.length}
+        resultLabel="consultations"
       />
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid

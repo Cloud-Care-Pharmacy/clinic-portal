@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 import type { Consultation, ConsultationType } from "@/types";
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-blue-500",
-  "follow-up": "bg-purple-500",
-  renewal: "bg-green-500",
+  initial: "bg-status-info-fg",
+  "follow-up": "bg-status-accent-fg",
+  renewal: "bg-status-success-fg",
 };
 
 const STATUS_OPACITY: Record<string, string> = {
@@ -307,15 +307,15 @@ export function ConsultationCalendar({
           {/* Legend */}
           <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+              <span className="h-2.5 w-2.5 rounded-full bg-status-info-fg" />
               Initial
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+              <span className="h-2.5 w-2.5 rounded-full bg-status-accent-fg" />
               Follow-up
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <span className="h-2.5 w-2.5 rounded-full bg-status-success-fg" />
               Renewal
             </span>
           </div>
