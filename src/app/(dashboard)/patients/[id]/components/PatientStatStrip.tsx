@@ -1,20 +1,20 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarCheck, Pill, CalendarClock, HeartPulse } from "lucide-react";
+import { CalendarCheck, Pill, CalendarClock } from "lucide-react";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 
-interface StatCardProps {
+interface StatItemProps {
   icon: React.ReactNode;
   iconBg: string;
   value: string;
   label: string;
 }
 
-function StatCard({ icon, iconBg, value, label }: StatCardProps) {
+function StatItem({ icon, iconBg, value, label }: StatItemProps) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3">
+    <div className="flex items-center gap-3 flex-1 px-4 py-3">
       <div
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconBg}`}
       >
@@ -61,17 +61,19 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
 
   if (!patientId || loadingConsults || loadingRx) {
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+      <div className="flex rounded-lg border divide-x">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex-1 px-4 py-3">
+            <Skeleton className="h-12 w-full" />
+          </div>
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <StatCard
+    <div className="flex rounded-lg border divide-x">
+      <StatItem
         icon={<CalendarCheck className="h-4 w-4 text-status-info-fg" />}
         iconBg="bg-status-info-bg"
         value={
@@ -85,13 +87,13 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         }
         label="Last consult"
       />
-      <StatCard
+      <StatItem
         icon={<Pill className="h-4 w-4 text-status-success-fg" />}
         iconBg="bg-status-success-bg"
         value={String(activeMeds)}
         label="Active meds"
       />
-      <StatCard
+      <StatItem
         icon={<CalendarClock className="h-4 w-4 text-status-accent-fg" />}
         iconBg="bg-status-accent-bg"
         value={
@@ -99,16 +101,16 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
             ? new Date(nextAppt.scheduledAt).toLocaleDateString("en-AU", {
                 day: "2-digit",
                 month: "short",
+              }) +
+              ", " +
+              new Date(nextAppt.scheduledAt).toLocaleTimeString("en-AU", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
               })
             : "—"
         }
-        label="Next appt"
-      />
-      <StatCard
-        icon={<HeartPulse className="h-4 w-4 text-status-warning-fg" />}
-        iconBg="bg-status-warning-bg"
-        value="—"
-        label="Conditions"
+        label="Next appointment"
       />
     </div>
   );

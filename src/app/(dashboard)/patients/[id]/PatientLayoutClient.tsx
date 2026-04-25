@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
+import { useConsultations } from "@/lib/hooks/use-consultations";
+import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import { PatientHeader } from "./components/PatientHeader";
@@ -12,14 +14,13 @@ import { RedFlagAlert } from "./components/RedFlagAlert";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { label: "Overview", segment: "" },
-  { label: "Consultations", segment: "consultations" },
-  { label: "Prescriptions", segment: "prescriptions" },
-  { label: "Documents", segment: "documents" },
-  { label: "Clinical History", segment: "clinical" },
-  { label: "Notes", segment: "notes" },
-  { label: "Activity", segment: "activity" },
-] as const;
+  { label: "Overview", segment: "", countKey: null },
+  { label: "Consultations", segment: "consultations", countKey: "consultations" as const },
+  { label: "Prescriptions", segment: "prescriptions", countKey: "prescriptions" as const },
+  { label: "Documents", segment: "documents", countKey: null },
+  { label: "Clinical History", segment: "clinical", countKey: "clinical" as const },
+  { label: "Activity", segment: "activity", countKey: null },
+];
 
 interface PatientLayoutClientProps {
   id: string;
@@ -39,6 +40,16 @@ export default function PatientLayoutClient({
     ? computeRedFlags(latestClinical.data.clinicalData)
     : null;
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
+
+  // Fetch counts for tab badges
+  const { data: consultsData } = useConsultations(id);
+  const { data: rxData } = usePrescriptions(id);
+
+  const tabCounts: Record<string, number | undefined> = {
+    consultations: consultsData?.data?.consultations?.length,
+    prescriptions: rxData?.data?.prescriptions?.length,
+    clinical: undefined, // no easy count endpoint
+  };
 
   const fullName = [patient?.first_name, patient?.last_name]
     .filter(Boolean)
@@ -90,13 +101,14 @@ export default function PatientLayoutClient({
         {TABS.map((tab) => {
           const href = tab.segment ? `${basePath}/${tab.segment}` : basePath;
           const isActive = activeSegment === tab.segment;
+          const count = tab.countKey ? tabCounts[tab.countKey] : undefined;
 
           return (
             <button
               key={tab.segment}
               onClick={() => router.push(href, { scroll: false })}
               className={cn(
-                "relative inline-flex items-center justify-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+                "relative inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors",
                 "hover:text-foreground",
                 isActive
                   ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
@@ -104,6 +116,11 @@ export default function PatientLayoutClient({
               )}
             >
               {tab.label}
+              {count != null && count > 0 && (
+                <span className="inline-flex items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground min-w-5 h-5">
+                  {count}
+                </span>
+              )}
             </button>
           );
         })}
