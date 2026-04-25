@@ -10,11 +10,6 @@ import {
   Trash2,
   Copy,
   SlidersHorizontal,
-  ArrowUp,
-  ArrowDown,
-  Funnel,
-  EyeOff,
-  Columns3,
 } from "lucide-react";
 import {
   DataGrid,
@@ -88,74 +83,6 @@ type StatusFilter = "Linked" | "Pending";
 
 const STATUS_OPTIONS: StatusFilter[] = ["Linked", "Pending"];
 
-function ColumnHeaderMenu({
-  field,
-  headerName,
-  sortModel,
-  onSortModelChange,
-  onHideColumn,
-  onOpenColumnVisibility,
-}: {
-  field: string;
-  headerName: string;
-  sortModel: GridSortModel;
-  onSortModelChange: (model: GridSortModel) => void;
-  onHideColumn: (field: string) => void;
-  onOpenColumnVisibility: () => void;
-}) {
-  const currentSort = sortModel.find((s) => s.field === field);
-
-  return (
-    <div className="flex w-full items-center justify-between">
-      <span className="truncate">{headerName}</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="inline-flex items-center justify-center rounded-md size-8 hover:bg-accent transition-colors ml-1"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <MoreHorizontal className="size-4 text-muted-foreground" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={4} className="w-[220px]">
-          <DropdownMenuItem
-            onClick={() =>
-              onSortModelChange(
-                currentSort?.sort === "asc" ? [] : [{ field, sort: "asc" }]
-              )
-            }
-          >
-            <ArrowUp />
-            Sort ascending
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() =>
-              onSortModelChange(
-                currentSort?.sort === "desc" ? [] : [{ field, sort: "desc" }]
-              )
-            }
-          >
-            <ArrowDown />
-            Sort descending
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Funnel />
-            Filter
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onHideColumn(field)}>
-            <EyeOff />
-            Hide column
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onOpenColumnVisibility}>
-            <Columns3 />
-            Manage columns
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-}
-
 interface ColumnVisibility {
   patient_name: boolean;
   original_email: boolean;
@@ -219,18 +146,6 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
     navigator.clipboard.writeText(email);
   }, []);
 
-  const handleHideColumn = useCallback(
-    (field: string) => {
-      if (field in columnVisibility) {
-        setColumnVisibility((prev) => ({
-          ...prev,
-          [field]: false,
-        }));
-      }
-    },
-    [columnVisibility]
-  );
-
   const filteredPatients = useMemo(() => {
     let result = patients;
 
@@ -257,29 +172,12 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
     return result;
   }, [patients, searchQuery, statusFilters]);
 
-  const columnHeaderProps = useMemo(
-    () => ({
-      sortModel,
-      onSortModelChange: setSortModel,
-      onHideColumn: handleHideColumn,
-      onOpenColumnVisibility: () => setViewMenuOpen(true),
-    }),
-    [sortModel, handleHideColumn]
-  );
-
   const columns: GridColDef<PatientMapping>[] = [
     {
       field: "patient_name",
       headerName: "Name",
       flex: 1,
       minWidth: 160,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="patient_name"
-          headerName="Name"
-          {...columnHeaderProps}
-        />
-      ),
       valueGetter: (_value: unknown, row: PatientMapping) => {
         const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
         return name || "—";
@@ -290,25 +188,11 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       headerName: "Email",
       flex: 1,
       minWidth: 220,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="original_email"
-          headerName="Email"
-          {...columnHeaderProps}
-        />
-      ),
     },
     {
       field: "date_of_birth",
       headerName: "Date of Birth",
       width: 130,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="date_of_birth"
-          headerName="Date of Birth"
-          {...columnHeaderProps}
-        />
-      ),
       valueFormatter: (value: string | null) =>
         value
           ? new Date(value).toLocaleDateString("en-AU", {
@@ -322,22 +206,12 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       field: "mobile",
       headerName: "Mobile",
       width: 140,
-      renderHeader: () => (
-        <ColumnHeaderMenu field="mobile" headerName="Mobile" {...columnHeaderProps} />
-      ),
       valueFormatter: (value: string | null) => value ?? "—",
     },
     {
       field: "location",
       headerName: "Location",
       width: 160,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="location"
-          headerName="Location"
-          {...columnHeaderProps}
-        />
-      ),
       valueGetter: (_value: unknown, row: PatientMapping) => {
         const parts = [row.city, row.state].filter(Boolean);
         return parts.length > 0 ? parts.join(", ") : "—";
@@ -348,25 +222,11 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       headerName: "Generated Email",
       flex: 1,
       minWidth: 250,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="generated_email"
-          headerName="Generated Email"
-          {...columnHeaderProps}
-        />
-      ),
     },
     {
       field: "halaxy_patient_id",
       headerName: "PMS ID",
       width: 140,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="halaxy_patient_id"
-          headerName="PMS ID"
-          {...columnHeaderProps}
-        />
-      ),
       valueFormatter: (value: string | null) => value ?? "—",
     },
     {
@@ -376,13 +236,6 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       sortable: true,
       type: "singleSelect",
       valueOptions: ["Linked", "Pending"],
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="pms_status"
-          headerName="Status"
-          {...columnHeaderProps}
-        />
-      ),
       valueGetter: (_value: unknown, row: PatientMapping) =>
         row.halaxy_patient_id ? "Linked" : "Pending",
       renderCell: (params) => <PmsStatusCell value={params.row.halaxy_patient_id} />,
@@ -391,13 +244,6 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       field: "created_at",
       headerName: "Created",
       width: 140,
-      renderHeader: () => (
-        <ColumnHeaderMenu
-          field="created_at"
-          headerName="Created"
-          {...columnHeaderProps}
-        />
-      ),
       valueFormatter: (value: string) =>
         new Date(value).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -510,8 +356,6 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           sx={{
             ...dataGridSx,
             "& .MuiDataGrid-menuIcon": { display: "none" },
-            "& .MuiDataGrid-sortIcon": { display: "none" },
-            "& .MuiDataGrid-iconButtonContainer": { display: "none" },
           }}
         />
       </div>
