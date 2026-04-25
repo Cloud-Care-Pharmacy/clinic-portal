@@ -233,7 +233,123 @@ code, kbd, pre, .mono { font-family: var(--font-mono); font-size: 0.8125rem; }
     font-family: var(--font-mono);
     font-size: 12px;
   }
-  .space-bar { height: 16px; background: var(--primary); border-radius: 2px; }
+  .space-row > span:first-child { color: var(--foreground); font-weight: 500; }
+  .space-row > span:nth-child(2) { color: var(--muted-foreground); }
+  .space-bar { height: 14px; background: var(--primary); border-radius: 3px; }
+
+  /* ============== 12-column grid demo ============== */
+  .grid-demo { padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+  .grid-demo + .grid-demo { margin-top: 12px; }
+  .grid-demo-label { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); margin-bottom: 10px; letter-spacing: 0.04em; }
+  .grid-demo-cols { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+  .grid-cell {
+    height: 56px;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .grid-cell.muted {
+    background: var(--muted);
+    border-color: var(--border);
+    color: var(--muted-foreground);
+  }
+  /* Background lines showing the 12-column structure */
+  .grid-tracks {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+    height: 24px;
+    margin-bottom: 8px;
+  }
+  .grid-tracks .track {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--muted-foreground) 12%, transparent) 0 4px,
+      transparent 4px 8px
+    );
+    border-radius: 3px;
+  }
+
+  /* ============== Padding-by-surface demo ============== */
+  .pad-demo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 880px) { .pad-demo-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .pad-demo-grid { grid-template-columns: 1fr; } }
+  .pad-demo {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .pad-demo-stage {
+    background: var(--background);
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px);
+    background-size: 4px 4px;
+    border-bottom: 1px solid var(--border);
+    padding: 24px;
+    display: grid;
+    place-items: center;
+    min-height: 130px;
+  }
+  .pad-demo-target {
+    background: var(--card);
+    border: 1px dashed color-mix(in srgb, var(--primary) 50%, transparent);
+    border-radius: 6px;
+    position: relative;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .pad-demo-target::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--primary);
+    opacity: 0.06;
+    pointer-events: none;
+  }
+  .pad-demo-meta {
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .pad-demo-name { font-size: 13px; font-weight: 500; color: var(--foreground); }
+  .pad-demo-val { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+
+  /* ============== Stack spacing visual ============== */
+  .stack-demo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 880px) { .stack-demo-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .stack-demo-grid { grid-template-columns: 1fr; } }
+  .stack-demo {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+  }
+  .stack-demo-name { font-size: 13px; font-weight: 500; color: var(--foreground); margin-bottom: 4px; }
+  .stack-demo-token { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); margin-bottom: 16px; }
+  .stack-demo-stack { display: flex; flex-direction: column; align-items: stretch; }
+  .stack-bar {
+    height: 12px;
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border-radius: 3px;
+  }
+  .stack-bar.short { width: 60%; }
+  .stack-bar.medium { width: 80%; }
 
   /* ============== Radii demo ============== */
   .radii-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -1125,6 +1241,230 @@ code, kbd, pre, .mono { font-family: var(--font-mono); font-size: 0.8125rem; }
       <div class="r"><span class="k">Card padding</span><span class="v">Inside dashboard cards &amp; panels</span><span class="hex">20px</span></div>
       <div class="r"><span class="k">Field spacing</span><span class="v">Vertical gap between form rows</span><span class="hex">16px</span></div>
     </div>
+
+    <h3 class="sub-title">12-column grid</h3>
+    <p class="sec-lead" style="margin-top: 0;">
+      Layouts use a <strong>12-column grid</strong> with a <strong>20px gutter</strong>.
+      Twelve divides cleanly by 2, 3, 4, and 6 — every common split (halves, thirds,
+      quarters, sixths) lands on grid lines without negotiation. Use Tailwind's
+      <code class="inline">grid grid-cols-12 gap-5</code> at the top of any layout that
+      needs more than a single column.
+    </p>
+
+    <div class="grid-demo">
+      <div class="grid-demo-label">12 — every column visible · the canvas</div>
+      <div class="grid-demo-cols">
+        <div class="grid-cell muted">1</div>
+        <div class="grid-cell muted">2</div>
+        <div class="grid-cell muted">3</div>
+        <div class="grid-cell muted">4</div>
+        <div class="grid-cell muted">5</div>
+        <div class="grid-cell muted">6</div>
+        <div class="grid-cell muted">7</div>
+        <div class="grid-cell muted">8</div>
+        <div class="grid-cell muted">9</div>
+        <div class="grid-cell muted">10</div>
+        <div class="grid-cell muted">11</div>
+        <div class="grid-cell muted">12</div>
+      </div>
+    </div>
+    <div class="grid-demo">
+      <div class="grid-demo-label">6 / 6 — two-up · cards on dashboard</div>
+      <div class="grid-demo-cols">
+        <div class="grid-cell" style="grid-column: span 6;">span&nbsp;6</div>
+        <div class="grid-cell" style="grid-column: span 6;">span&nbsp;6</div>
+      </div>
+    </div>
+    <div class="grid-demo">
+      <div class="grid-demo-label">4 / 4 / 4 — three-up · stat cards</div>
+      <div class="grid-demo-cols">
+        <div class="grid-cell" style="grid-column: span 4;">span&nbsp;4</div>
+        <div class="grid-cell" style="grid-column: span 4;">span&nbsp;4</div>
+        <div class="grid-cell" style="grid-column: span 4;">span&nbsp;4</div>
+      </div>
+    </div>
+    <div class="grid-demo">
+      <div class="grid-demo-label">8 / 4 — main + side · patient overview</div>
+      <div class="grid-demo-cols">
+        <div class="grid-cell" style="grid-column: span 8;">span&nbsp;8</div>
+        <div class="grid-cell" style="grid-column: span 4;">span&nbsp;4</div>
+      </div>
+    </div>
+    <div class="grid-demo">
+      <div class="grid-demo-label">3 / 3 / 3 / 3 — four-up · quick stats</div>
+      <div class="grid-demo-cols">
+        <div class="grid-cell" style="grid-column: span 3;">span&nbsp;3</div>
+        <div class="grid-cell" style="grid-column: span 3;">span&nbsp;3</div>
+        <div class="grid-cell" style="grid-column: span 3;">span&nbsp;3</div>
+        <div class="grid-cell" style="grid-column: span 3;">span&nbsp;3</div>
+      </div>
+    </div>
+
+    <div class="row-block" style="margin-top: 16px;">
+      <div class="r"><span class="k">Columns</span><span class="v">Fixed across all viewports — content responds, not the grid</span><span class="hex">12</span></div>
+      <div class="r"><span class="k">Gutter</span><span class="v">Horizontal gap between columns</span><span class="hex">20px</span></div>
+      <div class="r"><span class="k">Row gap</span><span class="v">Vertical gap between grid rows</span><span class="hex">24px</span></div>
+      <div class="r"><span class="k">Common splits</span><span class="v">Two-up · Three-up · Four-up · Sidebar+main · Form pair</span><span class="hex">6/6 · 4/4/4 · 3/3/3/3 · 8/4 · 6/6</span></div>
+    </div>
+
+    <h3 class="sub-title">Breakpoints</h3>
+    <p class="sec-lead" style="margin-top: 0;">
+      Desktop-first. Tablet support is real (clinicians use iPads at point of care);
+      phone support is opportunistic. Match Tailwind's defaults so utilities like
+      <code class="inline">md:grid-cols-2</code> behave predictably.
+    </p>
+    <div class="row-block">
+      <div class="r"><span class="k">sm</span><span class="v">Small phone — single column, stacked everything</span><span class="hex">640px</span></div>
+      <div class="r"><span class="k">md</span><span class="v">Tablet portrait — sidebar collapses, two-up cards</span><span class="hex">768px</span></div>
+      <div class="r"><span class="k">lg</span><span class="v">Tablet landscape / small laptop — sidebar expands</span><span class="hex">1024px</span></div>
+      <div class="r"><span class="k">xl</span><span class="v">Desktop default — the canonical layout</span><span class="hex">1280px</span></div>
+      <div class="r"><span class="k">2xl</span><span class="v">Wide desktop — content max-width caps, gutters grow</span><span class="hex">1536px</span></div>
+    </div>
+
+    <h3 class="sub-title">Padding — by surface</h3>
+    <p class="sec-lead" style="margin-top: 0;">
+      The padding inside a surface tells the user how heavy the surface is. Page
+      padding is generous; card padding is comfortable; list-item padding is tight;
+      button and input padding is precise. Don't drift between these values per screen.
+    </p>
+
+    <div class="pad-demo-grid">
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 32px; width: 100%;">Page<br/>32px</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">Page</span><span class="pad-demo-val">32 · 32</span></div>
+      </div>
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 20px; width: 100%;">Card<br/>20px</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">Card</span><span class="pad-demo-val">20</span></div>
+      </div>
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 12px 16px; width: 100%;">List item<br/>12 · 16</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">List item</span><span class="pad-demo-val">12 · 16</span></div>
+      </div>
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 8px 16px;">Button</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">Button</span><span class="pad-demo-val">8 · 16</span></div>
+      </div>
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 8px 12px;">Input field</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">Input</span><span class="pad-demo-val">8 · 12</span></div>
+      </div>
+      <div class="pad-demo">
+        <div class="pad-demo-stage">
+          <div class="pad-demo-target" style="padding: 2px 10px; font-size: 11px;">Pending</div>
+        </div>
+        <div class="pad-demo-meta"><span class="pad-demo-name">Badge</span><span class="pad-demo-val">2 · 10</span></div>
+      </div>
+    </div>
+
+    <div class="row-block" style="margin-top: 16px;">
+      <div class="r"><span class="k">Page (desktop)</span><span class="v">Outer page padding on the main content column</span><span class="hex">32px · 32px</span></div>
+      <div class="r"><span class="k">Page (tablet)</span><span class="v">Below <code class="inline">md</code> breakpoint</span><span class="hex">20px · 20px</span></div>
+      <div class="r"><span class="k">Card</span><span class="v">Inside <code class="inline">.card</code> and <code class="inline">.modal-body</code></span><span class="hex">20px</span></div>
+      <div class="r"><span class="k">Card (compact)</span><span class="v">Stat cards, dense panels</span><span class="hex">16px</span></div>
+      <div class="r"><span class="k">Section header inside card</span><span class="v">Title bar above card body</span><span class="hex">16px · 20px</span></div>
+      <div class="r"><span class="k">List / row item</span><span class="v">Vertical · horizontal — recent activity, dropdown items</span><span class="hex">12px · 16px</span></div>
+      <div class="r"><span class="k">Table cell</span><span class="v">Vertical · horizontal — DataGrid default density</span><span class="hex">12px · 16px</span></div>
+      <div class="r"><span class="k">Table cell (dense)</span><span class="v">Log-shaped reference tables only</span><span class="hex">8px · 12px</span></div>
+      <div class="r"><span class="k">Button (default)</span><span class="v">Vertical · horizontal — 36px tall</span><span class="hex">8px · 16px</span></div>
+      <div class="r"><span class="k">Button (small)</span><span class="v">Inline / row actions — 28px tall</span><span class="hex">4px · 12px</span></div>
+      <div class="r"><span class="k">Input</span><span class="v">Vertical · horizontal — 36px tall, matches button</span><span class="hex">8px · 12px</span></div>
+      <div class="r"><span class="k">Badge / pill</span><span class="v">Vertical · horizontal — 22px tall</span><span class="hex">2px · 10px</span></div>
+      <div class="r"><span class="k">Tooltip</span><span class="v">Dark hint bubbles for icon-only controls</span><span class="hex">6px · 10px</span></div>
+      <div class="r"><span class="k">Popover</span><span class="v">Light content surfaces — definitions, mini-forms</span><span class="hex">12px · 14px</span></div>
+    </div>
+
+    <h3 class="sub-title">Vertical rhythm — stack spacing</h3>
+    <p class="sec-lead" style="margin-top: 0;">
+      Use <code class="inline">gap</code> on a flex/grid container, never margin between
+      siblings. The container owns the rhythm. These are the only stack values you should
+      reach for — anything else is probably a mistake.
+    </p>
+
+    <div class="stack-demo-grid">
+      <div class="stack-demo">
+        <div class="stack-demo-name">Tight</div>
+        <div class="stack-demo-token">gap-1 · 4px</div>
+        <div class="stack-demo-stack" style="gap: 4px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+      <div class="stack-demo">
+        <div class="stack-demo-name">Inside</div>
+        <div class="stack-demo-token">gap-2 · 8px</div>
+        <div class="stack-demo-stack" style="gap: 8px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+      <div class="stack-demo">
+        <div class="stack-demo-name">Default</div>
+        <div class="stack-demo-token">gap-3 · 12px</div>
+        <div class="stack-demo-stack" style="gap: 12px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+      <div class="stack-demo">
+        <div class="stack-demo-name">Comfortable</div>
+        <div class="stack-demo-token">gap-4 · 16px</div>
+        <div class="stack-demo-stack" style="gap: 16px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+      <div class="stack-demo">
+        <div class="stack-demo-name">Section</div>
+        <div class="stack-demo-token">gap-6 · 24px</div>
+        <div class="stack-demo-stack" style="gap: 24px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+      <div class="stack-demo">
+        <div class="stack-demo-name">Page section</div>
+        <div class="stack-demo-token">gap-8 · 32px</div>
+        <div class="stack-demo-stack" style="gap: 32px;">
+          <div class="stack-bar"></div>
+          <div class="stack-bar medium"></div>
+          <div class="stack-bar short"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row-block" style="margin-top: 16px;">
+      <div class="r"><span class="k">Tight (4px)</span><span class="v">Label → input · badge cluster · inline metadata</span><span class="hex">gap-1</span></div>
+      <div class="r"><span class="k">Inside (8px)</span><span class="v">Dense lists, dropdown items, button rows</span><span class="hex">gap-2</span></div>
+      <div class="r"><span class="k">Default (12px)</span><span class="v">Stacked elements inside a card body</span><span class="hex">gap-3</span></div>
+      <div class="r"><span class="k">Comfortable (16px)</span><span class="v">Form rows · grid items inside a section</span><span class="hex">gap-4</span></div>
+      <div class="r"><span class="k">Section (24px)</span><span class="v">Card → next card · subsection → next subsection</span><span class="hex">gap-6</span></div>
+      <div class="r"><span class="k">Page section (32px)</span><span class="v">Major page section → next major section</span><span class="hex">gap-8</span></div>
+      <div class="r"><span class="k">Page block (48px)</span><span class="v">Hero / page header → first content section</span><span class="hex">gap-12</span></div>
+    </div>
+
+    <h3 class="sub-title">When to break the rule</h3>
+    <p class="sec-lead" style="margin-top: 0;">
+      Optical alignment beats arithmetic alignment. If 16px <em>looks</em> wrong because of
+      a glyph's overhang or a card's shadow, nudge by 2px and document it. This is the only
+      place a non-multiple-of-4 is acceptable, and only with a <code class="inline">/* optical */</code>
+      comment in the source.
+    </p>
   </section>
 
   <!-- ========== RADII ========== -->
