@@ -91,6 +91,13 @@
   --feedback-info-foreground: #fbfbfb;
   --feedback-danger: var(--destructive);
   --feedback-danger-foreground: var(--destructive-foreground);
+
+  /* ---- Auth page ---- */
+  --auth-gradient-start: #2d1f1a;
+  --auth-gradient-mid: #4a2d24;
+  --auth-gradient-end: #6b3a2c;
+  --auth-accent: #d97757;
+  --auth-card-bg: #faf7f2;
 }
 
 /* ---- Status colour Tailwind mappings ---- */
@@ -232,4 +239,62 @@
     line-height: 1.45;
     color: var(--muted-foreground);
   }
+}
+
+/* =========================================================
+   Auth page — split layout
+   ========================================================= */
+
+.auth-brand-panel {
+  background: linear-gradient(
+    180deg,
+    var(--auth-gradient-start) 0%,
+    var(--auth-gradient-mid) 60%,
+    var(--auth-gradient-end) 100%
+  );
+}
+
+.auth-glow-top {
+  position: absolute;
+  top: -120px;
+  right: -160px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--auth-accent) 45%, transparent) 0%,
+    transparent 65%
+  );
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.auth-glow-bottom {
+  position: absolute;
+  bottom: -220px;
+  left: -120px;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--auth-gradient-end) 40%, transparent) 0%,
+    transparent 65%
+  );
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.auth-dot-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--auth-gradient-end) 12%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+  pointer-events: none;
 }

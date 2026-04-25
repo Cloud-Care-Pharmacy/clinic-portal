@@ -5,18 +5,19 @@ export default function SignInPage() {
     <SignIn
       appearance={{
         variables: {
-          colorPrimary: "#c96442",
-          colorText: "#3d3929",
-          borderRadius: "0.625rem",
+          colorPrimary: "var(--primary)",
+          colorText: "var(--foreground)",
+          colorBackground: "var(--popover)",
+          borderRadius: "0.5rem",
+          fontFamily: "Outfit, sans-serif",
         },
         elements: {
-          card: "shadow-lg rounded-[20px] bg-card",
-          formButtonPrimary:
-            "bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-none",
+          card: "shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.10)] rounded-2xl bg-white",
           socialButtonsBlockButton:
-            "border border-border bg-background hover:bg-accent text-foreground font-medium shadow-none",
+            "border border-border bg-white hover:bg-muted text-foreground font-medium shadow-none h-11",
           socialButtonsBlockButtonText: "font-medium",
-          footerActionLink: "text-primary font-semibold hover:text-primary/80",
+          footerAction: "bg-[var(--auth-card-bg)]",
+          footerActionLink: "text-foreground font-semibold hover:text-primary",
         },
       }}
     />
