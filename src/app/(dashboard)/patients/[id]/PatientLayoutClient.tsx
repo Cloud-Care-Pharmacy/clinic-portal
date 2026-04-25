@@ -26,7 +26,7 @@ const TABS = [
     countKey: "prescriptions" as const,
   },
   { label: "Documents", segment: "documents", countKey: null },
-  { label: "Clinical History", segment: "clinical", countKey: "clinical" as const },
+  { label: "Clinical", segment: "clinical", countKey: "clinical" as const },
   { label: "Activity", segment: "activity", countKey: null },
 ];
 
@@ -56,7 +56,7 @@ export default function PatientLayoutClient({
   const tabCounts: Record<string, number | undefined> = {
     consultations: consultsData?.data?.consultations?.length,
     prescriptions: rxData?.data?.prescriptions?.length,
-    clinical: undefined, // no easy count endpoint
+    clinical: undefined,
   };
 
   const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
@@ -83,28 +83,23 @@ export default function PatientLayoutClient({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-40 w-full rounded-lg" />
-        <Skeleton className="h-10 w-96" />
-        <Skeleton className="h-64 w-full rounded-lg" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <Skeleton className="h-[52px] w-96 rounded-[14px]" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Patient Header */}
-      <PatientHeader
-        patient={patient}
-        displayName={displayName}
-        redFlags={redFlags}
-        isLoading={isLoading}
-      />
+    <div className="flex flex-col gap-6">
+      {/* Patient Header (includes stat strip) */}
+      <PatientHeader patient={patient} displayName={displayName} />
 
-      {/* Red-flag alert */}
+      {/* Red-flag alert — separate banner between header and tabs */}
       {redFlags?.hasRedFlag && <RedFlagAlert redFlags={redFlags} />}
 
-      {/* Tab navigation */}
-      <nav className="flex items-center gap-1 overflow-x-auto border-b">
+      {/* Pill-style tab navigation */}
+      <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
         {TABS.map((tab) => {
           const href = tab.segment ? `${basePath}/${tab.segment}` : basePath;
           const isActive = activeSegment === tab.segment;
@@ -115,16 +110,15 @@ export default function PatientLayoutClient({
               key={tab.segment}
               onClick={() => router.push(href, { scroll: false })}
               className={cn(
-                "relative inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors",
-                "hover:text-foreground",
+                "inline-flex items-center justify-center gap-1.5 h-10 px-[18px] rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
-                  ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
-                  : "text-muted-foreground"
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}
               {count != null && count > 0 && (
-                <span className="inline-flex items-center justify-center rounded-full bg-muted px-1.5 text-[11px] font-medium text-muted-foreground min-w-5 h-5">
+                <span className="inline-flex items-center justify-center rounded-full px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
                   {count}
                 </span>
               )}
