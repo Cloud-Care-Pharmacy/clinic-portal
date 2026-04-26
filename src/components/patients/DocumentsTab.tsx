@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import type { PatientDocument, DocumentCategory } from "@/types";
@@ -12,6 +12,7 @@ import {
   useDeleteDocument,
   useVerifyDocument,
 } from "@/lib/hooks/use-documents";
+import { DocumentDetailSheet } from "@/components/patients/DocumentDetailSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,20 +64,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { toast } from "sonner";
-
-const CATEGORY_LABELS: Record<DocumentCategory, string> = {
-  proof_of_identity: "Proof of Identity",
-  proof_of_age: "Proof of Age",
-  prescription: "Prescription",
-  lab_result: "Lab Result",
-  referral: "Referral",
-  consent_form: "Consent Form",
-  insurance: "Insurance",
-  clinical_report: "Clinical Report",
-  imaging: "Imaging",
-  correspondence: "Correspondence",
-  other: "Other",
-};
+import {
+  DOCUMENT_CATEGORY_LABELS,
+  formatFileSize,
+  getDocumentDownloadHref,
+} from "./document-utils";
 
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -89,21 +81,21 @@ const ALLOWED_TYPES = [
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 interface DocumentsTabProps {
   patientId: string;
   initialAction?: "upload";
+  selectedDocumentId?: string;
 }
 
-export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
+export function DocumentsTab({
+  patientId,
+  initialAction,
+  selectedDocumentId,
+}: DocumentsTabProps) {
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(null);
+  const [selectedFromRow, setSelectedFromRow] = useState<PatientDocument | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const { data, isLoading, error } = usePatientDocuments(patientId);
@@ -159,9 +151,25 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
   };
 
   const handleDownload = (doc: PatientDocument) => {
-    const url = `/api/proxy/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(doc.id)}/download`;
+    const url = getDocumentDownloadHref(patientId, doc.id);
     window.open(url, "_blank");
   };
+
+  function selectedDocumentHref(documentId: string) {
+    return `/patients/${encodeURIComponent(patientId)}/documents?selected=${encodeURIComponent(documentId)}`;
+  }
+
+  function clearSelectedDocument() {
+    setSelectedFromRow(null);
+    router.replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
+      scroll: false,
+    });
+  }
+
+  function openDocument(doc: PatientDocument) {
+    setSelectedFromRow(doc);
+    router.push(selectedDocumentHref(doc.id), { scroll: false });
+  }
 
   const columns: GridColDef<PatientDocument>[] = [
     {
@@ -180,7 +188,8 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
       field: "category",
       headerName: "Category",
       width: 160,
-      valueFormatter: (value: DocumentCategory) => CATEGORY_LABELS[value] ?? value,
+      valueFormatter: (value: DocumentCategory) =>
+        DOCUMENT_CATEGORY_LABELS[value] ?? value,
     },
     {
       field: "file_size",
@@ -222,7 +231,13 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="ghost" size="icon" className="size-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={(event) => event.stopPropagation()}
+                aria-label={`Open actions for ${params.row.filename}`}
+              >
                 <MoreHorizontal className="size-4" />
               </Button>
             }
@@ -246,11 +261,11 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-destructive"
+              variant="destructive"
               onClick={() => setDeleteTarget(params.row)}
             >
               <Trash2 className="mr-2 size-4" />
-              Delete
+              Delete document
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -278,6 +293,9 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
   }
 
   const documents = data?.data?.documents ?? [];
+  const selectedDocument = selectedDocumentId
+    ? (documents.find((doc) => doc.id === selectedDocumentId) ?? null)
+    : selectedFromRow;
 
   return (
     <div className="space-y-4">
@@ -302,10 +320,20 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
             initialState={{
               pagination: { paginationModel: { pageSize: 10 } },
             }}
+            onRowClick={(params: GridRowParams<PatientDocument>) =>
+              openDocument(params.row)
+            }
+            getRowClassName={() => "cursor-pointer"}
             sx={dataGridSx}
           />
         </div>
       )}
+
+      <DocumentDetailSheet
+        patientId={patientId}
+        document={selectedDocument}
+        onClose={clearSelectedDocument}
+      />
 
       {/* Upload Dialog */}
       <UploadDialog
@@ -332,10 +360,11 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
-              Delete
+              Delete document
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -506,7 +535,7 @@ function UploadDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+                {Object.entries(DOCUMENT_CATEGORY_LABELS).map(([key, label]) => (
                   <SelectItem key={key} value={key}>
                     {label}
                   </SelectItem>

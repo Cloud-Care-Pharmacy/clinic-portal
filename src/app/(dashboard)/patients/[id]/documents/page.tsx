@@ -8,15 +8,16 @@ export default function DocumentsPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ action?: string }>;
+  searchParams: Promise<{ action?: string; selected?: string }>;
 }) {
   const { id } = use(params);
-  const { action } = use(searchParams);
+  const { action, selected } = use(searchParams);
 
   return (
     <DocumentsTab
       patientId={id}
       initialAction={action === "upload" ? "upload" : undefined}
+      selectedDocumentId={selected}
     />
   );
 }
