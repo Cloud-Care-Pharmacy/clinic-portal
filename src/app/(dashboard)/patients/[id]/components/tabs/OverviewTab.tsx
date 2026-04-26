@@ -2,7 +2,7 @@
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stethoscope, RotateCw, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, htmlToPlainText } from "@/lib/utils";
 import type { PatientMapping, ConsultationType } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
@@ -201,37 +201,39 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
             {recentConsults.map((c, i) => {
               const config = CONSULT_TYPE_CONFIG[c.type] ?? CONSULT_TYPE_CONFIG.initial;
               const Icon = config.icon;
+              const summary =
+                htmlToPlainText(c.outcome) || htmlToPlainText(c.notes) || c.status;
               return (
-                <div
-                  key={c.id}
-                  className={cn(
-                    "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted",
-                    i === 0 && "pt-0",
-                    i === recentConsults.length - 1 ? "pb-0" : "border-b border-border"
-                  )}
-                >
+                <div key={c.id}>
+                  {i > 0 && <div className="h-px bg-border" />}
                   <div
                     className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
-                      config.tileClass
+                      "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted",
+                      i === 0 && "pt-0",
+                      i === recentConsults.length - 1 && "pb-0"
                     )}
                   >
-                    <Icon className="size-3.5" />
+                    <div
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                        config.tileClass
+                      )}
+                    >
+                      <Icon className="size-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">
+                        {c.doctorName}{" "}
+                        <span className="font-normal text-muted-foreground capitalize">
+                          · {c.type.replace("-", " ")}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{summary}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 tabular-nums">
+                      {fmtDate(c.scheduledAt)}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">
-                      {c.doctorName}{" "}
-                      <span className="font-normal text-muted-foreground capitalize">
-                        · {c.type.replace("-", " ")}
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {c.outcome ?? c.notes ?? c.status}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 tabular-nums">
-                    {fmtDate(c.scheduledAt)}
-                  </span>
                 </div>
               );
             })}
