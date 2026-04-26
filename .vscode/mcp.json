@@ -3,6 +3,11 @@
     "vercel": {
       "type": "http",
       "url": "https://mcp.vercel.com"
+    },
+    "FastMeds": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "apidog-mcp-server@latest", "--site-id=768878"]
     }
   }
 }
