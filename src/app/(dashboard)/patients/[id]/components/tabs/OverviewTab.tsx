@@ -12,21 +12,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 
 /* ── Helpers ── */
 
-function relTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays <= 30) return `${diffDays} days ago`;
-  return date.toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: diffDays > 365 ? "numeric" : undefined,
-  });
-}
-
 function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-AU", {
     day: "numeric",
@@ -393,24 +378,24 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
         ) : recentNotes.length === 0 ? (
           <p className="text-[13px] text-muted-foreground py-4">No notes yet</p>
         ) : (
-          <div className="grid gap-4 min-[900px]:grid-cols-3">
-            {recentNotes.map((n) => (
-              <div
-                key={n.id}
-                className="rounded-xl border border-border bg-background p-4"
-              >
-                <p className="text-[13px] leading-[1.55] text-foreground font-medium">
-                  {n.title}
-                </p>
-                <div
-                  className="text-[13px] leading-[1.55] text-foreground line-clamp-3 mt-1"
-                  dangerouslySetInnerHTML={{ __html: n.content }}
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {n.authorName} · {relTime(n.createdAt)}
-                </p>
-              </div>
-            ))}
+          <div className="flex flex-col">
+            {recentNotes.map((n, i) => {
+              const noteText = htmlToPlainText(n.content) || n.title;
+
+              return (
+                <div key={n.id}>
+                  {i > 0 && <div className="h-px bg-border" />}
+                  <div className={cn("py-4", i === 0 && "pt-0")}>
+                    <p className="text-sm leading-[1.6] text-foreground whitespace-pre-line">
+                      {noteText}
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {n.authorName} · {fmtDate(n.createdAt)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </OverviewCard>
