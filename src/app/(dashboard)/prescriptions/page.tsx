@@ -9,13 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -25,14 +18,55 @@ import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatients } from "@/lib/hooks/use-patients";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { dataGridSx } from "@/lib/datagrid-theme";
-import type { PatientMapping, ParchmentPrescription } from "@/types";
+import {
+  PrescriptionDetailSheet,
+  formatPrescriptionReference,
+} from "@/components/prescriptions/PrescriptionDetailSheet";
+import type { ParchmentPrescription } from "@/types";
 
 const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
 
 const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
-  { field: "product", headerName: "Product", flex: 1, minWidth: 180 },
-  { field: "dosage", headerName: "Dosage", width: 120 },
-  { field: "prescriberName", headerName: "Prescribed By", width: 160 },
+  {
+    field: "id",
+    headerName: "Prescription",
+    flex: 1,
+    minWidth: 190,
+    renderCell: (params) => (
+      <div className="min-w-0 py-2">
+        <p
+          className="truncate text-sm font-medium"
+          title={formatPrescriptionReference(params.row)}
+        >
+          {formatPrescriptionReference(params.row)}
+        </p>
+        <p
+          className="truncate text-xs text-muted-foreground"
+          title={params.row.product}
+        >
+          {params.row.product}
+        </p>
+      </div>
+    ),
+  },
+  {
+    field: "medications",
+    headerName: "Items",
+    width: 90,
+    align: "right",
+    headerAlign: "right",
+    renderCell: (params) => (
+      <span className="w-full text-right tabular-nums">
+        {params.row.medications.length}
+      </span>
+    ),
+  },
+  {
+    field: "prescriberName",
+    headerName: "Prescribed by",
+    width: 160,
+    valueFormatter: (value: string | undefined) => value ?? "—",
+  },
   {
     field: "issuedAt",
     headerName: "Issued",
@@ -52,55 +86,6 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
     renderCell: (params) => <StatusBadge status={params.value} />,
   },
 ];
-
-function PrescriptionDetail({
-  prescription,
-  onClose,
-}: {
-  prescription: ParchmentPrescription | null;
-  onClose: () => void;
-}) {
-  if (!prescription) return null;
-
-  return (
-    <Sheet open={!!prescription} onOpenChange={() => onClose()}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>{prescription.product}</SheetTitle>
-          <SheetDescription>Prescription detail</SheetDescription>
-        </SheetHeader>
-        <div className="space-y-4 mt-6">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Dosage</p>
-            <p>{prescription.dosage}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Status</p>
-            <StatusBadge status={prescription.status} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Prescribed By</p>
-            <p>{prescription.prescriberName ?? "—"}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Issued</p>
-            <p>{new Date(prescription.issuedAt).toLocaleDateString("en-AU")}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Expires</p>
-            <p>{new Date(prescription.expiresAt).toLocaleDateString("en-AU")}</p>
-          </div>
-          {prescription.notes && (
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Notes</p>
-              <p className="text-sm">{prescription.notes}</p>
-            </div>
-          )}
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-}
 
 function PrescriptionGrid({ patientId }: { patientId: string }) {
   const { data, isLoading, error } = usePrescriptions(patientId);
@@ -139,8 +124,9 @@ function PrescriptionGrid({ patientId }: { patientId: string }) {
           rows={prescriptions}
           columns={prescriptionColumns}
           autoHeight
-          checkboxSelection
           disableRowSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={44}
           pageSizeOptions={[10, 25]}
           rowHeight={56}
           initialState={{
@@ -152,7 +138,10 @@ function PrescriptionGrid({ patientId }: { patientId: string }) {
           sx={dataGridSx}
         />
       </div>
-      <PrescriptionDetail prescription={selected} onClose={() => setSelected(null)} />
+      <PrescriptionDetailSheet
+        prescription={selected}
+        onClose={() => setSelected(null)}
+      />
     </>
   );
 }
