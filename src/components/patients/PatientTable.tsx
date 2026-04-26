@@ -60,7 +60,7 @@ function ActionsCell({
       >
         <MoreHorizontal className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={4} className="w-[220px]">
+      <DropdownMenuContent align="end" sideOffset={4} className="w-55">
         <DropdownMenuItem onClick={onView}>
           <Eye />
           View Details
@@ -306,7 +306,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
                 <SlidersHorizontal className="size-4 text-muted-foreground" />
                 View
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={4} className="w-[240px]">
+              <DropdownMenuContent align="end" sideOffset={4} className="w-60">
                 {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
                   (key) => (
                     <DropdownMenuCheckboxItem
@@ -353,10 +353,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           onRowClick={(params: GridRowParams<PatientMapping>) =>
             router.push(`/patients/${params.row.id}`)
           }
-          sx={{
-            ...dataGridSx,
-            "& .MuiDataGrid-menuIcon": { display: "none" },
-          }}
+          sx={dataGridSx}
         />
       </div>
     </div>

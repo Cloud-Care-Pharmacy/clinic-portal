@@ -376,7 +376,10 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
             rows={documents}
             columns={columns}
             autoHeight
+            pagination
             disableRowSelectionOnClick
+            disableColumnMenu
+            columnHeaderHeight={44}
             pageSizeOptions={[10, 25, 50]}
             rowHeight={56}
             initialState={{

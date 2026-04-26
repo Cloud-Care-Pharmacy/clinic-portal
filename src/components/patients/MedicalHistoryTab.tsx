@@ -588,8 +588,11 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
                 rows={records}
                 columns={historyColumns}
                 autoHeight
+                pagination
                 disableRowSelectionOnClick
-                pageSizeOptions={[10, 25]}
+                disableColumnMenu
+                columnHeaderHeight={44}
+                pageSizeOptions={[10, 25, 50]}
                 rowHeight={56}
                 initialState={{
                   pagination: { paginationModel: { pageSize: 10 } },

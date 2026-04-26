@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -17,15 +15,21 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { CalendarCheck, Stethoscope, User } from "lucide-react";
+import { CalendarCheck, User } from "lucide-react";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import type { Consultation, ConsultationType } from "@/types";
 
-const CONSULT_TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-status-info-bg text-status-info-fg border-status-info-border",
-  "follow-up": "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
-  renewal: "bg-status-success-bg text-status-success-fg border-status-success-border",
+const CONSULT_TYPE_LABELS: Record<ConsultationType, string> = {
+  initial: "Initial",
+  "follow-up": "Follow-up",
+  renewal: "Renewal",
+};
+
+const CONSULT_TYPE_VARIANTS: Record<ConsultationType, "info" | "accent" | "success"> = {
+  initial: "info",
+  "follow-up": "accent",
+  renewal: "success",
 };
 
 // ---- Consultation Detail Sheet ----
@@ -46,7 +50,7 @@ function ConsultationDetailSheetInline({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="overflow-y-auto w-full sm:min-w-[500px] sm:max-w-[580px] p-0"
+        className="overflow-y-auto w-full sm:min-w-125 sm:max-w-145 p-0"
       >
         <SheetHeader className="p-6 pb-4">
           <SheetTitle>Consultation</SheetTitle>
@@ -72,12 +76,9 @@ function ConsultationDetailSheetInline({
               <p className="text-xs text-muted-foreground">Doctor</p>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={cn("capitalize text-xs", CONSULT_TYPE_COLORS[c.type])}
-              >
-                {c.type}
-              </Badge>
+              <StatusBadge variant={CONSULT_TYPE_VARIANTS[c.type]}>
+                {CONSULT_TYPE_LABELS[c.type]}
+              </StatusBadge>
               <StatusBadge status={c.status} />
             </div>
           </div>
@@ -135,15 +136,9 @@ const consultationColumns: GridColDef<Consultation>[] = [
     headerName: "Type",
     width: 120,
     renderCell: (params) => (
-      <Badge
-        variant="outline"
-        className={cn(
-          "capitalize text-xs",
-          CONSULT_TYPE_COLORS[params.value as ConsultationType]
-        )}
-      >
-        {params.value}
-      </Badge>
+      <StatusBadge variant={CONSULT_TYPE_VARIANTS[params.value as ConsultationType]}>
+        {CONSULT_TYPE_LABELS[params.value as ConsultationType]}
+      </StatusBadge>
     ),
   },
   {
@@ -234,8 +229,11 @@ export function ConsultationsTab({ patientId, patientName }: ConsultationsTabPro
           rows={consultations}
           columns={consultationColumns}
           autoHeight
+          pagination
           disableRowSelectionOnClick
-          pageSizeOptions={[10, 25]}
+          disableColumnMenu
+          columnHeaderHeight={44}
+          pageSizeOptions={[10, 25, 50]}
           rowHeight={56}
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },

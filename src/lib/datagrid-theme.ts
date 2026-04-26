@@ -113,6 +113,9 @@ export const dataGridSx: SxProps<Theme> = {
     opacity: 0,
     transition: "opacity .15s",
   },
+  "& .MuiDataGrid-menuIcon": {
+    display: "none",
+  },
   "& .MuiDataGrid-columnHeader:hover .MuiDataGrid-columnSeparator": {
     opacity: 1,
   },
