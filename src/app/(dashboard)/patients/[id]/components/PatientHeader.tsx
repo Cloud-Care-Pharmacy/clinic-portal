@@ -211,7 +211,7 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
             </div>
 
             {/* Meta row — location and patient tenure */}
-            <div className="flex flex-wrap items-center gap-4 text-[13px] leading-none text-muted-foreground">
+            <div className="-mt-2 flex flex-wrap items-center gap-4 text-[13px] leading-none text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5" />
                 {locationText}
