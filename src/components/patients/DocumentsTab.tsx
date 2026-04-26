@@ -202,7 +202,7 @@ export function DocumentsTab({
         DOCUMENT_CATEGORY_LABELS[value] ?? value,
     },
     {
-      field: "file_size",
+      field: "fileSize",
       headerName: "Size",
       width: 100,
       valueFormatter: (value: number) => formatFileSize(value),
@@ -221,7 +221,7 @@ export function DocumentsTab({
         value === "email_attachment" ? "Email" : "Upload",
     },
     {
-      field: "created_at",
+      field: "createdAt",
       headerName: "Uploaded",
       width: 130,
       valueFormatter: (value: string) =>
@@ -487,7 +487,7 @@ function UploadDialog({
         file,
         category,
         description: description.trim() || undefined,
-        expiry_date: expiryDate || undefined,
+        expiryDate: expiryDate || undefined,
       },
       {
         onSuccess: () => {

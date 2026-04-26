@@ -5,6 +5,7 @@ import type {
   DocumentCategory,
   DocumentStatus,
   DocumentSource,
+  DocumentUploadPayload,
   DocumentUpdatePayload,
   DocumentVerifyPayload,
   DocumentSyncResponse,
@@ -22,7 +23,7 @@ type PatientDocumentsQueryOptions = {
   source?: DocumentSource;
   limit?: number;
   offset?: number;
-  sort?: "created_at" | "filename" | "category";
+  sort?: "createdAt" | "filename" | "category";
   order?: "asc" | "desc";
 };
 
@@ -81,22 +82,13 @@ async function fetchEntityDocuments(
   return res.json() as Promise<EntityDocumentsListResponse>;
 }
 
-async function uploadDocument(
-  patientId: string,
-  payload: {
-    file: File;
-    category: DocumentCategory;
-    description?: string;
-    expiry_date?: string;
-    uploaded_by?: string;
-  }
-) {
+async function uploadDocument(patientId: string, payload: DocumentUploadPayload) {
   const formData = new FormData();
   formData.append("file", payload.file);
   formData.append("category", payload.category);
   if (payload.description) formData.append("description", payload.description);
-  if (payload.expiry_date) formData.append("expiry_date", payload.expiry_date);
-  if (payload.uploaded_by) formData.append("uploaded_by", payload.uploaded_by);
+  if (payload.expiryDate) formData.append("expiryDate", payload.expiryDate);
+  if (payload.uploadedBy) formData.append("uploadedBy", payload.uploadedBy);
 
   const res = await fetch(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/documents`,
@@ -234,13 +226,7 @@ export function useEntityDocuments(
 export function useUploadDocument(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: {
-      file: File;
-      category: DocumentCategory;
-      description?: string;
-      expiry_date?: string;
-      uploaded_by?: string;
-    }) => uploadDocument(patientId, payload),
+    mutationFn: (payload: DocumentUploadPayload) => uploadDocument(patientId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-documents", patientId] });
     },

@@ -175,7 +175,7 @@ export function OverviewTab({
   )[0];
   const recentNotes = notes.slice(0, 3);
 
-  const conditions = clinical?.medical_conditions ?? [];
+  const conditions = clinical?.medicalConditions ?? [];
   const clinicalEditHref = patientTabHref(
     patientId,
     "clinical",
@@ -379,7 +379,7 @@ export function OverviewTab({
               <dt className="text-muted-foreground">DOB</dt>
               <dd className="font-medium min-w-0 wrap-break-word">
                 {(() => {
-                  const dob = formatDobWithAge(patient?.date_of_birth ?? null);
+                  const dob = formatDobWithAge(patient?.dateOfBirth ?? null);
                   if (!dob) return "—";
                   return (
                     <>
@@ -397,7 +397,7 @@ export function OverviewTab({
               <dd className="font-medium">{patient?.mobile ?? "—"}</dd>
               <dt className="text-muted-foreground">Email</dt>
               <dd className="font-medium text-xs min-w-0 wrap-break-word">
-                {patient?.original_email ?? "—"}
+                {patient?.originalEmail ?? "—"}
               </dd>
               <dt className="text-muted-foreground">Address</dt>
               <dd className="font-medium">
@@ -406,8 +406,8 @@ export function OverviewTab({
               <dt className="text-muted-foreground">Medicare</dt>
               <dd className="font-mono text-xs font-normal tracking-[0.01em]">
                 {formatMedicare(
-                  patient?.medicare_number ?? null,
-                  patient?.medicare_irn ?? null
+                  patient?.medicareNumber ?? null,
+                  patient?.medicareIrn ?? null
                 )}
               </dd>
             </dl>

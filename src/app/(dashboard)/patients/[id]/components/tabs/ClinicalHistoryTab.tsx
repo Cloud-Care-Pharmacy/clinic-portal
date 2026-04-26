@@ -54,7 +54,7 @@ function IntakeFormSheet({
   const approveRecord = useApproveClinicalRecord(patientId);
   const [reviewNotes, setReviewNotes] = useState("");
 
-  const isApproved = record?.review_status === "approved";
+  const isApproved = record?.reviewStatus === "approved";
 
   function handleApprove() {
     if (!record) return;
@@ -78,33 +78,33 @@ function IntakeFormSheet({
         {
           title: "SMOKING STATUS",
           fields: [
-            { label: "Smoking status", value: record.smoking_status },
-            ...(record.cigarettes_per_day
-              ? [{ label: "Cigarettes per day", value: record.cigarettes_per_day }]
+            { label: "Smoking status", value: record.smokingStatus },
+            ...(record.cigarettesPerDay
+              ? [{ label: "Cigarettes per day", value: record.cigarettesPerDay }]
               : []),
-            ...(record.years_smoked
-              ? [{ label: "Years smoked", value: record.years_smoked }]
+            ...(record.yearsSmoked
+              ? [{ label: "Years smoked", value: record.yearsSmoked }]
               : []),
-            ...(record.times_tried_quitting
-              ? [{ label: "Quit attempts", value: record.times_tried_quitting }]
+            ...(record.timesTriedQuitting
+              ? [{ label: "Quit attempts", value: record.timesTriedQuitting }]
               : []),
-            ...(record.last_cigarette
-              ? [{ label: "Last cigarette", value: record.last_cigarette }]
+            ...(record.lastCigarette
+              ? [{ label: "Last cigarette", value: record.lastCigarette }]
               : []),
           ],
         },
         {
           title: "VAPING STATUS",
           fields: [
-            { label: "Vaping status", value: record.vaping_status },
-            ...(record.vaping_method
-              ? [{ label: "Method", value: record.vaping_method }]
+            { label: "Vaping status", value: record.vapingStatus },
+            ...(record.vapingMethod
+              ? [{ label: "Method", value: record.vapingMethod }]
               : []),
-            ...(record.vaping_strength
-              ? [{ label: "Strength", value: record.vaping_strength }]
+            ...(record.vapingStrength
+              ? [{ label: "Strength", value: record.vapingStrength }]
               : []),
-            ...(record.vaping_volume
-              ? [{ label: "Volume", value: record.vaping_volume }]
+            ...(record.vapingVolume
+              ? [{ label: "Volume", value: record.vapingVolume }]
               : []),
           ],
         },
@@ -113,21 +113,21 @@ function IntakeFormSheet({
           fields: [
             {
               label: "Has conditions",
-              value: record.has_medical_conditions === "yes" ? "Yes" : "No",
+              value: record.hasMedicalConditions === "yes" ? "Yes" : "No",
             },
-            ...(record.medical_conditions?.length
+            ...(record.medicalConditions?.length
               ? [
                   {
                     label: "Conditions",
-                    value: record.medical_conditions.join(", "),
+                    value: record.medicalConditions.join(", "),
                   },
                 ]
               : []),
-            ...(record.medical_conditions_other
+            ...(record.medicalConditionsOther
               ? [
                   {
                     label: "Other conditions",
-                    value: record.medical_conditions_other,
+                    value: record.medicalConditionsOther,
                   },
                 ]
               : []),
@@ -138,18 +138,18 @@ function IntakeFormSheet({
           fields: [
             {
               label: "Takes medication",
-              value: record.takes_medication === "yes" ? "Yes" : "No",
+              value: record.takesMedication === "yes" ? "Yes" : "No",
             },
-            ...(record.high_risk_medications?.length
+            ...(record.highRiskMedications?.length
               ? [
                   {
                     label: "High-risk medications",
-                    value: record.high_risk_medications.join(", "),
+                    value: record.highRiskMedications.join(", "),
                   },
                 ]
               : []),
-            ...(record.medications_list
-              ? [{ label: "Medications list", value: record.medications_list }]
+            ...(record.medicationsList
+              ? [{ label: "Medications list", value: record.medicationsList }]
               : []),
           ],
         },
@@ -171,11 +171,11 @@ function IntakeFormSheet({
             },
           ],
         },
-        ...(record.additional_notes
+        ...(record.additionalNotes
           ? [
               {
                 title: "ADDITIONAL NOTES",
-                fields: [{ label: "Notes", value: record.additional_notes }],
+                fields: [{ label: "Notes", value: record.additionalNotes }],
               },
             ]
           : []),
@@ -216,7 +216,7 @@ function IntakeFormSheet({
       }
       description={
         record
-          ? `${reviewMode ? "Review requested · " : ""}Submitted ${formatDateTime(record.submitted_at)}`
+          ? `${reviewMode ? "Review requested · " : ""}Submitted ${formatDateTime(record.submittedAt)}`
           : ""
       }
     >
@@ -259,22 +259,22 @@ function IntakeFormSheet({
                 <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
                   <p>
                     <span className="text-muted-foreground">Approved by:</span>{" "}
-                    <span className="font-medium">{record.reviewed_by ?? "—"}</span>
-                    {record.reviewed_by_role ? (
+                    <span className="font-medium">{record.reviewedBy ?? "—"}</span>
+                    {record.reviewedByRole ? (
                       <span className="text-muted-foreground">
                         {" "}
-                        ({record.reviewed_by_role})
+                        ({record.reviewedByRole})
                       </span>
                     ) : null}
                   </p>
-                  {record.reviewed_at && (
+                  {record.reviewedAt && (
                     <p className="text-xs text-muted-foreground">
-                      {formatDateTime(record.reviewed_at)}
+                      {formatDateTime(record.reviewedAt)}
                     </p>
                   )}
-                  {record.review_notes && (
+                  {record.reviewNotes && (
                     <div className="mt-2 rounded-md border bg-background p-3 whitespace-pre-wrap">
-                      {record.review_notes}
+                      {record.reviewNotes}
                     </div>
                   )}
                 </div>
@@ -320,26 +320,26 @@ function IntakeFormSheet({
 
 const historyColumns: GridColDef<ClinicalDataRecord>[] = [
   {
-    field: "submitted_at",
+    field: "submittedAt",
     headerName: "Submitted",
     width: 180,
     valueFormatter: (value: string) => formatDateTime(value),
   },
   {
-    field: "smoking_status",
+    field: "smokingStatus",
     headerName: "Type",
     flex: 1,
     minWidth: 150,
     valueFormatter: () => "Intake Form",
   },
   {
-    field: "has_medical_conditions",
+    field: "hasMedicalConditions",
     headerName: "Sections",
     width: 100,
     valueFormatter: () => "6",
   },
   {
-    field: "safety_acknowledgment",
+    field: "safetyAcknowledgment",
     headerName: "Status",
     width: 120,
     renderCell: () => <StatusBadge variant="success">Completed</StatusBadge>,
@@ -376,7 +376,7 @@ export function ClinicalHistoryTab({
   const latestId =
     records.length > 0
       ? records.reduce((a, b) =>
-          new Date(a.submitted_at) > new Date(b.submitted_at) ? a : b
+          new Date(a.submittedAt) > new Date(b.submittedAt) ? a : b
         ).id
       : null;
 
@@ -431,7 +431,7 @@ export function ClinicalHistoryTab({
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
             sorting: {
-              sortModel: [{ field: "submitted_at", sort: "desc" }],
+              sortModel: [{ field: "submittedAt", sort: "desc" }],
             },
           }}
           onRowClick={(params) => openClinicalRecord(params.row)}

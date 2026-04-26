@@ -210,7 +210,7 @@ export function PrescriptionsClient({
               <SelectContent>
                 {patients.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
-                    {p.original_email} ({p.id.slice(0, 8)}…)
+                    {p.originalEmail} ({p.id.slice(0, 8)}…)
                   </SelectItem>
                 ))}
               </SelectContent>

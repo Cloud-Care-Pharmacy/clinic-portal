@@ -75,7 +75,7 @@ export const PatientStatStrip = memo(function PatientStatStrip({
     )[0];
 
   // Conditions count (since no allergies)
-  const conditions = clinical?.medical_conditions ?? [];
+  const conditions = clinical?.medicalConditions ?? [];
 
   if (!patientId) {
     return (

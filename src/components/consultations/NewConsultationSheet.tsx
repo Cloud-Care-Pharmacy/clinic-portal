@@ -347,13 +347,10 @@ export function NewConsultationSheet({
                 </p>
               ) : patientOptions.length > 0 ? (
                 patientOptions.map((patient) => {
-                  const name = [patient.first_name, patient.last_name]
-                    .filter(Boolean)
-                    .join(" ");
                   const label =
-                    name ||
-                    patient.original_email ||
-                    patient.generated_email ||
+                    patient.displayName ||
+                    patient.originalEmail ||
+                    patient.generatedEmail ||
                     "Patient";
                   return (
                     <button
@@ -371,9 +368,9 @@ export function NewConsultationSheet({
                     >
                       <span className="font-medium">{label}</span>
                       <span className="text-xs text-muted-foreground">
-                        {patient.date_of_birth ?? "DOB not recorded"}
-                        {patient.halaxy_patient_id
-                          ? ` · PMS ${patient.halaxy_patient_id}`
+                        {patient.dateOfBirth ?? "DOB not recorded"}
+                        {patient.halaxyPatientId
+                          ? ` · PMS ${patient.halaxyPatientId}`
                           : " · PMS pending"}
                       </span>
                     </button>

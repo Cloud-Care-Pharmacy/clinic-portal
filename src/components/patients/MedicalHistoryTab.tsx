@@ -109,7 +109,7 @@ function ClinicalDetailSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="Clinical Data Snapshot"
-      description={record ? `Submitted ${formatDate(record.submitted_at)}` : ""}
+      description={record ? `Submitted ${formatDate(record.submittedAt)}` : ""}
     >
       {record ? (
         <div className="space-y-6">
@@ -119,48 +119,48 @@ function ClinicalDetailSheet({
             <div className="space-y-2 text-sm">
               <p>
                 <span className="text-muted-foreground">Status:</span>{" "}
-                {SMOKING_LABELS[record.smoking_status] ?? record.smoking_status}
+                {SMOKING_LABELS[record.smokingStatus] ?? record.smokingStatus}
               </p>
-              {record.cigarettes_per_day && (
+              {record.cigarettesPerDay && (
                 <p>
                   <span className="text-muted-foreground">Cigarettes/day:</span>{" "}
-                  {record.cigarettes_per_day}
+                  {record.cigarettesPerDay}
                 </p>
               )}
-              {record.years_smoked && (
+              {record.yearsSmoked && (
                 <p>
                   <span className="text-muted-foreground">Years smoked:</span>{" "}
-                  {record.years_smoked}
+                  {record.yearsSmoked}
                 </p>
               )}
-              {record.times_tried_quitting && (
+              {record.timesTriedQuitting && (
                 <p>
                   <span className="text-muted-foreground">Quit attempts:</span>{" "}
-                  {record.times_tried_quitting}
+                  {record.timesTriedQuitting}
                 </p>
               )}
-              {record.quit_motivation && record.quit_motivation.length > 0 && (
+              {record.quitMotivation && record.quitMotivation.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Quit motivation:</span>{" "}
-                  {formatList(record.quit_motivation)}
+                  {formatList(record.quitMotivation)}
                 </p>
               )}
-              {record.quit_methods && record.quit_methods.length > 0 && (
+              {record.quitMethods && record.quitMethods.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Quit methods:</span>{" "}
-                  {formatList(record.quit_methods)}
+                  {formatList(record.quitMethods)}
                 </p>
               )}
-              {record.quit_method_explanation && (
+              {record.quitMethodExplanation && (
                 <p>
                   <span className="text-muted-foreground">Method details:</span>{" "}
-                  {record.quit_method_explanation}
+                  {record.quitMethodExplanation}
                 </p>
               )}
-              {record.last_cigarette && (
+              {record.lastCigarette && (
                 <p>
                   <span className="text-muted-foreground">Last cigarette:</span>{" "}
-                  {record.last_cigarette}
+                  {record.lastCigarette}
                 </p>
               )}
             </div>
@@ -174,30 +174,30 @@ function ClinicalDetailSheet({
             <div className="space-y-2 text-sm">
               <p>
                 <span className="text-muted-foreground">Status:</span>{" "}
-                {VAPING_LABELS[record.vaping_status] ?? record.vaping_status}
+                {VAPING_LABELS[record.vapingStatus] ?? record.vapingStatus}
               </p>
-              {record.vaping_method && (
+              {record.vapingMethod && (
                 <p>
                   <span className="text-muted-foreground">Method:</span>{" "}
-                  {record.vaping_method}
+                  {record.vapingMethod}
                 </p>
               )}
-              {record.vaping_strength && (
+              {record.vapingStrength && (
                 <p>
                   <span className="text-muted-foreground">Strength:</span>{" "}
-                  {record.vaping_strength}
+                  {record.vapingStrength}
                 </p>
               )}
-              {record.vaping_volume && (
+              {record.vapingVolume && (
                 <p>
                   <span className="text-muted-foreground">Volume:</span>{" "}
-                  {record.vaping_volume}
+                  {record.vapingVolume}
                 </p>
               )}
-              {record.vaping_notes && (
+              {record.vapingNotes && (
                 <p>
                   <span className="text-muted-foreground">Notes:</span>{" "}
-                  {record.vaping_notes}
+                  {record.vapingNotes}
                 </p>
               )}
             </div>
@@ -211,18 +211,18 @@ function ClinicalDetailSheet({
             <div className="space-y-2 text-sm">
               <p>
                 <span className="text-muted-foreground">Has conditions:</span>{" "}
-                {record.has_medical_conditions === "yes" ? "Yes" : "No"}
+                {record.hasMedicalConditions === "yes" ? "Yes" : "No"}
               </p>
-              {record.medical_conditions && record.medical_conditions.length > 0 && (
+              {record.medicalConditions && record.medicalConditions.length > 0 && (
                 <p>
                   <span className="text-muted-foreground">Conditions:</span>{" "}
-                  {formatList(record.medical_conditions)}
+                  {formatList(record.medicalConditions)}
                 </p>
               )}
-              {record.medical_conditions_other && (
+              {record.medicalConditionsOther && (
                 <p>
                   <span className="text-muted-foreground">Other:</span>{" "}
-                  {record.medical_conditions_other}
+                  {record.medicalConditionsOther}
                 </p>
               )}
             </div>
@@ -236,21 +236,18 @@ function ClinicalDetailSheet({
             <div className="space-y-2 text-sm">
               <p>
                 <span className="text-muted-foreground">Takes medication:</span>{" "}
-                {record.takes_medication === "yes" ? "Yes" : "No"}
+                {record.takesMedication === "yes" ? "Yes" : "No"}
               </p>
-              {record.high_risk_medications &&
-                record.high_risk_medications.length > 0 && (
-                  <p>
-                    <span className="text-muted-foreground">
-                      High-risk medications:
-                    </span>{" "}
-                    {formatList(record.high_risk_medications)}
-                  </p>
-                )}
-              {record.medications_list && (
+              {record.highRiskMedications && record.highRiskMedications.length > 0 && (
+                <p>
+                  <span className="text-muted-foreground">High-risk medications:</span>{" "}
+                  {formatList(record.highRiskMedications)}
+                </p>
+              )}
+              {record.medicationsList && (
                 <p>
                   <span className="text-muted-foreground">Medications list:</span>{" "}
-                  {record.medications_list}
+                  {record.medicationsList}
                 </p>
               )}
             </div>
@@ -277,12 +274,12 @@ function ClinicalDetailSheet({
             </div>
           </div>
 
-          {record.additional_notes && (
+          {record.additionalNotes && (
             <>
               <Separator />
               <div>
                 <h4 className="text-sm font-semibold mb-2">Additional Notes</h4>
-                <p className="text-sm">{record.additional_notes}</p>
+                <p className="text-sm">{record.additionalNotes}</p>
               </div>
             </>
           )}
@@ -303,7 +300,7 @@ function MedicalSummaryCard({
 }) {
   const redFlags = computeRedFlags(record);
   const approveClinicalRecord = useApproveClinicalRecord(patientId);
-  const reviewed = record.review_status === "approved";
+  const reviewed = record.reviewStatus === "approved";
 
   const handleApprove = useCallback(() => {
     approveClinicalRecord.mutate(
@@ -316,8 +313,8 @@ function MedicalSummaryCard({
   }, [approveClinicalRecord, record.id]);
 
   const reviewLabel = reviewed
-    ? record.reviewed_at
-      ? `Approved ${formatDate(record.reviewed_at)}`
+    ? record.reviewedAt
+      ? `Approved ${formatDate(record.reviewedAt)}`
       : "Approved"
     : "Pending review";
 
@@ -330,7 +327,7 @@ function MedicalSummaryCard({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
-              Last updated {formatDate(record.submitted_at)}
+              Last updated {formatDate(record.submittedAt)}
             </span>
             <StatusBadge variant={reviewed ? "success" : "warning"}>
               {reviewLabel}
@@ -428,21 +425,21 @@ function MedicalSummaryCard({
           <SummaryField
             icon={<Cigarette className="h-4 w-4" />}
             label="Smoking Status"
-            value={SMOKING_LABELS[record.smoking_status] ?? record.smoking_status}
-            badge={record.cigarettes_per_day ?? undefined}
+            value={SMOKING_LABELS[record.smokingStatus] ?? record.smokingStatus}
+            badge={record.cigarettesPerDay ?? undefined}
           />
           <SummaryField
             icon={<Wind className="h-4 w-4" />}
             label="Vaping Status"
-            value={VAPING_LABELS[record.vaping_status] ?? record.vaping_status}
-            badge={record.vaping_method ?? undefined}
+            value={VAPING_LABELS[record.vapingStatus] ?? record.vapingStatus}
+            badge={record.vapingMethod ?? undefined}
           />
           <SummaryField
             icon={<HeartPulse className="h-4 w-4" />}
             label="Medical Conditions"
             value={
-              record.has_medical_conditions === "yes"
-                ? formatList(record.medical_conditions)
+              record.hasMedicalConditions === "yes"
+                ? formatList(record.medicalConditions)
                 : "None reported"
             }
           />
@@ -450,8 +447,8 @@ function MedicalSummaryCard({
             icon={<Pill className="h-4 w-4" />}
             label="Medications"
             value={
-              record.takes_medication === "yes"
-                ? (record.medications_list ?? formatList(record.high_risk_medications))
+              record.takesMedication === "yes"
+                ? (record.medicationsList ?? formatList(record.highRiskMedications))
                 : "None"
             }
           />
@@ -481,32 +478,32 @@ function MedicalSummaryCard({
 
 const historyColumns: GridColDef<ClinicalDataRecord>[] = [
   {
-    field: "submitted_at",
+    field: "submittedAt",
     headerName: "Date",
     width: 140,
     valueFormatter: (value: string) => formatDate(value),
   },
   {
-    field: "smoking_status",
+    field: "smokingStatus",
     headerName: "Smoking",
     flex: 1,
     minWidth: 150,
     valueFormatter: (value: string) => SMOKING_LABELS[value] ?? value,
   },
   {
-    field: "vaping_status",
+    field: "vapingStatus",
     headerName: "Vaping",
     width: 100,
     valueFormatter: (value: string) => VAPING_LABELS[value] ?? value,
   },
   {
-    field: "has_medical_conditions",
+    field: "hasMedicalConditions",
     headerName: "Conditions",
     width: 110,
     valueFormatter: (value: string) => (value === "yes" ? "Yes" : "No"),
   },
   {
-    field: "takes_medication",
+    field: "takesMedication",
     headerName: "Medications",
     width: 110,
     valueFormatter: (value: string) => (value === "yes" ? "Yes" : "No"),
@@ -598,7 +595,7 @@ export function MedicalHistoryTab({ patientId }: { patientId: string }) {
                 initialState={{
                   pagination: { paginationModel: { pageSize: 10 } },
                   sorting: {
-                    sortModel: [{ field: "submitted_at", sort: "desc" }],
+                    sortModel: [{ field: "submittedAt", sort: "desc" }],
                   },
                 }}
                 onRowClick={(params) => setSelectedRecord(params.row)}

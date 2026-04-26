@@ -75,7 +75,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
 
   useEffect(() => {
     if (profile) {
-      const activeDays = profile.availability_days ?? [];
+      const activeDays = profile.availabilityDays ?? [];
       form.reset({
         timezone: "Australia/Sydney",
         days: DAYS_OF_WEEK.map((d) => ({

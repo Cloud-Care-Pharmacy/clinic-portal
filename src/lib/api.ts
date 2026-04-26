@@ -392,7 +392,7 @@ class ApiClient {
       source?: DocumentSource;
       limit?: number;
       offset?: number;
-      sort?: "created_at" | "filename" | "category";
+      sort?: "createdAt" | "filename" | "category";
       order?: "asc" | "desc";
     }
   ): Promise<PatientDocumentsListResponse> {

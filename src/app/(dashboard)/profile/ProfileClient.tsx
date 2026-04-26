@@ -30,23 +30,23 @@ const ROLE_COLORS: Record<UserRole, string> = {
 
 function computeCompleteness(profile: UserProfile | null, isDoctor: boolean) {
   if (!profile) return { pct: 0, missing: 0 };
-  const base = [profile.phone, profile.date_of_birth, profile.gender];
+  const base = [profile.phone, profile.dateOfBirth, profile.gender];
   const doctorFields = isDoctor
     ? [
         profile.qualifications,
         profile.specialty,
-        profile.prescriber_number,
-        profile.business_phone,
-        profile.ahpra_number,
-        profile.hospital_provider_number,
-        profile.provider_number,
+        profile.prescriberNumber,
+        profile.businessPhone,
+        profile.ahpraNumber,
+        profile.hospitalProviderNumber,
+        profile.providerNumber,
         profile.hpii,
-        profile.business_street_number,
-        profile.business_street_name,
-        profile.business_suburb,
-        profile.business_state,
-        profile.business_postcode,
-        profile.business_email,
+        profile.businessStreetNumber,
+        profile.businessStreetName,
+        profile.businessSuburb,
+        profile.businessState,
+        profile.businessPostcode,
+        profile.businessEmail,
       ]
     : [];
   const all = [...base, ...doctorFields];
@@ -167,15 +167,15 @@ export function ProfileClient({ initialProfile, initialUser }: ProfileClientProp
             {/* Row 2: specialty, prescriber #, joined */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
               {isDoctor && profile?.specialty && <span>{profile.specialty}</span>}
-              {isDoctor && profile?.prescriber_number && (
+              {isDoctor && profile?.prescriberNumber && (
                 <span className="font-mono text-xs">
-                  Prescriber #{profile.prescriber_number}
+                  Prescriber #{profile.prescriberNumber}
                 </span>
               )}
-              {profile?.created_at && (
+              {profile?.createdAt && (
                 <span className="text-xs">
                   Joined{" "}
-                  {new Date(profile.created_at).toLocaleDateString("en-AU", {
+                  {new Date(profile.createdAt).toLocaleDateString("en-AU", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",

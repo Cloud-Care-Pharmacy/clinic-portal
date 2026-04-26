@@ -74,7 +74,7 @@ async function deletePatient(patientId: string) {
     const err = await res.json().catch(() => ({ error: "Failed to delete patient" }));
     throw new Error(err.error ?? "Failed to delete patient");
   }
-  return res.json() as Promise<{ success: boolean; data?: { deleted: boolean } }>;
+  return res.json() as Promise<{ deleted: boolean }>;
 }
 
 async function fetchClinicalData(patientId: string, limit = 50, offset = 0) {

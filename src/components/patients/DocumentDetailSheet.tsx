@@ -64,7 +64,7 @@ const documentMetadataSchema = z.object({
       "Category is required"
     ),
   description: z.string().max(500, "Description must be 500 characters or fewer"),
-  expiry_date: z
+  expiryDate: z
     .string()
     .refine(
       (value) => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value),
@@ -75,7 +75,7 @@ const documentMetadataSchema = z.object({
 type DocumentMetadataFormData = {
   category: DocumentCategory;
   description: string;
-  expiry_date: string;
+  expiryDate: string;
 };
 
 interface DocumentDetailSheetProps {
@@ -88,7 +88,7 @@ function documentToFormDefaults(document: PatientDocument): DocumentMetadataForm
   return {
     category: document.category,
     description: document.description ?? "",
-    expiry_date: document.expiry_date?.slice(0, 10) ?? "",
+    expiryDate: document.expiryDate?.slice(0, 10) ?? "",
   };
 }
 
@@ -133,7 +133,7 @@ export function DocumentDetailSheet({
   const form = useForm<DocumentMetadataFormData>({
     defaultValues: documentInput
       ? documentToFormDefaults(documentInput)
-      : { category: "other", description: "", expiry_date: "" },
+      : { category: "other", description: "", expiryDate: "" },
   });
   const categoryValue = useWatch({ control: form.control, name: "category" });
 
@@ -173,7 +173,7 @@ export function DocumentDetailSheet({
         data: {
           category: result.data.category as DocumentCategory,
           description: result.data.description.trim(),
-          expiry_date: result.data.expiry_date || null,
+          expiryDate: result.data.expiryDate || null,
         },
       },
       {
@@ -235,7 +235,7 @@ export function DocumentDetailSheet({
         }}
         title="Document details"
         description={
-          document ? `Uploaded ${formatDocumentDate(document.created_at)}` : ""
+          document ? `Uploaded ${formatDocumentDate(document.createdAt)}` : ""
         }
         footerClassName="sm:justify-between"
         footer={
@@ -286,7 +286,7 @@ export function DocumentDetailSheet({
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <StatusBadge status={document.status} />
                     <span className="text-xs text-muted-foreground">
-                      {document.content_type}
+                      {document.contentType}
                     </span>
                   </div>
                 </div>
@@ -295,7 +295,7 @@ export function DocumentDetailSheet({
 
             <section className="grid gap-3 sm:grid-cols-2">
               <MetadataItem icon={<HardDrive className="size-4" />} label="Size">
-                {formatFileSize(document.file_size)}
+                {formatFileSize(document.fileSize)}
               </MetadataItem>
               <MetadataItem
                 icon={
@@ -310,14 +310,14 @@ export function DocumentDetailSheet({
                 {document.source === "email_attachment" ? "Email" : "Upload"}
               </MetadataItem>
               <MetadataItem icon={<CalendarDays className="size-4" />} label="Expiry">
-                {formatDocumentDate(document.expiry_date)}
+                {formatDocumentDate(document.expiryDate)}
               </MetadataItem>
               <MetadataItem icon={<CheckCircle2 className="size-4" />} label="Verified">
-                {formatDocumentTimestamp(document.verified_at)}
+                {formatDocumentTimestamp(document.verifiedAt)}
               </MetadataItem>
             </section>
 
-            {document.rejection_reason && (
+            {document.rejectionReason && (
               <section className="rounded-xl border border-status-danger-border bg-status-danger-bg p-3">
                 <div className="flex items-start gap-3">
                   <XCircle className="mt-0.5 size-4 shrink-0 text-status-danger-fg" />
@@ -326,7 +326,7 @@ export function DocumentDetailSheet({
                       Rejection reason
                     </h3>
                     <p className="mt-1 text-sm text-status-danger-fg wrap-break-word">
-                      {document.rejection_reason}
+                      {document.rejectionReason}
                     </p>
                   </div>
                 </div>
@@ -399,12 +399,12 @@ export function DocumentDetailSheet({
                 <Input
                   id="document-expiry-date"
                   type="date"
-                  aria-invalid={!!form.formState.errors.expiry_date}
-                  {...form.register("expiry_date")}
+                  aria-invalid={!!form.formState.errors.expiryDate}
+                  {...form.register("expiryDate")}
                 />
-                {form.formState.errors.expiry_date && (
+                {form.formState.errors.expiryDate && (
                   <p className="text-sm text-destructive">
-                    {form.formState.errors.expiry_date.message}
+                    {form.formState.errors.expiryDate.message}
                   </p>
                 )}
               </div>
@@ -501,13 +501,13 @@ export function DocumentDetailSheet({
                 <div className="flex justify-between gap-3">
                   <dt>Uploaded</dt>
                   <dd className="text-right text-foreground">
-                    {formatDocumentTimestamp(document.created_at)}
+                    {formatDocumentTimestamp(document.createdAt)}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
                   <dt>Last updated</dt>
                   <dd className="text-right text-foreground">
-                    {formatDocumentTimestamp(document.updated_at)}
+                    {formatDocumentTimestamp(document.updatedAt)}
                   </dd>
                 </div>
               </dl>

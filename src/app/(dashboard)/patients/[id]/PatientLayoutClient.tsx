@@ -92,11 +92,11 @@ export default function PatientLayoutClient({
     activity: counts?.activity,
   };
 
-  const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
+  const fullName = [patient?.firstName, patient?.lastName].filter(Boolean).join(" ");
   const displayName =
     fullName ||
-    (patient?.original_email
-      ? patient.original_email.split("@")[0].replace(/[._+]/g, " ")
+    (patient?.originalEmail
+      ? patient.originalEmail.split("@")[0].replace(/[._+]/g, " ")
       : "Loading…");
 
   useEffect(() => {

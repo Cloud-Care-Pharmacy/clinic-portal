@@ -64,49 +64,51 @@ export interface IntakeFormData {
   safetyAcknowledgment: string;
 }
 
-/** Entity (Shopify shop) from D1 */
+/** Entity (Shopify shop) */
 export interface Entity {
   id: string;
-  shopify_domain: string;
+  shopifyDomain: string;
   name: string | null;
-  email_prefix: string;
-  is_active: number;
-  created_at: string;
-  updated_at: string;
+  emailPrefix: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** Patient mapping from D1 — matches GET /api/patients/:id response */
+/** Patient mapping — matches GET /api/patients/:id response */
 export interface PatientMapping {
   id: string;
-  entity_id: string | null;
-  generated_email: string;
-  original_email: string;
-  pbs_patient_id?: string | null;
-  halaxy_patient_id: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  date_of_birth: string | null;
+  entityId: string | null;
+  generatedEmail: string;
+  originalEmail: string;
+  pbsPatientId?: string | null;
+  halaxyPatientId: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  dateOfBirth: string | null;
   gender: string | null;
   mobile: string | null;
-  street_address: string | null;
+  streetAddress: string | null;
   city: string | null;
   state: string | null;
   postcode: string | null;
   country: string | null;
-  medicare_number: string | null;
-  medicare_irn: string | null;
-  forward_email: string | null;
-  proof_of_age_file_name: string | null;
-  proof_of_age_file_type: string | null;
-  created_at: string;
-  updated_at: string | null;
+  medicareNumber: string | null;
+  medicareIrn: string | null;
+  forwardEmail: string | null;
+  proofOfAgeFileName: string | null;
+  proofOfAgeFileType: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  archivedAt?: string | null;
+  archivedBy?: string | null;
 }
 
 export interface PatientsListResponse {
   success: boolean;
   data: {
     entityId: string;
-    shopify_domain?: string;
+    shopifyDomain?: string;
     patients: PatientMapping[];
     pagination: { limit: number; offset: number; total: number };
   };
@@ -114,12 +116,12 @@ export interface PatientsListResponse {
 
 export type PatientPmsStatusFilter = "linked" | "pending";
 export type PatientSortField =
-  | "created_at"
-  | "first_name"
-  | "last_name"
-  | "date_of_birth"
-  | "halaxy_patient_id"
-  | "pbs_patient_id";
+  | "createdAt"
+  | "firstName"
+  | "lastName"
+  | "dateOfBirth"
+  | "halaxyPatientId"
+  | "pbsPatientId";
 export type SortOrder = "asc" | "desc";
 
 export interface PatientsListQuery {
@@ -133,15 +135,13 @@ export interface PatientsListQuery {
 
 export interface PatientSearchResult {
   id: string;
-  entity_id: string;
-  first_name: string | null;
-  last_name: string | null;
-  date_of_birth: string | null;
-  original_email: string | null;
-  generated_email: string | null;
+  displayName: string;
+  originalEmail: string | null;
+  generatedEmail: string | null;
   mobile: string | null;
-  pbs_patient_id: string | null;
-  halaxy_patient_id: string | null;
+  dateOfBirth: string | null;
+  pbsPatientId: string | null;
+  halaxyPatientId: string | null;
 }
 
 export interface PatientSearchResponse {
@@ -152,16 +152,18 @@ export interface PatientSearchResponse {
   };
 }
 
-/** Email record from D1 */
+/** Email record */
 export interface EmailRecord {
   id: string;
-  patient_id: string | null;
-  from_address: string | null;
+  patientId: string | null;
+  fromAddress: string | null;
   subject: string | null;
-  message_id: string | null;
-  attachment_count: number;
-  received_at: string;
+  messageId: string | null;
+  attachmentCount: number;
+  receivedAt: string;
   status: "received" | "processed" | "failed";
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Email attachment metadata from R2 */
@@ -296,36 +298,38 @@ export interface ParchmentPrescriptionsResponse {
 /** Clinical data record — matches GET /api/patients/:id/clinical-data response */
 export interface ClinicalDataRecord {
   id: string;
-  patient_id: string;
-  smoking_status: string;
-  cigarettes_per_day: string | null;
-  years_smoked: string | null;
-  times_tried_quitting: string | null;
-  quit_motivation: string[];
-  quit_methods: string[];
-  quit_method_explanation: string | null;
-  last_cigarette: string | null;
-  vaping_status: string;
-  vaping_method: string | null;
-  vaping_strength: string | null;
-  vaping_volume: string | null;
-  vaping_notes: string | null;
-  has_medical_conditions: string;
-  medical_conditions: string[];
-  medical_conditions_other: string | null;
-  takes_medication: string;
-  high_risk_medications: string[];
-  medications_list: string | null;
+  patientId: string;
+  smokingStatus: string;
+  cigarettesPerDay: string | null;
+  yearsSmoked: string | null;
+  timesTriedQuitting: string | null;
+  quitMotivation: string[];
+  quitMethods: string[];
+  quitMethodExplanation: string | null;
+  lastCigarette: string | null;
+  vapingStatus: string;
+  vapingMethod: string | null;
+  vapingStrength: string | null;
+  vapingVolume: string | null;
+  vapingNotes: string | null;
+  hasMedicalConditions: string;
+  medicalConditions: string[];
+  medicalConditionsOther: string | null;
+  takesMedication: string;
+  highRiskMedications: string[];
+  medicationsList: string | null;
   cardiovascular: string;
   pregnancy: string;
-  additional_notes: string | null;
-  safety_acknowledgment: string;
-  submitted_at: string;
-  review_status?: "pending" | "approved";
-  reviewed_by?: string | null;
-  reviewed_by_role?: "admin" | "doctor" | null;
-  reviewed_at?: string | null;
-  review_notes?: string | null;
+  additionalNotes: string | null;
+  safetyAcknowledgment: string;
+  reviewStatus?: "pending" | "approved";
+  reviewedBy?: string | null;
+  reviewedByRole?: "admin" | "doctor" | null;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
+  submittedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ClinicalDataListResponse {
@@ -347,7 +351,7 @@ export interface LatestClinicalDataResponse {
 export interface ClinicalDataApprovalResponse {
   success: boolean;
   data: {
-    clinicalData: ClinicalDataRecord;
+    record: ClinicalDataRecord;
   };
 }
 
@@ -395,23 +399,23 @@ export type DocumentSource = "upload" | "email_attachment";
 
 export interface PatientDocument {
   id: string;
-  patient_id: string;
-  entity_id: string;
+  patientId: string;
+  entityId: string;
   filename: string;
-  content_type: string;
-  file_size: number;
+  contentType: string;
+  fileSize: number;
   category: DocumentCategory;
   description: string | null;
-  expiry_date: string | null;
+  expiryDate: string | null;
   source: DocumentSource;
-  source_email_id: string | null;
+  sourceEmailId: string | null;
   status: DocumentStatus;
-  verified_by: string | null;
-  verified_at: string | null;
-  rejection_reason: string | null;
-  uploaded_by: string;
-  created_at: string;
-  updated_at: string;
+  verifiedBy: string | null;
+  verifiedAt: string | null;
+  rejectionReason: string | null;
+  uploadedBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PatientDocumentsListResponse {
@@ -443,19 +447,19 @@ export interface DocumentUploadPayload {
   file: File;
   category: DocumentCategory;
   description?: string;
-  expiry_date?: string;
-  uploaded_by?: string;
+  expiryDate?: string;
+  uploadedBy?: string;
 }
 
 export interface DocumentUpdatePayload {
   category?: DocumentCategory;
   description?: string;
-  expiry_date?: string | null;
+  expiryDate?: string | null;
 }
 
 export interface DocumentVerifyPayload {
   action: "verify" | "reject";
-  verified_by?: string;
+  verifiedBy?: string;
   reason?: string;
 }
 
@@ -790,33 +794,35 @@ export interface PatientCountsResponse {
 // User Profile types (from prescription-gateway users table)
 // ============================================
 
-/** User profile record — matches GET /api/users/me response (snake_case from D1) */
+/** User profile record — matches GET /api/users/me response */
 export interface UserProfile {
   id: string;
   hpii: string | null;
-  prescriber_number: string | null;
+  prescriberNumber: string | null;
   qualifications: string | null;
   phone: string | null;
   role: UserRole;
-  availability_days: string[] | null;
+  availabilityDays: string[] | null;
   // Prescriber details (doctor-only)
   title: string | null;
   specialty: string | null;
-  ahpra_number: string | null;
-  hospital_provider_number: string | null;
-  business_phone: string | null;
-  business_email: string | null;
-  provider_number: string | null;
-  date_of_birth: string | null;
+  ahpraNumber: string | null;
+  hospitalProviderNumber: string | null;
+  businessPhone: string | null;
+  businessEmail: string | null;
+  providerNumber: string | null;
+  dateOfBirth: string | null;
   gender: string | null;
   // Business address
-  business_street_number: string | null;
-  business_street_name: string | null;
-  business_suburb: string | null;
-  business_state: string | null;
-  business_postcode: string | null;
-  created_at: string;
-  updated_at: string;
+  businessStreetNumber: string | null;
+  businessStreetName: string | null;
+  businessSuburb: string | null;
+  businessState: string | null;
+  businessPostcode: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deactivatedAt?: string | null;
+  deactivatedBy?: string | null;
 }
 
 export interface UserProfileResponse {

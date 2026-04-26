@@ -45,14 +45,14 @@ interface PatientCommandPaletteProps {
 }
 
 function getPatientName(patient: PatientSearchResult) {
-  return [patient.first_name, patient.last_name].filter(Boolean).join(" ");
+  return patient.displayName;
 }
 
 function getPatientLabel(patient: PatientSearchResult) {
   return (
     getPatientName(patient) ||
-    patient.original_email ||
-    patient.generated_email ||
+    patient.originalEmail ||
+    patient.generatedEmail ||
     "Patient"
   );
 }
@@ -70,13 +70,13 @@ function formatDateOfBirth(dateOfBirth: string | null) {
 }
 
 function patientDetails(patient: PatientSearchResult) {
-  const formattedDob = formatDateOfBirth(patient.date_of_birth);
+  const formattedDob = formatDateOfBirth(patient.dateOfBirth);
 
   return [
-    patient.original_email || patient.generated_email
+    patient.originalEmail || patient.generatedEmail
       ? {
           icon: Mail,
-          label: patient.original_email || patient.generated_email || "",
+          label: patient.originalEmail || patient.generatedEmail || "",
         }
       : null,
     patient.mobile ? { icon: Phone, label: patient.mobile } : null,
@@ -85,8 +85,8 @@ function patientDetails(patient: PatientSearchResult) {
 }
 
 function patientIdentifier(patient: PatientSearchResult) {
-  if (patient.halaxy_patient_id) return `PMS ${patient.halaxy_patient_id}`;
-  if (patient.pbs_patient_id) return `PBS ${patient.pbs_patient_id}`;
+  if (patient.halaxyPatientId) return `PMS ${patient.halaxyPatientId}`;
+  if (patient.pbsPatientId) return `PBS ${patient.pbsPatientId}`;
   return "PMS pending";
 }
 

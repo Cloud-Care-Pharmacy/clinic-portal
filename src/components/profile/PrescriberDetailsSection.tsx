@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,6 +65,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
       providerNumber: "",
     },
   });
+  const specialtyValue = useWatch({ control: form.control, name: "specialty" });
 
   useEffect(() => {
     if (profile) {
@@ -73,10 +74,10 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
         title: profile.title ?? "",
         qualifications: profile.qualifications ?? "",
         specialty: profile.specialty ?? "",
-        prescriberNumber: profile.prescriber_number ?? "",
-        ahpraNumber: profile.ahpra_number ?? "",
-        hospitalProviderNumber: profile.hospital_provider_number ?? "",
-        providerNumber: profile.provider_number ?? "",
+        prescriberNumber: profile.prescriberNumber ?? "",
+        ahpraNumber: profile.ahpraNumber ?? "",
+        hospitalProviderNumber: profile.hospitalProviderNumber ?? "",
+        providerNumber: profile.providerNumber ?? "",
       });
     }
   }, [profile, form]);
@@ -141,7 +142,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                 Specialty <span className="text-destructive">*</span>
               </Label>
               <Select
-                value={form.watch("specialty") || undefined}
+                value={specialtyValue || undefined}
                 onValueChange={(v) => {
                   if (v) form.setValue("specialty", v, { shouldDirty: true });
                 }}

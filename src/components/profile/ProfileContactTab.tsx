@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,12 +55,13 @@ export function ProfileContactTab({
       phone: "",
     },
   });
+  const genderValue = useWatch({ control: form.control, name: "gender" });
 
   useEffect(() => {
     form.reset({
       firstName: clerkFirstName,
       lastName: clerkLastName,
-      dateOfBirth: profile?.date_of_birth ?? "",
+      dateOfBirth: profile?.dateOfBirth ?? "",
       gender: profile?.gender ?? "",
       phone: profile?.phone ?? "",
     });
@@ -138,7 +139,7 @@ export function ProfileContactTab({
             <div className="space-y-2">
               <Label htmlFor="ct-gender">Gender</Label>
               <Select
-                value={form.watch("gender") || undefined}
+                value={genderValue || undefined}
                 onValueChange={(v) => {
                   if (v) form.setValue("gender", v, { shouldDirty: true });
                 }}

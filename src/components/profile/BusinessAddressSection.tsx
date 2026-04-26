@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,17 +51,21 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
       businessPostcode: "",
     },
   });
+  const businessStateValue = useWatch({
+    control: form.control,
+    name: "businessState",
+  });
 
   useEffect(() => {
     if (profile) {
       form.reset({
-        businessPhone: profile.business_phone ?? "",
-        businessEmail: profile.business_email ?? "",
-        businessStreetNumber: profile.business_street_number ?? "",
-        businessStreetName: profile.business_street_name ?? "",
-        businessSuburb: profile.business_suburb ?? "",
-        businessState: profile.business_state ?? "",
-        businessPostcode: profile.business_postcode ?? "",
+        businessPhone: profile.businessPhone ?? "",
+        businessEmail: profile.businessEmail ?? "",
+        businessStreetNumber: profile.businessStreetNumber ?? "",
+        businessStreetName: profile.businessStreetName ?? "",
+        businessSuburb: profile.businessSuburb ?? "",
+        businessState: profile.businessState ?? "",
+        businessPostcode: profile.businessPostcode ?? "",
       });
     }
   }, [profile, form]);
@@ -163,7 +167,7 @@ export function BusinessAddressSection({ profile }: BusinessAddressSectionProps)
             <div className="space-y-2">
               <Label htmlFor="ba-state">State</Label>
               <Select
-                value={form.watch("businessState") || undefined}
+                value={businessStateValue || undefined}
                 onValueChange={(v) => {
                   if (v) form.setValue("businessState", v, { shouldDirty: true });
                 }}

@@ -61,16 +61,16 @@ function sameHeaderPatient(
 
   return (
     previous.id === next.id &&
-    previous.first_name === next.first_name &&
-    previous.last_name === next.last_name &&
-    previous.original_email === next.original_email &&
-    previous.date_of_birth === next.date_of_birth &&
+    previous.firstName === next.firstName &&
+    previous.lastName === next.lastName &&
+    previous.originalEmail === next.originalEmail &&
+    previous.dateOfBirth === next.dateOfBirth &&
     previous.gender === next.gender &&
-    previous.halaxy_patient_id === next.halaxy_patient_id &&
+    previous.halaxyPatientId === next.halaxyPatientId &&
     previous.city === next.city &&
     previous.state === next.state &&
     previous.mobile === next.mobile &&
-    previous.created_at === next.created_at
+    previous.createdAt === next.createdAt
   );
 }
 
@@ -96,10 +96,10 @@ export const PatientHeader = memo(
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const deleteMutation = useDeletePatient();
-    const age = getAge(patient?.date_of_birth ?? null);
+    const age = getAge(patient?.dateOfBirth ?? null);
     const gender = patient?.gender ?? "";
     const ageGender = [age, gender].filter(Boolean).join(" · ");
-    const pmsId = patient?.halaxy_patient_id ?? "";
+    const pmsId = patient?.halaxyPatientId ?? "";
     const patientId = patient?.id;
     const actionsDisabled = !patientId;
 
@@ -122,12 +122,12 @@ export const PatientHeader = memo(
           <div className="flex items-start gap-4">
             {/* Avatar — 56×56 */}
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-lg font-semibold">
-              {patient?.first_name ? (
+              {patient?.firstName ? (
                 (
-                  patient.first_name.charAt(0) + (patient.last_name?.charAt(0) ?? "")
+                  patient.firstName.charAt(0) + (patient.lastName?.charAt(0) ?? "")
                 ).toUpperCase()
-              ) : patient?.original_email ? (
-                patient.original_email.charAt(0).toUpperCase()
+              ) : patient?.originalEmail ? (
+                patient.originalEmail.charAt(0).toUpperCase()
               ) : (
                 <User className="h-5 w-5" />
               )}
@@ -164,9 +164,9 @@ export const PatientHeader = memo(
                 <div className="flex items-center gap-1.5">
                   <ExpandableIconButton
                     icon={<Mail className="size-4" />}
-                    label={patient?.original_email ?? "No email"}
-                    ariaLabel={`Email: ${patient?.original_email ?? "No email"}`}
-                    disabled={!patient?.original_email}
+                    label={patient?.originalEmail ?? "No email"}
+                    ariaLabel={`Email: ${patient?.originalEmail ?? "No email"}`}
+                    disabled={!patient?.originalEmail}
                     expandDirection="left"
                   />
                   <ExpandableIconButton
@@ -254,11 +254,11 @@ export const PatientHeader = memo(
                   <MapPin className="size-3.5" />
                   {locationText}
                 </span>
-                {patient?.created_at && (
+                {patient?.createdAt && (
                   <span className="inline-flex items-center gap-1.5">
                     <Calendar className="size-3.5" />
                     Patient since{" "}
-                    {new Date(patient.created_at).toLocaleDateString("en-AU", {
+                    {new Date(patient.createdAt).toLocaleDateString("en-AU", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",

@@ -80,7 +80,7 @@ function formatDob(dob: string | null): string {
 
 function formatAddress(patient: PatientMapping): string {
   const parts = [
-    patient.street_address,
+    patient.streetAddress,
     patient.city,
     patient.state,
     patient.postcode,
@@ -90,25 +90,25 @@ function formatAddress(patient: PatientMapping): string {
 }
 
 function patientToFormDefaults(patient: PatientMapping): ProfileFormData {
-  const { day, month, year } = parseDob(patient.date_of_birth);
+  const { day, month, year } = parseDob(patient.dateOfBirth);
   return {
-    firstName: patient.first_name ?? "",
-    lastName: patient.last_name ?? "",
+    firstName: patient.firstName ?? "",
+    lastName: patient.lastName ?? "",
     dobDay: day,
     dobMonth: month,
     dobYear: year,
     gender: patient.gender ?? "",
-    streetAddress: patient.street_address ?? "",
+    streetAddress: patient.streetAddress ?? "",
     city: patient.city ?? "",
     postcode: patient.postcode ?? "",
     mobile: patient.mobile ?? "",
-    proofOfAgeFileName: patient.proof_of_age_file_name ?? "",
-    proofOfAgeFileType: patient.proof_of_age_file_type ?? "",
+    proofOfAgeFileName: patient.proofOfAgeFileName ?? "",
+    proofOfAgeFileType: patient.proofOfAgeFileType ?? "",
     state: patient.state ?? "",
     country: patient.country ?? "Australia",
-    medicareNumber: patient.medicare_number ?? "",
-    medicareIRN: patient.medicare_irn ?? "",
-    forwardEmail: patient.forward_email ?? "",
+    medicareNumber: patient.medicareNumber ?? "",
+    medicareIRN: patient.medicareIrn ?? "",
+    forwardEmail: patient.forwardEmail ?? "",
   };
 }
 
@@ -433,9 +433,7 @@ export function ProfileTab({
     );
   }
 
-  const displayName = [patient?.first_name, patient?.last_name]
-    .filter(Boolean)
-    .join(" ");
+  const displayName = [patient?.firstName, patient?.lastName].filter(Boolean).join(" ");
 
   return (
     <>
@@ -459,7 +457,7 @@ export function ProfileTab({
             <DetailField
               icon={<Mail className="h-4 w-4" />}
               label="Email"
-              value={patient?.original_email}
+              value={patient?.originalEmail}
             />
             <DetailField
               icon={<Phone className="h-4 w-4" />}
@@ -469,7 +467,7 @@ export function ProfileTab({
             <DetailField
               icon={<CalendarIcon className="h-4 w-4" />}
               label="Date of Birth"
-              value={formatDob(patient?.date_of_birth ?? null)}
+              value={formatDob(patient?.dateOfBirth ?? null)}
             />
             <DetailField
               icon={<User className="h-4 w-4" />}
@@ -485,20 +483,20 @@ export function ProfileTab({
               icon={<CreditCard className="h-4 w-4" />}
               label="Medicare Number"
               value={
-                patient?.medicare_number
-                  ? `${patient.medicare_number}${patient.medicare_irn ? ` / IRN ${patient.medicare_irn}` : ""}`
+                patient?.medicareNumber
+                  ? `${patient.medicareNumber}${patient.medicareIrn ? ` / IRN ${patient.medicareIrn}` : ""}`
                   : null
               }
             />
             <DetailField
               icon={<Hash className="h-4 w-4" />}
               label="PMS Patient ID"
-              value={patient?.halaxy_patient_id}
+              value={patient?.halaxyPatientId}
             />
             <DetailField
               icon={<Forward className="h-4 w-4" />}
               label="Forward Email"
-              value={patient?.forward_email}
+              value={patient?.forwardEmail}
             />
           </div>
         </CardContent>

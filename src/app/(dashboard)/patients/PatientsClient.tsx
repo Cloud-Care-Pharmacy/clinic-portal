@@ -14,11 +14,11 @@ import type {
 } from "@/types";
 
 const SORT_FIELD_MAP: Record<string, PatientSortField | undefined> = {
-  patient_name: "last_name",
-  original_email: undefined,
-  date_of_birth: "date_of_birth",
-  halaxy_patient_id: "halaxy_patient_id",
-  created_at: "created_at",
+  patientName: "lastName",
+  originalEmail: undefined,
+  dateOfBirth: "dateOfBirth",
+  halaxyPatientId: "halaxyPatientId",
+  createdAt: "createdAt",
 };
 
 interface PatientsClientProps {

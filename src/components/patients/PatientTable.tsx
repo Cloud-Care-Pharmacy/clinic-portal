@@ -101,39 +101,39 @@ function ActionsCell({
 const STATUS_OPTIONS: PatientPmsStatusFilter[] = ["linked", "pending"];
 
 interface ColumnVisibility {
-  patient_name: boolean;
-  original_email: boolean;
-  date_of_birth: boolean;
+  patientName: boolean;
+  originalEmail: boolean;
+  dateOfBirth: boolean;
   mobile: boolean;
   location: boolean;
-  generated_email: boolean;
-  halaxy_patient_id: boolean;
-  pms_status: boolean;
-  created_at: boolean;
+  generatedEmail: boolean;
+  halaxyPatientId: boolean;
+  pmsStatus: boolean;
+  createdAt: boolean;
 }
 
 const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
-  patient_name: true,
-  original_email: true,
-  date_of_birth: true,
+  patientName: true,
+  originalEmail: true,
+  dateOfBirth: true,
   mobile: false,
   location: false,
-  generated_email: false,
-  halaxy_patient_id: false,
-  pms_status: true,
-  created_at: true,
+  generatedEmail: false,
+  halaxyPatientId: false,
+  pmsStatus: true,
+  createdAt: true,
 };
 
 const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
-  patient_name: "Name",
-  original_email: "Email",
-  date_of_birth: "Date of Birth",
+  patientName: "Name",
+  originalEmail: "Email",
+  dateOfBirth: "Date of Birth",
   mobile: "Mobile",
   location: "Location",
-  generated_email: "Generated Email",
-  halaxy_patient_id: "PMS ID",
-  pms_status: "Status",
-  created_at: "Created",
+  generatedEmail: "Generated Email",
+  halaxyPatientId: "PMS ID",
+  pmsStatus: "Status",
+  createdAt: "Created",
 };
 
 export function PatientTable({
@@ -175,12 +175,12 @@ export function PatientTable({
 
   const columns: GridColDef<PatientMapping>[] = [
     {
-      field: "patient_name",
+      field: "patientName",
       headerName: "Name",
       flex: 1,
       minWidth: 160,
       valueGetter: (_value: unknown, row: PatientMapping) => {
-        const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
+        const name = [row.firstName, row.lastName].filter(Boolean).join(" ");
         return name || "—";
       },
       renderCell: (params) => (
@@ -196,13 +196,13 @@ export function PatientTable({
       ),
     },
     {
-      field: "original_email",
+      field: "originalEmail",
       headerName: "Email",
       flex: 1,
       minWidth: 220,
     },
     {
-      field: "date_of_birth",
+      field: "dateOfBirth",
       headerName: "Date of Birth",
       width: 130,
       valueFormatter: (value: string | null) =>
@@ -230,30 +230,30 @@ export function PatientTable({
       },
     },
     {
-      field: "generated_email",
+      field: "generatedEmail",
       headerName: "Generated Email",
       flex: 1,
       minWidth: 250,
     },
     {
-      field: "halaxy_patient_id",
+      field: "halaxyPatientId",
       headerName: "PMS ID",
       width: 140,
       valueFormatter: (value: string | null) => value ?? "—",
     },
     {
-      field: "pms_status",
+      field: "pmsStatus",
       headerName: "Status",
       width: 120,
       sortable: true,
       type: "singleSelect",
       valueOptions: ["Linked", "Pending"],
       valueGetter: (_value: unknown, row: PatientMapping) =>
-        row.halaxy_patient_id ? "Linked" : "Pending",
-      renderCell: (params) => <PmsStatusCell value={params.row.halaxy_patient_id} />,
+        row.halaxyPatientId ? "Linked" : "Pending",
+      renderCell: (params) => <PmsStatusCell value={params.row.halaxyPatientId} />,
     },
     {
-      field: "created_at",
+      field: "createdAt",
       headerName: "Created",
       width: 140,
       valueFormatter: (value: string) =>
@@ -273,7 +273,7 @@ export function PatientTable({
         <ActionsCell
           patient={params.row}
           onView={() => router.push(`/patients/${params.row.id}`)}
-          onCopyEmail={() => handleCopyEmail(params.row.original_email)}
+          onCopyEmail={() => handleCopyEmail(params.row.originalEmail)}
           onDelete={() => setDeleteTarget(params.row)}
         />
       ),
@@ -387,9 +387,9 @@ export function PatientTable({
             <AlertDialogDescription>
               {deleteTarget
                 ? `This will permanently delete ${
-                    [deleteTarget.first_name, deleteTarget.last_name]
+                    [deleteTarget.firstName, deleteTarget.lastName]
                       .filter(Boolean)
-                      .join(" ") || deleteTarget.original_email
+                      .join(" ") || deleteTarget.originalEmail
                   } and all related records (consultations, notes, documents, prescriptions). This action cannot be undone.`
                 : ""}
             </AlertDialogDescription>
