@@ -96,7 +96,7 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
           </div>
 
           {/* Identity + meta */}
-          <div className="flex min-h-14 flex-1 min-w-0 flex-col justify-between gap-1.5">
+          <div className="flex flex-1 min-w-0 flex-col gap-1">
             {/* Name row — name/age left, PMS ID + Actions right */}
             <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1">
               <h2 className="text-[22px] font-semibold leading-none tracking-[-0.01em]">
@@ -108,21 +108,6 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
                   {ageGender}
                 </span>
               )}
-
-              <div className="flex items-center gap-1.5">
-                <ExpandableIconButton
-                  icon={<Mail className="size-4" />}
-                  label={patient?.original_email ?? "No email"}
-                  ariaLabel={`Email: ${patient?.original_email ?? "No email"}`}
-                  disabled={!patient?.original_email}
-                />
-                <ExpandableIconButton
-                  icon={<Phone className="size-4" />}
-                  label={patient?.mobile ?? "No phone"}
-                  ariaLabel={`Phone: ${patient?.mobile ?? "No phone"}`}
-                  disabled={!patient?.mobile}
-                />
-              </div>
 
               {/* Spacer */}
               <div className="flex-1" />
@@ -137,6 +122,23 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
                   <Copy className="size-3.5 text-muted-foreground" />
                 </button>
               )}
+
+              <div className="flex items-center gap-1.5">
+                <ExpandableIconButton
+                  icon={<Mail className="size-4" />}
+                  label={patient?.original_email ?? "No email"}
+                  ariaLabel={`Email: ${patient?.original_email ?? "No email"}`}
+                  disabled={!patient?.original_email}
+                  expandDirection="left"
+                />
+                <ExpandableIconButton
+                  icon={<Phone className="size-4" />}
+                  label={patient?.mobile ?? "No phone"}
+                  ariaLabel={`Phone: ${patient?.mobile ?? "No phone"}`}
+                  disabled={!patient?.mobile}
+                  expandDirection="left"
+                />
+              </div>
 
               {/* Actions dropdown — top right */}
               <DropdownMenu>
