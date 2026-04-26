@@ -1,5 +1,6 @@
 import type {
   PatientMapping,
+  PatientsListResponse,
   Entity,
   EmailRecord,
   EmailMetadata,
@@ -19,10 +20,23 @@ import type {
   DocumentCategory,
   DocumentStatus,
   DocumentSource,
+  PatientNotesResponse,
+  PatientActivityResponse,
+  UserProfileResponse,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 const API_SECRET = process.env.API_SECRET ?? "";
+
+function categoryForActivityEntity(
+  entityType: PatientActivityResponse["data"]["events"][number]["entityType"]
+): PatientActivityResponse["data"]["events"][number]["category"] {
+  if (entityType === "consultation") return "consultations";
+  if (entityType === "note") return "notes";
+  if (entityType === "prescription") return "prescriptions";
+  if (entityType === "document") return "documents";
+  return "system";
+}
 
 class ApiClient {
   private baseUrl: string;
@@ -86,14 +100,7 @@ class ApiClient {
   async getPatients(
     entityId: string,
     opts?: { limit?: number; offset?: number }
-  ): Promise<{
-    success: boolean;
-    data: {
-      entityId: string;
-      patients: PatientMapping[];
-      pagination: { limit: number; offset: number; total: number };
-    };
-  }> {
+  ): Promise<PatientsListResponse> {
     const params = new URLSearchParams();
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
@@ -116,6 +123,45 @@ class ApiClient {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/consultations${qs}`
     );
+  }
+
+  async getConsultations(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ConsultationsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/consultations${qs}`);
+  }
+
+  async getPatientNotes(patientId: string): Promise<PatientNotesResponse> {
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}/notes`);
+  }
+
+  async getPatientActivity(
+    patientId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<PatientActivityResponse> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const payload = await this.request<PatientActivityResponse>(
+      `/api/patients/${encodeURIComponent(patientId)}/activity${qs}`
+    );
+
+    return {
+      ...payload,
+      data: {
+        ...payload.data,
+        events: payload.data.events.map((event) => ({
+          ...event,
+          category: event.category ?? categoryForActivityEntity(event.entityType),
+        })),
+      },
+    };
   }
 
   // ---- Clinical Data ----
@@ -163,6 +209,14 @@ class ApiClient {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/prescriptions${qs}`
     );
+  }
+
+  // ---- User Profile ----
+
+  async getMyProfile(userId: string): Promise<UserProfileResponse> {
+    return this.request("/api/users/me", {
+      headers: { "X-Clerk-User-Id": userId },
+    });
   }
 
   // ---- Patient Emails ----

@@ -18,7 +18,7 @@ async function fetchConsultations(
 ): Promise<ConsultationsListResponse> {
   const url = patientId
     ? `/api/proxy/patients/${encodeURIComponent(patientId)}/consultations?limit=50`
-    : "/api/consultations";
+    : "/api/proxy/consultations?limit=50";
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch consultations");
   return res.json();

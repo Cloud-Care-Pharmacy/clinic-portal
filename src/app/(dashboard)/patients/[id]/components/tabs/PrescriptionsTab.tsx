@@ -12,7 +12,7 @@ import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
-import type { ParchmentPrescription } from "@/types";
+import type { ParchmentPrescription, ParchmentPrescriptionsResponse } from "@/types";
 
 const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
   {
@@ -77,14 +77,16 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
 interface PrescriptionsTabProps {
   patientId: string;
   selectedPrescriptionId?: string;
+  initialPrescriptions?: ParchmentPrescriptionsResponse;
 }
 
 export function PrescriptionsTab({
   patientId,
   selectedPrescriptionId,
+  initialPrescriptions,
 }: PrescriptionsTabProps) {
   const router = useRouter();
-  const { data, isLoading, error } = usePrescriptions(patientId);
+  const { data, isLoading, error } = usePrescriptions(patientId, initialPrescriptions);
   const [selectedFromRow, setSelectedFromRow] = useState<ParchmentPrescription | null>(
     null
   );

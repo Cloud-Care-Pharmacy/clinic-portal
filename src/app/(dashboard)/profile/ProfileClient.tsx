@@ -14,7 +14,7 @@ import { ProfileAvailabilityTab } from "@/components/profile/ProfileAvailability
 import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
 import { BusinessAddressSection } from "@/components/profile/BusinessAddressSection";
 import { ProfileSecurityTab } from "@/components/profile/ProfileSecurityTab";
-import type { UserProfile, UserRole } from "@/types";
+import type { UserProfile, UserProfileResponse, UserRole } from "@/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
@@ -55,18 +55,37 @@ function computeCompleteness(profile: UserProfile | null, isDoctor: boolean) {
   return { pct, missing: all.length - filled };
 }
 
-export function ProfileClient() {
+interface ProfileInitialUser {
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  imageUrl?: string;
+  role: UserRole;
+}
+
+interface ProfileClientProps {
+  initialProfile?: UserProfileResponse;
+  initialUser?: ProfileInitialUser;
+}
+
+export function ProfileClient({ initialProfile, initialUser }: ProfileClientProps) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
-  const { data: profileData, isLoading: profileLoading } = useProfile();
+  const { data: profileData, isLoading: profileLoading } = useProfile(initialProfile);
 
   const profile = profileData?.data?.profile ?? null;
-  const role = (clerkUser?.publicMetadata?.role as UserRole) ?? "staff";
+  const role =
+    (clerkUser?.publicMetadata?.role as UserRole | undefined) ??
+    initialUser?.role ??
+    "staff";
   const isDoctor = role === "doctor";
 
-  const fullName = clerkUser
-    ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || "User"
-    : "";
-  const email = clerkUser?.emailAddresses[0]?.emailAddress ?? "";
+  const firstName = clerkUser?.firstName ?? initialUser?.firstName ?? "";
+  const lastName = clerkUser?.lastName ?? initialUser?.lastName ?? "";
+  const fullName =
+    [firstName, lastName].filter(Boolean).join(" ") || initialUser?.fullName || "";
+  const email = clerkUser?.emailAddresses[0]?.emailAddress ?? initialUser?.email ?? "";
+  const imageUrl = clerkUser?.imageUrl ?? initialUser?.imageUrl;
   const phone = profile?.phone ?? "";
   const initials = fullName
     .split(" ")
@@ -80,7 +99,7 @@ export function ProfileClient() {
     [profile, isDoctor]
   );
 
-  const isLoading = !clerkLoaded || profileLoading;
+  const isLoading = (!initialUser && !clerkLoaded) || profileLoading;
 
   if (isLoading) {
     return (
@@ -111,9 +130,9 @@ export function ProfileClient() {
             {/* Row 1: avatar, name, role badge, contact icons */}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                {clerkUser?.imageUrl ? (
+                {imageUrl ? (
                   <img
-                    src={clerkUser.imageUrl}
+                    src={imageUrl}
                     alt={fullName}
                     className="h-10 w-10 rounded-full object-cover"
                   />
@@ -203,8 +222,8 @@ export function ProfileClient() {
           <ProfileContactTab
             profile={profile}
             role={role}
-            clerkFirstName={clerkUser?.firstName ?? ""}
-            clerkLastName={clerkUser?.lastName ?? ""}
+            clerkFirstName={firstName}
+            clerkLastName={lastName}
           />
         </TabsContent>
 

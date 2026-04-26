@@ -40,7 +40,7 @@ import {
   useTogglePin,
   useDeleteNote,
 } from "@/lib/hooks/use-notes";
-import type { PatientNote, NoteCategory } from "@/types";
+import type { PatientNote, PatientNotesResponse, NoteCategory } from "@/types";
 
 // ---- Schema ----
 
@@ -428,12 +428,18 @@ interface NotesTabProps {
   patientId: string;
   initialAction?: "new";
   selectedNoteId?: string;
+  initialNotes?: PatientNotesResponse;
 }
 
-export function NotesTab({ patientId, initialAction, selectedNoteId }: NotesTabProps) {
+export function NotesTab({
+  patientId,
+  initialAction,
+  selectedNoteId,
+  initialNotes,
+}: NotesTabProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data, isLoading, error } = usePatientNotes(patientId);
+  const { data, isLoading, error } = usePatientNotes(patientId, initialNotes);
   const togglePin = useTogglePin(patientId);
   const deleteNoteMutation = useDeleteNote(patientId);
   const addNoteOpen = sheetOpen || initialAction === "new";

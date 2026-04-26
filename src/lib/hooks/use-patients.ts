@@ -1,5 +1,6 @@
 import type {
   PatientMapping,
+  PatientsListResponse,
   UpdatePatientPayload,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
@@ -23,14 +24,7 @@ async function fetchPatients(entityId: string, limit = 50, offset = 0) {
     `/api/proxy/entities/${encodeURIComponent(entityId)}/patients?${params}`
   );
   if (!res.ok) throw new Error("Failed to fetch patients");
-  return res.json() as Promise<{
-    success: boolean;
-    data: {
-      entityId: string;
-      patients: PatientMapping[];
-      pagination: { limit: number; offset: number; total: number };
-    };
-  }>;
+  return res.json() as Promise<PatientsListResponse>;
 }
 
 async function fetchPatient(patientId: string) {
@@ -128,12 +122,14 @@ export function latestClinicalDataQueryOptions(patientId: string) {
 
 export function usePatients(
   entityId: string | undefined,
-  opts?: { limit?: number; offset?: number }
+  opts?: { limit?: number; offset?: number },
+  initialData?: PatientsListResponse
 ) {
   return useQuery({
     queryKey: ["patients", entityId, opts?.limit, opts?.offset],
     queryFn: () => fetchPatients(entityId!, opts?.limit, opts?.offset),
     enabled: !!entityId,
+    initialData,
   });
 }
 
@@ -161,11 +157,13 @@ export function useUpdatePatient(patientId: string) {
 
 export function useClinicalData(
   patientId: string | undefined,
-  opts?: { limit?: number; offset?: number }
+  opts?: { limit?: number; offset?: number },
+  initialData?: ClinicalDataListResponse
 ) {
   return useQuery({
     ...clinicalDataQueryOptions(patientId ?? "", opts),
     enabled: !!patientId,
+    initialData,
   });
 }
 

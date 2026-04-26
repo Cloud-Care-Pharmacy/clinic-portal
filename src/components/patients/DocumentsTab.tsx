@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
-import type { PatientDocument, DocumentCategory } from "@/types";
+import type {
+  PatientDocument,
+  PatientDocumentsListResponse,
+  DocumentCategory,
+} from "@/types";
 import {
   usePatientDocuments,
   useUploadDocument,
@@ -85,12 +89,14 @@ interface DocumentsTabProps {
   patientId: string;
   initialAction?: "upload";
   selectedDocumentId?: string;
+  initialDocuments?: PatientDocumentsListResponse;
 }
 
 export function DocumentsTab({
   patientId,
   initialAction,
   selectedDocumentId,
+  initialDocuments,
 }: DocumentsTabProps) {
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
@@ -98,7 +104,11 @@ export function DocumentsTab({
   const [selectedFromRow, setSelectedFromRow] = useState<PatientDocument | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const { data, isLoading, error } = usePatientDocuments(patientId);
+  const { data, isLoading, error } = usePatientDocuments(
+    patientId,
+    undefined,
+    initialDocuments
+  );
   const deleteMutation = useDeleteDocument(patientId);
   const verifyMutation = useVerifyDocument(patientId);
   const documentUploadOpen = initialAction === "upload";

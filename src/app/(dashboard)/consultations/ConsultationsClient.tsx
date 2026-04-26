@@ -10,12 +10,18 @@ import { ConsultationTable } from "@/components/consultations/ConsultationTable"
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { ConsultationCalendar } from "@/components/consultations/ConsultationCalendar";
 import { useConsultations } from "@/lib/hooks/use-consultations";
-import type { Consultation } from "@/types";
+import type { Consultation, ConsultationsListResponse } from "@/types";
 
 type ViewMode = "table" | "calendar";
 
-export function ConsultationsClient() {
-  const { data, isLoading } = useConsultations();
+interface ConsultationsClientProps {
+  initialConsultations?: ConsultationsListResponse;
+}
+
+export function ConsultationsClient({
+  initialConsultations,
+}: ConsultationsClientProps) {
+  const { data, isLoading, error } = useConsultations(undefined, initialConsultations);
   const consultations = data?.data?.consultations ?? [];
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Consultation | null>(null);
@@ -69,6 +75,10 @@ export function ConsultationsClient() {
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
+          Failed to load consultations: {error.message}
         </div>
       ) : (
         <ErrorBoundary>

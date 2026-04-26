@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import {
   Select,
@@ -22,9 +23,11 @@ import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
-import type { ParchmentPrescription } from "@/types";
-
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
+import type {
+  ParchmentPrescription,
+  ParchmentPrescriptionsResponse,
+  PatientsListResponse,
+} from "@/types";
 
 const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
   {
@@ -87,8 +90,14 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
   },
 ];
 
-function PrescriptionGrid({ patientId }: { patientId: string }) {
-  const { data, isLoading, error } = usePrescriptions(patientId);
+function PrescriptionGrid({
+  patientId,
+  initialPrescriptions,
+}: {
+  patientId: string;
+  initialPrescriptions?: ParchmentPrescriptionsResponse;
+}) {
+  const { data, isLoading, error } = usePrescriptions(patientId, initialPrescriptions);
   const [selected, setSelected] = useState<ParchmentPrescription | null>(null);
 
   if (isLoading)
@@ -146,10 +155,32 @@ function PrescriptionGrid({ patientId }: { patientId: string }) {
   );
 }
 
-export function PrescriptionsClient() {
-  const { data: patientsData, isLoading } = usePatients(ENTITY_ID || undefined);
+interface PrescriptionsClientProps {
+  entityId: string;
+  selectedPatientId: string;
+  initialPatients?: PatientsListResponse;
+  initialPrescriptions?: ParchmentPrescriptionsResponse;
+}
+
+export function PrescriptionsClient({
+  entityId,
+  selectedPatientId,
+  initialPatients,
+  initialPrescriptions,
+}: PrescriptionsClientProps) {
+  const router = useRouter();
+  const { data: patientsData, isLoading } = usePatients(
+    entityId || undefined,
+    undefined,
+    initialPatients
+  );
   const patients = patientsData?.data?.patients ?? [];
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("");
+
+  function selectPatient(patientId: string) {
+    router.push(`/prescriptions?patientId=${encodeURIComponent(patientId)}`, {
+      scroll: false,
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -170,7 +201,7 @@ export function PrescriptionsClient() {
             <Select
               value={selectedPatientId}
               onValueChange={(v) => {
-                if (v) setSelectedPatientId(v);
+                if (v) selectPatient(v);
               }}
             >
               <SelectTrigger className="w-full max-w-md">
@@ -190,7 +221,10 @@ export function PrescriptionsClient() {
 
       {selectedPatientId && (
         <ErrorBoundary>
-          <PrescriptionGrid patientId={selectedPatientId} />
+          <PrescriptionGrid
+            patientId={selectedPatientId}
+            initialPrescriptions={initialPrescriptions}
+          />
         </ErrorBoundary>
       )}
     </div>

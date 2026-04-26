@@ -9,7 +9,11 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
-import type { Consultation, ConsultationType } from "@/types";
+import type {
+  Consultation,
+  ConsultationsListResponse,
+  ConsultationType,
+} from "@/types";
 
 const CONSULT_TYPE_LABELS: Record<ConsultationType, string> = {
   initial: "Initial",
@@ -74,15 +78,17 @@ interface ConsultationsTabProps {
   patientId: string;
   patientName: string;
   selectedConsultationId?: string;
+  initialConsultations?: ConsultationsListResponse;
 }
 
 export function ConsultationsTab({
   patientId,
   patientName,
   selectedConsultationId,
+  initialConsultations,
 }: ConsultationsTabProps) {
   const router = useRouter();
-  const { data, isLoading } = useConsultations(patientId);
+  const { data, isLoading } = useConsultations(patientId, initialConsultations);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
   const [selectedFromRow, setSelectedFromRow] = useState<Consultation | null>(null);
 

@@ -101,6 +101,15 @@ export interface PatientMapping {
   updated_at: string | null;
 }
 
+export interface PatientsListResponse {
+  success: boolean;
+  data: {
+    entityId: string;
+    patients: PatientMapping[];
+    pagination: { limit: number; offset: number; total: number };
+  };
+}
+
 /** Email record from D1 */
 export interface EmailRecord {
   id: string;

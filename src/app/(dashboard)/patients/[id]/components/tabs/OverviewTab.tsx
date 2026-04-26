@@ -5,7 +5,13 @@ import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stethoscope, RotateCw, RefreshCw } from "lucide-react";
 import { cn, htmlToPlainText } from "@/lib/utils";
-import type { ConsultationType } from "@/types";
+import type {
+  ConsultationType,
+  ConsultationsListResponse,
+  LatestClinicalDataResponse,
+  ParchmentPrescriptionsResponse,
+  PatientNotesResponse,
+} from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientNotes } from "@/lib/hooks/use-notes";
@@ -121,16 +127,37 @@ function OverviewCard({
 
 interface OverviewTabProps {
   patientId: string;
+  initialConsultations?: ConsultationsListResponse;
+  initialPrescriptions?: ParchmentPrescriptionsResponse;
+  initialNotes?: PatientNotesResponse;
+  initialLatestClinical?: LatestClinicalDataResponse;
 }
 
-export function OverviewTab({ patientId }: OverviewTabProps) {
+export function OverviewTab({
+  patientId,
+  initialConsultations,
+  initialPrescriptions,
+  initialNotes,
+  initialLatestClinical,
+}: OverviewTabProps) {
   const { patient } = usePatientShell();
   const [editPatientOpen, setEditPatientOpen] = useState(false);
-  const { data: consultsData, isLoading: loadingConsults } =
-    useConsultations(patientId);
-  const { data: rxData, isLoading: loadingRx } = usePrescriptions(patientId);
-  const { data: notesData, isLoading: loadingNotes } = usePatientNotes(patientId);
-  const { data: clinicalData } = useLatestClinicalData(patientId);
+  const { data: consultsData, isLoading: loadingConsults } = useConsultations(
+    patientId,
+    initialConsultations
+  );
+  const { data: rxData, isLoading: loadingRx } = usePrescriptions(
+    patientId,
+    initialPrescriptions
+  );
+  const { data: notesData, isLoading: loadingNotes } = usePatientNotes(
+    patientId,
+    initialNotes
+  );
+  const { data: clinicalData } = useLatestClinicalData(
+    patientId,
+    initialLatestClinical
+  );
 
   const consultations = consultsData?.data?.consultations ?? [];
   const prescriptions = rxData?.data?.prescriptions ?? [];

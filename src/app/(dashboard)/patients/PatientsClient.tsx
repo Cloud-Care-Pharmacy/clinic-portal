@@ -5,11 +5,19 @@ import { PatientTable } from "@/components/patients/PatientTable";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { PatientsListResponse } from "@/types";
 
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
+interface PatientsClientProps {
+  entityId: string;
+  initialPatients?: PatientsListResponse;
+}
 
-export function PatientsClient() {
-  const { data, isLoading, error } = usePatients(ENTITY_ID || undefined);
+export function PatientsClient({ entityId, initialPatients }: PatientsClientProps) {
+  const { data, isLoading, error } = usePatients(
+    entityId || undefined,
+    undefined,
+    initialPatients
+  );
 
   return (
     <div className="space-y-6">

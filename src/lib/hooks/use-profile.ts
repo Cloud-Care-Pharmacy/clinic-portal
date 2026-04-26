@@ -30,10 +30,11 @@ async function updateProfile(data: UpdateUserProfilePayload) {
 
 // ---- Hooks ----
 
-export function useProfile() {
+export function useProfile(initialData?: UserProfileResponse) {
   return useQuery({
     queryKey: ["profile"],
     queryFn: fetchProfile,
+    initialData,
   });
 }
 

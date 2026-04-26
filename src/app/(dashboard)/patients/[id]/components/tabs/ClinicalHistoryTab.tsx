@@ -18,7 +18,7 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
 import { useClinicalData, useApproveClinicalRecord } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import type { ClinicalDataRecord, UserRole } from "@/types";
+import type { ClinicalDataListResponse, ClinicalDataRecord, UserRole } from "@/types";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", {
@@ -350,15 +350,21 @@ interface ClinicalHistoryTabProps {
   patientId: string;
   selectedClinicalId?: string;
   reviewMode?: boolean;
+  initialClinicalData?: ClinicalDataListResponse;
 }
 
 export function ClinicalHistoryTab({
   patientId,
   selectedClinicalId,
   reviewMode,
+  initialClinicalData,
 }: ClinicalHistoryTabProps) {
   const router = useRouter();
-  const { data, isLoading, error } = useClinicalData(patientId);
+  const { data, isLoading, error } = useClinicalData(
+    patientId,
+    undefined,
+    initialClinicalData
+  );
   const [selectedFromRow, setSelectedFromRow] = useState<ClinicalDataRecord | null>(
     null
   );

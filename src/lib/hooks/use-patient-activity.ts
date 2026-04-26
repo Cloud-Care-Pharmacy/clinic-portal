@@ -47,10 +47,14 @@ export function patientActivityQueryOptions(patientId: string) {
   });
 }
 
-export function usePatientActivity(patientId: string | undefined) {
+export function usePatientActivity(
+  patientId: string | undefined,
+  initialData?: PatientActivityResponse
+) {
   const query = useQuery({
     ...patientActivityQueryOptions(patientId ?? ""),
     enabled: Boolean(patientId),
+    initialData,
   });
 
   return {

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type {
   ActivityEventCategory,
   ActivityEventType,
+  PatientActivityResponse,
   PatientActivityEvent,
 } from "@/types";
 
@@ -134,11 +135,12 @@ function ActivityRow({ event }: { event: PatientActivityEvent }) {
 
 interface ActivityTabProps {
   patientId: string;
+  initialActivity?: PatientActivityResponse;
 }
 
-export function ActivityTab({ patientId }: ActivityTabProps) {
+export function ActivityTab({ patientId, initialActivity }: ActivityTabProps) {
   const [filter, setFilter] = useState<ActivityFilter>("all");
-  const { events, isLoading, errors } = usePatientActivity(patientId);
+  const { events, isLoading, errors } = usePatientActivity(patientId, initialActivity);
   const filteredEvents = events.filter(
     (event) => filter === "all" || event.category === filter
   );

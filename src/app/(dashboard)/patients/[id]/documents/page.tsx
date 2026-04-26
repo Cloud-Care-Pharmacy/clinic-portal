@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 import { DocumentsTab } from "@/components/patients/DocumentsTab";
 
 export default async function DocumentsPage({
@@ -8,12 +9,14 @@ export default async function DocumentsPage({
   searchParams: Promise<{ action?: string; selected?: string }>;
 }) {
   const [{ id }, { action, selected }] = await Promise.all([params, searchParams]);
+  const initialDocuments = await api.getPatientDocuments(id).catch(() => undefined);
 
   return (
     <DocumentsTab
       patientId={id}
       initialAction={action === "upload" ? "upload" : undefined}
       selectedDocumentId={selected}
+      initialDocuments={initialDocuments}
     />
   );
 }

@@ -69,10 +69,14 @@ export function patientNotesQueryOptions(patientId: string) {
   });
 }
 
-export function usePatientNotes(patientId: string | undefined) {
+export function usePatientNotes(
+  patientId: string | undefined,
+  initialData?: PatientNotesResponse
+) {
   return useQuery({
     ...patientNotesQueryOptions(patientId ?? ""),
     enabled: !!patientId,
+    initialData,
   });
 }
 

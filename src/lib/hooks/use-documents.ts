@@ -170,11 +170,13 @@ export function patientDocumentsQueryOptions(
 
 export function usePatientDocuments(
   patientId: string | undefined,
-  opts?: PatientDocumentsQueryOptions
+  opts?: PatientDocumentsQueryOptions,
+  initialData?: PatientDocumentsListResponse
 ) {
   return useQuery({
     ...patientDocumentsQueryOptions(patientId ?? "", opts),
     enabled: !!patientId,
+    initialData,
   });
 }
 

@@ -3,6 +3,7 @@ import {
   emptyParchmentPrescriptionsResponse,
   normalizePatientPrescriptionsResponse,
 } from "@/lib/prescriptions";
+import { notFound } from "next/navigation";
 import PatientLayoutClient from "./PatientLayoutClient";
 import type { PatientShellInitialData } from "./patient-shell-data";
 
@@ -21,6 +22,10 @@ async function getPatientShellInitialData(
 
   if (patient.status === "fulfilled") {
     initialData.patient = patient.value;
+  } else if (patient.reason instanceof ApiError && patient.reason.status === 404) {
+    notFound();
+  } else {
+    throw patient.reason;
   }
 
   if (latestClinical.status === "fulfilled") {

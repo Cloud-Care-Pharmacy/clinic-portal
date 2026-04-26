@@ -13,9 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Overview } from "@/components/dashboard/Overview";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { useConsultations } from "@/lib/hooks/use-consultations";
+import type { ConsultationsListResponse } from "@/types";
 
-export function DashboardClient() {
-  const { data: consultationsData } = useConsultations();
+interface DashboardClientProps {
+  initialConsultations?: ConsultationsListResponse;
+}
+
+export function DashboardClient({ initialConsultations }: DashboardClientProps) {
+  const { data: consultationsData } = useConsultations(undefined, initialConsultations);
   const pendingCount = (consultationsData?.data?.consultations ?? []).filter(
     (c) => c.status === "scheduled"
   ).length;
