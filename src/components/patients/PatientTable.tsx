@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   Plus,
   MoreHorizontal,
@@ -26,10 +27,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { useDeletePatient } from "@/lib/hooks/use-patients";
 import type { PatientMapping } from "@/types";
 
 interface PatientTableProps {
@@ -128,6 +140,8 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
   );
   const [sortModel, setSortModel] = useState<GridSortModel>([]);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<PatientMapping | null>(null);
+  const deleteMutation = useDeletePatient();
 
   const statusFilterDefs: FilterDefinition[] = useMemo(
     () => [
@@ -273,9 +287,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           patient={params.row}
           onView={() => router.push(`/patients/${params.row.id}`)}
           onCopyEmail={() => handleCopyEmail(params.row.original_email)}
-          onDelete={() => {
-            /* TODO: wire up delete mutation */
-          }}
+          onDelete={() => setDeleteTarget(params.row)}
         />
       ),
     },
@@ -375,6 +387,55 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           sx={dataGridSx}
         />
       </div>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete patient?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `This will permanently delete ${
+                    [deleteTarget.first_name, deleteTarget.last_name]
+                      .filter(Boolean)
+                      .join(" ") || deleteTarget.original_email
+                  } and all related records (consultations, notes, documents, prescriptions). This action cannot be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleteTarget) return;
+                const target = deleteTarget;
+                deleteMutation.mutate(target.id, {
+                  onSuccess: () => {
+                    toast.success("Patient deleted");
+                    setDeleteTarget(null);
+                  },
+                  onError: (err) => {
+                    toast.error(
+                      err instanceof Error ? err.message : "Failed to delete patient"
+                    );
+                  },
+                });
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

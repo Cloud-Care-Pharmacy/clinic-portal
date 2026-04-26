@@ -25,13 +25,24 @@ import {
   Upload,
   Pencil,
   Flag,
-  Archive,
+  Trash2,
   Copy,
 } from "lucide-react";
 import type { PatientMapping } from "@/types";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useDeletePatient } from "@/lib/hooks/use-patients";
 import { PatientStatStrip } from "./PatientStatStrip";
 import type { PatientShellInitialData } from "../patient-shell-data";
 
@@ -83,6 +94,8 @@ export const PatientHeader = memo(
     const router = useRouter();
     const [consultationOpen, setConsultationOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const deleteMutation = useDeletePatient();
     const age = getAge(patient?.date_of_birth ?? null);
     const gender = patient?.gender ?? "";
     const ageGender = [age, gender].filter(Boolean).join(" · ");
@@ -225,11 +238,11 @@ export const PatientHeader = memo(
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       variant="destructive"
-                      disabled
-                      title="Archive API is not available yet"
+                      disabled={actionsDisabled}
+                      onClick={() => setDeleteOpen(true)}
                     >
-                      <Archive className="mr-2 size-4" />
-                      Archive patient
+                      <Trash2 className="mr-2 size-4" />
+                      Delete patient
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -272,6 +285,51 @@ export const PatientHeader = memo(
           open={editOpen}
           onOpenChange={setEditOpen}
         />
+
+        <AlertDialog
+          open={deleteOpen}
+          onOpenChange={(open) => {
+            if (!deleteMutation.isPending) setDeleteOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete patient?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {displayName} and all related records
+                (consultations, notes, documents, prescriptions). This action cannot be
+                undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteMutation.isPending}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={deleteMutation.isPending || !patientId}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!patientId) return;
+                  deleteMutation.mutate(patientId, {
+                    onSuccess: () => {
+                      toast.success("Patient deleted");
+                      setDeleteOpen(false);
+                      router.push("/patients");
+                    },
+                    onError: (err) => {
+                      toast.error(
+                        err instanceof Error ? err.message : "Failed to delete patient"
+                      );
+                    },
+                  });
+                }}
+                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              >
+                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </>
     );
   },

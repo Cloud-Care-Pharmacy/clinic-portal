@@ -52,6 +52,17 @@ async function updatePatient(patientId: string, data: UpdatePatientPayload) {
   }>;
 }
 
+async function deletePatient(patientId: string) {
+  const res = await fetch(`/api/proxy/patients/${encodeURIComponent(patientId)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to delete patient" }));
+    throw new Error(err.error ?? "Failed to delete patient");
+  }
+  return res.json() as Promise<{ success: boolean; data?: { deleted: boolean } }>;
+}
+
 async function fetchClinicalData(patientId: string, limit = 50, offset = 0) {
   const params = new URLSearchParams({
     limit: String(limit),
@@ -151,6 +162,19 @@ export function useUpdatePatient(patientId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+  });
+}
+
+export function useDeletePatient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (patientId: string) => deletePatient(patientId),
+    onSuccess: (_data, patientId) => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      queryClient.removeQueries({ queryKey: ["patient", patientId] });
+      queryClient.removeQueries({ queryKey: ["patient-counts", patientId] });
+      queryClient.removeQueries({ queryKey: ["consultations", patientId] });
     },
   });
 }

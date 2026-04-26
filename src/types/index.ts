@@ -519,7 +519,8 @@ export interface PaginatedResponse<T> {
 }
 
 // ============================================
-// Patient Notes types (mock backend — swap to real endpoint later)
+// Patient Notes types (prescription-gateway: GET/POST /api/patients/:id/notes,
+// PATCH/DELETE /api/patients/:id/notes/:noteId)
 // ============================================
 
 export type NoteCategory = "clinical" | "pharmacy" | "follow-up" | "general";
