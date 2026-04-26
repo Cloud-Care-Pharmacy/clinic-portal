@@ -52,20 +52,22 @@ This tells us which bundles actually hurt initial load and prevents churn on com
 
 ## Phase 2 — Reduce route-level client boundaries
 
+_Progress 2026-04-26:_ All authenticated `page.tsx` route-level client boundaries found in the audit have been split into Server Component wrappers and focused `*Client.tsx` leaves. Interactive admin and new-patient intake flows now live in client leaves instead of route pages.
+
 ### Tasks
 
-- [ ] Audit each authenticated `page.tsx` with `"use client"` and split it into:
+- [x] Audit each authenticated `page.tsx` with `"use client"` and split it into:
   - a default Server Component page for layout, metadata-safe route composition, and optional initial data fetching;
   - a small `*Client.tsx` leaf for state, event handlers, browser APIs, and TanStack Query hooks.
-- [ ] Prioritize these pages first:
-  - `src/app/(dashboard)/dashboard/page.tsx`
-  - `src/app/(dashboard)/patients/page.tsx`
-  - `src/app/(dashboard)/consultations/page.tsx`
-  - `src/app/(dashboard)/prescriptions/page.tsx`
-  - `src/app/(dashboard)/profile/page.tsx`
-- [ ] Keep route-group layouts as Server Components where possible.
-- [ ] Ensure any props crossing Server Component to Client Component boundaries are JSON-serializable.
-- [ ] Keep client-only providers as high as necessary but no higher than needed.
+- [x] Prioritize these pages first:
+  - [x] `src/app/(dashboard)/dashboard/page.tsx`
+  - [x] `src/app/(dashboard)/patients/page.tsx`
+  - [x] `src/app/(dashboard)/consultations/page.tsx`
+  - [x] `src/app/(dashboard)/prescriptions/page.tsx`
+  - [x] `src/app/(dashboard)/profile/page.tsx`
+- [x] Keep route-group layouts as Server Components where possible.
+- [x] Ensure any props crossing Server Component to Client Component boundaries are JSON-serializable.
+- [x] Keep client-only providers as high as necessary but no higher than needed.
 
 ### Why
 

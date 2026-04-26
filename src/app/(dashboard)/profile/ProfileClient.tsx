@@ -1,0 +1,233 @@
+"use client";
+
+import { useMemo } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
+import { useProfile } from "@/lib/hooks/use-profile";
+import { Mail, Phone, User } from "lucide-react";
+import { ProfileContactTab } from "@/components/profile/ProfileContactTab";
+import { ProfileAvailabilityTab } from "@/components/profile/ProfileAvailabilityTab";
+import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
+import { BusinessAddressSection } from "@/components/profile/BusinessAddressSection";
+import { ProfileSecurityTab } from "@/components/profile/ProfileSecurityTab";
+import type { UserProfile, UserRole } from "@/types";
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Administrator",
+  doctor: "Doctor",
+  staff: "Staff",
+};
+
+const ROLE_COLORS: Record<UserRole, string> = {
+  admin: "bg-primary/10 text-primary border-primary/20",
+  doctor: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  staff: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
+};
+
+function computeCompleteness(profile: UserProfile | null, isDoctor: boolean) {
+  if (!profile) return { pct: 0, missing: 0 };
+  const base = [profile.phone, profile.date_of_birth, profile.gender];
+  const doctorFields = isDoctor
+    ? [
+        profile.qualifications,
+        profile.specialty,
+        profile.prescriber_number,
+        profile.business_phone,
+        profile.ahpra_number,
+        profile.hospital_provider_number,
+        profile.provider_number,
+        profile.hpii,
+        profile.business_street_number,
+        profile.business_street_name,
+        profile.business_suburb,
+        profile.business_state,
+        profile.business_postcode,
+        profile.business_email,
+      ]
+    : [];
+  const all = [...base, ...doctorFields];
+  const filled = all.filter((v) => v && String(v).trim().length > 0).length;
+  const pct = Math.round((filled / all.length) * 100);
+  return { pct, missing: all.length - filled };
+}
+
+export function ProfileClient() {
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
+  const { data: profileData, isLoading: profileLoading } = useProfile();
+
+  const profile = profileData?.data?.profile ?? null;
+  const role = (clerkUser?.publicMetadata?.role as UserRole) ?? "staff";
+  const isDoctor = role === "doctor";
+
+  const fullName = clerkUser
+    ? [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || "User"
+    : "";
+  const email = clerkUser?.emailAddresses[0]?.emailAddress ?? "";
+  const phone = profile?.phone ?? "";
+  const initials = fullName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const { pct, missing } = useMemo(
+    () => computeCompleteness(profile, isDoctor),
+    [profile, isDoctor]
+  );
+
+  const isLoading = !clerkLoaded || profileLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="px-6 py-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-6 w-20 rounded-full" />
+            </div>
+          </CardContent>
+        </Card>
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Profile Header Card */}
+      <Card>
+        <CardContent className="px-6 py-4">
+          <div className="flex flex-col gap-3">
+            {/* Row 1: avatar, name, role badge, contact icons */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                {clerkUser?.imageUrl ? (
+                  <img
+                    src={clerkUser.imageUrl}
+                    alt={fullName}
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : initials ? (
+                  initials
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
+              </div>
+              <h2 className="text-lg font-semibold leading-tight whitespace-nowrap">
+                {fullName}
+              </h2>
+              <Badge variant="outline" className={ROLE_COLORS[role]}>
+                {ROLE_LABELS[role]}
+              </Badge>
+              <div className="flex items-center gap-1.5">
+                <ExpandableIconButton
+                  icon={<Mail className="size-4" />}
+                  label={email}
+                  ariaLabel={`Email: ${email}`}
+                  disabled={!email}
+                />
+                <ExpandableIconButton
+                  icon={<Phone className="size-4" />}
+                  label={phone || "Not set"}
+                  ariaLabel={`Phone: ${phone || "Not set"}`}
+                  disabled={!phone}
+                />
+              </div>
+            </div>
+
+            {/* Row 2: specialty, prescriber #, joined */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              {isDoctor && profile?.specialty && <span>{profile.specialty}</span>}
+              {isDoctor && profile?.prescriber_number && (
+                <span className="font-mono text-xs">
+                  Prescriber #{profile.prescriber_number}
+                </span>
+              )}
+              {profile?.created_at && (
+                <span className="text-xs">
+                  Joined{" "}
+                  {new Date(profile.created_at).toLocaleDateString("en-AU", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+
+            {/* Row 3: Profile completeness */}
+            <div className="flex items-center gap-3 border-t pt-3">
+              <span className="text-[13px] text-muted-foreground whitespace-nowrap">
+                <strong className="text-foreground font-semibold">
+                  Profile {pct}% complete
+                </strong>
+                {missing > 0 && (
+                  <>
+                    {" "}
+                    &mdash; {missing} field{missing === 1 ? "" : "s"} missing
+                  </>
+                )}
+              </span>
+              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs defaultValue="contact" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="contact">Contact</TabsTrigger>
+          <TabsTrigger value="availability">Availability</TabsTrigger>
+          {isDoctor && <TabsTrigger value="prescriber">Prescriber Details</TabsTrigger>}
+          {isDoctor && <TabsTrigger value="address">Business Details</TabsTrigger>}
+          <TabsTrigger value="security">Security</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="contact">
+          <ProfileContactTab
+            profile={profile}
+            role={role}
+            clerkFirstName={clerkUser?.firstName ?? ""}
+            clerkLastName={clerkUser?.lastName ?? ""}
+          />
+        </TabsContent>
+
+        <TabsContent value="availability">
+          <ProfileAvailabilityTab profile={profile} />
+        </TabsContent>
+
+        {isDoctor && (
+          <TabsContent value="prescriber">
+            <PrescriberDetailsSection profile={profile} />
+          </TabsContent>
+        )}
+
+        {isDoctor && (
+          <TabsContent value="address">
+            <BusinessAddressSection profile={profile} />
+          </TabsContent>
+        )}
+
+        <TabsContent value="security">
+          <ProfileSecurityTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

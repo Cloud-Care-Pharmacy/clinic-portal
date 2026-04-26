@@ -1,25 +1,13 @@
-"use client";
+import { ConsultationsPageClient } from "./ConsultationsPageClient";
 
-import { use } from "react";
-import { ConsultationsTab } from "../components/tabs/ConsultationsTab";
-import { usePatientShell } from "../components/PatientShellContext";
-
-export default function ConsultationsPage({
+export default async function ConsultationsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ selected?: string }>;
 }) {
-  const { id } = use(params);
-  const { selected } = use(searchParams);
-  const { displayName } = usePatientShell();
+  const [{ id }, { selected }] = await Promise.all([params, searchParams]);
 
-  return (
-    <ConsultationsTab
-      patientId={id}
-      patientName={displayName}
-      selectedConsultationId={selected}
-    />
-  );
+  return <ConsultationsPageClient patientId={id} selectedConsultationId={selected} />;
 }
