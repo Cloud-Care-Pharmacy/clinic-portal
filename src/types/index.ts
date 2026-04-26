@@ -268,6 +268,11 @@ export interface ClinicalDataRecord {
   additional_notes: string | null;
   safety_acknowledgment: string;
   submitted_at: string;
+  review_status?: "pending" | "approved";
+  reviewed_by?: string | null;
+  reviewed_by_role?: "admin" | "doctor" | null;
+  reviewed_at?: string | null;
+  review_notes?: string | null;
 }
 
 export interface ClinicalDataListResponse {

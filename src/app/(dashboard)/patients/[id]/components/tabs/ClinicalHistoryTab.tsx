@@ -2,17 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
+import { ShieldCheck, Clock } from "lucide-react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
-import { useClinicalData } from "@/lib/hooks/use-patients";
+import { useClinicalData, useApproveClinicalRecord } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import type { ClinicalDataRecord } from "@/types";
+import type { ClinicalDataRecord, UserRole } from "@/types";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", {
@@ -28,18 +34,41 @@ function formatDateTime(iso: string) {
 
 function IntakeFormSheet({
   record: input,
+  patientId,
   isLatest,
   reviewMode,
   open,
   onOpenChange,
 }: {
   record: ClinicalDataRecord | null;
+  patientId: string;
   isLatest: boolean;
   reviewMode?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const record = useLastDefined(input);
+  const { user } = useUser();
+  const role = (user?.publicMetadata?.role as UserRole) ?? "staff";
+  const canApprove = role === "doctor" || role === "admin";
+  const approveRecord = useApproveClinicalRecord(patientId);
+  const [reviewNotes, setReviewNotes] = useState("");
+
+  const isApproved = record?.review_status === "approved";
+
+  function handleApprove() {
+    if (!record) return;
+    approveRecord.mutate(
+      { recordId: record.id, reviewNotes: reviewNotes.trim() || undefined },
+      {
+        onSuccess: () => {
+          toast.success("Clinical submission approved");
+          setReviewNotes("");
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
+  }
 
   const sections: {
     title: string;
@@ -165,6 +194,24 @@ function IntakeFormSheet({
               LATEST
             </Badge>
           )}
+          {record &&
+            (isApproved ? (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 bg-status-success-bg text-status-success-fg border-status-success-border"
+              >
+                <ShieldCheck className="mr-1 h-3 w-3" />
+                Approved
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 bg-status-warning-bg text-status-warning-fg border-status-warning-border"
+              >
+                <Clock className="mr-1 h-3 w-3" />
+                Pending review
+              </Badge>
+            ))}
         </span>
       }
       description={
@@ -196,6 +243,74 @@ function IntakeFormSheet({
             </div>
           </div>
         ))}
+
+        {record && (
+          <>
+            <Separator />
+            <section aria-label="Doctor review" className="space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em]">
+                  Doctor Review
+                </h4>
+              </div>
+
+              {isApproved ? (
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
+                  <p>
+                    <span className="text-muted-foreground">Approved by:</span>{" "}
+                    <span className="font-medium">{record.reviewed_by ?? "—"}</span>
+                    {record.reviewed_by_role ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        ({record.reviewed_by_role})
+                      </span>
+                    ) : null}
+                  </p>
+                  {record.reviewed_at && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatDateTime(record.reviewed_at)}
+                    </p>
+                  )}
+                  {record.review_notes && (
+                    <div className="mt-2 rounded-md border bg-background p-3 whitespace-pre-wrap">
+                      {record.review_notes}
+                    </div>
+                  )}
+                </div>
+              ) : canApprove ? (
+                <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">
+                    Review the submission above and approve when ready. You can leave an
+                    optional comment for the record.
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="clinical-review-notes">
+                      Review comment (optional)
+                    </Label>
+                    <Textarea
+                      id="clinical-review-notes"
+                      placeholder="Add any review comments…"
+                      value={reviewNotes}
+                      onChange={(e) => setReviewNotes(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={handleApprove} disabled={approveRecord.isPending}>
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      {approveRecord.isPending ? "Approving…" : "Approve"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                  This submission is awaiting review by a doctor.
+                </p>
+              )}
+            </section>
+          </>
+        )}
       </div>
     </AppSheet>
   );
@@ -319,6 +434,7 @@ export function ClinicalHistoryTab({
       </div>
       <IntakeFormSheet
         record={selected}
+        patientId={patientId}
         isLatest={selected?.id === latestId}
         reviewMode={reviewMode && selected?.id === selectedClinicalId}
         open={!!selected}

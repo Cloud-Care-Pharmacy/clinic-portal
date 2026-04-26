@@ -3,6 +3,7 @@ import type {
   UpdatePatientPayload,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
+  ClinicalDataRecord,
 } from "@/types";
 import {
   queryOptions,
@@ -75,6 +76,28 @@ async function fetchLatestClinicalData(patientId: string) {
   );
   if (!res.ok) throw new Error("Failed to fetch latest clinical data");
   return res.json() as Promise<LatestClinicalDataResponse>;
+}
+
+async function approveClinicalRecord(
+  patientId: string,
+  recordId: string,
+  body: { reviewNotes?: string }
+): Promise<{ success: boolean; data: { record: ClinicalDataRecord } }> {
+  const res = await fetch(
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/clinical-data/${encodeURIComponent(recordId)}/approve`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Failed to approve clinical record" }));
+    throw new Error(err.error ?? "Failed to approve clinical record");
+  }
+  return res.json();
 }
 
 // ---- Hooks ----
@@ -154,5 +177,24 @@ export function useLatestClinicalData(
     ...latestClinicalDataQueryOptions(patientId ?? ""),
     enabled: !!patientId,
     initialData,
+  });
+}
+
+export function useApproveClinicalRecord(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      recordId,
+      reviewNotes,
+    }: {
+      recordId: string;
+      reviewNotes?: string;
+    }) => approveClinicalRecord(patientId, recordId, { reviewNotes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clinical-data", patientId] });
+      queryClient.invalidateQueries({
+        queryKey: ["clinical-data-latest", patientId],
+      });
+    },
   });
 }
