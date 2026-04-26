@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -30,15 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
+import { AppSheet } from "@/components/shared/AppSheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import {
@@ -93,6 +85,7 @@ function AddNoteSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const createNote = useCreateNote(patientId);
+  const formId = useId();
   const form = useForm<NoteFormData>({
     defaultValues: { title: "", content: "", category: "general", isPinned: false },
   });
@@ -132,104 +125,89 @@ function AddNoteSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-100"
-      >
-        <SheetHeader>
-          <SheetTitle>Add Note</SheetTitle>
-          <SheetDescription>
-            Add a clinical or general note for this patient.
-          </SheetDescription>
-        </SheetHeader>
+    <AppSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Note"
+      description="Add a clinical or general note for this patient."
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              form.reset();
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={createNote.isPending}>
+            {createNote.isPending ? "Saving…" : "Add note"}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="note-title">Title</Label>
+          <Input id="note-title" placeholder="Note title" {...form.register("title")} />
+          {form.formState.errors.title && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.title.message}
+            </p>
+          )}
+        </div>
 
-        <Separator />
+        <div className="space-y-2">
+          <Label htmlFor="note-category">Category</Label>
+          <Select
+            value={categoryValue}
+            onValueChange={(v) => {
+              if (v) form.setValue("category", v);
+            }}
+          >
+            <SelectTrigger id="note-category">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="clinical">Clinical Observation</SelectItem>
+              <SelectItem value="pharmacy">Pharmacy Note</SelectItem>
+              <SelectItem value="follow-up">Follow-up</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-1 flex-col gap-4 p-4"
-        >
-          <div className="space-y-2">
-            <Label htmlFor="note-title">Title</Label>
-            <Input
-              id="note-title"
-              placeholder="Note title"
-              {...form.register("title")}
-            />
-            {form.formState.errors.title && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.title.message}
-              </p>
-            )}
+        <div className="flex-1 space-y-2">
+          <Label>Note</Label>
+          <SimpleEditor
+            content={form.getValues("content")}
+            onChange={(html) =>
+              form.setValue("content", html, { shouldValidate: true })
+            }
+          />
+          {form.formState.errors.content && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.content.message}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold">Pin this note</p>
+            <p className="text-xs text-muted-foreground">
+              Pinned notes stay at the top of the notes list for quick access.
+            </p>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="note-category">Category</Label>
-            <Select
-              value={categoryValue}
-              onValueChange={(v) => {
-                if (v) form.setValue("category", v);
-              }}
-            >
-              <SelectTrigger id="note-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="clinical">Clinical Observation</SelectItem>
-                <SelectItem value="pharmacy">Pharmacy Note</SelectItem>
-                <SelectItem value="follow-up">Follow-up</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex-1 space-y-2">
-            <Label>Note</Label>
-            <SimpleEditor
-              content={form.getValues("content")}
-              onChange={(html) =>
-                form.setValue("content", html, { shouldValidate: true })
-              }
-            />
-            {form.formState.errors.content && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.content.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
-            <div className="space-y-0.5">
-              <p className="text-sm font-semibold">Pin this note</p>
-              <p className="text-xs text-muted-foreground">
-                Pinned notes stay at the top of the notes list for quick access.
-              </p>
-            </div>
-            <Switch
-              checked={isPinnedValue}
-              onCheckedChange={(checked) => form.setValue("isPinned", checked === true)}
-            />
-          </div>
-
-          <div className="flex gap-2 justify-end pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                form.reset();
-                onOpenChange(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createNote.isPending}>
-              {createNote.isPending ? "Saving…" : "Add Note"}
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+          <Switch
+            checked={isPinnedValue}
+            onCheckedChange={(checked) => form.setValue("isPinned", checked === true)}
+          />
+        </div>
+      </form>
+    </AppSheet>
   );
 }
 
@@ -247,56 +225,50 @@ function NoteDetailSheet({
   if (!note) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden sm:max-w-[33vw] sm:min-w-100"
-      >
-        <SheetHeader>
-          <SheetTitle>{note.title}</SheetTitle>
-          <SheetDescription>
-            {note.authorName} ·{" "}
-            {new Date(note.createdAt).toLocaleString("en-AU", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </SheetDescription>
-        </SheetHeader>
-
-        <Separator />
-
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className={`text-xs px-2 py-0.5 ${CATEGORY_COLORS[note.category]}`}
-            >
-              {CATEGORY_LABELS[note.category]}
+    <AppSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={note.title}
+      description={
+        <>
+          {note.authorName} ·{" "}
+          {new Date(note.createdAt).toLocaleString("en-AU", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </>
+      }
+      footer={
+        <Button variant="outline" onClick={() => onOpenChange(false)}>
+          Close
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge
+            variant="outline"
+            className={`text-xs px-2 py-0.5 ${CATEGORY_COLORS[note.category]}`}
+          >
+            {CATEGORY_LABELS[note.category]}
+          </Badge>
+          {note.isPinned && (
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
+              <Pin className="mr-1.5 h-3 w-3" />
+              Pinned
             </Badge>
-            {note.isPinned && (
-              <Badge variant="outline" className="text-xs px-2 py-0.5">
-                <Pin className="mr-1.5 h-3 w-3" />
-                Pinned
-              </Badge>
-            )}
-          </div>
-
-          <div
-            className="prose prose-sm max-w-none text-sm text-foreground [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2"
-            dangerouslySetInnerHTML={{ __html: note.content }}
-          />
+          )}
         </div>
 
-        <SheetFooter className="border-t bg-popover">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Close
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        <div
+          className="prose prose-sm max-w-none text-sm text-foreground [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2"
+          dangerouslySetInnerHTML={{ __html: note.content }}
+        />
+      </div>
+    </AppSheet>
   );
 }
 

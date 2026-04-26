@@ -18,16 +18,8 @@ import {
   SelectValue as UISelectValue,
 } from "@/components/ui/select";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
+import { AppSheet } from "@/components/shared/AppSheet";
 import { cn } from "@/lib/utils";
-
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
 import {
   useCreateConsultation,
   useUpdateConsultation,
@@ -113,6 +105,7 @@ export function NewConsultationSheet({
   const createConsultation = useCreateConsultation();
   const updateConsultation = useUpdateConsultation();
   const fallbackPatientId = useId();
+  const formId = useId();
   const isEditing = Boolean(consultation);
   const initialTimeParts = getTimeParts(consultation?.scheduledAt);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -252,259 +245,243 @@ export function NewConsultationSheet({
   }
 
   return (
-    <Sheet
+    <AppSheet
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen && !isEditing) resetNewConsultationState();
         onOpenChange(nextOpen);
       }}
+      title={isEditing ? "Update Consultation" : "Schedule Consultation"}
+      description={
+        isEditing
+          ? "Update appointment details and consultation outcome."
+          : "Create a new consultation appointment."
+      }
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              if (!isEditing) resetNewConsultationState();
+              onOpenChange(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={isSubmitting}>
+            {isSubmitting
+              ? isEditing
+                ? "Saving…"
+                : "Scheduling…"
+              : isEditing
+                ? "Save changes"
+                : "Schedule"}
+          </Button>
+        </>
+      }
     >
-      <SheetContent
-        side="right"
-        className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden sm:max-w-[33vw] sm:min-w-100"
-      >
-        <SheetHeader>
-          <SheetTitle>
-            {isEditing ? "Update Consultation" : "Schedule Consultation"}
-          </SheetTitle>
-          <SheetDescription>
-            {isEditing
-              ? "Update appointment details and consultation outcome."
-              : "Create a new consultation appointment."}
-          </SheetDescription>
-        </SheetHeader>
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="patientName">Patient Name</Label>
+          <Input
+            id="patientName"
+            placeholder="Enter patient name"
+            {...form.register("patientName")}
+            disabled={isEditing || !!defaultPatientName}
+          />
+          {form.formState.errors.patientName && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.patientName.message}
+            </p>
+          )}
+        </div>
 
-        <Separator />
+        <div className="space-y-2">
+          <Label htmlFor="doctorName">Doctor</Label>
+          <Input
+            id="doctorName"
+            placeholder="Enter doctor name"
+            {...form.register("doctorName")}
+          />
+          {form.formState.errors.doctorName && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.doctorName.message}
+            </p>
+          )}
+        </div>
 
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-        >
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-6">
-            <div className="space-y-2">
-              <Label htmlFor="patientName">Patient Name</Label>
-              <Input
-                id="patientName"
-                placeholder="Enter patient name"
-                {...form.register("patientName")}
-                disabled={isEditing || !!defaultPatientName}
-              />
-              {form.formState.errors.patientName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.patientName.message}
-                </p>
+        <div className="space-y-2">
+          <Label htmlFor="type">Type</Label>
+          <UISelect
+            value={typeValue}
+            onValueChange={(v) => {
+              if (v) form.setValue("type", v);
+            }}
+          >
+            <UISelectTrigger id="type">
+              <UISelectValue placeholder="Select type" />
+            </UISelectTrigger>
+            <UISelectContent>
+              <UISelectItem value="initial">Initial Assessment</UISelectItem>
+              <UISelectItem value="follow-up">Follow-up</UISelectItem>
+              <UISelectItem value="renewal">Prescription Renewal</UISelectItem>
+            </UISelectContent>
+          </UISelect>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Date & Time</Label>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger
+              className={cn(
+                "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                !displayValue && "text-muted-foreground",
+                form.formState.errors.scheduledAt &&
+                  "border-destructive ring-3 ring-destructive/20"
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="doctorName">Doctor</Label>
-              <Input
-                id="doctorName"
-                placeholder="Enter doctor name"
-                {...form.register("doctorName")}
+            >
+              <span>{displayValue ?? "Pick a date & time"}</span>
+              <CalendarIcon className="h-4 w-4 opacity-50" />
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                captionLayout="dropdown"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                defaultMonth={selectedDate ?? new Date()}
+                startMonth={new Date()}
+                endMonth={new Date(2030, 11)}
               />
-              {form.formState.errors.doctorName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.doctorName.message}
-                </p>
-              )}
-            </div>
+            </PopoverContent>
+          </Popover>
 
+          <div className="flex items-center gap-2">
+            <UISelect
+              value={hour}
+              onValueChange={(v) => {
+                if (v) {
+                  setHour(v);
+                  updateScheduledAt(selectedDate, v, minute, period);
+                }
+              }}
+            >
+              <UISelectTrigger className="w-17.5">
+                <UISelectValue />
+              </UISelectTrigger>
+              <UISelectContent>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const val = String(i + 1).padStart(2, "0");
+                  return (
+                    <UISelectItem key={val} value={val}>
+                      {val}
+                    </UISelectItem>
+                  );
+                })}
+              </UISelectContent>
+            </UISelect>
+            <span className="text-sm font-medium">:</span>
+            <UISelect
+              value={minute}
+              onValueChange={(v) => {
+                if (v) {
+                  setMinute(v);
+                  updateScheduledAt(selectedDate, hour, v, period);
+                }
+              }}
+            >
+              <UISelectTrigger className="w-17.5">
+                <UISelectValue />
+              </UISelectTrigger>
+              <UISelectContent>
+                {minuteOptions.map((val) => (
+                  <UISelectItem key={val} value={val}>
+                    {val}
+                  </UISelectItem>
+                ))}
+              </UISelectContent>
+            </UISelect>
+            <UISelect
+              value={period}
+              onValueChange={(v) => {
+                if (v) {
+                  setPeriod(v as "AM" | "PM");
+                  updateScheduledAt(selectedDate, hour, minute, v as "AM" | "PM");
+                }
+              }}
+            >
+              <UISelectTrigger className="w-17.5">
+                <UISelectValue />
+              </UISelectTrigger>
+              <UISelectContent>
+                <UISelectItem value="AM">AM</UISelectItem>
+                <UISelectItem value="PM">PM</UISelectItem>
+              </UISelectContent>
+            </UISelect>
+          </div>
+
+          {form.formState.errors.scheduledAt && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.scheduledAt.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="duration">Duration (minutes)</Label>
+          <Input
+            id="duration"
+            type="number"
+            min="5"
+            max="120"
+            {...form.register("duration")}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Notes</Label>
+          <SimpleEditor
+            content={notesValue ?? ""}
+            onChange={(html) => form.setValue("notes", html)}
+            placeholder="Optional notes for this consultation…"
+          />
+        </div>
+
+        {isEditing && (
+          <>
             <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
+              <Label htmlFor="status">Status</Label>
               <UISelect
-                value={typeValue}
+                value={statusValue}
                 onValueChange={(v) => {
-                  if (v) form.setValue("type", v);
+                  if (v) form.setValue("status", v);
                 }}
               >
-                <UISelectTrigger id="type">
-                  <UISelectValue placeholder="Select type" />
+                <UISelectTrigger id="status">
+                  <UISelectValue placeholder="Select status" />
                 </UISelectTrigger>
                 <UISelectContent>
-                  <UISelectItem value="initial">Initial Assessment</UISelectItem>
-                  <UISelectItem value="follow-up">Follow-up</UISelectItem>
-                  <UISelectItem value="renewal">Prescription Renewal</UISelectItem>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <UISelectItem key={value} value={value}>
+                      {label}
+                    </UISelectItem>
+                  ))}
                 </UISelectContent>
               </UISelect>
             </div>
 
             <div className="space-y-2">
-              <Label>Date & Time</Label>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger
-                  className={cn(
-                    "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                    !displayValue && "text-muted-foreground",
-                    form.formState.errors.scheduledAt &&
-                      "border-destructive ring-3 ring-destructive/20"
-                  )}
-                >
-                  <span>{displayValue ?? "Pick a date & time"}</span>
-                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    captionLayout="dropdown"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    defaultMonth={selectedDate ?? new Date()}
-                    startMonth={new Date()}
-                    endMonth={new Date(2030, 11)}
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <div className="flex items-center gap-2">
-                <UISelect
-                  value={hour}
-                  onValueChange={(v) => {
-                    if (v) {
-                      setHour(v);
-                      updateScheduledAt(selectedDate, v, minute, period);
-                    }
-                  }}
-                >
-                  <UISelectTrigger className="w-17.5">
-                    <UISelectValue />
-                  </UISelectTrigger>
-                  <UISelectContent>
-                    {Array.from({ length: 12 }, (_, i) => {
-                      const val = String(i + 1).padStart(2, "0");
-                      return (
-                        <UISelectItem key={val} value={val}>
-                          {val}
-                        </UISelectItem>
-                      );
-                    })}
-                  </UISelectContent>
-                </UISelect>
-                <span className="text-sm font-medium">:</span>
-                <UISelect
-                  value={minute}
-                  onValueChange={(v) => {
-                    if (v) {
-                      setMinute(v);
-                      updateScheduledAt(selectedDate, hour, v, period);
-                    }
-                  }}
-                >
-                  <UISelectTrigger className="w-17.5">
-                    <UISelectValue />
-                  </UISelectTrigger>
-                  <UISelectContent>
-                    {minuteOptions.map((val) => (
-                      <UISelectItem key={val} value={val}>
-                        {val}
-                      </UISelectItem>
-                    ))}
-                  </UISelectContent>
-                </UISelect>
-                <UISelect
-                  value={period}
-                  onValueChange={(v) => {
-                    if (v) {
-                      setPeriod(v as "AM" | "PM");
-                      updateScheduledAt(selectedDate, hour, minute, v as "AM" | "PM");
-                    }
-                  }}
-                >
-                  <UISelectTrigger className="w-17.5">
-                    <UISelectValue />
-                  </UISelectTrigger>
-                  <UISelectContent>
-                    <UISelectItem value="AM">AM</UISelectItem>
-                    <UISelectItem value="PM">PM</UISelectItem>
-                  </UISelectContent>
-                </UISelect>
-              </div>
-
-              {form.formState.errors.scheduledAt && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.scheduledAt.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="duration">Duration (minutes)</Label>
-              <Input
-                id="duration"
-                type="number"
-                min="5"
-                max="120"
-                {...form.register("duration")}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Notes</Label>
+              <Label>Outcome</Label>
               <SimpleEditor
-                content={notesValue ?? ""}
-                onChange={(html) => form.setValue("notes", html)}
-                placeholder="Optional notes for this consultation…"
+                content={outcomeValue ?? ""}
+                onChange={(html) => form.setValue("outcome", html)}
+                placeholder="Optional outcome or summary…"
               />
             </div>
-
-            {isEditing && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
-                  <UISelect
-                    value={statusValue}
-                    onValueChange={(v) => {
-                      if (v) form.setValue("status", v);
-                    }}
-                  >
-                    <UISelectTrigger id="status">
-                      <UISelectValue placeholder="Select status" />
-                    </UISelectTrigger>
-                    <UISelectContent>
-                      {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                        <UISelectItem key={value} value={value}>
-                          {label}
-                        </UISelectItem>
-                      ))}
-                    </UISelectContent>
-                  </UISelect>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Outcome</Label>
-                  <SimpleEditor
-                    content={outcomeValue ?? ""}
-                    onChange={(html) => form.setValue("outcome", html)}
-                    placeholder="Optional outcome or summary…"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="flex shrink-0 justify-end gap-2 border-t bg-popover px-4 py-3">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                if (!isEditing) resetNewConsultationState();
-                onOpenChange(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? isEditing
-                  ? "Saving…"
-                  : "Scheduling…"
-                : isEditing
-                  ? "Save changes"
-                  : "Schedule"}
-            </Button>
-          </div>
-        </form>
-      </SheetContent>
-    </Sheet>
+          </>
+        )}
+      </form>
+    </AppSheet>
   );
 }

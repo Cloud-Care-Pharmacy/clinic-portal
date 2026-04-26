@@ -1,13 +1,7 @@
 "use client";
 
 import { Pill } from "lucide-react";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import type { ParchmentPrescription, PrescriptionMedication } from "@/types";
 
@@ -76,68 +70,67 @@ export function PrescriptionDetailSheet({
   const reference = formatPrescriptionReference(prescription);
 
   return (
-    <Sheet open={!!prescription} onOpenChange={() => onClose()}>
-      <SheetContent className="sm:max-w-110">
-        <SheetHeader>
-          <SheetTitle>{reference}</SheetTitle>
-          <SheetDescription>
-            Prescription issued {formatDate(prescription.issuedAt)}
-          </SheetDescription>
-        </SheetHeader>
-        <div className="space-y-5 overflow-y-auto px-4 pb-4">
-          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-3 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <div className="mt-1">
-                <StatusBadge status={prescription.status} />
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Items</p>
-              <p className="mt-1 font-medium tabular-nums">
-                {prescription.medications.length}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Prescribed by</p>
-              <p className="mt-1 font-medium wrap-break-word">
-                {prescription.prescriberName ?? "—"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Expires</p>
-              <p className="mt-1 font-medium tabular-nums">
-                {formatDate(prescription.expiresAt)}
-              </p>
+    <AppSheet
+      open={!!prescription}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={reference}
+      description={`Prescription issued ${formatDate(prescription.issuedAt)}`}
+    >
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+          <div>
+            <p className="text-xs text-muted-foreground">Status</p>
+            <div className="mt-1">
+              <StatusBadge status={prescription.status} />
             </div>
           </div>
-
-          <section className="space-y-3">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Medications in this prescription
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Review each item included in the selected prescription.
-              </p>
-            </div>
-            <div className="space-y-3">
-              {prescription.medications.map((medication) => (
-                <MedicationRow key={medication.id} medication={medication} />
-              ))}
-            </div>
-          </section>
-
-          {prescription.notes && (
-            <section className="rounded-xl border border-border bg-card p-3">
-              <h3 className="text-sm font-semibold text-foreground">Notes</h3>
-              <p className="mt-1 text-sm text-muted-foreground wrap-break-word">
-                {prescription.notes}
-              </p>
-            </section>
-          )}
+          <div>
+            <p className="text-xs text-muted-foreground">Items</p>
+            <p className="mt-1 font-medium tabular-nums">
+              {prescription.medications.length}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Prescribed by</p>
+            <p className="mt-1 font-medium wrap-break-word">
+              {prescription.prescriberName ?? "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Expires</p>
+            <p className="mt-1 font-medium tabular-nums">
+              {formatDate(prescription.expiresAt)}
+            </p>
+          </div>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        <section className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              Medications in this prescription
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Review each item included in the selected prescription.
+            </p>
+          </div>
+          <div className="space-y-3">
+            {prescription.medications.map((medication) => (
+              <MedicationRow key={medication.id} medication={medication} />
+            ))}
+          </div>
+        </section>
+
+        {prescription.notes && (
+          <section className="rounded-xl border border-border bg-card p-3">
+            <h3 className="text-sm font-semibold text-foreground">Notes</h3>
+            <p className="mt-1 text-sm text-muted-foreground wrap-break-word">
+              {prescription.notes}
+            </p>
+          </section>
+        )}
+      </div>
+    </AppSheet>
   );
 }

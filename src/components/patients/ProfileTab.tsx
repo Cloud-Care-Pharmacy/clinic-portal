@@ -15,14 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+import { AppSheet } from "@/components/shared/AppSheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import {
@@ -280,143 +273,135 @@ export function PatientEditSheet({
   }
 
   return (
-    <Sheet
+    <AppSheet
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) handleCancel();
         else onOpenChange(nextOpen);
       }}
-    >
-      <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Edit Patient Details</SheetTitle>
-          <SheetDescription>
-            Update patient demographics and contact information.
-          </SheetDescription>
-        </SheetHeader>
-        <form
-          id={formId}
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-4 px-4"
-        >
-          {/* Name */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name *</Label>
-              <Input id="firstName" {...form.register("firstName")} />
-              {form.formState.errors.firstName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.firstName.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name *</Label>
-              <Input id="lastName" {...form.register("lastName")} />
-              {form.formState.errors.lastName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.lastName.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* DOB */}
-          <DateOfBirthPicker form={form} />
-
-          {/* Gender & Mobile */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="gender">Gender *</Label>
-              <Input
-                id="gender"
-                placeholder="e.g. Male, Female, Other"
-                {...form.register("gender")}
-              />
-              {form.formState.errors.gender && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.gender.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile *</Label>
-              <Input id="mobile" type="tel" {...form.register("mobile")} />
-              {form.formState.errors.mobile && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.mobile.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="space-y-2">
-            <Label htmlFor="streetAddress">Street Address *</Label>
-            <Input id="streetAddress" {...form.register("streetAddress")} />
-            {form.formState.errors.streetAddress && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.streetAddress.message}
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">City *</Label>
-              <Input id="city" {...form.register("city")} />
-              {form.formState.errors.city && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.city.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Input id="state" {...form.register("state")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="postcode">Postcode *</Label>
-              <Input id="postcode" {...form.register("postcode")} />
-              {form.formState.errors.postcode && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.postcode.message}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="country">Country</Label>
-            <Input id="country" {...form.register("country")} />
-          </div>
-
-          {/* Medicare */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="medicareNumber">Medicare Number</Label>
-              <Input id="medicareNumber" {...form.register("medicareNumber")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="medicareIRN">Medicare IRN</Label>
-              <Input id="medicareIRN" {...form.register("medicareIRN")} />
-            </div>
-          </div>
-
-          {/* Forward email */}
-          <div className="space-y-2">
-            <Label htmlFor="forwardEmail">Forward Email</Label>
-            <Input id="forwardEmail" type="email" {...form.register("forwardEmail")} />
-          </div>
-        </form>
-        <SheetFooter>
+      title="Edit Patient Details"
+      description="Update patient demographics and contact information."
+      footer={
+        <>
           <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button type="submit" form={formId} disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? "Saving…" : "Save Changes"}
+            {updateMutation.isPending ? "Saving…" : "Save changes"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {/* Name */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name *</Label>
+            <Input id="firstName" {...form.register("firstName")} />
+            {form.formState.errors.firstName && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.firstName.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name *</Label>
+            <Input id="lastName" {...form.register("lastName")} />
+            {form.formState.errors.lastName && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.lastName.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* DOB */}
+        <DateOfBirthPicker form={form} />
+
+        {/* Gender & Mobile */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="gender">Gender *</Label>
+            <Input
+              id="gender"
+              placeholder="e.g. Male, Female, Other"
+              {...form.register("gender")}
+            />
+            {form.formState.errors.gender && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.gender.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mobile">Mobile *</Label>
+            <Input id="mobile" type="tel" {...form.register("mobile")} />
+            {form.formState.errors.mobile && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.mobile.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Address */}
+        <div className="space-y-2">
+          <Label htmlFor="streetAddress">Street Address *</Label>
+          <Input id="streetAddress" {...form.register("streetAddress")} />
+          {form.formState.errors.streetAddress && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.streetAddress.message}
+            </p>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="city">City *</Label>
+            <Input id="city" {...form.register("city")} />
+            {form.formState.errors.city && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.city.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="state">State</Label>
+            <Input id="state" {...form.register("state")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="postcode">Postcode *</Label>
+            <Input id="postcode" {...form.register("postcode")} />
+            {form.formState.errors.postcode && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.postcode.message}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="country">Country</Label>
+          <Input id="country" {...form.register("country")} />
+        </div>
+
+        {/* Medicare */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="medicareNumber">Medicare Number</Label>
+            <Input id="medicareNumber" {...form.register("medicareNumber")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="medicareIRN">Medicare IRN</Label>
+            <Input id="medicareIRN" {...form.register("medicareIRN")} />
+          </div>
+        </div>
+
+        {/* Forward email */}
+        <div className="space-y-2">
+          <Label htmlFor="forwardEmail">Forward Email</Label>
+          <Input id="forwardEmail" type="email" {...form.register("forwardEmail")} />
+        </div>
+      </form>
+    </AppSheet>
   );
 }
 

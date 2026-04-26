@@ -19,6 +19,10 @@ This file expands the requested items into actionable tasks that another AI/codi
 
 ## 1. Patient profile feels slow: App Router preloading and faster tab movement
 
+### Status
+
+Done
+
 ### Problem
 
 Opening a patient profile and moving between patient tabs can feel slow. Current patient profile tabs are implemented as App Router child routes, but the tab navigation uses buttons with `router.push(...)`, which does not get the same automatic route prefetch benefits as `Link`. The patient shell also fetches data in multiple client components:
@@ -87,6 +91,10 @@ Use App Router for the route shell and TanStack Query for client cache, with exp
 
 ## 2. Overview tab: connect all links/rows to the right actions and sections
 
+### Status
+
+Done
+
 ### Problem
 
 The overview tab shows cards for recent consultations, conditions, latest prescription, demographics, care team, and latest notes. Some actions work, some are incomplete, and list rows do not consistently open the relevant detail/sidebar.
@@ -132,6 +140,10 @@ Current examples:
 ---
 
 ## 3. Documents tab: add a sidebar for status updates and document actions
+
+### Status
+
+Done
 
 ### Problem
 
@@ -235,6 +247,10 @@ Red flags are currently computed locally from clinical data. Some review state e
 
 ## 6. All sidebars/sheets need the same style and motion
 
+### Status
+
+Done
+
 ### Problem
 
 The app uses several sheets with slightly different width, padding, overflow, footer, and action styles. This makes the UI feel inconsistent.
@@ -275,6 +291,10 @@ Examples to normalize:
 ---
 
 ## 7. Patient header summary refreshes when tabs open: stop unnecessary refetch/re-render
+
+### Status
+
+Done
 
 ### Problem
 

@@ -8,13 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
+import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
 import { useClinicalData } from "@/lib/hooks/use-patients";
 import type { ClinicalDataRecord } from "@/types";
@@ -157,52 +151,46 @@ function IntakeFormSheet({
   ];
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="overflow-y-auto w-full sm:min-w-125 sm:max-w-145 p-0"
-      >
-        <SheetHeader className="p-6 pb-4">
-          <div className="flex items-center gap-2">
-            <SheetTitle>Intake form</SheetTitle>
-            {isLatest && (
-              <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
-                LATEST
-              </Badge>
-            )}
-          </div>
-          <SheetDescription>
-            {reviewMode ? "Review requested · " : ""}Submitted{" "}
-            {formatDateTime(record.submitted_at)}
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="px-6 pb-6 space-y-6">
-          {sections.map((section, idx) => (
-            <div key={section.title}>
-              {idx > 0 && <Separator className="mb-6" />}
-              <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em] mb-3">
-                {section.title}
-              </h4>
-              <div className="space-y-2">
-                {section.fields.map((field) => (
-                  <div
-                    key={field.label}
-                    className="grid gap-2"
-                    style={{
-                      gridTemplateColumns: "minmax(150px, 0.7fr) minmax(0, 1.3fr)",
-                    }}
-                  >
-                    <span className="text-sm text-muted-foreground">{field.label}</span>
-                    <span className="text-sm text-foreground">{field.value}</span>
-                  </div>
-                ))}
-              </div>
+    <AppSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={
+        <span className="flex items-center gap-2">
+          Intake form
+          {isLatest && (
+            <Badge className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
+              LATEST
+            </Badge>
+          )}
+        </span>
+      }
+      description={`${reviewMode ? "Review requested · " : ""}Submitted ${formatDateTime(record.submitted_at)}`}
+    >
+      <div className="space-y-6">
+        {sections.map((section, idx) => (
+          <div key={section.title}>
+            {idx > 0 && <Separator className="mb-6" />}
+            <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em] mb-3">
+              {section.title}
+            </h4>
+            <div className="space-y-2">
+              {section.fields.map((field) => (
+                <div
+                  key={field.label}
+                  className="grid gap-2"
+                  style={{
+                    gridTemplateColumns: "minmax(150px, 0.7fr) minmax(0, 1.3fr)",
+                  }}
+                >
+                  <span className="text-sm text-muted-foreground">{field.label}</span>
+                  <span className="text-sm text-foreground">{field.value}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </SheetContent>
-    </Sheet>
+          </div>
+        ))}
+      </div>
+    </AppSheet>
   );
 }
 
