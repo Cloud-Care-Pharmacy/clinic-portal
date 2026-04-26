@@ -142,6 +142,42 @@ export interface SubmissionResult {
 // Parchment Prescription types
 // ============================================
 
+export interface Prescription {
+  type?: string;
+  url?: string;
+  scid?: string;
+  status?: string;
+  createdDate?: string;
+  itemName?: string;
+  quantity?: string;
+  repeatsAuthorised?: string;
+  repeatIntervals?: string;
+  pbsCode?: string;
+}
+
+export interface PatientPrescriptionsApiResponse {
+  success: boolean;
+  data: {
+    patient?: {
+      id?: string;
+      firstName?: string;
+      lastName?: string;
+      dateOfBirth?: string;
+    };
+    prescriber?: {
+      firstName?: string;
+      lastName?: string;
+    };
+    prescriptions: Prescription[];
+    pagination?: {
+      count?: number;
+      hasNext?: boolean;
+      limit?: number;
+      lastKey?: string | null;
+    };
+  };
+}
+
 export interface ParchmentPrescription {
   id: string;
   patientId: string;
@@ -363,12 +399,12 @@ export interface Consultation {
   doctorId: string;
   doctorName: string;
   scheduledAt: string;
-  completedAt?: string;
+  completedAt?: string | null;
   type: ConsultationType;
   status: ConsultationStatus;
-  duration?: number;
-  notes?: string;
-  outcome?: string;
+  duration?: number | null;
+  notes?: string | null;
+  outcome?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -380,7 +416,11 @@ export interface ConsultationResponse {
 
 export interface ConsultationsListResponse {
   success: boolean;
-  data: { consultations: Consultation[] };
+  data: {
+    patientId?: string;
+    consultations: Consultation[];
+    pagination?: { limit: number; offset: number; total: number };
+  };
 }
 
 export interface Staff {
@@ -459,6 +499,86 @@ export interface PatientNotesResponse {
     patientId: string;
     notes: PatientNote[];
   };
+}
+
+// ============================================
+// Patient Activity types (from prescription-gateway)
+// ============================================
+
+export type ActivityEventType =
+  | "consultation-scheduled"
+  | "consultation-completed"
+  | "consultation-updated"
+  | "note-added"
+  | "note-updated"
+  | "note-deleted"
+  | "prescription-issued"
+  | "document-uploaded"
+  | "document-verified"
+  | "document-rejected"
+  | "flag-raised"
+  | "flag-resolved"
+  | "patient-created"
+  | "details-updated";
+
+export type ActivityEventCategory =
+  | "consultations"
+  | "notes"
+  | "prescriptions"
+  | "documents"
+  | "system";
+
+export type ActivityEntityType =
+  | "consultation"
+  | "note"
+  | "prescription"
+  | "document"
+  | "patient"
+  | "flag"
+  | "system";
+
+export interface PatientActivityEvent {
+  id: string;
+  patientId: string;
+  type: ActivityEventType;
+  category: ActivityEventCategory;
+  title: string;
+  description: string | null;
+  actorId?: string | null;
+  actorName: string;
+  actorRole: "admin" | "doctor" | "staff" | "system";
+  entityType: ActivityEntityType;
+  entityId: string | null;
+  createdAt: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface PatientActivityResponse {
+  success: boolean;
+  data: {
+    patientId: string;
+    events: PatientActivityEvent[];
+    pagination: { limit: number; offset: number; total: number };
+  };
+}
+
+export interface PatientCounts {
+  patientId: string;
+  consultations: number;
+  prescriptions: number;
+  clinicalRecords: number;
+  documents: number;
+  notes: number;
+  activity: number;
+  activePrescriptions?: number;
+  scheduledConsultations?: number;
+  completedConsultations?: number;
+  pendingDocuments?: number;
+}
+
+export interface PatientCountsResponse {
+  success: boolean;
+  data: PatientCounts;
 }
 
 // ============================================

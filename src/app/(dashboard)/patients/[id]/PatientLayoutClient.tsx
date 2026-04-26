@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatient, useLatestClinicalData } from "@/lib/hooks/use-patients";
-import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
+import { usePatientCounts } from "@/lib/hooks/use-patient-counts";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import { PatientHeader } from "./components/PatientHeader";
@@ -25,9 +25,10 @@ const TABS = [
     segment: "prescriptions",
     countKey: "prescriptions" as const,
   },
-  { label: "Documents", segment: "documents", countKey: null },
+  { label: "Documents", segment: "documents", countKey: "documents" as const },
   { label: "Clinical", segment: "clinical", countKey: "clinical" as const },
-  { label: "Activity", segment: "activity", countKey: null },
+  { label: "Notes", segment: "notes", countKey: "notes" as const },
+  { label: "Activity", segment: "activity", countKey: "activity" as const },
 ];
 
 interface PatientLayoutClientProps {
@@ -49,14 +50,19 @@ export default function PatientLayoutClient({
     : null;
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
 
-  // Fetch counts for tab badges
-  const { data: consultsData } = useConsultations(id);
+  // Fetch counts for tab badges. Prescriptions are fetched directly because the
+  // counts endpoint currently returns zeroes for Parchment-derived prescriptions.
+  const { data: countsData } = usePatientCounts(id);
   const { data: rxData } = usePrescriptions(id);
+  const counts = countsData?.data;
 
   const tabCounts: Record<string, number | undefined> = {
-    consultations: consultsData?.data?.consultations?.length,
+    consultations: counts?.consultations,
     prescriptions: rxData?.data?.prescriptions?.length,
-    clinical: undefined,
+    documents: counts?.documents,
+    clinical: counts?.clinicalRecords,
+    notes: counts?.notes,
+    activity: counts?.activity,
   };
 
   const fullName = [patient?.first_name, patient?.last_name].filter(Boolean).join(" ");
@@ -84,7 +90,7 @@ export default function PatientLayoutClient({
     return (
       <div className="space-y-6">
         <Skeleton className="h-40 w-full rounded-2xl" />
-        <Skeleton className="h-[52px] w-96 rounded-[14px]" />
+        <Skeleton className="h-13 w-96 rounded-[14px]" />
         <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     );
@@ -110,7 +116,7 @@ export default function PatientLayoutClient({
               key={tab.segment}
               onClick={() => router.push(href, { scroll: false })}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 h-10 px-[18px] rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"

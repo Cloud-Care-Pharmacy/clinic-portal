@@ -6,13 +6,13 @@ import type {
   ConsultationStatus,
 } from "@/types";
 
-// ---- Fetch helpers (local API — no backend yet) ----
+// ---- Fetch helpers ----
 
 async function fetchConsultations(
   patientId?: string
 ): Promise<ConsultationsListResponse> {
   const url = patientId
-    ? `/api/consultations?patientId=${encodeURIComponent(patientId)}`
+    ? `/api/proxy/patients/${encodeURIComponent(patientId)}/consultations?limit=50`
     : "/api/consultations";
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch consultations");
@@ -20,7 +20,7 @@ async function fetchConsultations(
 }
 
 async function fetchConsultation(id: string): Promise<ConsultationResponse> {
-  const res = await fetch(`/api/consultations/${encodeURIComponent(id)}`);
+  const res = await fetch(`/api/proxy/consultations/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error("Failed to fetch consultation");
   return res.json();
 }
@@ -35,7 +35,7 @@ async function createConsultationApi(body: {
   duration?: number;
   notes?: string;
 }): Promise<ConsultationResponse> {
-  const res = await fetch("/api/consultations", {
+  const res = await fetch("/api/proxy/consultations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -56,9 +56,14 @@ async function updateConsultationApi(
     outcome?: string;
     notes?: string;
     completedAt?: string;
+    scheduledAt?: string;
+    duration?: number;
+    type?: ConsultationType;
+    doctorId?: string;
+    doctorName?: string;
   }
 ): Promise<ConsultationResponse> {
-  const res = await fetch(`/api/consultations/${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/proxy/consultations/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -72,8 +77,10 @@ async function updateConsultationApi(
   return res.json();
 }
 
-async function deleteConsultationApi(id: string): Promise<{ success: boolean }> {
-  const res = await fetch(`/api/consultations/${encodeURIComponent(id)}`, {
+async function deleteConsultationApi(
+  id: string
+): Promise<{ success: boolean; data?: { deleted: boolean } }> {
+  const res = await fetch(`/api/proxy/consultations/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Failed to delete consultation");
@@ -110,8 +117,14 @@ export function useCreateConsultation() {
       duration?: number;
       notes?: string;
     }) => createConsultationApi(body),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["consultations"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity"] });
+      const patientId = res.data.consultation.patientId;
+      queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
     },
   });
 }
@@ -128,9 +141,23 @@ export function useUpdateConsultation() {
       outcome?: string;
       notes?: string;
       completedAt?: string;
+      scheduledAt?: string;
+      duration?: number;
+      type?: ConsultationType;
+      doctorId?: string;
+      doctorName?: string;
     }) => updateConsultationApi(id, body),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["consultations"] });
+      queryClient.invalidateQueries({
+        queryKey: ["consultation", res.data.consultation.id],
+      });
+      queryClient.invalidateQueries({ queryKey: ["patient-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity"] });
+      const patientId = res.data.consultation.patientId;
+      queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
     },
   });
 }
@@ -141,6 +168,8 @@ export function useDeleteConsultation() {
     mutationFn: (id: string) => deleteConsultationApi(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["consultations"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity"] });
     },
   });
 }

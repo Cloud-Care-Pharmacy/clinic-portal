@@ -3,11 +3,10 @@ import type {
   Entity,
   EmailRecord,
   EmailMetadata,
-  ParchmentPrescriptionsResponse,
+  PatientPrescriptionsApiResponse,
   SubmissionResult,
   IntakeFormData,
   UpdatePatientPayload,
-  ClinicalDataRecord,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
   PatientDocumentsListResponse,
@@ -32,10 +31,7 @@ class ApiClient {
     this.apiKey = apiKey;
   }
 
-  private async request<T>(
-    path: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -63,9 +59,7 @@ class ApiClient {
     return this.request("/api/entities");
   }
 
-  async getEntity(
-    entityId: string
-  ): Promise<{ success: boolean; data: Entity }> {
+  async getEntity(entityId: string): Promise<{ success: boolean; data: Entity }> {
     return this.request(`/api/entities/${encodeURIComponent(entityId)}`);
   }
 
@@ -74,19 +68,17 @@ class ApiClient {
   async getPatient(
     patientId: string
   ): Promise<{ success: boolean; data: { patient: PatientMapping } }> {
-    return this.request(
-      `/api/patients/${encodeURIComponent(patientId)}`
-    );
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}`);
   }
 
   async updatePatient(
     patientId: string,
     data: UpdatePatientPayload
   ): Promise<{ success: boolean; data: { patient: PatientMapping } }> {
-    return this.request(
-      `/api/patients/${encodeURIComponent(patientId)}`,
-      { method: "PUT", body: JSON.stringify(data) }
-    );
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
   }
 
   async getPatients(
@@ -104,9 +96,7 @@ class ApiClient {
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(
-      `/api/entities/${encodeURIComponent(entityId)}/patients${qs}`
-    );
+    return this.request(`/api/entities/${encodeURIComponent(entityId)}/patients${qs}`);
   }
 
   // ---- Clinical Data ----
@@ -124,9 +114,7 @@ class ApiClient {
     );
   }
 
-  async getLatestClinicalData(
-    patientId: string
-  ): Promise<LatestClinicalDataResponse> {
+  async getLatestClinicalData(patientId: string): Promise<LatestClinicalDataResponse> {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/clinical-data/latest`
     );
@@ -148,13 +136,13 @@ class ApiClient {
   async getPatientPrescriptions(
     patientId: string,
     opts?: { limit?: number; offset?: number }
-  ): Promise<ParchmentPrescriptionsResponse> {
+  ): Promise<PatientPrescriptionsApiResponse> {
     const params = new URLSearchParams();
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
-      `/api/parchment/patients/${encodeURIComponent(patientId)}/prescriptions${qs}`
+      `/api/patients/${encodeURIComponent(patientId)}/prescriptions${qs}`
     );
   }
 
@@ -175,9 +163,7 @@ class ApiClient {
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(
-      `/api/patients/${encodeURIComponent(patientId)}/emails${qs}`
-    );
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}/emails${qs}`);
   }
 
   async getEmailDetail(
@@ -192,11 +178,7 @@ class ApiClient {
     );
   }
 
-  getAttachmentUrl(
-    patientId: string,
-    emailId: string,
-    filename: string
-  ): string {
+  getAttachmentUrl(patientId: string, emailId: string, filename: string): string {
     return `${this.baseUrl}/api/patients/${encodeURIComponent(patientId)}/emails/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(filename)}`;
   }
 
@@ -275,9 +257,7 @@ class ApiClient {
     );
   }
 
-  async syncEmailAttachments(
-    patientId: string
-  ): Promise<DocumentSyncResponse> {
+  async syncEmailAttachments(patientId: string): Promise<DocumentSyncResponse> {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/documents/sync-email-attachments`,
       { method: "POST" }

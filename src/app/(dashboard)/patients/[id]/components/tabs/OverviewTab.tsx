@@ -69,7 +69,7 @@ function SectionHead({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
-      <h3 className="text-base font-semibold leading-[1.25] tracking-[-0.01em]">
+      <h3 className="text-base font-semibold leading-tight tracking-[-0.01em]">
         {title}
       </h3>
       <div className="inline-flex items-center gap-2">
@@ -205,7 +205,7 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
                 <div
                   key={c.id}
                   className={cn(
-                    "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-[120ms] -mx-3 px-3 rounded-lg hover:bg-muted",
+                    "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted",
                     i === 0 && "pt-0",
                     i === recentConsults.length - 1 ? "pb-0" : "border-b border-border"
                   )}
@@ -309,79 +309,6 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
         )}
       </OverviewCard>
 
-      {/* Latest vitals — span-4 */}
-      <OverviewCard className="col-span-12 min-[1100px]:col-span-4 min-w-0">
-        <SectionHead title="Latest vitals" />
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[10px] border border-border bg-background p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
-              Blood pressure
-            </p>
-            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
-          </div>
-          <div className="rounded-[10px] border border-border bg-background p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
-              Heart rate
-            </p>
-            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
-          </div>
-          <div className="rounded-[10px] border border-border bg-background p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
-              BMI
-            </p>
-            <p className="text-base font-semibold leading-[1.2] tabular-nums">—</p>
-          </div>
-          <div className="rounded-[10px] border border-border bg-background p-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-1">
-              Recorded
-            </p>
-            <p className="text-[13px] font-medium">—</p>
-          </div>
-        </div>
-      </OverviewCard>
-
-      {/* Latest notes — span-8 */}
-      <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">
-        <SectionHead
-          title="Latest notes"
-          actionLabel="+ Add note"
-          onAction={() => onTabChange("notes")}
-        />
-        {loadingNotes ? (
-          <div className="space-y-3">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
-            ))}
-          </div>
-        ) : recentNotes.length === 0 ? (
-          <p className="text-[13px] text-muted-foreground py-4">No notes yet</p>
-        ) : (
-          <div className="flex flex-col">
-            {recentNotes.map((n, i) => (
-              <div
-                key={n.id}
-                className={cn(
-                  "py-3",
-                  i === 0 && "pt-0",
-                  i === recentNotes.length - 1 ? "pb-0" : "border-b border-border"
-                )}
-              >
-                <p className="text-[13px] leading-[1.55] text-foreground font-medium">
-                  {n.title}
-                </p>
-                <div
-                  className="text-[13px] leading-[1.55] text-foreground line-clamp-2 mt-0.5"
-                  dangerouslySetInnerHTML={{ __html: n.content }}
-                />
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {n.authorName} · {relTime(n.createdAt)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </OverviewCard>
-
       {/* Right column stack: Demographics + Care team — span-4 */}
       <div className="col-span-12 min-[1100px]:col-span-4 min-w-0 flex flex-col gap-6">
         {/* Demographics */}
@@ -389,7 +316,7 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
           <SectionHead title="Demographics" actionLabel="Edit" onAction={() => {}} />
           <dl className="grid grid-cols-[96px_1fr] gap-x-4 gap-y-2.5 text-[13px]">
             <dt className="text-muted-foreground">DOB</dt>
-            <dd className="font-medium min-w-0 break-words">
+            <dd className="font-medium min-w-0 wrap-break-word">
               {(() => {
                 const dob = formatDobWithAge(patient?.date_of_birth ?? null);
                 if (!dob) return "—";
@@ -406,7 +333,7 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
             <dt className="text-muted-foreground">Mobile</dt>
             <dd className="font-medium">{patient?.mobile ?? "—"}</dd>
             <dt className="text-muted-foreground">Email</dt>
-            <dd className="font-medium text-xs min-w-0 break-words">
+            <dd className="font-medium text-xs min-w-0 wrap-break-word">
               {patient?.original_email ?? "—"}
             </dd>
             <dt className="text-muted-foreground">Address</dt>
@@ -421,15 +348,6 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
               )}
             </dd>
           </dl>
-
-          {/* Emergency contact sub-block */}
-          <div className="mt-4 pt-4 border-t border-border">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground mb-2">
-              Emergency contact
-            </p>
-            <p className="text-[13px] font-medium text-foreground">—</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Not recorded</p>
-          </div>
         </OverviewCard>
 
         {/* Care team */}
@@ -456,6 +374,44 @@ export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProp
           )}
         </OverviewCard>
       </div>
+
+      {/* Latest notes */}
+      <OverviewCard className="col-span-12 min-w-0">
+        <SectionHead
+          title="Latest notes"
+          actionLabel="+ Add note"
+          onAction={() => onTabChange("notes")}
+        />
+        {loadingNotes ? (
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : recentNotes.length === 0 ? (
+          <p className="text-[13px] text-muted-foreground py-4">No notes yet</p>
+        ) : (
+          <div className="grid gap-4 min-[900px]:grid-cols-3">
+            {recentNotes.map((n) => (
+              <div
+                key={n.id}
+                className="rounded-xl border border-border bg-background p-4"
+              >
+                <p className="text-[13px] leading-[1.55] text-foreground font-medium">
+                  {n.title}
+                </p>
+                <div
+                  className="text-[13px] leading-[1.55] text-foreground line-clamp-3 mt-1"
+                  dangerouslySetInnerHTML={{ __html: n.content }}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {n.authorName} · {relTime(n.createdAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </OverviewCard>
     </div>
   );
 }
