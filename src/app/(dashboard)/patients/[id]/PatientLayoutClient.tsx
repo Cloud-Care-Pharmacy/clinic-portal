@@ -13,7 +13,6 @@ import {
   canIdlePrefetchPatientTabs,
   isPatientTabSegment,
   prefetchLikelyPatientTabs,
-  prefetchPatientTab,
   type PatientTabSegment,
 } from "@/lib/hooks/patient-tab-prefetch";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
@@ -21,6 +20,7 @@ import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvide
 import { PatientHeader } from "./components/PatientHeader";
 import { PatientShellProvider } from "./components/PatientShellContext";
 import { RedFlagAlert } from "./components/RedFlagAlert";
+import type { PatientShellInitialData } from "./patient-shell-data";
 import { cn } from "@/lib/utils";
 
 type TabCountKey =
@@ -55,18 +55,23 @@ const TABS: {
 
 interface PatientLayoutClientProps {
   id: string;
+  initialData?: PatientShellInitialData;
   children: React.ReactNode;
 }
 
 export default function PatientLayoutClient({
   id,
+  initialData,
   children,
 }: PatientLayoutClientProps) {
   const pathname = usePathname();
   const queryClient = useQueryClient();
-  const { data: patientData, isLoading } = usePatient(id);
+  const { data: patientData, isLoading } = usePatient(id, initialData?.patient);
   const patient = patientData?.data?.patient;
-  const { data: latestClinical } = useLatestClinicalData(id);
+  const { data: latestClinical } = useLatestClinicalData(
+    id,
+    initialData?.latestClinical
+  );
   const redFlags = latestClinical?.data?.clinicalData
     ? computeRedFlags(latestClinical.data.clinicalData)
     : null;
@@ -74,8 +79,8 @@ export default function PatientLayoutClient({
 
   // Fetch counts for tab badges. Prescriptions are fetched directly because the
   // counts endpoint currently returns zeroes for Parchment-derived prescriptions.
-  const { data: countsData } = usePatientCounts(id);
-  const { data: rxData } = usePrescriptions(id);
+  const { data: countsData } = usePatientCounts(id, initialData?.counts);
+  const { data: rxData } = usePrescriptions(id, initialData?.prescriptions);
   const counts = countsData?.data;
 
   const tabCounts: Record<TabCountKey, number | undefined> = {
@@ -135,10 +140,6 @@ export default function PatientLayoutClient({
     };
   }, [activeSegment, id, isLoading, queryClient]);
 
-  function handleTabIntent(tab: PatientTabSegment) {
-    void prefetchPatientTab(queryClient, id, tab);
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -153,7 +154,11 @@ export default function PatientLayoutClient({
     <PatientShellProvider patientId={id} patient={patient} displayName={displayName}>
       <div className="flex flex-col gap-6">
         {/* Patient Header (includes stat strip) */}
-        <PatientHeader patient={patient} displayName={displayName} />
+        <PatientHeader
+          patient={patient}
+          displayName={displayName}
+          statData={initialData}
+        />
 
         {/* Red-flag alert — separate banner between header and tabs */}
         {redFlags?.hasRedFlag && <RedFlagAlert redFlags={redFlags} />}
@@ -170,9 +175,8 @@ export default function PatientLayoutClient({
                 key={tab.segment}
                 href={href}
                 scroll={false}
+                prefetch={false}
                 aria-current={isActive ? "page" : undefined}
-                onMouseEnter={() => handleTabIntent(tab.segment)}
-                onFocus={() => handleTabIntent(tab.segment)}
                 className={cn(
                   "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
                   isActive

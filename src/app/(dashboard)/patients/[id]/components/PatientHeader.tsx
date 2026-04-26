@@ -33,10 +33,12 @@ import { NewConsultationSheet } from "@/components/consultations/NewConsultation
 import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { PatientStatStrip } from "./PatientStatStrip";
+import type { PatientShellInitialData } from "../patient-shell-data";
 
 interface PatientHeaderProps {
   patient: PatientMapping | undefined;
   displayName: string;
+  statData?: PatientShellInitialData;
 }
 
 function sameHeaderPatient(
@@ -77,7 +79,7 @@ function copyToClipboard(text: string) {
 }
 
 export const PatientHeader = memo(
-  function PatientHeader({ patient, displayName }: PatientHeaderProps) {
+  function PatientHeader({ patient, displayName, statData }: PatientHeaderProps) {
     const router = useRouter();
     const [consultationOpen, setConsultationOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
@@ -255,7 +257,7 @@ export const PatientHeader = memo(
           </div>
 
           {/* Stat strip — separated by border-top */}
-          <PatientStatStrip patientId={patient?.id} />
+          <PatientStatStrip patientId={patient?.id} statData={statData} />
         </div>
 
         <NewConsultationSheet

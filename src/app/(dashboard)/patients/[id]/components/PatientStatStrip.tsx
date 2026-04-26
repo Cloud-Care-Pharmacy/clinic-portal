@@ -3,9 +3,7 @@
 import { memo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Activity, FileText, CalendarClock, Heart } from "lucide-react";
-import { useConsultations } from "@/lib/hooks/use-consultations";
-import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
-import { useLatestClinicalData } from "@/lib/hooks/use-patients";
+import type { PatientShellInitialData } from "../patient-shell-data";
 
 interface StatCellProps {
   icon: React.ReactNode;
@@ -43,16 +41,16 @@ function StatCell({ icon, tileClass, label, value, subText }: StatCellProps) {
 
 interface PatientStatStripProps {
   patientId: string | undefined;
+  statData?: PatientShellInitialData;
 }
 
 export const PatientStatStrip = memo(function PatientStatStrip({
   patientId,
+  statData,
 }: PatientStatStripProps) {
-  const { data: consultsData, isLoading: loadingConsults } = useConsultations(
-    patientId ?? ""
-  );
-  const { data: rxData, isLoading: loadingRx } = usePrescriptions(patientId ?? "");
-  const { data: clinicalData } = useLatestClinicalData(patientId ?? "");
+  const consultsData = statData?.consultations;
+  const rxData = statData?.prescriptions;
+  const clinicalData = statData?.latestClinical;
   const clinical = clinicalData?.data?.clinicalData;
 
   const consultations = consultsData?.data?.consultations ?? [];
@@ -78,10 +76,8 @@ export const PatientStatStrip = memo(function PatientStatStrip({
 
   // Conditions count (since no allergies)
   const conditions = clinical?.medical_conditions ?? [];
-  const isLoadingInitialStats =
-    (!consultsData && loadingConsults) || (!rxData && loadingRx);
 
-  if (!patientId || isLoadingInitialStats) {
+  if (!patientId) {
     return (
       <div className="flex border-t border-border mt-4 pt-4">
         {Array.from({ length: 4 }).map((_, i) => (

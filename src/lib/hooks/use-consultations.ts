@@ -101,10 +101,14 @@ export function consultationsQueryOptions(patientId?: string) {
   });
 }
 
-export function useConsultations(patientId?: string) {
+export function useConsultations(
+  patientId?: string,
+  initialData?: ConsultationsListResponse
+) {
   return useQuery({
     ...consultationsQueryOptions(patientId),
     enabled: patientId !== "",
+    initialData,
   });
 }
 

@@ -114,10 +114,14 @@ export function usePatients(
   });
 }
 
-export function usePatient(patientId: string | undefined) {
+export function usePatient(
+  patientId: string | undefined,
+  initialData?: { success: boolean; data: { patient: PatientMapping } }
+) {
   return useQuery({
     ...patientQueryOptions(patientId ?? ""),
     enabled: !!patientId,
+    initialData,
   });
 }
 
@@ -142,9 +146,13 @@ export function useClinicalData(
   });
 }
 
-export function useLatestClinicalData(patientId: string | undefined) {
+export function useLatestClinicalData(
+  patientId: string | undefined,
+  initialData?: LatestClinicalDataResponse
+) {
   return useQuery({
     ...latestClinicalDataQueryOptions(patientId ?? ""),
     enabled: !!patientId,
+    initialData,
   });
 }

@@ -16,9 +16,13 @@ export function patientCountsQueryOptions(patientId: string) {
   });
 }
 
-export function usePatientCounts(patientId: string | undefined) {
+export function usePatientCounts(
+  patientId: string | undefined,
+  initialData?: PatientCountsResponse
+) {
   return useQuery({
     ...patientCountsQueryOptions(patientId ?? ""),
     enabled: Boolean(patientId),
+    initialData,
   });
 }

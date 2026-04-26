@@ -28,11 +28,7 @@ const PATIENT_TAB_SEGMENTS: PatientTabSegment[] = [
   "activity",
 ];
 
-const IDLE_PREFETCH_SEGMENTS: PatientTabSegment[] = [
-  "consultations",
-  "prescriptions",
-  "notes",
-];
+const IDLE_PREFETCH_SEGMENTS: PatientTabSegment[] = ["notes"];
 
 function prefetchAll(tasks: Promise<unknown>[]) {
   return Promise.allSettled(tasks).then(() => undefined);

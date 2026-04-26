@@ -1,4 +1,7 @@
-import type { PatientPrescriptionsApiResponse } from "@/types";
+import type {
+  ParchmentPrescriptionsResponse,
+  PatientPrescriptionsApiResponse,
+} from "@/types";
 import {
   emptyParchmentPrescriptionsResponse,
   normalizePatientPrescriptionsResponse,
@@ -24,9 +27,13 @@ export function prescriptionsQueryOptions(patientId: string) {
   });
 }
 
-export function usePrescriptions(patientId: string | undefined) {
+export function usePrescriptions(
+  patientId: string | undefined,
+  initialData?: ParchmentPrescriptionsResponse
+) {
   return useQuery({
     ...prescriptionsQueryOptions(patientId ?? ""),
     enabled: !!patientId,
+    initialData,
   });
 }
