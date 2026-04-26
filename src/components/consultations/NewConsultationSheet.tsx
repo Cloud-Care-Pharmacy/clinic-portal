@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useCallback, useEffect, useId } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { CalendarIcon } from "lucide-react";
@@ -56,6 +56,7 @@ export function NewConsultationSheet({
   defaultPatientName,
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
+  const fallbackPatientId = useId();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [hour, setHour] = useState("09");
@@ -72,6 +73,13 @@ export function NewConsultationSheet({
       notes: "",
     },
   });
+  const typeValue = useWatch({ control: form.control, name: "type" });
+  const notesValue = useWatch({ control: form.control, name: "notes" });
+
+  useEffect(() => {
+    if (!open) return;
+    form.setValue("patientName", defaultPatientName ?? "");
+  }, [defaultPatientName, form, open]);
 
   const updateScheduledAt = useCallback(
     (date: Date | undefined, h: string, m: string, p: "AM" | "PM") => {
@@ -119,7 +127,7 @@ export function NewConsultationSheet({
 
     createConsultation.mutate(
       {
-        patientId: defaultPatientId ?? `p-${Date.now()}`,
+        patientId: defaultPatientId ?? fallbackPatientId,
         patientName: result.data.patientName,
         doctorName: result.data.doctorName,
         type: result.data.type as ConsultationType,
@@ -130,7 +138,14 @@ export function NewConsultationSheet({
       {
         onSuccess: () => {
           toast.success("Consultation scheduled");
-          form.reset();
+          form.reset({
+            patientName: defaultPatientName ?? "",
+            doctorName: "",
+            type: "initial",
+            scheduledAt: "",
+            duration: "30",
+            notes: "",
+          });
           setSelectedDate(undefined);
           setHour("09");
           setMinute("00");
@@ -148,7 +163,7 @@ export function NewConsultationSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-[400px]"
+        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-100"
       >
         <SheetHeader>
           <SheetTitle>Schedule Consultation</SheetTitle>
@@ -193,7 +208,7 @@ export function NewConsultationSheet({
           <div className="space-y-2">
             <Label htmlFor="type">Type</Label>
             <UISelect
-              value={form.watch("type")}
+              value={typeValue}
               onValueChange={(v) => {
                 if (v) form.setValue("type", v);
               }}
@@ -321,7 +336,7 @@ export function NewConsultationSheet({
           <div className="flex-1 space-y-2">
             <Label>Notes</Label>
             <SimpleEditor
-              content={form.watch("notes") ?? ""}
+              content={notesValue ?? ""}
               onChange={(html) => form.setValue("notes", html)}
               placeholder="Optional notes for this consultation…"
             />

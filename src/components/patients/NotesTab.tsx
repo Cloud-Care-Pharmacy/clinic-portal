@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -133,7 +134,7 @@ function AddNoteSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-[400px]"
+        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-100"
       >
         <SheetHeader>
           <SheetTitle>Add Note</SheetTitle>
@@ -376,11 +377,27 @@ function NoteCard({
 
 // ---- NotesTab (main export) ----
 
-export function NotesTab({ patientId }: { patientId: string }) {
+interface NotesTabProps {
+  patientId: string;
+  initialAction?: "new";
+}
+
+export function NotesTab({ patientId, initialAction }: NotesTabProps) {
+  const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { data, isLoading, error } = usePatientNotes(patientId);
   const togglePin = useTogglePin(patientId);
   const deleteNoteMutation = useDeleteNote(patientId);
+  const addNoteOpen = sheetOpen || initialAction === "new";
+
+  function handleSheetOpenChange(open: boolean) {
+    setSheetOpen(open);
+    if (!open && initialAction === "new") {
+      router.replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
+        scroll: false,
+      });
+    }
+  }
 
   function handleTogglePin(noteId: string) {
     togglePin.mutate(noteId, {
@@ -421,8 +438,8 @@ export function NotesTab({ patientId }: { patientId: string }) {
     <div className="space-y-4">
       <AddNoteSheet
         patientId={patientId}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        open={addNoteOpen}
+        onOpenChange={handleSheetOpenChange}
       />
 
       {notes.length === 0 ? (

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +29,8 @@ import {
   Copy,
 } from "lucide-react";
 import type { PatientMapping } from "@/types";
+import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { PatientStatStrip } from "./PatientStatStrip";
 
 interface PatientHeaderProps {
@@ -50,17 +54,31 @@ function copyToClipboard(text: string) {
 }
 
 export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
+  const router = useRouter();
+  const [consultationOpen, setConsultationOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const age = getAge(patient?.date_of_birth ?? null);
   const gender = patient?.gender ?? "";
   const ageGender = [age, gender].filter(Boolean).join(" · ");
   const pmsId = patient?.halaxy_patient_id ?? "";
+  const patientId = patient?.id;
+  const actionsDisabled = !patientId;
 
   const locationParts = [patient?.city, patient?.state].filter(Boolean);
   const locationText =
     locationParts.length > 0 ? locationParts.join(", ") : "Not available";
 
+  function navigateTo(segment: string, action?: string) {
+    if (!patientId) return;
+    const query = action ? `?action=${encodeURIComponent(action)}` : "";
+    router.push(`/patients/${encodeURIComponent(patientId)}/${segment}${query}`, {
+      scroll: false,
+    });
+  }
+
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5">
+    <>
+      <div className="rounded-2xl border border-border/60 bg-card p-5">
       {/* Identity row */}
       <div className="flex items-start gap-4">
         {/* Avatar — 56×56 */}
@@ -116,33 +134,55 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end" className="w-[220px]">
-                <DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-55">
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => setConsultationOpen(true)}
+                >
                   <CalendarPlus className="mr-2 size-4" />
                   New consultation
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => navigateTo("prescriptions")}
+                >
                   <Pill className="mr-2 size-4" />
                   New prescription
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => navigateTo("notes", "new")}
+                >
                   <StickyNote className="mr-2 size-4" />
                   Add note
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => navigateTo("documents", "upload")}
+                >
                   <Upload className="mr-2 size-4" />
                   Upload document
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => setEditOpen(true)}
+                >
                   <Pencil className="mr-2 size-4" />
                   Edit patient details
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={actionsDisabled}
+                  onClick={() => navigateTo("clinical")}
+                >
                   <Flag className="mr-2 size-4" />
                   Flag for review
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled
+                  title="Archive API is not available yet"
+                >
                   <Archive className="mr-2 size-4" />
                   Archive patient
                 </DropdownMenuItem>
@@ -185,6 +225,20 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
 
       {/* Stat strip — separated by border-top */}
       <PatientStatStrip patientId={patient?.id} />
-    </div>
+      </div>
+
+      <NewConsultationSheet
+        open={consultationOpen}
+        onOpenChange={setConsultationOpen}
+        defaultPatientId={patientId}
+        defaultPatientName={displayName === "Loading…" ? "" : displayName}
+      />
+
+      <PatientEditSheet
+        patient={patient}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
+    </>
   );
 }

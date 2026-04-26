@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -222,6 +222,204 @@ function DateOfBirthPicker({
   );
 }
 
+// ---- Edit Sheet ----
+
+export function PatientEditSheet({
+  patient,
+  open,
+  onOpenChange,
+}: {
+  patient: PatientMapping | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const formId = useId();
+  const updateMutation = useUpdatePatient(patient?.id ?? "");
+
+  const form = useForm<ProfileFormData>({
+    defaultValues: patient ? patientToFormDefaults(patient) : {},
+  });
+
+  useEffect(() => {
+    if (patient) {
+      form.reset(patientToFormDefaults(patient));
+    }
+  }, [patient, form]);
+
+  function handleCancel() {
+    if (patient) form.reset(patientToFormDefaults(patient));
+    onOpenChange(false);
+  }
+
+  function onSubmit(data: ProfileFormData) {
+    if (!patient?.id) {
+      toast.error("Patient details are not ready yet");
+      return;
+    }
+
+    const result = updatePatientSchema.safeParse(data);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof ProfileFormData;
+        form.setError(field, { message: issue.message });
+      }
+      return;
+    }
+
+    const payload: UpdatePatientPayload = result.data;
+
+    updateMutation.mutate(payload, {
+      onSuccess: () => {
+        toast.success("Patient details updated");
+        onOpenChange(false);
+      },
+      onError: (err) => {
+        toast.error(err.message || "Failed to update patient");
+      },
+    });
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) handleCancel();
+        else onOpenChange(nextOpen);
+      }}
+    >
+      <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Edit Patient Details</SheetTitle>
+          <SheetDescription>
+            Update patient demographics and contact information.
+          </SheetDescription>
+        </SheetHeader>
+        <form
+          id={formId}
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-4 px-4"
+        >
+          {/* Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input id="firstName" {...form.register("firstName")} />
+              {form.formState.errors.firstName && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.firstName.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name *</Label>
+              <Input id="lastName" {...form.register("lastName")} />
+              {form.formState.errors.lastName && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.lastName.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* DOB */}
+          <DateOfBirthPicker form={form} />
+
+          {/* Gender & Mobile */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender *</Label>
+              <Input
+                id="gender"
+                placeholder="e.g. Male, Female, Other"
+                {...form.register("gender")}
+              />
+              {form.formState.errors.gender && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.gender.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobile">Mobile *</Label>
+              <Input id="mobile" type="tel" {...form.register("mobile")} />
+              {form.formState.errors.mobile && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.mobile.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="streetAddress">Street Address *</Label>
+            <Input id="streetAddress" {...form.register("streetAddress")} />
+            {form.formState.errors.streetAddress && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.streetAddress.message}
+              </p>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="city">City *</Label>
+              <Input id="city" {...form.register("city")} />
+              {form.formState.errors.city && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.city.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="state">State</Label>
+              <Input id="state" {...form.register("state")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="postcode">Postcode *</Label>
+              <Input id="postcode" {...form.register("postcode")} />
+              {form.formState.errors.postcode && (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.postcode.message}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="country">Country</Label>
+            <Input id="country" {...form.register("country")} />
+          </div>
+
+          {/* Medicare */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="medicareNumber">Medicare Number</Label>
+              <Input id="medicareNumber" {...form.register("medicareNumber")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="medicareIRN">Medicare IRN</Label>
+              <Input id="medicareIRN" {...form.register("medicareIRN")} />
+            </div>
+          </div>
+
+          {/* Forward email */}
+          <div className="space-y-2">
+            <Label htmlFor="forwardEmail">Forward Email</Label>
+            <Input id="forwardEmail" type="email" {...form.register("forwardEmail")} />
+          </div>
+        </form>
+        <SheetFooter>
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? "Saving…" : "Save Changes"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // ---- Component ----
 
 export function ProfileTab({
@@ -232,18 +430,6 @@ export function ProfileTab({
   isLoading: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const updateMutation = useUpdatePatient(patient?.id ?? "");
-
-  const form = useForm<ProfileFormData>({
-    defaultValues: patient ? patientToFormDefaults(patient) : {},
-  });
-
-  // Reset form when patient data loads/changes
-  useEffect(() => {
-    if (patient) {
-      form.reset(patientToFormDefaults(patient));
-    }
-  }, [patient, form]);
 
   if (isLoading) {
     return (
@@ -260,34 +446,6 @@ export function ProfileTab({
         </CardContent>
       </Card>
     );
-  }
-
-  function handleCancel() {
-    if (patient) form.reset(patientToFormDefaults(patient));
-    setEditing(false);
-  }
-
-  function onSubmit(data: ProfileFormData) {
-    const result = updatePatientSchema.safeParse(data);
-    if (!result.success) {
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as keyof ProfileFormData;
-        form.setError(field, { message: issue.message });
-      }
-      return;
-    }
-
-    const payload: UpdatePatientPayload = result.data;
-
-    updateMutation.mutate(payload, {
-      onSuccess: () => {
-        toast.success("Patient details updated");
-        setEditing(false);
-      },
-      onError: (err) => {
-        toast.error(err.message || "Failed to update patient");
-      },
-    });
   }
 
   const displayName = [patient?.first_name, patient?.last_name]
@@ -361,150 +519,7 @@ export function ProfileTab({
         </CardContent>
       </Card>
 
-      <Sheet
-        open={editing}
-        onOpenChange={(open) => {
-          if (!open) handleCancel();
-        }}
-      >
-        <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Patient Details</SheetTitle>
-            <SheetDescription>
-              Update patient demographics and contact information.
-            </SheetDescription>
-          </SheetHeader>
-          <form
-            id="edit-patient-form"
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 px-4"
-          >
-            {/* Name */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input id="firstName" {...form.register("firstName")} />
-                {form.formState.errors.firstName && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.firstName.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input id="lastName" {...form.register("lastName")} />
-                {form.formState.errors.lastName && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.lastName.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* DOB */}
-            <DateOfBirthPicker form={form} />
-
-            {/* Gender & Mobile */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
-                <Input
-                  id="gender"
-                  placeholder="e.g. Male, Female, Other"
-                  {...form.register("gender")}
-                />
-                {form.formState.errors.gender && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.gender.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile *</Label>
-                <Input id="mobile" type="tel" {...form.register("mobile")} />
-                {form.formState.errors.mobile && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.mobile.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="streetAddress">Street Address *</Label>
-              <Input id="streetAddress" {...form.register("streetAddress")} />
-              {form.formState.errors.streetAddress && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.streetAddress.message}
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City *</Label>
-                <Input id="city" {...form.register("city")} />
-                {form.formState.errors.city && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.city.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input id="state" {...form.register("state")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postcode">Postcode *</Label>
-                <Input id="postcode" {...form.register("postcode")} />
-                {form.formState.errors.postcode && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.postcode.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" {...form.register("country")} />
-            </div>
-
-            {/* Medicare */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="medicareNumber">Medicare Number</Label>
-                <Input id="medicareNumber" {...form.register("medicareNumber")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="medicareIRN">Medicare IRN</Label>
-                <Input id="medicareIRN" {...form.register("medicareIRN")} />
-              </div>
-            </div>
-
-            {/* Forward email */}
-            <div className="space-y-2">
-              <Label htmlFor="forwardEmail">Forward Email</Label>
-              <Input
-                id="forwardEmail"
-                type="email"
-                {...form.register("forwardEmail")}
-              />
-            </div>
-          </form>
-          <SheetFooter>
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              form="edit-patient-form"
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? "Saving…" : "Save Changes"}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <PatientEditSheet patient={patient} open={editing} onOpenChange={setEditing} />
     </>
   );
 }

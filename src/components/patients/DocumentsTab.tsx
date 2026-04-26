@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
@@ -99,9 +100,11 @@ function formatFileSize(bytes: number): string {
 
 interface DocumentsTabProps {
   patientId: string;
+  initialAction?: "upload";
 }
 
-export function DocumentsTab({ patientId }: DocumentsTabProps) {
+export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
+  const router = useRouter();
   const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -120,6 +123,16 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
   const deleteMutation = useDeleteDocument(patientId);
   const verifyMutation = useVerifyDocument(patientId);
   const syncMutation = useSyncEmailAttachments(patientId);
+  const documentUploadOpen = uploadOpen || initialAction === "upload";
+
+  const handleUploadOpenChange = (open: boolean) => {
+    setUploadOpen(open);
+    if (!open && initialAction === "upload") {
+      router.replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
+        scroll: false,
+      });
+    }
+  };
 
   const handleVerify = (doc: PatientDocument) => {
     verifyMutation.mutate(
@@ -377,8 +390,8 @@ export function DocumentsTab({ patientId }: DocumentsTabProps) {
       {/* Upload Dialog */}
       <UploadDialog
         patientId={patientId}
-        open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        open={documentUploadOpen}
+        onOpenChange={handleUploadOpenChange}
       />
 
       {/* Delete Confirmation */}
