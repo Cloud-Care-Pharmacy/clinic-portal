@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Activity, FileText, CalendarClock, Heart } from "lucide-react";
 import { useConsultations } from "@/lib/hooks/use-consultations";
@@ -44,7 +45,9 @@ interface PatientStatStripProps {
   patientId: string | undefined;
 }
 
-export function PatientStatStrip({ patientId }: PatientStatStripProps) {
+export const PatientStatStrip = memo(function PatientStatStrip({
+  patientId,
+}: PatientStatStripProps) {
   const { data: consultsData, isLoading: loadingConsults } = useConsultations(
     patientId ?? ""
   );
@@ -75,8 +78,10 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
 
   // Conditions count (since no allergies)
   const conditions = clinical?.medical_conditions ?? [];
+  const isLoadingInitialStats =
+    (!consultsData && loadingConsults) || (!rxData && loadingRx);
 
-  if (!patientId || loadingConsults || loadingRx) {
+  if (!patientId || isLoadingInitialStats) {
     return (
       <div className="flex border-t border-border mt-4 pt-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -155,4 +160,4 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       />
     </div>
   );
-}
+});
