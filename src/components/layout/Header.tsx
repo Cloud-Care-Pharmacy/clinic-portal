@@ -3,8 +3,6 @@
 import { usePathname } from "next/navigation";
 import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSidebarState } from "@/components/providers/SidebarProvider";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
@@ -19,7 +17,11 @@ const routeTitles: Record<string, string> = {
   "/profile": "My Profile",
 };
 
-export function Header() {
+interface HeaderProps {
+  onSearchOpen?: () => void;
+}
+
+export function Header({ onSearchOpen }: HeaderProps) {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebarState();
   const { overrides } = useBreadcrumbOverrides();
@@ -76,10 +78,18 @@ export function Header() {
           </nav>
         )}
         <div className="ml-auto flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search..." className="w-64 pl-8 h-9" />
-          </div>
+          <button
+            type="button"
+            onClick={onSearchOpen}
+            className="hidden h-9 w-64 items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:inline-flex"
+            aria-label="Search patients with Command K or Control K"
+          >
+            <Search className="size-4 shrink-0" />
+            <span className="flex-1">Search patients…</span>
+            <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+              ⌘K
+            </kbd>
+          </button>
         </div>
       </div>
     </header>
