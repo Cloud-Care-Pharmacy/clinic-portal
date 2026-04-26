@@ -35,13 +35,28 @@ export async function PATCH(
 
   const { consultationId } = await params;
   const body = await req.json();
-  const { status, outcome, notes, completedAt } = body;
+  const {
+    status,
+    outcome,
+    notes,
+    completedAt,
+    scheduledAt,
+    duration,
+    type,
+    doctorId,
+    doctorName,
+  } = body;
 
   const updated = updateConsultation(consultationId, {
     status,
     outcome,
     notes,
     completedAt,
+    scheduledAt,
+    duration,
+    type,
+    doctorId,
+    doctorName,
   });
 
   if (!updated) {

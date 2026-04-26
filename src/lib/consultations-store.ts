@@ -113,9 +113,14 @@ export function updateConsultation(
   id: string,
   data: {
     status?: ConsultationStatus;
-    outcome?: string;
-    notes?: string;
-    completedAt?: string;
+    outcome?: string | null;
+    notes?: string | null;
+    completedAt?: string | null;
+    scheduledAt?: string;
+    duration?: number | null;
+    type?: ConsultationType;
+    doctorId?: string;
+    doctorName?: string;
   }
 ): Consultation | undefined {
   const existing = store.get(id);

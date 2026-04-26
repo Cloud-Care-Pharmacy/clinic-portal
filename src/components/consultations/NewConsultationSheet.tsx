@@ -28,8 +28,20 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { useCreateConsultation } from "@/lib/hooks/use-consultations";
-import type { ConsultationType } from "@/types";
+import {
+  useCreateConsultation,
+  useUpdateConsultation,
+} from "@/lib/hooks/use-consultations";
+import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
+
+const MINUTE_OPTIONS = ["00", "15", "30", "45"];
+
+const STATUS_LABELS: Record<ConsultationStatus, string> = {
+  scheduled: "Scheduled",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  "no-show": "No-show",
+};
 
 const schema = z.object({
   patientName: z.string().min(1, "Patient name is required"),
@@ -38,15 +50,57 @@ const schema = z.object({
   scheduledAt: z.string().min(1, "Date & time is required"),
   duration: z.string().optional(),
   notes: z.string().optional(),
+  status: z.string().optional(),
+  outcome: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
+
+function getTimeParts(value?: string | null) {
+  const date = value ? new Date(value) : undefined;
+  if (!date || Number.isNaN(date.getTime())) {
+    return {
+      selectedDate: undefined,
+      hour: "09",
+      minute: "00",
+      period: "AM" as const,
+    };
+  }
+
+  const hour24 = date.getHours();
+  const period: "AM" | "PM" = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 || 12;
+
+  return {
+    selectedDate: date,
+    hour: String(hour12).padStart(2, "0"),
+    minute: String(date.getMinutes()).padStart(2, "0"),
+    period,
+  };
+}
+
+function getDefaultValues(
+  defaultPatientName?: string,
+  consultation?: Consultation | null
+): FormData {
+  return {
+    patientName: consultation?.patientName ?? defaultPatientName ?? "",
+    doctorName: consultation?.doctorName ?? "",
+    type: consultation?.type ?? "initial",
+    scheduledAt: consultation?.scheduledAt ?? "",
+    duration: consultation?.duration ? String(consultation.duration) : "30",
+    notes: consultation?.notes ?? "",
+    status: consultation?.status ?? "scheduled",
+    outcome: consultation?.outcome ?? "",
+  };
+}
 
 interface NewConsultationSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultPatientId?: string;
   defaultPatientName?: string;
+  consultation?: Consultation | null;
 }
 
 export function NewConsultationSheet({
@@ -54,32 +108,45 @@ export function NewConsultationSheet({
   onOpenChange,
   defaultPatientId,
   defaultPatientName,
+  consultation,
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
+  const updateConsultation = useUpdateConsultation();
   const fallbackPatientId = useId();
+  const isEditing = Boolean(consultation);
+  const initialTimeParts = getTimeParts(consultation?.scheduledAt);
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [hour, setHour] = useState("09");
-  const [minute, setMinute] = useState("00");
-  const [period, setPeriod] = useState<"AM" | "PM">("AM");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    initialTimeParts.selectedDate
+  );
+  const [hour, setHour] = useState(initialTimeParts.hour);
+  const [minute, setMinute] = useState(initialTimeParts.minute);
+  const [period, setPeriod] = useState<"AM" | "PM">(initialTimeParts.period);
 
   const form = useForm<FormData>({
-    defaultValues: {
-      patientName: defaultPatientName ?? "",
-      doctorName: "",
-      type: "initial",
-      scheduledAt: "",
-      duration: "30",
-      notes: "",
-    },
+    defaultValues: getDefaultValues(defaultPatientName, consultation),
   });
   const typeValue = useWatch({ control: form.control, name: "type" });
   const notesValue = useWatch({ control: form.control, name: "notes" });
+  const statusValue = useWatch({ control: form.control, name: "status" });
+  const outcomeValue = useWatch({ control: form.control, name: "outcome" });
+  const minuteOptions = MINUTE_OPTIONS.includes(minute)
+    ? MINUTE_OPTIONS
+    : [minute, ...MINUTE_OPTIONS];
+  const isSubmitting = createConsultation.isPending || updateConsultation.isPending;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEditing) return;
     form.setValue("patientName", defaultPatientName ?? "");
-  }, [defaultPatientName, form, open]);
+  }, [defaultPatientName, form, isEditing, open]);
+
+  const resetNewConsultationState = useCallback(() => {
+    form.reset(getDefaultValues(defaultPatientName));
+    setSelectedDate(undefined);
+    setHour("09");
+    setMinute("00");
+    setPeriod("AM");
+  }, [defaultPatientName, form]);
 
   const updateScheduledAt = useCallback(
     (date: Date | undefined, h: string, m: string, p: "AM" | "PM") => {
@@ -125,31 +192,56 @@ export function NewConsultationSheet({
       return;
     }
 
+    const duration = result.data.duration
+      ? parseInt(result.data.duration, 10)
+      : undefined;
+    const scheduledAt = new Date(result.data.scheduledAt).toISOString();
+
+    if (consultation) {
+      const status = (result.data.status ?? consultation.status) as ConsultationStatus;
+
+      updateConsultation.mutate(
+        {
+          id: consultation.id,
+          doctorName: result.data.doctorName,
+          type: result.data.type as ConsultationType,
+          scheduledAt,
+          duration: duration ?? null,
+          notes: result.data.notes || null,
+          status,
+          outcome: result.data.outcome || null,
+          completedAt:
+            status === "completed"
+              ? (consultation.completedAt ?? new Date().toISOString())
+              : null,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Consultation updated");
+            onOpenChange(false);
+          },
+          onError: (err) => {
+            toast.error(err.message);
+          },
+        }
+      );
+      return;
+    }
+
     createConsultation.mutate(
       {
         patientId: defaultPatientId ?? fallbackPatientId,
         patientName: result.data.patientName,
         doctorName: result.data.doctorName,
         type: result.data.type as ConsultationType,
-        scheduledAt: new Date(result.data.scheduledAt).toISOString(),
-        duration: result.data.duration ? parseInt(result.data.duration, 10) : undefined,
+        scheduledAt,
+        duration,
         notes: result.data.notes || undefined,
       },
       {
         onSuccess: () => {
           toast.success("Consultation scheduled");
-          form.reset({
-            patientName: defaultPatientName ?? "",
-            doctorName: "",
-            type: "initial",
-            scheduledAt: "",
-            duration: "30",
-            notes: "",
-          });
-          setSelectedDate(undefined);
-          setHour("09");
-          setMinute("00");
-          setPeriod("AM");
+          resetNewConsultationState();
           onOpenChange(false);
         },
         onError: (err) => {
@@ -160,14 +252,26 @@ export function NewConsultationSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isEditing) resetNewConsultationState();
+        onOpenChange(nextOpen);
+      }}
+    >
       <SheetContent
         side="right"
         className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-100"
       >
         <SheetHeader>
-          <SheetTitle>Schedule Consultation</SheetTitle>
-          <SheetDescription>Create a new consultation appointment.</SheetDescription>
+          <SheetTitle>
+            {isEditing ? "Update Consultation" : "Schedule Consultation"}
+          </SheetTitle>
+          <SheetDescription>
+            {isEditing
+              ? "Update appointment details and consultation outcome."
+              : "Create a new consultation appointment."}
+          </SheetDescription>
         </SheetHeader>
 
         <Separator />
@@ -182,7 +286,7 @@ export function NewConsultationSheet({
               id="patientName"
               placeholder="Enter patient name"
               {...form.register("patientName")}
-              disabled={!!defaultPatientName}
+              disabled={isEditing || !!defaultPatientName}
             />
             {form.formState.errors.patientName && (
               <p className="text-sm text-destructive">
@@ -289,7 +393,7 @@ export function NewConsultationSheet({
                   <UISelectValue />
                 </UISelectTrigger>
                 <UISelectContent>
-                  {["00", "15", "30", "45"].map((val) => (
+                  {minuteOptions.map((val) => (
                     <UISelectItem key={val} value={val}>
                       {val}
                     </UISelectItem>
@@ -342,23 +446,59 @@ export function NewConsultationSheet({
             />
           </div>
 
+          {isEditing && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <UISelect
+                  value={statusValue}
+                  onValueChange={(v) => {
+                    if (v) form.setValue("status", v);
+                  }}
+                >
+                  <UISelectTrigger id="status">
+                    <UISelectValue placeholder="Select status" />
+                  </UISelectTrigger>
+                  <UISelectContent>
+                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                      <UISelectItem key={value} value={value}>
+                        {label}
+                      </UISelectItem>
+                    ))}
+                  </UISelectContent>
+                </UISelect>
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <Label>Outcome</Label>
+                <SimpleEditor
+                  content={outcomeValue ?? ""}
+                  onChange={(html) => form.setValue("outcome", html)}
+                  placeholder="Optional outcome or summary…"
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex gap-2 justify-end pt-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => {
-                form.reset();
-                setSelectedDate(undefined);
-                setHour("09");
-                setMinute("00");
-                setPeriod("AM");
+                if (!isEditing) resetNewConsultationState();
                 onOpenChange(false);
               }}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createConsultation.isPending}>
-              {createConsultation.isPending ? "Scheduling…" : "Schedule"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting
+                ? isEditing
+                  ? "Saving…"
+                  : "Scheduling…"
+                : isEditing
+                  ? "Save changes"
+                  : "Schedule"}
             </Button>
           </div>
         </form>

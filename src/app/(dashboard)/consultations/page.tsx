@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { ConsultationTable } from "@/components/consultations/ConsultationTable";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
-import { ConsultationDetailSheet } from "@/components/consultations/ConsultationDetailSheet";
 import { ConsultationCalendar } from "@/components/consultations/ConsultationCalendar";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import type { Consultation } from "@/types";
@@ -90,10 +89,16 @@ export default function ConsultationsPage() {
       )}
 
       <NewConsultationSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-      <ConsultationDetailSheet
-        consultation={selected}
-        onClose={() => setSelected(null)}
-      />
+      {selected && (
+        <NewConsultationSheet
+          key={selected.id}
+          open={!!selected}
+          onOpenChange={(open) => {
+            if (!open) setSelected(null);
+          }}
+          consultation={selected}
+        />
+      )}
     </div>
   );
 }

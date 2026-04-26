@@ -53,11 +53,11 @@ async function updateConsultationApi(
   id: string,
   body: {
     status?: ConsultationStatus;
-    outcome?: string;
-    notes?: string;
-    completedAt?: string;
+    outcome?: string | null;
+    notes?: string | null;
+    completedAt?: string | null;
     scheduledAt?: string;
-    duration?: number;
+    duration?: number | null;
     type?: ConsultationType;
     doctorId?: string;
     doctorName?: string;
@@ -138,11 +138,11 @@ export function useUpdateConsultation() {
     }: {
       id: string;
       status?: ConsultationStatus;
-      outcome?: string;
-      notes?: string;
-      completedAt?: string;
+      outcome?: string | null;
+      notes?: string | null;
+      completedAt?: string | null;
       scheduledAt?: string;
-      duration?: number;
+      duration?: number | null;
       type?: ConsultationType;
       doctorId?: string;
       doctorName?: string;
