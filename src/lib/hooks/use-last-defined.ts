@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 
 /**
  * Returns the last non-null/undefined value seen for `value`. Useful for
@@ -8,7 +8,10 @@ import { useRef } from "react";
  * controlling parent has already cleared the selection.
  */
 export function useLastDefined<T>(value: T | null | undefined): T | null {
-  const ref = useRef<T | null>(null);
-  if (value != null) ref.current = value;
-  return ref.current;
+  const [stash, setStash] = useState<T | null>(value ?? null);
+  if (value != null && value !== stash) {
+    setStash(value);
+    return value;
+  }
+  return stash;
 }
