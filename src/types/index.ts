@@ -142,17 +142,46 @@ export interface SubmissionResult {
 // Parchment Prescription types
 // ============================================
 
-export interface Prescription {
+export interface PrescriptionMedicationApi {
+  id?: string;
+  itemName?: string;
+  name?: string;
+  product?: string;
+  medicationName?: string;
+  dosage?: string;
+  strength?: string;
+  quantity?: string | number;
+  repeatsAuthorised?: string | number;
+  repeats?: string | number;
+  repeatIntervals?: string;
+  pbsCode?: string;
+  notes?: string;
+}
+
+export interface Prescription extends PrescriptionMedicationApi {
+  id?: string;
   type?: string;
   url?: string;
   scid?: string;
   status?: string;
   createdDate?: string;
-  itemName?: string;
-  quantity?: string;
-  repeatsAuthorised?: string;
-  repeatIntervals?: string;
+  createdAt?: string;
+  issuedAt?: string;
+  expiresAt?: string;
+  prescriberName?: string;
+  medications?: PrescriptionMedicationApi[];
+  items?: PrescriptionMedicationApi[];
+}
+
+export interface PrescriptionMedication {
+  id: string;
+  name: string;
+  dosage?: string;
+  quantity?: number;
+  repeats?: number;
+  schedule?: string;
   pbsCode?: string;
+  notes?: string;
 }
 
 export interface PatientPrescriptionsApiResponse {
@@ -191,6 +220,7 @@ export interface ParchmentPrescription {
   expiresAt: string;
   status: "active" | "expired" | "pending";
   notes?: string;
+  medications: PrescriptionMedication[];
 }
 
 export interface ParchmentPrescriptionsResponse {

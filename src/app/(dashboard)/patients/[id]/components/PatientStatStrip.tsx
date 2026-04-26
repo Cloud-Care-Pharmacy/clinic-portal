@@ -1,7 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Activity, Pill, CalendarClock, Heart } from "lucide-react";
+import { Activity, FileText, CalendarClock, Heart } from "lucide-react";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
@@ -16,7 +16,7 @@ interface StatCellProps {
 
 function StatCell({ icon, tileClass, label, value, subText }: StatCellProps) {
   return (
-    <div className="flex flex-1 gap-3 px-5 first:pl-0 last:pr-0 [&:not(:last-child)]:border-r border-border">
+    <div className="flex flex-1 gap-3 px-5 first:pl-0 last:pr-0 not-last:border-r border-border">
       <div
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border ${tileClass}`}
       >
@@ -61,7 +61,9 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
       (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
     )[0];
 
-  const activeMeds = prescriptions.filter((p) => p.status === "active");
+  const latestPrescription = [...prescriptions].sort(
+    (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
+  )[0];
 
   // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
   const now = Date.now();
@@ -89,7 +91,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
   return (
     <div className="flex border-t border-border mt-4 pt-4">
       <StatCell
-        icon={<Activity className="size-[18px] text-status-info-fg" />}
+        icon={<Activity className="size-4.5 text-status-info-fg" />}
         tileClass="bg-status-info-bg text-status-info-fg border-status-info-border"
         label="Last consult"
         value={
@@ -104,7 +106,7 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         subText={lastConsult?.doctorName ?? "No consultations"}
       />
       <StatCell
-        icon={<CalendarClock className="size-[18px] text-status-success-fg" />}
+        icon={<CalendarClock className="size-4.5 text-status-success-fg" />}
         tileClass="bg-status-success-bg text-status-success-fg border-status-success-border"
         label="Next appointment"
         value={
@@ -124,18 +126,26 @@ export function PatientStatStrip({ patientId }: PatientStatStripProps) {
         subText={nextAppt?.doctorName ?? "None scheduled"}
       />
       <StatCell
-        icon={<Pill className="size-[18px] text-status-accent-fg" />}
+        icon={<FileText className="size-4.5 text-status-accent-fg" />}
         tileClass="bg-status-accent-bg text-status-accent-fg border-status-accent-border"
-        label="Active meds"
-        value={activeMeds.length > 0 ? String(activeMeds.length) : "—"}
+        label="Latest prescription"
+        value={
+          latestPrescription
+            ? new Date(latestPrescription.issuedAt).toLocaleDateString("en-AU", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })
+            : "—"
+        }
         subText={
-          activeMeds.length > 0
-            ? `${prescriptions.length} prescriptions`
+          latestPrescription
+            ? `${latestPrescription.medications.length} item${latestPrescription.medications.length === 1 ? "" : "s"}`
             : "No prescriptions"
         }
       />
       <StatCell
-        icon={<Heart className="size-[18px] text-status-danger-fg" />}
+        icon={<Heart className="size-4.5 text-status-danger-fg" />}
         tileClass="bg-status-danger-bg text-status-danger-fg border-status-danger-border"
         label="Conditions"
         value={conditions.length > 0 ? String(conditions.length) : "—"}
