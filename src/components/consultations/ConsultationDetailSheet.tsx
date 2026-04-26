@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUpdateConsultation } from "@/lib/hooks/use-consultations";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type { Consultation, ConsultationType } from "@/types";
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
@@ -55,16 +56,15 @@ function DetailRow({
 }
 
 export function ConsultationDetailSheet({
-  consultation,
+  consultation: input,
   onClose,
 }: ConsultationDetailSheetProps) {
   const updateConsultation = useUpdateConsultation();
   const [outcomeText, setOutcomeText] = useState("");
   const [showOutcomeInput, setShowOutcomeInput] = useState(false);
+  const consultation = useLastDefined(input);
 
-  if (!consultation) return null;
-
-  const isScheduled = consultation.status === "scheduled";
+  const isScheduled = consultation?.status === "scheduled";
 
   function handleComplete() {
     if (!showOutcomeInput) {
@@ -108,12 +108,16 @@ export function ConsultationDetailSheet({
 
   return (
     <AppSheet
-      open={!!consultation}
+      open={!!input}
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
       title="Consultation Details"
-      description={`${consultation.patientName} — ${consultation.type} consultation`}
+      description={
+        consultation
+          ? `${consultation.patientName} — ${consultation.type} consultation`
+          : ""
+      }
       footer={
         isScheduled ? (
           <>
@@ -151,54 +155,29 @@ export function ConsultationDetailSheet({
         ) : undefined
       }
     >
-      <div className="space-y-5">
-        <div className="flex items-center gap-2">
-          <StatusBadge status={consultation.status} />
-          <Badge
-            variant="outline"
-            className={`capitalize text-xs ${TYPE_COLORS[consultation.type]}`}
-          >
-            {consultation.type}
-          </Badge>
-        </div>
+      {consultation ? (
+        <div className="space-y-5">
+          <div className="flex items-center gap-2">
+            <StatusBadge status={consultation.status} />
+            <Badge
+              variant="outline"
+              className={`capitalize text-xs ${TYPE_COLORS[consultation.type]}`}
+            >
+              {consultation.type}
+            </Badge>
+          </div>
 
-        <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
-          {consultation.patientName}
-        </DetailRow>
-
-        <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">
-          {consultation.doctorName}
-        </DetailRow>
-
-        <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Scheduled">
-          {new Date(consultation.scheduledAt).toLocaleString("en-AU", {
-            weekday: "long",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </DetailRow>
-
-        {consultation.duration && (
-          <DetailRow icon={<Clock className="h-4 w-4" />} label="Duration">
-            {consultation.duration} minutes
+          <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
+            {consultation.patientName}
           </DetailRow>
-        )}
 
-        {consultation.notes && (
-          <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
-            <div
-              className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
-              dangerouslySetInnerHTML={{ __html: consultation.notes }}
-            />
+          <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">
+            {consultation.doctorName}
           </DetailRow>
-        )}
 
-        {consultation.completedAt && (
-          <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Completed At">
-            {new Date(consultation.completedAt).toLocaleString("en-AU", {
+          <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Scheduled">
+            {new Date(consultation.scheduledAt).toLocaleString("en-AU", {
+              weekday: "long",
               day: "2-digit",
               month: "long",
               year: "numeric",
@@ -206,35 +185,62 @@ export function ConsultationDetailSheet({
               minute: "2-digit",
             })}
           </DetailRow>
-        )}
 
-        {consultation.outcome && (
-          <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
-            <div
-              className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
-              dangerouslySetInnerHTML={{ __html: consultation.outcome }}
-            />
-          </DetailRow>
-        )}
+          {consultation.duration && (
+            <DetailRow icon={<Clock className="h-4 w-4" />} label="Duration">
+              {consultation.duration} minutes
+            </DetailRow>
+          )}
 
-        {/* Actions for scheduled consultations */}
-        {isScheduled && (
-          <>
-            <Separator />
+          {consultation.notes && (
+            <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
+              <div
+                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                dangerouslySetInnerHTML={{ __html: consultation.notes }}
+              />
+            </DetailRow>
+          )}
 
-            {showOutcomeInput && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Outcome / Summary</p>
-                <SimpleEditor
-                  content={outcomeText}
-                  onChange={setOutcomeText}
-                  placeholder="Enter consultation outcome…"
-                />
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          {consultation.completedAt && (
+            <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Completed At">
+              {new Date(consultation.completedAt).toLocaleString("en-AU", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </DetailRow>
+          )}
+
+          {consultation.outcome && (
+            <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
+              <div
+                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                dangerouslySetInnerHTML={{ __html: consultation.outcome }}
+              />
+            </DetailRow>
+          )}
+
+          {/* Actions for scheduled consultations */}
+          {isScheduled && (
+            <>
+              <Separator />
+
+              {showOutcomeInput && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Outcome / Summary</p>
+                  <SimpleEditor
+                    content={outcomeText}
+                    onChange={setOutcomeText}
+                    placeholder="Enter consultation outcome…"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
     </AppSheet>
   );
 }
