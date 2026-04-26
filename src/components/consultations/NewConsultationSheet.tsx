@@ -24,6 +24,7 @@ import {
   useCreateConsultation,
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
 
 const MINUTE_OPTIONS = ["00", "15", "30", "45"];
@@ -100,12 +101,15 @@ export function NewConsultationSheet({
   onOpenChange,
   defaultPatientId,
   defaultPatientName,
-  consultation,
+  consultation: consultationInput,
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
   const updateConsultation = useUpdateConsultation();
   const fallbackPatientId = useId();
   const formId = useId();
+  // Keep the previous consultation visible during the close transition so the
+  // sheet can animate out without flashing to the empty "Schedule" form.
+  const consultation = useLastDefined(consultationInput);
   const isEditing = Boolean(consultation);
   const initialTimeParts = getTimeParts(consultation?.scheduledAt);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -132,6 +136,20 @@ export function NewConsultationSheet({
     if (!open || isEditing) return;
     form.setValue("patientName", defaultPatientName ?? "");
   }, [defaultPatientName, form, isEditing, open]);
+
+  // When a different consultation is selected, refresh the form & time state.
+  // Done as derived state during render to avoid setState-in-effect cascades.
+  const incomingId = consultationInput?.id ?? null;
+  const [trackedId, setTrackedId] = useState<string | null>(incomingId);
+  if (consultationInput && incomingId !== trackedId) {
+    setTrackedId(incomingId);
+    form.reset(getDefaultValues(defaultPatientName, consultationInput));
+    const parts = getTimeParts(consultationInput.scheduledAt);
+    setSelectedDate(parts.selectedDate);
+    setHour(parts.hour);
+    setMinute(parts.minute);
+    setPeriod(parts.period);
+  }
 
   const resetNewConsultationState = useCallback(() => {
     form.reset(getDefaultValues(defaultPatientName));

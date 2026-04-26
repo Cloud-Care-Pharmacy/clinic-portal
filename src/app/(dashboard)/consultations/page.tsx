@@ -89,16 +89,13 @@ export default function ConsultationsPage() {
       )}
 
       <NewConsultationSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-      {selected && (
-        <NewConsultationSheet
-          key={selected.id}
-          open={!!selected}
-          onOpenChange={(open) => {
-            if (!open) setSelected(null);
-          }}
-          consultation={selected}
-        />
-      )}
+      <NewConsultationSheet
+        open={!!selected}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+        consultation={selected}
+      />
     </div>
   );
 }

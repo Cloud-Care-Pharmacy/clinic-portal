@@ -162,18 +162,15 @@ export function ConsultationsTab({
         />
       </div>
 
-      {selected && (
-        <NewConsultationSheet
-          key={selected.id}
-          open={!!selected}
-          onOpenChange={(open) => {
-            if (!open) clearSelectedConsultation();
-          }}
-          defaultPatientId={patientId}
-          defaultPatientName={patientName}
-          consultation={selected}
-        />
-      )}
+      <NewConsultationSheet
+        open={!!selected}
+        onOpenChange={(open) => {
+          if (!open) clearSelectedConsultation();
+        }}
+        defaultPatientId={patientId}
+        defaultPatientName={patientName}
+        consultation={selected}
+      />
     </div>
   );
 }
