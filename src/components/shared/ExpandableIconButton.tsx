@@ -37,7 +37,7 @@ export function ExpandableIconButton({
   return (
     <button
       className={cn(
-        "group relative inline-flex h-8 min-w-8 items-center justify-center overflow-hidden rounded-full border bg-muted px-2 text-muted-foreground transition-all duration-180 ease-in-out",
+        "group relative inline-flex h-9 min-w-9 items-center justify-center overflow-hidden rounded-full border bg-muted px-2.5 text-muted-foreground transition-all duration-180 ease-in-out",
         disabled
           ? "cursor-default opacity-50"
           : cn(

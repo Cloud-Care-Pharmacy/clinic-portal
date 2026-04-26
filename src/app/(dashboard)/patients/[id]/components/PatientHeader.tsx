@@ -154,7 +154,7 @@ export const PatientHeader = memo(
                 {pmsId && (
                   <button
                     onClick={() => copyToClipboard(pmsId)}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 font-mono text-xs font-medium text-foreground hover:bg-accent transition-colors"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-md bg-muted px-3 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     #{pmsId}
                     <Copy className="size-3.5 text-muted-foreground" />

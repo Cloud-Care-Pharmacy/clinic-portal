@@ -13,8 +13,8 @@ export default function ProfileLoading() {
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-6 w-20 rounded-full" />
               <div className="flex items-center gap-1.5">
-                <Skeleton className="h-8 w-8 rounded-md" />
-                <Skeleton className="h-8 w-8 rounded-md" />
+                <Skeleton className="h-9 w-9 rounded-md" />
+                <Skeleton className="h-9 w-9 rounded-md" />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
