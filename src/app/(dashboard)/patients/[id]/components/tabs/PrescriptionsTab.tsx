@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,11 +76,18 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
 
 interface PrescriptionsTabProps {
   patientId: string;
+  selectedPrescriptionId?: string;
 }
 
-export function PrescriptionsTab({ patientId }: PrescriptionsTabProps) {
+export function PrescriptionsTab({
+  patientId,
+  selectedPrescriptionId,
+}: PrescriptionsTabProps) {
+  const router = useRouter();
   const { data, isLoading, error } = usePrescriptions(patientId);
-  const [selected, setSelected] = useState<ParchmentPrescription | null>(null);
+  const [selectedFromRow, setSelectedFromRow] = useState<ParchmentPrescription | null>(
+    null
+  );
 
   if (isLoading) {
     return (
@@ -92,6 +100,27 @@ export function PrescriptionsTab({ patientId }: PrescriptionsTabProps) {
   }
 
   const prescriptions = data?.data?.prescriptions ?? [];
+  const selected = selectedPrescriptionId
+    ? (prescriptions.find(
+        (prescription) => prescription.id === selectedPrescriptionId
+      ) ?? null)
+    : selectedFromRow;
+
+  function selectedPrescriptionHref(prescriptionId: string) {
+    return `/patients/${encodeURIComponent(patientId)}/prescriptions?selected=${encodeURIComponent(prescriptionId)}`;
+  }
+
+  function clearSelectedPrescription() {
+    setSelectedFromRow(null);
+    router.replace(`/patients/${encodeURIComponent(patientId)}/prescriptions`, {
+      scroll: false,
+    });
+  }
+
+  function openPrescription(prescription: ParchmentPrescription) {
+    setSelectedFromRow(prescription);
+    router.push(selectedPrescriptionHref(prescription.id), { scroll: false });
+  }
 
   if (error || prescriptions.length === 0) {
     return (
@@ -122,14 +151,14 @@ export function PrescriptionsTab({ patientId }: PrescriptionsTabProps) {
             },
           }}
           onRowClick={(params: GridRowParams<ParchmentPrescription>) =>
-            setSelected(params.row)
+            openPrescription(params.row)
           }
           sx={dataGridSx}
         />
       </div>
       <PrescriptionDetailSheet
         prescription={selected}
-        onClose={() => setSelected(null)}
+        onClose={clearSelectedPrescription}
       />
     </>
   );

@@ -33,6 +33,7 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetDescription,
@@ -232,6 +233,73 @@ function AddNoteSheet({
   );
 }
 
+// ---- Note detail sheet ----
+
+function NoteDetailSheet({
+  note,
+  open,
+  onOpenChange,
+}: {
+  note: PatientNote | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!note) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden sm:max-w-[33vw] sm:min-w-100"
+      >
+        <SheetHeader>
+          <SheetTitle>{note.title}</SheetTitle>
+          <SheetDescription>
+            {note.authorName} ·{" "}
+            {new Date(note.createdAt).toLocaleString("en-AU", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </SheetDescription>
+        </SheetHeader>
+
+        <Separator />
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 pb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`text-xs px-2 py-0.5 ${CATEGORY_COLORS[note.category]}`}
+            >
+              {CATEGORY_LABELS[note.category]}
+            </Badge>
+            {note.isPinned && (
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
+                <Pin className="mr-1.5 h-3 w-3" />
+                Pinned
+              </Badge>
+            )}
+          </div>
+
+          <div
+            className="prose prose-sm max-w-none text-sm text-foreground [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2"
+            dangerouslySetInnerHTML={{ __html: note.content }}
+          />
+        </div>
+
+        <SheetFooter className="border-t bg-popover">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 // ---- Category Icons ----
 
 const CATEGORY_ICONS: Record<NoteCategory, React.ReactNode> = {
@@ -380,9 +448,10 @@ function NoteCard({
 interface NotesTabProps {
   patientId: string;
   initialAction?: "new";
+  selectedNoteId?: string;
 }
 
-export function NotesTab({ patientId, initialAction }: NotesTabProps) {
+export function NotesTab({ patientId, initialAction, selectedNoteId }: NotesTabProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { data, isLoading, error } = usePatientNotes(patientId);
@@ -433,6 +502,17 @@ export function NotesTab({ patientId, initialAction }: NotesTabProps) {
   const notes = data?.data?.notes ?? [];
   const pinnedNotes = notes.filter((n) => n.isPinned);
   const unpinnedNotes = notes.filter((n) => !n.isPinned);
+  const selectedNote = selectedNoteId
+    ? (notes.find((note) => note.id === selectedNoteId) ?? null)
+    : null;
+
+  function clearSelectedNote() {
+    if (selectedNoteId) {
+      router.replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
+        scroll: false,
+      });
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -440,6 +520,13 @@ export function NotesTab({ patientId, initialAction }: NotesTabProps) {
         patientId={patientId}
         open={addNoteOpen}
         onOpenChange={handleSheetOpenChange}
+      />
+      <NoteDetailSheet
+        note={selectedNote}
+        open={!!selectedNote}
+        onOpenChange={(open) => {
+          if (!open) clearSelectedNote();
+        }}
       />
 
       {notes.length === 0 ? (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,11 +34,13 @@ function formatDateTime(iso: string) {
 function IntakeFormSheet({
   record,
   isLatest,
+  reviewMode,
   open,
   onOpenChange,
 }: {
   record: ClinicalDataRecord | null;
   isLatest: boolean;
+  reviewMode?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -169,7 +172,8 @@ function IntakeFormSheet({
             )}
           </div>
           <SheetDescription>
-            Submitted {formatDateTime(record.submitted_at)}
+            {reviewMode ? "Review requested · " : ""}Submitted{" "}
+            {formatDateTime(record.submitted_at)}
           </SheetDescription>
         </SheetHeader>
 
@@ -234,19 +238,47 @@ const historyColumns: GridColDef<ClinicalDataRecord>[] = [
 
 interface ClinicalHistoryTabProps {
   patientId: string;
+  selectedClinicalId?: string;
+  reviewMode?: boolean;
 }
 
-export function ClinicalHistoryTab({ patientId }: ClinicalHistoryTabProps) {
+export function ClinicalHistoryTab({
+  patientId,
+  selectedClinicalId,
+  reviewMode,
+}: ClinicalHistoryTabProps) {
+  const router = useRouter();
   const { data, isLoading, error } = useClinicalData(patientId);
-  const [selected, setSelected] = useState<ClinicalDataRecord | null>(null);
+  const [selectedFromRow, setSelectedFromRow] = useState<ClinicalDataRecord | null>(
+    null
+  );
 
   const records = data?.data?.records ?? [];
+  const selected = selectedClinicalId
+    ? (records.find((record) => record.id === selectedClinicalId) ?? null)
+    : selectedFromRow;
   const latestId =
     records.length > 0
       ? records.reduce((a, b) =>
           new Date(a.submitted_at) > new Date(b.submitted_at) ? a : b
         ).id
       : null;
+
+  function selectedClinicalHref(recordId: string) {
+    return `/patients/${encodeURIComponent(patientId)}/clinical?selected=${encodeURIComponent(recordId)}`;
+  }
+
+  function clearSelectedClinicalRecord() {
+    setSelectedFromRow(null);
+    router.replace(`/patients/${encodeURIComponent(patientId)}/clinical`, {
+      scroll: false,
+    });
+  }
+
+  function openClinicalRecord(record: ClinicalDataRecord) {
+    setSelectedFromRow(record);
+    router.push(selectedClinicalHref(record.id), { scroll: false });
+  }
 
   if (isLoading) {
     return (
@@ -286,16 +318,17 @@ export function ClinicalHistoryTab({ patientId }: ClinicalHistoryTabProps) {
               sortModel: [{ field: "submitted_at", sort: "desc" }],
             },
           }}
-          onRowClick={(params) => setSelected(params.row)}
+          onRowClick={(params) => openClinicalRecord(params.row)}
           sx={dataGridSx}
         />
       </div>
       <IntakeFormSheet
         record={selected}
         isLatest={selected?.id === latestId}
+        reviewMode={reviewMode && selected?.id === selectedClinicalId}
         open={!!selected}
         onOpenChange={(open) => {
-          if (!open) setSelected(null);
+          if (!open) clearSelectedClinicalRecord();
         }}
       />
     </>

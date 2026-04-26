@@ -8,10 +8,16 @@ export default function NotesPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ action?: string }>;
+  searchParams: Promise<{ action?: string; selected?: string }>;
 }) {
   const { id } = use(params);
-  const { action } = use(searchParams);
+  const { action, selected } = use(searchParams);
 
-  return <NotesTab patientId={id} initialAction={action === "new" ? "new" : undefined} />;
+  return (
+    <NotesTab
+      patientId={id}
+      initialAction={action === "new" ? "new" : undefined}
+      selectedNoteId={selected}
+    />
+  );
 }

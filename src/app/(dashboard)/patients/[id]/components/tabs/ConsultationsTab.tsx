@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -72,14 +73,41 @@ const consultationColumns: GridColDef<Consultation>[] = [
 interface ConsultationsTabProps {
   patientId: string;
   patientName: string;
+  selectedConsultationId?: string;
 }
 
-export function ConsultationsTab({ patientId, patientName }: ConsultationsTabProps) {
+export function ConsultationsTab({
+  patientId,
+  patientName,
+  selectedConsultationId,
+}: ConsultationsTabProps) {
+  const router = useRouter();
   const { data, isLoading } = useConsultations(patientId);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
-  const [selected, setSelected] = useState<Consultation | null>(null);
+  const [selectedFromRow, setSelectedFromRow] = useState<Consultation | null>(null);
 
   const consultations = data?.data?.consultations ?? [];
+  const selected = selectedConsultationId
+    ? (consultations.find(
+        (consultation) => consultation.id === selectedConsultationId
+      ) ?? null)
+    : selectedFromRow;
+
+  function selectedConsultationHref(consultationId: string) {
+    return `/patients/${encodeURIComponent(patientId)}/consultations?selected=${encodeURIComponent(consultationId)}`;
+  }
+
+  function clearSelectedConsultation() {
+    setSelectedFromRow(null);
+    router.replace(`/patients/${encodeURIComponent(patientId)}/consultations`, {
+      scroll: false,
+    });
+  }
+
+  function openConsultation(consultation: Consultation) {
+    setSelectedFromRow(consultation);
+    router.push(selectedConsultationHref(consultation.id), { scroll: false });
+  }
 
   if (isLoading) {
     return (
@@ -129,7 +157,7 @@ export function ConsultationsTab({ patientId, patientName }: ConsultationsTabPro
               sortModel: [{ field: "scheduledAt", sort: "desc" }],
             },
           }}
-          onRowClick={(params) => setSelected(params.row)}
+          onRowClick={(params) => openConsultation(params.row)}
           sx={dataGridSx}
         />
       </div>
@@ -139,7 +167,7 @@ export function ConsultationsTab({ patientId, patientName }: ConsultationsTabPro
           key={selected.id}
           open={!!selected}
           onOpenChange={(open) => {
-            if (!open) setSelected(null);
+            if (!open) clearSelectedConsultation();
           }}
           defaultPatientId={patientId}
           defaultPatientName={patientName}

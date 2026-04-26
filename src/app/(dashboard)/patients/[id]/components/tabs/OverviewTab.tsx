@@ -1,20 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stethoscope, RotateCw, RefreshCw } from "lucide-react";
 import { cn, htmlToPlainText } from "@/lib/utils";
-import type { ConsultationType, ParchmentPrescription } from "@/types";
+import type { ConsultationType } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientNotes } from "@/lib/hooks/use-notes";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { usePatientShell } from "../PatientShellContext";
-import {
-  PrescriptionDetailSheet,
-  formatPrescriptionReference,
-} from "@/components/prescriptions/PrescriptionDetailSheet";
+import { formatPrescriptionReference } from "@/components/prescriptions/PrescriptionDetailSheet";
 
 /* ── Helpers ── */
 
@@ -24,6 +23,21 @@ function fmtDate(dateStr: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+function patientTabHref(
+  patientId: string,
+  tab: "consultations" | "prescriptions" | "documents" | "clinical" | "notes",
+  params?: Record<string, string | undefined>
+) {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value) search.set(key, value);
+  }
+
+  const qs = search.toString();
+  const path = `/patients/${encodeURIComponent(patientId)}/${tab}`;
+  return qs ? `${path}?${qs}` : path;
 }
 
 const CONSULT_TYPE_CONFIG: Record<
@@ -51,13 +65,18 @@ function SectionHead({
   title,
   count,
   actionLabel,
+  actionHref,
   onAction,
 }: {
   title: string;
   count?: string;
   actionLabel?: string;
+  actionHref?: string;
   onAction?: () => void;
 }) {
+  const actionClassName =
+    "inline-flex min-h-11 items-center rounded-md text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
       <h3 className="text-base font-semibold leading-tight tracking-[-0.01em]">
@@ -67,11 +86,13 @@ function SectionHead({
         {count && (
           <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
         )}
-        {actionLabel && onAction && (
-          <button
-            onClick={onAction}
-            className="text-[13px] font-medium text-primary hover:underline"
-          >
+        {actionLabel && actionHref && (
+          <Link href={actionHref} scroll={false} className={actionClassName}>
+            {actionLabel}
+          </Link>
+        )}
+        {actionLabel && !actionHref && onAction && (
+          <button type="button" onClick={onAction} className={actionClassName}>
             {actionLabel}
           </button>
         )}
@@ -100,13 +121,11 @@ function OverviewCard({
 
 interface OverviewTabProps {
   patientId: string;
-  onTabChange: (tab: string) => void;
 }
 
-export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
+export function OverviewTab({ patientId }: OverviewTabProps) {
   const { patient } = usePatientShell();
-  const [selectedPrescription, setSelectedPrescription] =
-    useState<ParchmentPrescription | null>(null);
+  const [editPatientOpen, setEditPatientOpen] = useState(false);
   const { data: consultsData, isLoading: loadingConsults } =
     useConsultations(patientId);
   const { data: rxData, isLoading: loadingRx } = usePrescriptions(patientId);
@@ -130,6 +149,11 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
   const recentNotes = notes.slice(0, 3);
 
   const conditions = clinical?.medical_conditions ?? [];
+  const clinicalEditHref = patientTabHref(
+    patientId,
+    "clinical",
+    clinical?.id ? { selected: clinical.id, action: "review" } : undefined
+  );
 
   // Unique care team from consultations
   const careTeamMap = new Map<string, { name: string; role: string }>();
@@ -182,7 +206,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
             title="Recent consultations"
             count={`${consultations.length} total`}
             actionLabel="View all"
-            onAction={() => onTabChange("consultations")}
+            actionHref={patientTabHref(patientId, "consultations")}
           />
           {loadingConsults ? (
             <div className="space-y-3">
@@ -205,9 +229,14 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
                 return (
                   <div key={c.id}>
                     {i > 0 && <div className="h-px bg-border" />}
-                    <div
+                    <Link
+                      href={patientTabHref(patientId, "consultations", {
+                        selected: c.id,
+                      })}
+                      scroll={false}
+                      aria-label={`Open consultation with ${c.doctorName} from ${fmtDate(c.scheduledAt)}`}
                       className={cn(
-                        "flex gap-3 items-center py-3 cursor-pointer transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted",
+                        "flex min-h-11 gap-3 items-center py-3 transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         i === 0 && "pt-0",
                         i === recentConsults.length - 1 && "pb-0"
                       )}
@@ -234,7 +263,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
                       <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 tabular-nums">
                         {fmtDate(c.scheduledAt)}
                       </span>
-                    </div>
+                    </Link>
                   </div>
                 );
               })}
@@ -247,7 +276,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
           <SectionHead
             title="Conditions"
             actionLabel="Edit"
-            onAction={() => onTabChange("clinical")}
+            actionHref={clinicalEditHref}
           />
           {conditions.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
@@ -271,7 +300,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
             title="Latest prescription"
             count={`${prescriptions.length} total`}
             actionLabel="View prescriptions"
-            onAction={() => onTabChange("prescriptions")}
+            actionHref={patientTabHref(patientId, "prescriptions")}
           />
           {loadingRx ? (
             <div className="space-y-3">
@@ -284,10 +313,13 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
               No prescriptions on record
             </p>
           ) : (
-            <button
-              type="button"
-              onClick={() => setSelectedPrescription(latestPrescription)}
-              className="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg py-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 px-3"
+            <Link
+              href={patientTabHref(patientId, "prescriptions", {
+                selected: latestPrescription.id,
+              })}
+              scroll={false}
+              aria-label={`Open prescription ${formatPrescriptionReference(latestPrescription)}`}
+              className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg py-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 px-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -303,7 +335,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
               <span className="font-mono text-[11px] text-muted-foreground tracking-[0.02em]">
                 {latestPrescription.id.slice(-6).toUpperCase()}
               </span>
-            </button>
+            </Link>
           )}
         </OverviewCard>
 
@@ -311,7 +343,11 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
         <div className="col-span-12 min-[1100px]:col-span-4 min-w-0 flex flex-col gap-6">
           {/* Demographics */}
           <OverviewCard>
-            <SectionHead title="Demographics" actionLabel="Edit" onAction={() => {}} />
+            <SectionHead
+              title="Demographics"
+              actionLabel="Edit"
+              onAction={() => setEditPatientOpen(true)}
+            />
             <dl className="grid grid-cols-[96px_1fr] gap-x-4 gap-y-2.5 text-[13px]">
               <dt className="text-muted-foreground">DOB</dt>
               <dd className="font-medium min-w-0 wrap-break-word">
@@ -382,7 +418,7 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
           <SectionHead
             title="Latest notes"
             actionLabel="+ Add note"
-            onAction={() => onTabChange("notes")}
+            actionHref={patientTabHref(patientId, "notes", { action: "new" })}
           />
           {loadingNotes ? (
             <div className="space-y-3">
@@ -400,14 +436,22 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
                 return (
                   <div key={n.id}>
                     {i > 0 && <div className="h-px bg-border" />}
-                    <div className={cn("py-4", i === 0 && "pt-0")}>
+                    <Link
+                      href={patientTabHref(patientId, "notes", { selected: n.id })}
+                      scroll={false}
+                      aria-label={`Open note ${n.title}`}
+                      className={cn(
+                        "block min-h-11 rounded-lg py-4 transition-colors duration-120 -mx-3 px-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        i === 0 && "pt-0"
+                      )}
+                    >
                       <p className="text-sm leading-[1.6] text-foreground whitespace-pre-line">
                         {noteText}
                       </p>
                       <p className="mt-2 text-xs text-muted-foreground">
                         {n.authorName} · {fmtDate(n.createdAt)}
                       </p>
-                    </div>
+                    </Link>
                   </div>
                 );
               })}
@@ -415,9 +459,10 @@ export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
           )}
         </OverviewCard>
       </div>
-      <PrescriptionDetailSheet
-        prescription={selectedPrescription}
-        onClose={() => setSelectedPrescription(null)}
+      <PatientEditSheet
+        patient={patient}
+        open={editPatientOpen}
+        onOpenChange={setEditPatientOpen}
       />
     </>
   );
