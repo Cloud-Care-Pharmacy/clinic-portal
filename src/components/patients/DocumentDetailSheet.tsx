@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AppSheet } from "@/components/shared/AppSheet";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,9 +118,10 @@ function MetadataItem({
 
 export function DocumentDetailSheet({
   patientId,
-  document,
+  document: documentInput,
   onClose,
 }: DocumentDetailSheetProps) {
+  const document = useLastDefined(documentInput);
   const formId = useId();
   const updateDocument = useUpdateDocument(patientId);
   const verifyDocument = useVerifyDocument(patientId);
@@ -129,22 +131,20 @@ export function DocumentDetailSheet({
   const [rejectionReason, setRejectionReason] = useState("");
 
   const form = useForm<DocumentMetadataFormData>({
-    defaultValues: document
-      ? documentToFormDefaults(document)
+    defaultValues: documentInput
+      ? documentToFormDefaults(documentInput)
       : { category: "other", description: "", expiry_date: "" },
   });
   const categoryValue = useWatch({ control: form.control, name: "category" });
 
   useEffect(() => {
-    if (!document) return;
-    form.reset(documentToFormDefaults(document));
-  }, [document, form]);
-
-  if (!document) return null;
+    if (!documentInput) return;
+    form.reset(documentToFormDefaults(documentInput));
+  }, [documentInput, form]);
 
   const isBusy =
     updateDocument.isPending || verifyDocument.isPending || deleteDocument.isPending;
-  const canReview = document.status === "uploaded";
+  const canReview = document?.status === "uploaded";
 
   function closeSheet() {
     setDeleteOpen(false);
@@ -229,12 +229,14 @@ export function DocumentDetailSheet({
   return (
     <>
       <AppSheet
-        open={!!document}
+        open={!!documentInput}
         onOpenChange={(open) => {
           if (!open) closeSheet();
         }}
         title="Document details"
-        description={`Uploaded ${formatDocumentDate(document.created_at)}`}
+        description={
+          document ? `Uploaded ${formatDocumentDate(document.created_at)}` : ""
+        }
         footerClassName="sm:justify-between"
         footer={
           <>
@@ -263,249 +265,255 @@ export function DocumentDetailSheet({
           </>
         }
       >
-        <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-          <section className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-bg text-status-info-fg">
-                <FileText className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p
-                  className="truncate text-sm font-semibold text-foreground"
-                  title={document.filename}
-                >
-                  {document.filename}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <StatusBadge status={document.status} />
-                  <span className="text-xs text-muted-foreground">
-                    {document.content_type}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="grid gap-3 sm:grid-cols-2">
-            <MetadataItem icon={<HardDrive className="size-4" />} label="Size">
-              {formatFileSize(document.file_size)}
-            </MetadataItem>
-            <MetadataItem
-              icon={
-                document.source === "email_attachment" ? (
-                  <Mail className="size-4" />
-                ) : (
-                  <UploadCloud className="size-4" />
-                )
-              }
-              label="Source"
-            >
-              {document.source === "email_attachment" ? "Email" : "Upload"}
-            </MetadataItem>
-            <MetadataItem icon={<CalendarDays className="size-4" />} label="Expiry">
-              {formatDocumentDate(document.expiry_date)}
-            </MetadataItem>
-            <MetadataItem icon={<CheckCircle2 className="size-4" />} label="Verified">
-              {formatDocumentTimestamp(document.verified_at)}
-            </MetadataItem>
-          </section>
-
-          {document.rejection_reason && (
-            <section className="rounded-xl border border-status-danger-border bg-status-danger-bg p-3">
+        {document ? (
+          <form
+            id={formId}
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-5"
+          >
+            <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start gap-3">
-                <XCircle className="mt-0.5 size-4 shrink-0 text-status-danger-fg" />
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-status-danger-fg">
-                    Rejection reason
-                  </h3>
-                  <p className="mt-1 text-sm text-status-danger-fg wrap-break-word">
-                    {document.rejection_reason}
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-bg text-status-info-fg">
+                  <FileText className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="truncate text-sm font-semibold text-foreground"
+                    title={document.filename}
+                  >
+                    {document.filename}
                   </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <StatusBadge status={document.status} />
+                    <span className="text-xs text-muted-foreground">
+                      {document.content_type}
+                    </span>
+                  </div>
                 </div>
               </div>
             </section>
-          )}
 
-          <section className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Editable metadata
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Update the category, description, or expiry date for this file.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="document-category">Category</Label>
-              <Select
-                value={categoryValue}
-                onValueChange={(value) => {
-                  if (value) {
-                    form.setValue("category", value as DocumentCategory, {
-                      shouldDirty: true,
-                    });
-                    form.clearErrors("category");
-                  }
-                }}
+            <section className="grid gap-3 sm:grid-cols-2">
+              <MetadataItem icon={<HardDrive className="size-4" />} label="Size">
+                {formatFileSize(document.file_size)}
+              </MetadataItem>
+              <MetadataItem
+                icon={
+                  document.source === "email_attachment" ? (
+                    <Mail className="size-4" />
+                  ) : (
+                    <UploadCloud className="size-4" />
+                  )
+                }
+                label="Source"
               >
-                <SelectTrigger
-                  id="document-category"
-                  className="w-full"
-                  aria-invalid={!!form.formState.errors.category}
-                >
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DOCUMENT_CATEGORY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.formState.errors.category && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.category.message}
-                </p>
-              )}
-            </div>
+                {document.source === "email_attachment" ? "Email" : "Upload"}
+              </MetadataItem>
+              <MetadataItem icon={<CalendarDays className="size-4" />} label="Expiry">
+                {formatDocumentDate(document.expiry_date)}
+              </MetadataItem>
+              <MetadataItem icon={<CheckCircle2 className="size-4" />} label="Verified">
+                {formatDocumentTimestamp(document.verified_at)}
+              </MetadataItem>
+            </section>
 
-            <div className="space-y-2">
-              <Label htmlFor="document-description">Description</Label>
-              <Textarea
-                id="document-description"
-                placeholder="Brief description…"
-                rows={3}
-                aria-invalid={!!form.formState.errors.description}
-                {...form.register("description")}
-              />
-              {form.formState.errors.description && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.description.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="document-expiry-date">Expiry date</Label>
-              <Input
-                id="document-expiry-date"
-                type="date"
-                aria-invalid={!!form.formState.errors.expiry_date}
-                {...form.register("expiry_date")}
-              />
-              {form.formState.errors.expiry_date && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.expiry_date.message}
-                </p>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-3 rounded-xl border border-border bg-card p-4">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Verification actions
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                {canReview
-                  ? "Verify the uploaded document or reject it with a reason."
-                  : `Current status: ${document.status}.`}
-              </p>
-            </div>
-
-            {canReview ? (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleVerify}
-                    disabled={isBusy}
-                  >
-                    <CheckCircle2 className="size-4" />
-                    Verify document
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline-destructive"
-                    onClick={() => setRejectOpen((open) => !open)}
-                    disabled={isBusy}
-                  >
-                    <XCircle className="size-4" />
-                    Reject document
-                  </Button>
-                </div>
-
-                {rejectOpen && (
-                  <div className="space-y-2 rounded-lg border border-status-danger-border bg-status-danger-bg p-3">
-                    <Label
-                      htmlFor="document-rejection-reason"
-                      className="text-status-danger-fg"
-                    >
+            {document.rejection_reason && (
+              <section className="rounded-xl border border-status-danger-border bg-status-danger-bg p-3">
+                <div className="flex items-start gap-3">
+                  <XCircle className="mt-0.5 size-4 shrink-0 text-status-danger-fg" />
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-status-danger-fg">
                       Rejection reason
-                    </Label>
-                    <Textarea
-                      id="document-rejection-reason"
-                      value={rejectionReason}
-                      onChange={(event) => setRejectionReason(event.target.value)}
-                      placeholder="Explain why this document cannot be accepted…"
-                      rows={3}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => {
-                          setRejectOpen(false);
-                          setRejectionReason("");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleReject}
-                        disabled={!rejectionReason.trim() || isBusy}
-                      >
-                        Reject document
-                      </Button>
-                    </div>
+                    </h3>
+                    <p className="mt-1 text-sm text-status-danger-fg wrap-break-word">
+                      {document.rejection_reason}
+                    </p>
                   </div>
+                </div>
+              </section>
+            )}
+
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Editable metadata
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Update the category, description, or expiry date for this file.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="document-category">Category</Label>
+                <Select
+                  value={categoryValue}
+                  onValueChange={(value) => {
+                    if (value) {
+                      form.setValue("category", value as DocumentCategory, {
+                        shouldDirty: true,
+                      });
+                      form.clearErrors("category");
+                    }
+                  }}
+                >
+                  <SelectTrigger
+                    id="document-category"
+                    className="w-full"
+                    aria-invalid={!!form.formState.errors.category}
+                  >
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCUMENT_CATEGORY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.category && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.category.message}
+                  </p>
                 )}
               </div>
-            ) : (
-              <StatusBadge status={document.status}>
-                {document.status === "verified" ? "Verified" : "Rejected"}
-              </StatusBadge>
-            )}
-          </section>
 
-          <section className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
-            <dl className="grid gap-2">
-              <div className="flex justify-between gap-3">
-                <dt>Category</dt>
-                <dd className="text-right text-foreground">
-                  {getDocumentCategoryLabel(document.category)}
-                </dd>
+              <div className="space-y-2">
+                <Label htmlFor="document-description">Description</Label>
+                <Textarea
+                  id="document-description"
+                  placeholder="Brief description…"
+                  rows={3}
+                  aria-invalid={!!form.formState.errors.description}
+                  {...form.register("description")}
+                />
+                {form.formState.errors.description && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.description.message}
+                  </p>
+                )}
               </div>
-              <div className="flex justify-between gap-3">
-                <dt>Uploaded</dt>
-                <dd className="text-right text-foreground">
-                  {formatDocumentTimestamp(document.created_at)}
-                </dd>
+
+              <div className="space-y-2">
+                <Label htmlFor="document-expiry-date">Expiry date</Label>
+                <Input
+                  id="document-expiry-date"
+                  type="date"
+                  aria-invalid={!!form.formState.errors.expiry_date}
+                  {...form.register("expiry_date")}
+                />
+                {form.formState.errors.expiry_date && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.expiry_date.message}
+                  </p>
+                )}
               </div>
-              <div className="flex justify-between gap-3">
-                <dt>Last updated</dt>
-                <dd className="text-right text-foreground">
-                  {formatDocumentTimestamp(document.updated_at)}
-                </dd>
+            </section>
+
+            <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Verification actions
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {canReview
+                    ? "Verify the uploaded document or reject it with a reason."
+                    : `Current status: ${document.status}.`}
+                </p>
               </div>
-            </dl>
-          </section>
-        </form>
+
+              {canReview ? (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleVerify}
+                      disabled={isBusy}
+                    >
+                      <CheckCircle2 className="size-4" />
+                      Verify document
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline-destructive"
+                      onClick={() => setRejectOpen((open) => !open)}
+                      disabled={isBusy}
+                    >
+                      <XCircle className="size-4" />
+                      Reject document
+                    </Button>
+                  </div>
+
+                  {rejectOpen && (
+                    <div className="space-y-2 rounded-lg border border-status-danger-border bg-status-danger-bg p-3">
+                      <Label
+                        htmlFor="document-rejection-reason"
+                        className="text-status-danger-fg"
+                      >
+                        Rejection reason
+                      </Label>
+                      <Textarea
+                        id="document-rejection-reason"
+                        value={rejectionReason}
+                        onChange={(event) => setRejectionReason(event.target.value)}
+                        placeholder="Explain why this document cannot be accepted…"
+                        rows={3}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => {
+                            setRejectOpen(false);
+                            setRejectionReason("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={handleReject}
+                          disabled={!rejectionReason.trim() || isBusy}
+                        >
+                          Reject document
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <StatusBadge status={document.status}>
+                  {document.status === "verified" ? "Verified" : "Rejected"}
+                </StatusBadge>
+              )}
+            </section>
+
+            <section className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
+              <dl className="grid gap-2">
+                <div className="flex justify-between gap-3">
+                  <dt>Category</dt>
+                  <dd className="text-right text-foreground">
+                    {getDocumentCategoryLabel(document.category)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Uploaded</dt>
+                  <dd className="text-right text-foreground">
+                    {formatDocumentTimestamp(document.created_at)}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Last updated</dt>
+                  <dd className="text-right text-foreground">
+                    {formatDocumentTimestamp(document.updated_at)}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          </form>
+        ) : null}
       </AppSheet>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -513,8 +521,8 @@ export function DocumentDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete &ldquo;{document.filename}&rdquo;. This action cannot be
-              undone.
+              This will delete &ldquo;{document?.filename ?? "this document"}&rdquo;.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

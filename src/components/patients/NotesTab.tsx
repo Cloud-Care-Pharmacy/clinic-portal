@@ -33,6 +33,7 @@ import {
 import { AppSheet } from "@/components/shared/AppSheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import {
   usePatientNotes,
   useCreateNote,
@@ -222,24 +223,28 @@ function NoteDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  if (!note) return null;
+  const stash = useLastDefined(note);
 
   return (
     <AppSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={note.title}
+      title={stash ? stash.title : ""}
       description={
-        <>
-          {note.authorName} ·{" "}
-          {new Date(note.createdAt).toLocaleString("en-AU", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </>
+        stash ? (
+          <>
+            {stash.authorName} ·{" "}
+            {new Date(stash.createdAt).toLocaleString("en-AU", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </>
+        ) : (
+          ""
+        )
       }
       footer={
         <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -247,27 +252,29 @@ function NoteDetailSheet({
         </Button>
       }
     >
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className={`text-xs px-2 py-0.5 ${CATEGORY_COLORS[note.category]}`}
-          >
-            {CATEGORY_LABELS[note.category]}
-          </Badge>
-          {note.isPinned && (
-            <Badge variant="outline" className="text-xs px-2 py-0.5">
-              <Pin className="mr-1.5 h-3 w-3" />
-              Pinned
+      {stash ? (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className={`text-xs px-2 py-0.5 ${CATEGORY_COLORS[stash.category]}`}
+            >
+              {CATEGORY_LABELS[stash.category]}
             </Badge>
-          )}
-        </div>
+            {stash.isPinned && (
+              <Badge variant="outline" className="text-xs px-2 py-0.5">
+                <Pin className="mr-1.5 h-3 w-3" />
+                Pinned
+              </Badge>
+            )}
+          </div>
 
-        <div
-          className="prose prose-sm max-w-none text-sm text-foreground [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2"
-          dangerouslySetInnerHTML={{ __html: note.content }}
-        />
-      </div>
+          <div
+            className="prose prose-sm max-w-none text-sm text-foreground [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2"
+            dangerouslySetInnerHTML={{ __html: stash.content }}
+          />
+        </div>
+      ) : null}
     </AppSheet>
   );
 }

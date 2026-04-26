@@ -3,6 +3,7 @@
 import { Pill } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type { ParchmentPrescription, PrescriptionMedication } from "@/types";
 
 function formatDate(value: string): string {
@@ -65,9 +66,8 @@ export function PrescriptionDetailSheet({
   prescription: ParchmentPrescription | null;
   onClose: () => void;
 }) {
-  if (!prescription) return null;
-
-  const reference = formatPrescriptionReference(prescription);
+  const stash = useLastDefined(prescription);
+  const reference = stash ? formatPrescriptionReference(stash) : "";
 
   return (
     <AppSheet
@@ -76,61 +76,63 @@ export function PrescriptionDetailSheet({
         if (!open) onClose();
       }}
       title={reference}
-      description={`Prescription issued ${formatDate(prescription.issuedAt)}`}
+      description={stash ? `Prescription issued ${formatDate(stash.issuedAt)}` : ""}
     >
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-3 text-sm">
-          <div>
-            <p className="text-xs text-muted-foreground">Status</p>
-            <div className="mt-1">
-              <StatusBadge status={prescription.status} />
+      {stash ? (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              <div className="mt-1">
+                <StatusBadge status={stash.status} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Items</p>
+              <p className="mt-1 font-medium tabular-nums">
+                {stash.medications.length}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Prescribed by</p>
+              <p className="mt-1 font-medium wrap-break-word">
+                {stash.prescriberName ?? "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Expires</p>
+              <p className="mt-1 font-medium tabular-nums">
+                {formatDate(stash.expiresAt)}
+              </p>
             </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Items</p>
-            <p className="mt-1 font-medium tabular-nums">
-              {prescription.medications.length}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Prescribed by</p>
-            <p className="mt-1 font-medium wrap-break-word">
-              {prescription.prescriberName ?? "—"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Expires</p>
-            <p className="mt-1 font-medium tabular-nums">
-              {formatDate(prescription.expiresAt)}
-            </p>
-          </div>
-        </div>
 
-        <section className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              Medications in this prescription
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Review each item included in the selected prescription.
-            </p>
-          </div>
-          <div className="space-y-3">
-            {prescription.medications.map((medication) => (
-              <MedicationRow key={medication.id} medication={medication} />
-            ))}
-          </div>
-        </section>
-
-        {prescription.notes && (
-          <section className="rounded-xl border border-border bg-card p-3">
-            <h3 className="text-sm font-semibold text-foreground">Notes</h3>
-            <p className="mt-1 text-sm text-muted-foreground wrap-break-word">
-              {prescription.notes}
-            </p>
+          <section className="space-y-3">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                Medications in this prescription
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Review each item included in the selected prescription.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {stash.medications.map((medication) => (
+                <MedicationRow key={medication.id} medication={medication} />
+              ))}
+            </div>
           </section>
-        )}
-      </div>
+
+          {stash.notes && (
+            <section className="rounded-xl border border-border bg-card p-3">
+              <h3 className="text-sm font-semibold text-foreground">Notes</h3>
+              <p className="mt-1 text-sm text-muted-foreground wrap-break-word">
+                {stash.notes}
+              </p>
+            </section>
+          )}
+        </div>
+      ) : null}
     </AppSheet>
   );
 }

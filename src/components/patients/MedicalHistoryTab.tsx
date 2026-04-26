@@ -8,6 +8,7 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
@@ -87,7 +88,7 @@ function SummaryField({
 // ---- Detail Sheet for a single clinical record ----
 
 function ClinicalDetailSheet({
-  record,
+  record: input,
   open,
   onOpenChange,
 }: {
@@ -95,188 +96,192 @@ function ClinicalDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  if (!record) return null;
+  const record = useLastDefined(input);
 
   return (
     <AppSheet
       open={open}
       onOpenChange={onOpenChange}
       title="Clinical Data Snapshot"
-      description={`Submitted ${formatDate(record.submitted_at)}`}
+      description={record ? `Submitted ${formatDate(record.submitted_at)}` : ""}
     >
-      <div className="space-y-6">
-        {/* Smoking */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Smoking</h4>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Status:</span>{" "}
-              {SMOKING_LABELS[record.smoking_status] ?? record.smoking_status}
-            </p>
-            {record.cigarettes_per_day && (
+      {record ? (
+        <div className="space-y-6">
+          {/* Smoking */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Smoking</h4>
+            <div className="space-y-2 text-sm">
               <p>
-                <span className="text-muted-foreground">Cigarettes/day:</span>{" "}
-                {record.cigarettes_per_day}
+                <span className="text-muted-foreground">Status:</span>{" "}
+                {SMOKING_LABELS[record.smoking_status] ?? record.smoking_status}
               </p>
-            )}
-            {record.years_smoked && (
-              <p>
-                <span className="text-muted-foreground">Years smoked:</span>{" "}
-                {record.years_smoked}
-              </p>
-            )}
-            {record.times_tried_quitting && (
-              <p>
-                <span className="text-muted-foreground">Quit attempts:</span>{" "}
-                {record.times_tried_quitting}
-              </p>
-            )}
-            {record.quit_motivation && record.quit_motivation.length > 0 && (
-              <p>
-                <span className="text-muted-foreground">Quit motivation:</span>{" "}
-                {formatList(record.quit_motivation)}
-              </p>
-            )}
-            {record.quit_methods && record.quit_methods.length > 0 && (
-              <p>
-                <span className="text-muted-foreground">Quit methods:</span>{" "}
-                {formatList(record.quit_methods)}
-              </p>
-            )}
-            {record.quit_method_explanation && (
-              <p>
-                <span className="text-muted-foreground">Method details:</span>{" "}
-                {record.quit_method_explanation}
-              </p>
-            )}
-            {record.last_cigarette && (
-              <p>
-                <span className="text-muted-foreground">Last cigarette:</span>{" "}
-                {record.last_cigarette}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Vaping */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Vaping</h4>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Status:</span>{" "}
-              {VAPING_LABELS[record.vaping_status] ?? record.vaping_status}
-            </p>
-            {record.vaping_method && (
-              <p>
-                <span className="text-muted-foreground">Method:</span>{" "}
-                {record.vaping_method}
-              </p>
-            )}
-            {record.vaping_strength && (
-              <p>
-                <span className="text-muted-foreground">Strength:</span>{" "}
-                {record.vaping_strength}
-              </p>
-            )}
-            {record.vaping_volume && (
-              <p>
-                <span className="text-muted-foreground">Volume:</span>{" "}
-                {record.vaping_volume}
-              </p>
-            )}
-            {record.vaping_notes && (
-              <p>
-                <span className="text-muted-foreground">Notes:</span>{" "}
-                {record.vaping_notes}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Medical Conditions */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Medical Conditions</h4>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Has conditions:</span>{" "}
-              {record.has_medical_conditions === "yes" ? "Yes" : "No"}
-            </p>
-            {record.medical_conditions && record.medical_conditions.length > 0 && (
-              <p>
-                <span className="text-muted-foreground">Conditions:</span>{" "}
-                {formatList(record.medical_conditions)}
-              </p>
-            )}
-            {record.medical_conditions_other && (
-              <p>
-                <span className="text-muted-foreground">Other:</span>{" "}
-                {record.medical_conditions_other}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Medications */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Medications</h4>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Takes medication:</span>{" "}
-              {record.takes_medication === "yes" ? "Yes" : "No"}
-            </p>
-            {record.high_risk_medications &&
-              record.high_risk_medications.length > 0 && (
+              {record.cigarettes_per_day && (
                 <p>
-                  <span className="text-muted-foreground">High-risk medications:</span>{" "}
-                  {formatList(record.high_risk_medications)}
+                  <span className="text-muted-foreground">Cigarettes/day:</span>{" "}
+                  {record.cigarettes_per_day}
                 </p>
               )}
-            {record.medications_list && (
-              <p>
-                <span className="text-muted-foreground">Medications list:</span>{" "}
-                {record.medications_list}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Risk Factors */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Risk Factors</h4>
-          <div className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Cardiovascular:</span>{" "}
-              {record.cardiovascular === "yes" ? "Yes" : "No"}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Pregnancy:</span>{" "}
-              {record.pregnancy === "yes"
-                ? "Yes"
-                : record.pregnancy === "na"
-                  ? "N/A"
-                  : "No"}
-            </p>
-          </div>
-        </div>
-
-        {record.additional_notes && (
-          <>
-            <Separator />
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Additional Notes</h4>
-              <p className="text-sm">{record.additional_notes}</p>
+              {record.years_smoked && (
+                <p>
+                  <span className="text-muted-foreground">Years smoked:</span>{" "}
+                  {record.years_smoked}
+                </p>
+              )}
+              {record.times_tried_quitting && (
+                <p>
+                  <span className="text-muted-foreground">Quit attempts:</span>{" "}
+                  {record.times_tried_quitting}
+                </p>
+              )}
+              {record.quit_motivation && record.quit_motivation.length > 0 && (
+                <p>
+                  <span className="text-muted-foreground">Quit motivation:</span>{" "}
+                  {formatList(record.quit_motivation)}
+                </p>
+              )}
+              {record.quit_methods && record.quit_methods.length > 0 && (
+                <p>
+                  <span className="text-muted-foreground">Quit methods:</span>{" "}
+                  {formatList(record.quit_methods)}
+                </p>
+              )}
+              {record.quit_method_explanation && (
+                <p>
+                  <span className="text-muted-foreground">Method details:</span>{" "}
+                  {record.quit_method_explanation}
+                </p>
+              )}
+              {record.last_cigarette && (
+                <p>
+                  <span className="text-muted-foreground">Last cigarette:</span>{" "}
+                  {record.last_cigarette}
+                </p>
+              )}
             </div>
-          </>
-        )}
-      </div>
+          </div>
+
+          <Separator />
+
+          {/* Vaping */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Vaping</h4>
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                {VAPING_LABELS[record.vaping_status] ?? record.vaping_status}
+              </p>
+              {record.vaping_method && (
+                <p>
+                  <span className="text-muted-foreground">Method:</span>{" "}
+                  {record.vaping_method}
+                </p>
+              )}
+              {record.vaping_strength && (
+                <p>
+                  <span className="text-muted-foreground">Strength:</span>{" "}
+                  {record.vaping_strength}
+                </p>
+              )}
+              {record.vaping_volume && (
+                <p>
+                  <span className="text-muted-foreground">Volume:</span>{" "}
+                  {record.vaping_volume}
+                </p>
+              )}
+              {record.vaping_notes && (
+                <p>
+                  <span className="text-muted-foreground">Notes:</span>{" "}
+                  {record.vaping_notes}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Medical Conditions */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Medical Conditions</h4>
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Has conditions:</span>{" "}
+                {record.has_medical_conditions === "yes" ? "Yes" : "No"}
+              </p>
+              {record.medical_conditions && record.medical_conditions.length > 0 && (
+                <p>
+                  <span className="text-muted-foreground">Conditions:</span>{" "}
+                  {formatList(record.medical_conditions)}
+                </p>
+              )}
+              {record.medical_conditions_other && (
+                <p>
+                  <span className="text-muted-foreground">Other:</span>{" "}
+                  {record.medical_conditions_other}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Medications */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Medications</h4>
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Takes medication:</span>{" "}
+                {record.takes_medication === "yes" ? "Yes" : "No"}
+              </p>
+              {record.high_risk_medications &&
+                record.high_risk_medications.length > 0 && (
+                  <p>
+                    <span className="text-muted-foreground">
+                      High-risk medications:
+                    </span>{" "}
+                    {formatList(record.high_risk_medications)}
+                  </p>
+                )}
+              {record.medications_list && (
+                <p>
+                  <span className="text-muted-foreground">Medications list:</span>{" "}
+                  {record.medications_list}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Risk Factors */}
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Risk Factors</h4>
+            <div className="space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Cardiovascular:</span>{" "}
+                {record.cardiovascular === "yes" ? "Yes" : "No"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Pregnancy:</span>{" "}
+                {record.pregnancy === "yes"
+                  ? "Yes"
+                  : record.pregnancy === "na"
+                    ? "N/A"
+                    : "No"}
+              </p>
+            </div>
+          </div>
+
+          {record.additional_notes && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Additional Notes</h4>
+                <p className="text-sm">{record.additional_notes}</p>
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
     </AppSheet>
   );
 }
