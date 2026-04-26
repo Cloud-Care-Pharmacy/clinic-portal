@@ -1,4 +1,9 @@
-import type { PatientNote, PatientNotesResponse, NoteCategory } from "@/types";
+import type {
+  PatientNote,
+  PatientNotesResponse,
+  NoteCategory,
+  UpdatePatientNotePayload,
+} from "@/types";
 import {
   queryOptions,
   useQuery,
@@ -48,6 +53,23 @@ async function togglePin(
 ): Promise<{ success: boolean; data: PatientNote }> {
   const res = await fetch(notesUrl(patientId, noteId), { method: "PATCH" });
   if (!res.ok) throw new Error("Failed to toggle pin");
+  return res.json();
+}
+
+async function updateNote(
+  patientId: string,
+  noteId: string,
+  body: UpdatePatientNotePayload
+): Promise<{ success: boolean; data: PatientNote }> {
+  const res = await fetch(notesUrl(patientId, noteId), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to update note" }));
+    throw new Error(err.error ?? "Failed to update note");
+  }
   return res.json();
 }
 
@@ -101,6 +123,22 @@ export function useTogglePin(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (noteId: string) => togglePin(patientId, noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patient-notes", patientId] });
+    },
+  });
+}
+
+export function useUpdateNote(patientId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      noteId,
+      data,
+    }: {
+      noteId: string;
+      data: UpdatePatientNotePayload;
+    }) => updateNote(patientId, noteId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-notes", patientId] });
     },

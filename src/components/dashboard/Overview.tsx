@@ -1,23 +1,23 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import type { DashboardIntakeSeriesPoint } from "@/types";
 
-const data = [
-  { name: "Jan", total: 42 },
-  { name: "Feb", total: 38 },
-  { name: "Mar", total: 55 },
-  { name: "Apr", total: 47 },
-  { name: "May", total: 62 },
-  { name: "Jun", total: 58 },
-  { name: "Jul", total: 73 },
-  { name: "Aug", total: 67 },
-  { name: "Sep", total: 81 },
-  { name: "Oct", total: 76 },
-  { name: "Nov", total: 89 },
-  { name: "Dec", total: 95 },
-];
+interface OverviewProps {
+  series: DashboardIntakeSeriesPoint[];
+}
 
-export function Overview() {
+export function Overview({ series }: OverviewProps) {
+  const data = series.map((point) => ({ name: point.label, total: point.total }));
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-87.5 items-center justify-center text-sm text-muted-foreground">
+        No intake data available.
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={data}>

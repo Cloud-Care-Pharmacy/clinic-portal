@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -12,9 +12,16 @@ import type { Consultation, ConsultationStatus, ConsultationType } from "@/types
 
 interface ConsultationTableProps {
   consultations: Consultation[];
+  total?: number;
   loading?: boolean;
   onRowClick: (consultation: Consultation) => void;
   onSchedule: () => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  statusFilters: ConsultationStatus[];
+  onStatusFiltersChange: (value: ConsultationStatus[]) => void;
+  typeFilters: ConsultationType[];
+  onTypeFiltersChange: (value: ConsultationType[]) => void;
 }
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
@@ -36,14 +43,17 @@ const TYPE_OPTIONS: TypeFilterOption[] = ["initial", "follow-up", "renewal"];
 
 export function ConsultationTable({
   consultations,
+  total,
   loading,
   onRowClick,
   onSchedule,
+  searchQuery,
+  onSearchChange,
+  statusFilters,
+  onStatusFiltersChange,
+  typeFilters,
+  onTypeFiltersChange,
 }: ConsultationTableProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<StatusFilterOption[]>([]);
-  const [typeFilters, setTypeFilters] = useState<TypeFilterOption[]>([]);
-
   const filters: FilterDefinition[] = useMemo(
     () => [
       {
@@ -51,42 +61,18 @@ export function ConsultationTable({
         label: "Status",
         options: STATUS_OPTIONS as string[],
         value: statusFilters as string[],
-        onChange: (v: string[]) => setStatusFilters(v as StatusFilterOption[]),
+        onChange: (v: string[]) => onStatusFiltersChange(v as StatusFilterOption[]),
       },
       {
         key: "type",
         label: "Type",
         options: TYPE_OPTIONS as string[],
         value: typeFilters as string[],
-        onChange: (v: string[]) => setTypeFilters(v as TypeFilterOption[]),
+        onChange: (v: string[]) => onTypeFiltersChange(v as TypeFilterOption[]),
       },
     ],
-    [statusFilters, typeFilters]
+    [onStatusFiltersChange, onTypeFiltersChange, statusFilters, typeFilters]
   );
-
-  const filtered = useMemo(() => {
-    let result = consultations;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.patientName.toLowerCase().includes(q) ||
-          c.doctorName.toLowerCase().includes(q) ||
-          (c.notes ?? "").toLowerCase().includes(q)
-      );
-    }
-
-    if (statusFilters.length > 0) {
-      result = result.filter((c) => statusFilters.includes(c.status));
-    }
-
-    if (typeFilters.length > 0) {
-      result = result.filter((c) => typeFilters.includes(c.type));
-    }
-
-    return result;
-  }, [consultations, searchQuery, statusFilters, typeFilters]);
 
   const columns: GridColDef<Consultation>[] = [
     {
@@ -154,14 +140,14 @@ export function ConsultationTable({
       <FilterBar
         searchPlaceholder="Search consultations…"
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={onSearchChange}
         filters={filters}
-        resultCount={filtered.length}
+        resultCount={total ?? consultations.length}
         resultLabel="consultations"
       />
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
-          rows={filtered}
+          rows={consultations}
           columns={columns}
           loading={loading}
           autoHeight

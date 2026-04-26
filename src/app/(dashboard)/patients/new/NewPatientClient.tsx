@@ -800,7 +800,7 @@ export function NewPatientClient() {
     setSubmitting(true);
     try {
       const values = methods.getValues();
-      const res = await fetch("/api/proxy/test/submit", {
+      const res = await fetch("/api/proxy/intake/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

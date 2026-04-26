@@ -10,10 +10,13 @@ import type {
   UpdatePatientPayload,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
+  ClinicalDataApprovalResponse,
   PatientDocumentsListResponse,
   PatientDocumentResponse,
+  EntityDocumentsListResponse,
   PatientCountsResponse,
   ConsultationsListResponse,
+  ConsultationsQuery,
   DocumentUpdatePayload,
   DocumentVerifyPayload,
   DocumentSyncResponse,
@@ -23,6 +26,18 @@ import type {
   PatientNotesResponse,
   PatientActivityResponse,
   UserProfileResponse,
+  PatientsListQuery,
+  PatientSearchResponse,
+  DashboardPeriod,
+  DashboardIntakeRange,
+  DashboardIntakeBucket,
+  DashboardSummaryResponse,
+  DashboardIntakeOverviewResponse,
+  DashboardRecentActivityResponse,
+  ActivityEventCategory,
+  EntityPrescriptionSummaryResponse,
+  UpdateUserAvailabilityPayload,
+  UserAvailabilityResponse,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
@@ -99,13 +114,27 @@ class ApiClient {
 
   async getPatients(
     entityId: string,
-    opts?: { limit?: number; offset?: number }
+    opts?: PatientsListQuery
   ): Promise<PatientsListResponse> {
     const params = new URLSearchParams();
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.search) params.set("search", opts.search);
+    if (opts?.pmsStatus) params.set("pmsStatus", opts.pmsStatus);
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(`/api/entities/${encodeURIComponent(entityId)}/patients${qs}`);
+  }
+
+  async searchPatients(
+    entityId: string,
+    opts?: { q?: string; limit?: number }
+  ): Promise<PatientSearchResponse> {
+    const params = new URLSearchParams({ entityId });
+    if (opts?.q) params.set("q", opts.q);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    return this.request(`/api/patients/search?${params.toString()}`);
   }
 
   async getPatientCounts(patientId: string): Promise<PatientCountsResponse> {
@@ -114,9 +143,17 @@ class ApiClient {
 
   async getPatientConsultations(
     patientId: string,
-    opts?: { limit?: number; offset?: number }
+    opts?: Omit<ConsultationsQuery, "patientId">
   ): Promise<ConsultationsListResponse> {
     const params = new URLSearchParams();
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.type) params.set("type", opts.type);
+    if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    if (opts?.search) params.set("search", opts.search);
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
@@ -125,11 +162,19 @@ class ApiClient {
     );
   }
 
-  async getConsultations(opts?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<ConsultationsListResponse> {
+  async getConsultations(
+    opts?: ConsultationsQuery
+  ): Promise<ConsultationsListResponse> {
     const params = new URLSearchParams();
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.type) params.set("type", opts.type);
+    if (opts?.patientId) params.set("patientId", opts.patientId);
+    if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    if (opts?.search) params.set("search", opts.search);
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
@@ -185,15 +230,67 @@ class ApiClient {
     );
   }
 
+  async approveClinicalData(
+    patientId: string,
+    recordId: string,
+    data: { reviewNotes?: string },
+    userId?: string
+  ): Promise<ClinicalDataApprovalResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/clinical-data/${encodeURIComponent(recordId)}/approve`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: userId ? { "X-Clerk-User-Id": userId } : undefined,
+      }
+    );
+  }
+
   // ---- Intake Submission ----
 
-  async submitIntake(
-    data: IntakeFormData
-  ): Promise<{ success: boolean; patientId: string; email: string }> {
-    return this.request<SubmissionResult>("/api/test/submit", {
+  async submitIntake(data: IntakeFormData): Promise<SubmissionResult> {
+    return this.request<SubmissionResult>("/api/intake/submit", {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  // ---- Dashboard ----
+
+  async getDashboardSummary(
+    entityId: string,
+    period: DashboardPeriod = "30d"
+  ): Promise<DashboardSummaryResponse> {
+    const params = new URLSearchParams({ entityId, period });
+    return this.request(`/api/dashboard/summary?${params.toString()}`);
+  }
+
+  async getDashboardIntakeOverview(opts?: {
+    entityId?: string;
+    range?: DashboardIntakeRange;
+    from?: string;
+    to?: string;
+    bucket?: DashboardIntakeBucket;
+  }): Promise<DashboardIntakeOverviewResponse> {
+    const params = new URLSearchParams();
+    if (opts?.entityId) params.set("entityId", opts.entityId);
+    if (opts?.range) params.set("range", opts.range);
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    if (opts?.bucket) params.set("bucket", opts.bucket);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/dashboard/intake-overview${qs}`);
+  }
+
+  async getDashboardRecentActivity(opts: {
+    entityId: string;
+    limit?: number;
+    category?: ActivityEventCategory;
+  }): Promise<DashboardRecentActivityResponse> {
+    const params = new URLSearchParams({ entityId: opts.entityId });
+    if (opts.limit) params.set("limit", String(opts.limit));
+    if (opts.category) params.set("category", opts.category);
+    return this.request(`/api/dashboard/recent-activity?${params.toString()}`);
   }
 
   // ---- Prescriptions ----
@@ -211,10 +308,34 @@ class ApiClient {
     );
   }
 
+  async getEntityPrescriptionSummary(
+    entityId: string,
+    opts?: { from?: string; to?: string }
+  ): Promise<EntityPrescriptionSummaryResponse> {
+    const params = new URLSearchParams();
+    if (opts?.from) params.set("from", opts.from);
+    if (opts?.to) params.set("to", opts.to);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/prescriptions/summary${qs}`
+    );
+  }
+
   // ---- User Profile ----
 
   async getMyProfile(userId: string): Promise<UserProfileResponse> {
     return this.request("/api/users/me", {
+      headers: { "X-Clerk-User-Id": userId },
+    });
+  }
+
+  async updateMyAvailability(
+    userId: string,
+    data: UpdateUserAvailabilityPayload
+  ): Promise<UserAvailabilityResponse> {
+    return this.request("/api/users/me/availability", {
+      method: "PUT",
+      body: JSON.stringify(data),
       headers: { "X-Clerk-User-Id": userId },
     });
   }
@@ -287,6 +408,32 @@ class ApiClient {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/documents${qs}`
     );
+  }
+
+  async getEntityDocuments(
+    entityId: string,
+    opts?: {
+      patientSearch?: string;
+      category?: DocumentCategory;
+      status?: DocumentStatus;
+      source?: DocumentSource;
+      limit?: number;
+      offset?: number;
+      sort?: string;
+      order?: "asc" | "desc";
+    }
+  ): Promise<EntityDocumentsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.patientSearch) params.set("patientSearch", opts.patientSearch);
+    if (opts?.category) params.set("category", opts.category);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.source) params.set("source", opts.source);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.order) params.set("order", opts.order);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/entities/${encodeURIComponent(entityId)}/documents${qs}`);
   }
 
   async getDocument(

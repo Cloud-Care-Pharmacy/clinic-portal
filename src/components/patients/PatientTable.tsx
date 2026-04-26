@@ -42,11 +42,18 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { useDeletePatient } from "@/lib/hooks/use-patients";
-import type { PatientMapping } from "@/types";
+import type { PatientMapping, PatientPmsStatusFilter } from "@/types";
 
 interface PatientTableProps {
   patients: PatientMapping[];
+  total?: number;
   loading?: boolean;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  statusFilters: PatientPmsStatusFilter[];
+  onStatusFiltersChange: (value: PatientPmsStatusFilter[]) => void;
+  sortModel: GridSortModel;
+  onSortModelChange: (model: GridSortModel) => void;
 }
 
 function PmsStatusCell({ value }: { value: string | null }) {
@@ -91,9 +98,7 @@ function ActionsCell({
   );
 }
 
-type StatusFilter = "Linked" | "Pending";
-
-const STATUS_OPTIONS: StatusFilter[] = ["Linked", "Pending"];
+const STATUS_OPTIONS: PatientPmsStatusFilter[] = ["linked", "pending"];
 
 interface ColumnVisibility {
   patient_name: boolean;
@@ -131,14 +136,21 @@ const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
   created_at: "Created",
 };
 
-export function PatientTable({ patients, loading }: PatientTableProps) {
+export function PatientTable({
+  patients,
+  total,
+  loading,
+  searchQuery,
+  onSearchChange,
+  statusFilters,
+  onStatusFiltersChange,
+  sortModel,
+  onSortModelChange,
+}: PatientTableProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<StatusFilter[]>([]);
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
     DEFAULT_COLUMN_VISIBILITY
   );
-  const [sortModel, setSortModel] = useState<GridSortModel>([]);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PatientMapping | null>(null);
   const deleteMutation = useDeletePatient();
@@ -150,41 +162,16 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
         label: "Status",
         options: STATUS_OPTIONS as string[],
         value: statusFilters as string[],
-        onChange: (v: string[]) => setStatusFilters(v as StatusFilter[]),
+        onChange: (v: string[]) => onStatusFiltersChange(v as PatientPmsStatusFilter[]),
+        formatOption: (option) => (option === "linked" ? "Linked" : "Pending"),
       },
     ],
-    [statusFilters]
+    [onStatusFiltersChange, statusFilters]
   );
 
   const handleCopyEmail = useCallback((email: string) => {
     navigator.clipboard.writeText(email);
   }, []);
-
-  const filteredPatients = useMemo(() => {
-    let result = patients;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.original_email.toLowerCase().includes(q) ||
-          p.generated_email.toLowerCase().includes(q) ||
-          (p.halaxy_patient_id ?? "").toLowerCase().includes(q) ||
-          (p.first_name ?? "").toLowerCase().includes(q) ||
-          (p.last_name ?? "").toLowerCase().includes(q) ||
-          (p.mobile ?? "").toLowerCase().includes(q)
-      );
-    }
-
-    if (statusFilters.length > 0) {
-      result = result.filter((p) => {
-        const status = p.halaxy_patient_id ? "Linked" : "Pending";
-        return statusFilters.includes(status);
-      });
-    }
-
-    return result;
-  }, [patients, searchQuery, statusFilters]);
 
   const columns: GridColDef<PatientMapping>[] = [
     {
@@ -318,9 +305,9 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       <FilterBar
         searchPlaceholder="Filter patients…"
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={onSearchChange}
         filters={statusFilterDefs}
-        resultCount={filteredPatients.length}
+        resultCount={total ?? patients.length}
         resultLabel="patients"
         trailing={
           <>
@@ -359,7 +346,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
       />
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
-          rows={filteredPatients}
+          rows={patients}
           columns={visibleColumns}
           loading={loading}
           autoHeight
@@ -369,7 +356,7 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           disableColumnMenu
           columnHeaderHeight={44}
           sortModel={sortModel}
-          onSortModelChange={setSortModel}
+          onSortModelChange={onSortModelChange}
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
           rowHeight={56}

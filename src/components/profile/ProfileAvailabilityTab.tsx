@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,17 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Plus, Video, Building2, House } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
-import { useUpdateProfile } from "@/lib/hooks/use-profile";
-import type { UserProfile, UpdateUserProfilePayload } from "@/types";
+import { useUpdateAvailability } from "@/lib/hooks/use-profile";
+import type { AvailabilityDayKey, UserProfile } from "@/types";
 
 const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  { label: "Monday", key: "monday" },
+  { label: "Tuesday", key: "tuesday" },
+  { label: "Wednesday", key: "wednesday" },
+  { label: "Thursday", key: "thursday" },
+  { label: "Friday", key: "friday" },
+  { label: "Saturday", key: "saturday" },
+  { label: "Sunday", key: "sunday" },
 ] as const;
 
 const CONSULT_TYPES = [
@@ -37,12 +37,14 @@ const CONSULT_TYPES = [
 
 const daySchema = z.object({
   day: z.string(),
+  key: z.string(),
   enabled: z.boolean(),
   start: z.string(),
   end: z.string(),
 });
 
 const availabilitySchema = z.object({
+  timezone: z.string().min(1, "Timezone is required"),
   days: z.array(daySchema),
 });
 
@@ -53,12 +55,14 @@ interface ProfileAvailabilityTabProps {
 }
 
 export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps) {
-  const updateProfile = useUpdateProfile();
+  const updateAvailability = useUpdateAvailability();
 
   const form = useForm<AvailabilityFormData>({
     defaultValues: {
+      timezone: "Australia/Sydney",
       days: DAYS_OF_WEEK.map((d) => ({
-        day: d,
+        day: d.label,
+        key: d.key,
         enabled: false,
         start: "09:00",
         end: "17:00",
@@ -67,14 +71,17 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
   });
 
   const { fields } = useFieldArray({ control: form.control, name: "days" });
+  const watchedDays = useWatch({ control: form.control, name: "days" });
 
   useEffect(() => {
     if (profile) {
       const activeDays = profile.availability_days ?? [];
       form.reset({
+        timezone: "Australia/Sydney",
         days: DAYS_OF_WEEK.map((d) => ({
-          day: d,
-          enabled: activeDays.includes(d),
+          day: d.label,
+          key: d.key,
+          enabled: activeDays.includes(d.label),
           start: "09:00",
           end: "17:00",
         })),
@@ -86,16 +93,22 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
     const result = availabilitySchema.safeParse(data);
     if (!result.success) return;
 
-    const enabledDays = result.data.days.filter((d) => d.enabled).map((d) => d.day);
+    const availability = DAYS_OF_WEEK.reduce(
+      (acc, day) => {
+        const row = result.data.days.find((d) => d.key === day.key);
+        acc[day.key] = row?.enabled ? [{ start: row.start, end: row.end }] : [];
+        return acc;
+      },
+      {} as Record<AvailabilityDayKey, { start: string; end: string }[]>
+    );
 
-    const payload: UpdateUserProfilePayload = {
-      availabilityDays: enabledDays.length ? enabledDays : undefined,
-    };
-
-    updateProfile.mutate(payload, {
-      onSuccess: () => toast.success("Availability updated"),
-      onError: (err) => toast.error(err.message),
-    });
+    updateAvailability.mutate(
+      { timezone: result.data.timezone, availability },
+      {
+        onSuccess: () => toast.success("Availability updated"),
+        onError: (err) => toast.error(err.message),
+      }
+    );
   }
 
   return (
@@ -103,10 +116,21 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
       {/* Working hours */}
       <Card>
         <CardContent className="pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Working hours</h3>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h3 className="text-base font-semibold">Working hours</h3>
+            <div className="w-full space-y-2 sm:w-56">
+              <label
+                className="text-xs font-medium text-muted-foreground"
+                htmlFor="timezone"
+              >
+                Timezone
+              </label>
+              <Input id="timezone" className="h-9" {...form.register("timezone")} />
+            </div>
+          </div>
           <div className="space-y-0">
             {fields.map((field, idx) => {
-              const enabled = form.watch(`days.${idx}.enabled`);
+              const enabled = watchedDays?.[idx]?.enabled ?? false;
               return (
                 <div
                   key={field.id}
@@ -209,7 +233,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
 
       <StickyFormBar
         isDirty={form.formState.isDirty}
-        isPending={updateProfile.isPending}
+        isPending={updateAvailability.isPending}
         onDiscard={() => form.reset()}
       />
     </form>

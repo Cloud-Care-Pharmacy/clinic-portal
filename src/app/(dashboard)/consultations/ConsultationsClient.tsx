@@ -10,27 +10,50 @@ import { ConsultationTable } from "@/components/consultations/ConsultationTable"
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { ConsultationCalendar } from "@/components/consultations/ConsultationCalendar";
 import { useConsultations } from "@/lib/hooks/use-consultations";
-import type { Consultation, ConsultationsListResponse } from "@/types";
+import type {
+  Consultation,
+  ConsultationStatus,
+  ConsultationsListResponse,
+  ConsultationType,
+} from "@/types";
 
 type ViewMode = "table" | "calendar";
 
 interface ConsultationsClientProps {
+  entityId: string;
   initialConsultations?: ConsultationsListResponse;
 }
 
 export function ConsultationsClient({
+  entityId,
   initialConsultations,
 }: ConsultationsClientProps) {
-  const { data, isLoading, error } = useConsultations(undefined, initialConsultations);
-  const consultations = data?.data?.consultations ?? [];
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selected, setSelected] = useState<Consultation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilters, setStatusFilters] = useState<ConsultationStatus[]>([]);
+  const [typeFilters, setTypeFilters] = useState<ConsultationType[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("consultations-view") as ViewMode) || "table";
     }
     return "table";
   });
+  const query = {
+    limit: 50,
+    offset: 0,
+    search: searchQuery.trim() || undefined,
+    status: statusFilters.length === 1 ? statusFilters[0] : undefined,
+    type: typeFilters.length === 1 ? typeFilters[0] : undefined,
+    sort: "scheduledAt" as const,
+    order: "desc" as const,
+  };
+  const { data, isLoading, error } = useConsultations(
+    undefined,
+    initialConsultations,
+    query
+  );
+  const consultations = data?.data?.consultations ?? [];
 
   function toggleView(mode: ViewMode) {
     setViewMode(mode);
@@ -88,6 +111,13 @@ export function ConsultationsClient({
               loading={isLoading}
               onRowClick={setSelected}
               onSchedule={() => setSheetOpen(true)}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              statusFilters={statusFilters}
+              onStatusFiltersChange={setStatusFilters}
+              typeFilters={typeFilters}
+              onTypeFiltersChange={setTypeFilters}
+              total={data?.data?.pagination?.total}
             />
           ) : (
             <ConsultationCalendar
@@ -98,7 +128,11 @@ export function ConsultationsClient({
         </ErrorBoundary>
       )}
 
-      <NewConsultationSheet open={sheetOpen} onOpenChange={setSheetOpen} />
+      <NewConsultationSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        entityId={entityId}
+      />
       <NewConsultationSheet
         open={!!selected}
         onOpenChange={(open) => {

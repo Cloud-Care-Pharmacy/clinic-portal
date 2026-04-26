@@ -9,16 +9,30 @@ import type {
   ConsultationResponse,
   ConsultationType,
   ConsultationStatus,
+  ConsultationsQuery,
 } from "@/types";
 
 // ---- Fetch helpers ----
 
 async function fetchConsultations(
-  patientId?: string
+  patientId?: string,
+  opts?: Omit<ConsultationsQuery, "patientId">
 ): Promise<ConsultationsListResponse> {
+  const params = new URLSearchParams();
+  params.set("limit", String(opts?.limit ?? 50));
+  params.set("offset", String(opts?.offset ?? 0));
+  if (opts?.status) params.set("status", opts.status);
+  if (opts?.type) params.set("type", opts.type);
+  if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+  if (opts?.from) params.set("from", opts.from);
+  if (opts?.to) params.set("to", opts.to);
+  if (opts?.search) params.set("search", opts.search);
+  if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.order) params.set("order", opts.order);
+  const qs = params.toString();
   const url = patientId
-    ? `/api/proxy/patients/${encodeURIComponent(patientId)}/consultations?limit=50`
-    : "/api/proxy/consultations?limit=50";
+    ? `/api/proxy/patients/${encodeURIComponent(patientId)}/consultations?${qs}`
+    : `/api/proxy/consultations?${qs}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("Failed to fetch consultations");
   return res.json();
@@ -94,19 +108,50 @@ async function deleteConsultationApi(
 
 // ---- Hooks ----
 
-export function consultationsQueryOptions(patientId?: string) {
+export function consultationsQueryOptions(
+  patientId?: string,
+  opts?: Omit<ConsultationsQuery, "patientId">
+) {
   return queryOptions({
-    queryKey: patientId ? ["consultations", patientId] : ["consultations"],
-    queryFn: () => fetchConsultations(patientId),
+    queryKey: patientId
+      ? [
+          "consultations",
+          patientId,
+          opts?.limit ?? 50,
+          opts?.offset ?? 0,
+          opts?.status ?? "",
+          opts?.type ?? "",
+          opts?.doctorId ?? "",
+          opts?.from ?? "",
+          opts?.to ?? "",
+          opts?.search ?? "",
+          opts?.sort ?? "",
+          opts?.order ?? "",
+        ]
+      : [
+          "consultations",
+          opts?.limit ?? 50,
+          opts?.offset ?? 0,
+          opts?.status ?? "",
+          opts?.type ?? "",
+          opts?.doctorId ?? "",
+          opts?.from ?? "",
+          opts?.to ?? "",
+          opts?.search ?? "",
+          opts?.sort ?? "",
+          opts?.order ?? "",
+        ],
+    queryFn: () => fetchConsultations(patientId, opts),
   });
 }
 
 export function useConsultations(
   patientId?: string,
-  initialData?: ConsultationsListResponse
+  initialData?: ConsultationsListResponse,
+  opts?: Omit<ConsultationsQuery, "patientId">
 ) {
   return useQuery({
-    ...consultationsQueryOptions(patientId),
+    ...consultationsQueryOptions(patientId, opts),
     enabled: patientId !== "",
     initialData,
   });

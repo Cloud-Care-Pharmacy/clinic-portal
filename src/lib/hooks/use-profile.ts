@@ -1,4 +1,9 @@
-import type { UserProfileResponse, UpdateUserProfilePayload } from "@/types";
+import type {
+  UserProfileResponse,
+  UpdateUserProfilePayload,
+  UpdateUserAvailabilityPayload,
+  UserAvailabilityResponse,
+} from "@/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 // ---- Fetch helpers ----
@@ -28,6 +33,21 @@ async function updateProfile(data: UpdateUserProfilePayload) {
   return res.json() as Promise<UserProfileResponse>;
 }
 
+async function updateAvailability(data: UpdateUserAvailabilityPayload) {
+  const res = await fetch("/api/proxy/users/me/availability", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Failed to update availability" }));
+    throw new Error(err.error ?? "Failed to update availability");
+  }
+  return res.json() as Promise<UserAvailabilityResponse>;
+}
+
 // ---- Hooks ----
 
 export function useProfile(initialData?: UserProfileResponse) {
@@ -42,6 +62,16 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: UpdateUserProfilePayload) => updateProfile(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}
+
+export function useUpdateAvailability() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateUserAvailabilityPayload) => updateAvailability(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },

@@ -1,10 +1,12 @@
 import type {
   PatientMapping,
   PatientsListResponse,
+  PatientsListQuery,
+  PatientSearchResponse,
   UpdatePatientPayload,
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
-  ClinicalDataRecord,
+  ClinicalDataApprovalResponse,
 } from "@/types";
 import {
   queryOptions,
@@ -15,16 +17,28 @@ import {
 
 // ---- Fetch helpers ----
 
-async function fetchPatients(entityId: string, limit = 50, offset = 0) {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
+async function fetchPatients(entityId: string, opts?: PatientsListQuery) {
+  const params = new URLSearchParams();
+  params.set("limit", String(opts?.limit ?? 50));
+  params.set("offset", String(opts?.offset ?? 0));
+  if (opts?.search) params.set("search", opts.search);
+  if (opts?.pmsStatus) params.set("pmsStatus", opts.pmsStatus);
+  if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.order) params.set("order", opts.order);
   const res = await fetch(
     `/api/proxy/entities/${encodeURIComponent(entityId)}/patients?${params}`
   );
   if (!res.ok) throw new Error("Failed to fetch patients");
   return res.json() as Promise<PatientsListResponse>;
+}
+
+async function searchPatients(entityId: string, opts?: { q?: string; limit?: number }) {
+  const params = new URLSearchParams({ entityId });
+  if (opts?.q) params.set("q", opts.q);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  const res = await fetch(`/api/proxy/patients/search?${params}`);
+  if (!res.ok) throw new Error("Failed to search patients");
+  return res.json() as Promise<PatientSearchResponse>;
 }
 
 async function fetchPatient(patientId: string) {
@@ -87,7 +101,7 @@ async function approveClinicalRecord(
   patientId: string,
   recordId: string,
   body: { reviewNotes?: string }
-): Promise<{ success: boolean; data: { record: ClinicalDataRecord } }> {
+): Promise<ClinicalDataApprovalResponse> {
   const res = await fetch(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/clinical-data/${encodeURIComponent(recordId)}/approve`,
     {
@@ -133,14 +147,34 @@ export function latestClinicalDataQueryOptions(patientId: string) {
 
 export function usePatients(
   entityId: string | undefined,
-  opts?: { limit?: number; offset?: number },
+  opts?: PatientsListQuery,
   initialData?: PatientsListResponse
 ) {
   return useQuery({
-    queryKey: ["patients", entityId, opts?.limit, opts?.offset],
-    queryFn: () => fetchPatients(entityId!, opts?.limit, opts?.offset),
+    queryKey: [
+      "patients",
+      entityId,
+      opts?.limit ?? 50,
+      opts?.offset ?? 0,
+      opts?.search ?? "",
+      opts?.pmsStatus ?? "",
+      opts?.sort ?? "",
+      opts?.order ?? "",
+    ],
+    queryFn: () => fetchPatients(entityId!, opts),
     enabled: !!entityId,
     initialData,
+  });
+}
+
+export function usePatientSearch(
+  entityId: string | undefined,
+  opts?: { q?: string; limit?: number }
+) {
+  return useQuery({
+    queryKey: ["patient-search", entityId, opts?.q ?? "", opts?.limit ?? 20],
+    queryFn: () => searchPatients(entityId!, opts),
+    enabled: Boolean(entityId),
   });
 }
 
@@ -217,6 +251,9 @@ export function useApproveClinicalRecord(patientId: string) {
       queryClient.invalidateQueries({
         queryKey: ["clinical-data-latest", patientId],
       });
+      queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-recent-activity"] });
     },
   });
 }

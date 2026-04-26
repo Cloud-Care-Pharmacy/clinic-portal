@@ -8,10 +8,12 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { toast } from "sonner";
 import {
   Cigarette,
   Wind,
@@ -22,7 +24,11 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
-import { useLatestClinicalData, useClinicalData } from "@/lib/hooks/use-patients";
+import {
+  useApproveClinicalRecord,
+  useLatestClinicalData,
+  useClinicalData,
+} from "@/lib/hooks/use-patients";
 import type { ClinicalDataRecord } from "@/types";
 import { computeRedFlags } from "@/components/patients/red-flag-utils";
 
@@ -295,45 +301,41 @@ function MedicalSummaryCard({
   record: ClinicalDataRecord;
   patientId: string;
 }) {
-  const storageKey = `red-flag-reviewed-${patientId}`;
-
-  const [reviewed, setReviewed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const isReviewed = localStorage.getItem(storageKey) === "true";
-    const storedAt = localStorage.getItem(`${storageKey}-at`);
-    if (isReviewed && storedAt && storedAt !== record.submitted_at) {
-      localStorage.removeItem(storageKey);
-      localStorage.removeItem(`${storageKey}-at`);
-      return false;
-    }
-    return isReviewed;
-  });
-
   const redFlags = computeRedFlags(record);
+  const approveClinicalRecord = useApproveClinicalRecord(patientId);
+  const reviewed = record.review_status === "approved";
 
-  const toggleReviewed = useCallback(() => {
-    setReviewed((prev) => {
-      const next = !prev;
-      localStorage.setItem(storageKey, String(next));
-      if (next) {
-        localStorage.setItem(`${storageKey}-at`, record.submitted_at);
-      } else {
-        localStorage.removeItem(`${storageKey}-at`);
+  const handleApprove = useCallback(() => {
+    approveClinicalRecord.mutate(
+      { recordId: record.id, reviewNotes: "Reviewed and approved in portal." },
+      {
+        onSuccess: () => toast.success("Clinical data approved"),
+        onError: (err) => toast.error(err.message),
       }
-      return next;
-    });
-  }, [storageKey, record.submitted_at]);
+    );
+  }, [approveClinicalRecord, record.id]);
+
+  const reviewLabel = reviewed
+    ? record.reviewed_at
+      ? `Approved ${formatDate(record.reviewed_at)}`
+      : "Approved"
+    : "Pending review";
 
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm font-semibold">
             Current Medical Summary
           </CardTitle>
-          <span className="text-xs text-muted-foreground">
-            Last updated {formatDate(record.submitted_at)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              Last updated {formatDate(record.submitted_at)}
+            </span>
+            <StatusBadge variant={reviewed ? "success" : "warning"}>
+              {reviewLabel}
+            </StatusBadge>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -368,9 +370,14 @@ function MedicalSummaryCard({
               <Button
                 variant={reviewed ? "outline" : "destructive"}
                 size="sm"
-                onClick={toggleReviewed}
+                onClick={handleApprove}
+                disabled={reviewed || approveClinicalRecord.isPending}
               >
-                {reviewed ? "Mark Unreviewed" : "Mark as Reviewed"}
+                {reviewed
+                  ? "Approved"
+                  : approveClinicalRecord.isPending
+                    ? "Approving…"
+                    : "Approve"}
               </Button>
             </div>
             <p

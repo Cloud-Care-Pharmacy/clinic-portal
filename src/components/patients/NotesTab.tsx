@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import {
   Pin,
   PinOff,
   Trash2,
+  Pencil,
   StickyNote,
   Stethoscope,
   Pill,
@@ -37,6 +38,7 @@ import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import {
   usePatientNotes,
   useCreateNote,
+  useUpdateNote,
   useTogglePin,
   useDeleteNote,
 } from "@/lib/hooks/use-notes";
@@ -212,6 +214,157 @@ function AddNoteSheet({
   );
 }
 
+function EditNoteSheet({
+  patientId,
+  note,
+  open,
+  onOpenChange,
+}: {
+  patientId: string;
+  note: PatientNote | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const updateNote = useUpdateNote(patientId);
+  const formId = useId();
+  const form = useForm<NoteFormData>({
+    defaultValues: {
+      title: note?.title ?? "",
+      content: note?.content ?? "",
+      category: note?.category ?? "general",
+      isPinned: note?.isPinned ?? false,
+    },
+  });
+  const categoryValue = useWatch({ control: form.control, name: "category" });
+  const isPinnedValue = useWatch({ control: form.control, name: "isPinned" });
+
+  useEffect(() => {
+    if (!note || !open) return;
+    form.reset({
+      title: note.title,
+      content: note.content,
+      category: note.category,
+      isPinned: note.isPinned,
+    });
+  }, [form, note, open]);
+
+  function onSubmit(data: NoteFormData) {
+    if (!note) return;
+    const result = noteSchema.safeParse(data);
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as keyof NoteFormData;
+        form.setError(field, { message: issue.message });
+      }
+      return;
+    }
+
+    updateNote.mutate(
+      {
+        noteId: note.id,
+        data: {
+          title: result.data.title,
+          content: result.data.content,
+          category: result.data.category as NoteCategory,
+          isPinned: result.data.isPinned,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Note updated");
+          onOpenChange(false);
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
+  }
+
+  return (
+    <AppSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Edit Note"
+      description="Update the note details."
+      footer={
+        <>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} disabled={updateNote.isPending}>
+            {updateNote.isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="edit-note-title">Title</Label>
+          <Input
+            id="edit-note-title"
+            placeholder="Note title"
+            {...form.register("title")}
+          />
+          {form.formState.errors.title && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.title.message}
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="edit-note-category">Category</Label>
+          <Select
+            value={categoryValue}
+            onValueChange={(v) => {
+              if (v) form.setValue("category", v, { shouldDirty: true });
+            }}
+          >
+            <SelectTrigger id="edit-note-category">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="general">General</SelectItem>
+              <SelectItem value="clinical">Clinical Observation</SelectItem>
+              <SelectItem value="pharmacy">Pharmacy Note</SelectItem>
+              <SelectItem value="follow-up">Follow-up</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Note</Label>
+          <SimpleEditor
+            content={form.getValues("content")}
+            onChange={(html) =>
+              form.setValue("content", html, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+          />
+          {form.formState.errors.content && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.content.message}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold">Pin this note</p>
+            <p className="text-xs text-muted-foreground">
+              Pinned notes stay at the top of the notes list for quick access.
+            </p>
+          </div>
+          <Switch
+            checked={isPinnedValue}
+            onCheckedChange={(checked) =>
+              form.setValue("isPinned", checked === true, { shouldDirty: true })
+            }
+          />
+        </div>
+      </form>
+    </AppSheet>
+  );
+}
+
 // ---- Note detail sheet ----
 
 function NoteDetailSheet({
@@ -312,12 +465,14 @@ function groupNotesByMonth(notes: PatientNote[]) {
 
 function NoteCard({
   note,
+  onEdit,
   onTogglePin,
   onDelete,
   isPinning,
   isDeleting,
 }: {
   note: PatientNote;
+  onEdit: () => void;
   onTogglePin: () => void;
   onDelete: () => void;
   isPinning: boolean;
@@ -394,6 +549,15 @@ function NoteCard({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
+                onClick={onEdit}
+                title="Edit note"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7"
                 onClick={onTogglePin}
                 disabled={isPinning}
                 title={note.isPinned ? "Unpin note" : "Pin note"}
@@ -439,6 +603,7 @@ export function NotesTab({
 }: NotesTabProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PatientNote | null>(null);
   const { data, isLoading, error } = usePatientNotes(patientId, initialNotes);
   const togglePin = useTogglePin(patientId);
   const deleteNoteMutation = useDeleteNote(patientId);
@@ -513,6 +678,14 @@ export function NotesTab({
           if (!open) clearSelectedNote();
         }}
       />
+      <EditNoteSheet
+        patientId={patientId}
+        note={editTarget}
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+      />
 
       {notes.length === 0 ? (
         <EmptyState
@@ -543,6 +716,7 @@ export function NotesTab({
                 <NoteCard
                   key={note.id}
                   note={note}
+                  onEdit={() => setEditTarget(note)}
                   onTogglePin={() => handleTogglePin(note.id)}
                   onDelete={() => handleDelete(note.id)}
                   isPinning={togglePin.isPending && togglePin.variables === note.id}
@@ -567,6 +741,7 @@ export function NotesTab({
                 <NoteCard
                   key={note.id}
                   note={note}
+                  onEdit={() => setEditTarget(note)}
                   onTogglePin={() => handleTogglePin(note.id)}
                   onDelete={() => handleDelete(note.id)}
                   isPinning={togglePin.isPending && togglePin.variables === note.id}

@@ -81,6 +81,7 @@ export interface PatientMapping {
   entity_id: string | null;
   generated_email: string;
   original_email: string;
+  pbs_patient_id?: string | null;
   halaxy_patient_id: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -105,8 +106,49 @@ export interface PatientsListResponse {
   success: boolean;
   data: {
     entityId: string;
+    shopify_domain?: string;
     patients: PatientMapping[];
     pagination: { limit: number; offset: number; total: number };
+  };
+}
+
+export type PatientPmsStatusFilter = "linked" | "pending";
+export type PatientSortField =
+  | "created_at"
+  | "first_name"
+  | "last_name"
+  | "date_of_birth"
+  | "halaxy_patient_id"
+  | "pbs_patient_id";
+export type SortOrder = "asc" | "desc";
+
+export interface PatientsListQuery {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  pmsStatus?: PatientPmsStatusFilter;
+  sort?: PatientSortField;
+  order?: SortOrder;
+}
+
+export interface PatientSearchResult {
+  id: string;
+  entity_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  date_of_birth: string | null;
+  original_email: string | null;
+  generated_email: string | null;
+  mobile: string | null;
+  pbs_patient_id: string | null;
+  halaxy_patient_id: string | null;
+}
+
+export interface PatientSearchResponse {
+  success: boolean;
+  data: {
+    entityId: string;
+    patients: PatientSearchResult[];
   };
 }
 
@@ -144,7 +186,9 @@ export interface EmailMetadata {
 export interface SubmissionResult {
   success: boolean;
   patientId: string;
-  email: string;
+  email?: string;
+  documentId?: string;
+  isNewPatient?: boolean;
 }
 
 // ============================================
@@ -300,6 +344,13 @@ export interface LatestClinicalDataResponse {
   };
 }
 
+export interface ClinicalDataApprovalResponse {
+  success: boolean;
+  data: {
+    clinicalData: ClinicalDataRecord;
+  };
+}
+
 /** Payload for PUT /api/patients/:id */
 export interface UpdatePatientPayload {
   firstName: string;
@@ -372,6 +423,15 @@ export interface PatientDocumentsListResponse {
   };
 }
 
+export interface EntityDocumentsListResponse {
+  success: boolean;
+  data: {
+    entityId: string;
+    documents: PatientDocument[];
+    pagination: { limit: number; offset: number; total: number };
+  };
+}
+
 export interface PatientDocumentResponse {
   success: boolean;
   data: {
@@ -436,6 +496,22 @@ export interface Patient {
 export type ConsultationStatus = "scheduled" | "completed" | "cancelled" | "no-show";
 export type ConsultationType = "initial" | "follow-up" | "renewal";
 
+export type ConsultationSortField = "scheduledAt" | "createdAt" | "status" | "type";
+
+export interface ConsultationsQuery {
+  status?: ConsultationStatus;
+  type?: ConsultationType;
+  patientId?: string;
+  doctorId?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  sort?: ConsultationSortField;
+  order?: SortOrder;
+  limit?: number;
+  offset?: number;
+}
+
 export interface Consultation {
   id: string;
   patientId: string;
@@ -464,6 +540,7 @@ export interface ConsultationsListResponse {
     patientId?: string;
     consultations: Consultation[];
     pagination?: { limit: number; offset: number; total: number };
+    filters?: Partial<ConsultationsQuery>;
   };
 }
 
@@ -481,6 +558,82 @@ export interface DashboardStats {
   pendingConsultations: number;
   activePrescriptions: number;
   newThisWeek: number;
+}
+
+export type DashboardPeriod = "7d" | "30d" | "6m" | "12m";
+export type DashboardIntakeRange = "3m" | "6m" | "12m";
+export type DashboardIntakeBucket = "day" | "week" | "month";
+
+export interface DashboardSummary {
+  entityId: string;
+  totalPatients: number;
+  totalPatientsDeltaPct: number;
+  pendingConsultations: number;
+  scheduledConsultations: number;
+  activePrescriptions: number;
+  activePrescriptionsDeltaPct: number;
+  newPatientsThisWeek: number;
+  newPatientsDeltaPct: number;
+  documentsPendingReview: number;
+  clinicalRecordsPendingReview: number;
+  period: DashboardPeriod;
+}
+
+export interface DashboardSummaryResponse {
+  success: boolean;
+  data: DashboardSummary;
+}
+
+export interface DashboardIntakeSeriesPoint {
+  label: string;
+  startDate: string;
+  endDate: string;
+  total: number;
+}
+
+export interface DashboardIntakeOverviewResponse {
+  success: boolean;
+  data: {
+    from: string;
+    to: string;
+    range?: DashboardIntakeRange;
+    entityId?: string;
+    bucket: DashboardIntakeBucket;
+    buckets: Array<{ month?: string; week?: string; day?: string; count: number }>;
+    series: DashboardIntakeSeriesPoint[];
+  };
+}
+
+export interface DashboardActivityItem {
+  id: string;
+  patientId: string | null;
+  patientName: string;
+  patientInitials: string;
+  action: string;
+  by: string;
+  actorRole: "admin" | "doctor" | "staff" | "system";
+  timestamp: string;
+  type: ActivityEventType;
+  category: ActivityEventCategory;
+}
+
+export interface DashboardRecentActivityResponse {
+  success: boolean;
+  data: {
+    entityId: string;
+    items: DashboardActivityItem[];
+  };
+}
+
+export interface EntityPrescriptionSummaryResponse {
+  success: boolean;
+  data: {
+    entityId: string;
+    activePrescriptions: number;
+    expiredPrescriptions: number;
+    pendingPrescriptions: number;
+    newThisWeek: number;
+  };
 }
 
 export interface RecentActivity {
@@ -544,6 +697,13 @@ export interface PatientNotesResponse {
     patientId: string;
     notes: PatientNote[];
   };
+}
+
+export interface UpdatePatientNotePayload {
+  title?: string;
+  content?: string;
+  category?: NoteCategory;
+  isPinned?: boolean;
 }
 
 // ============================================
@@ -688,6 +848,40 @@ export interface UpdateUserProfilePayload {
   businessSuburb?: string;
   businessState?: string;
   businessPostcode?: string;
+}
+
+export type AvailabilityDayKey =
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday"
+  | "sunday";
+
+export interface AvailabilityWindow {
+  start: string;
+  end: string;
+}
+
+export type StructuredAvailability = Record<AvailabilityDayKey, AvailabilityWindow[]>;
+
+export interface UpdateUserAvailabilityPayload {
+  timezone: string;
+  availability: StructuredAvailability;
+}
+
+export interface UserAvailabilityResponse {
+  success: boolean;
+  data: {
+    availability: {
+      userId: string;
+      timezone: string;
+      availability: Partial<StructuredAvailability>;
+      createdAt: string;
+      updatedAt: string;
+    };
+  };
 }
 
 // ============================================

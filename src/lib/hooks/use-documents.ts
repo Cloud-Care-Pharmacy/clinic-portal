@@ -1,5 +1,6 @@
 import type {
   PatientDocumentsListResponse,
+  EntityDocumentsListResponse,
   PatientDocumentResponse,
   DocumentCategory,
   DocumentStatus,
@@ -23,6 +24,11 @@ type PatientDocumentsQueryOptions = {
   offset?: number;
   sort?: "created_at" | "filename" | "category";
   order?: "asc" | "desc";
+};
+
+type EntityDocumentsQueryOptions = PatientDocumentsQueryOptions & {
+  patientSearch?: string;
+  sort?: string;
 };
 
 // ---- Fetch helpers ----
@@ -52,6 +58,27 @@ async function fetchDocuments(patientId: string, opts?: PatientDocumentsQueryOpt
   }
   if (!res.ok) throw new Error("Failed to fetch documents");
   return res.json() as Promise<PatientDocumentsListResponse>;
+}
+
+async function fetchEntityDocuments(
+  entityId: string,
+  opts?: EntityDocumentsQueryOptions
+) {
+  const params = new URLSearchParams();
+  if (opts?.patientSearch) params.set("patientSearch", opts.patientSearch);
+  if (opts?.category) params.set("category", opts.category);
+  if (opts?.status) params.set("status", opts.status);
+  if (opts?.source) params.set("source", opts.source);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  if (opts?.offset) params.set("offset", String(opts.offset));
+  if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.order) params.set("order", opts.order);
+  const qs = params.toString() ? `?${params}` : "";
+  const res = await fetch(
+    `/api/proxy/entities/${encodeURIComponent(entityId)}/documents${qs}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch entity documents");
+  return res.json() as Promise<EntityDocumentsListResponse>;
 }
 
 async function uploadDocument(
@@ -176,6 +203,30 @@ export function usePatientDocuments(
   return useQuery({
     ...patientDocumentsQueryOptions(patientId ?? "", opts),
     enabled: !!patientId,
+    initialData,
+  });
+}
+
+export function useEntityDocuments(
+  entityId: string | undefined,
+  opts?: EntityDocumentsQueryOptions,
+  initialData?: EntityDocumentsListResponse
+) {
+  return useQuery({
+    queryKey: [
+      "entity-documents",
+      entityId,
+      opts?.patientSearch ?? "",
+      opts?.category ?? null,
+      opts?.status ?? null,
+      opts?.source ?? null,
+      opts?.limit ?? null,
+      opts?.offset ?? null,
+      opts?.sort ?? null,
+      opts?.order ?? null,
+    ],
+    queryFn: () => fetchEntityDocuments(entityId!, opts),
+    enabled: !!entityId,
     initialData,
   });
 }

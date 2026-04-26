@@ -24,8 +24,14 @@ import {
   useCreateConsultation,
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
+import { usePatientSearch } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
+import type {
+  Consultation,
+  ConsultationStatus,
+  ConsultationType,
+  PatientSearchResult,
+} from "@/types";
 
 const MINUTE_OPTIONS = ["00", "15", "30", "45"];
 
@@ -91,6 +97,7 @@ function getDefaultValues(
 interface NewConsultationSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  entityId?: string;
   defaultPatientId?: string;
   defaultPatientName?: string;
   consultation?: Consultation | null;
@@ -99,13 +106,13 @@ interface NewConsultationSheetProps {
 export function NewConsultationSheet({
   open,
   onOpenChange,
+  entityId,
   defaultPatientId,
   defaultPatientName,
   consultation: consultationInput,
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
   const updateConsultation = useUpdateConsultation();
-  const fallbackPatientId = useId();
   const formId = useId();
   // Keep the previous consultation visible during the close transition so the
   // sheet can animate out without flashing to the empty "Schedule" form.
@@ -116,6 +123,9 @@ export function NewConsultationSheet({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     initialTimeParts.selectedDate
   );
+  const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(
+    null
+  );
   const [hour, setHour] = useState(initialTimeParts.hour);
   const [minute, setMinute] = useState(initialTimeParts.minute);
   const [period, setPeriod] = useState<"AM" | "PM">(initialTimeParts.period);
@@ -123,6 +133,7 @@ export function NewConsultationSheet({
   const form = useForm<FormData>({
     defaultValues: getDefaultValues(defaultPatientName, consultation),
   });
+  const patientNameValue = useWatch({ control: form.control, name: "patientName" });
   const typeValue = useWatch({ control: form.control, name: "type" });
   const notesValue = useWatch({ control: form.control, name: "notes" });
   const statusValue = useWatch({ control: form.control, name: "status" });
@@ -131,6 +142,13 @@ export function NewConsultationSheet({
     ? MINUTE_OPTIONS
     : [minute, ...MINUTE_OPTIONS];
   const isSubmitting = createConsultation.isPending || updateConsultation.isPending;
+  const canSearchPatients =
+    open && !isEditing && !defaultPatientId && Boolean(entityId);
+  const { data: patientSearchData, isFetching: searchingPatients } = usePatientSearch(
+    canSearchPatients ? entityId : undefined,
+    { q: patientNameValue?.trim() ?? "", limit: 8 }
+  );
+  const patientOptions = patientSearchData?.data?.patients ?? [];
 
   useEffect(() => {
     if (!open || isEditing) return;
@@ -153,6 +171,7 @@ export function NewConsultationSheet({
 
   const resetNewConsultationState = useCallback(() => {
     form.reset(getDefaultValues(defaultPatientName));
+    setSelectedPatient(null);
     setSelectedDate(undefined);
     setHour("09");
     setMinute("00");
@@ -207,6 +226,7 @@ export function NewConsultationSheet({
       ? parseInt(result.data.duration, 10)
       : undefined;
     const scheduledAt = new Date(result.data.scheduledAt).toISOString();
+    const patientId = defaultPatientId ?? selectedPatient?.id;
 
     if (consultation) {
       const status = (result.data.status ?? consultation.status) as ConsultationStatus;
@@ -239,9 +259,16 @@ export function NewConsultationSheet({
       return;
     }
 
+    if (!patientId) {
+      form.setError("patientName", {
+        message: "Select a patient from the search results.",
+      });
+      return;
+    }
+
     createConsultation.mutate(
       {
-        patientId: defaultPatientId ?? fallbackPatientId,
+        patientId,
         patientName: result.data.patientName,
         doctorName: result.data.doctorName,
         type: result.data.type as ConsultationType,
@@ -307,7 +334,58 @@ export function NewConsultationSheet({
             placeholder="Enter patient name"
             {...form.register("patientName")}
             disabled={isEditing || !!defaultPatientName}
+            onChange={(event) => {
+              form.setValue("patientName", event.target.value, { shouldDirty: true });
+              setSelectedPatient(null);
+            }}
           />
+          {!isEditing && !defaultPatientId && entityId && patientNameValue && (
+            <div className="rounded-lg border bg-popover p-1 shadow-sm">
+              {searchingPatients ? (
+                <p className="px-3 py-2 text-sm text-muted-foreground">
+                  Searching patients…
+                </p>
+              ) : patientOptions.length > 0 ? (
+                patientOptions.map((patient) => {
+                  const name = [patient.first_name, patient.last_name]
+                    .filter(Boolean)
+                    .join(" ");
+                  const label =
+                    name ||
+                    patient.original_email ||
+                    patient.generated_email ||
+                    "Patient";
+                  return (
+                    <button
+                      type="button"
+                      key={patient.id}
+                      className="flex min-h-11 w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      onClick={() => {
+                        setSelectedPatient(patient);
+                        form.setValue("patientName", label, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        form.clearErrors("patientName");
+                      }}
+                    >
+                      <span className="font-medium">{label}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {patient.date_of_birth ?? "DOB not recorded"}
+                        {patient.halaxy_patient_id
+                          ? ` · PMS ${patient.halaxy_patient_id}`
+                          : " · PMS pending"}
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="px-3 py-2 text-sm text-muted-foreground">
+                  No matching patients found.
+                </p>
+              )}
+            </div>
+          )}
           {form.formState.errors.patientName && (
             <p className="text-sm text-destructive">
               {form.formState.errors.patientName.message}
