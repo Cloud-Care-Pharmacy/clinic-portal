@@ -261,7 +261,7 @@ export function NewConsultationSheet({
     >
       <SheetContent
         side="right"
-        className="flex flex-col w-full sm:max-w-[33vw] sm:min-w-100"
+        className="flex h-dvh max-h-dvh w-full flex-col overflow-hidden sm:max-w-[33vw] sm:min-w-100"
       >
         <SheetHeader>
           <SheetTitle>
@@ -278,7 +278,7 @@ export function NewConsultationSheet({
 
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-1 flex-col gap-4 p-4"
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4"
         >
           <div className="space-y-2">
             <Label htmlFor="patientName">Patient Name</Label>
@@ -437,7 +437,7 @@ export function NewConsultationSheet({
             />
           </div>
 
-          <div className="flex-1 space-y-2">
+          <div className="space-y-2">
             <Label>Notes</Label>
             <SimpleEditor
               content={notesValue ?? ""}
@@ -469,7 +469,7 @@ export function NewConsultationSheet({
                 </UISelect>
               </div>
 
-              <div className="flex-1 space-y-2">
+              <div className="space-y-2">
                 <Label>Outcome</Label>
                 <SimpleEditor
                   content={outcomeValue ?? ""}
@@ -480,7 +480,7 @@ export function NewConsultationSheet({
             </>
           )}
 
-          <div className="flex gap-2 justify-end pt-2">
+          <div className="sticky bottom-0 -mx-4 mt-2 flex shrink-0 justify-end gap-2 border-t bg-popover px-4 py-3">
             <Button
               type="button"
               variant="ghost"
