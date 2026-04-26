@@ -1,9 +1,15 @@
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import {
   emptyParchmentPrescriptionsResponse,
   normalizePatientPrescriptionsResponse,
 } from "@/lib/prescriptions";
 import { OverviewTab } from "./components/tabs/OverviewTab";
+import {
+  getLatestClinicalData,
+  getPatientConsultations,
+  getPatientNotes,
+  getPatientPrescriptions,
+} from "./server-fetchers";
 
 export default async function PatientOverviewPage({
   params,
@@ -14,10 +20,10 @@ export default async function PatientOverviewPage({
 
   const [consultations, prescriptions, notes, latestClinical] =
     await Promise.allSettled([
-      api.getPatientConsultations(id, { limit: 50, offset: 0 }),
-      api.getPatientPrescriptions(id),
-      api.getPatientNotes(id),
-      api.getLatestClinicalData(id),
+      getPatientConsultations(id, 50),
+      getPatientPrescriptions(id),
+      getPatientNotes(id),
+      getLatestClinicalData(id),
     ]);
 
   const initialPrescriptions =

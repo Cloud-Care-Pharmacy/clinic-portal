@@ -182,6 +182,17 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
         const name = [row.first_name, row.last_name].filter(Boolean).join(" ");
         return name || "—";
       },
+      renderCell: (params) => (
+        <Link
+          href={`/patients/${params.row.id}`}
+          prefetch
+          scroll={false}
+          onClick={(e) => e.stopPropagation()}
+          className="truncate font-medium text-foreground hover:underline"
+        >
+          {params.value as string}
+        </Link>
+      ),
     },
     {
       field: "original_email",
@@ -351,8 +362,16 @@ export function PatientTable({ patients, loading }: PatientTableProps) {
           initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
           rowHeight={56}
           onRowClick={(params: GridRowParams<PatientMapping>) =>
-            router.push(`/patients/${params.row.id}`)
+            router.push(`/patients/${params.row.id}`, { scroll: false })
           }
+          slotProps={{
+            row: {
+              onMouseEnter: (event) => {
+                const id = (event.currentTarget as HTMLElement).getAttribute("data-id");
+                if (id) router.prefetch(`/patients/${id}`);
+              },
+            },
+          }}
           sx={dataGridSx}
         />
       </div>

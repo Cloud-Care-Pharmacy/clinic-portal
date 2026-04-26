@@ -1,4 +1,4 @@
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import {
   emptyParchmentPrescriptionsResponse,
   normalizePatientPrescriptionsResponse,
@@ -6,17 +6,24 @@ import {
 import { notFound } from "next/navigation";
 import PatientLayoutClient from "./PatientLayoutClient";
 import type { PatientShellInitialData } from "./patient-shell-data";
+import {
+  getLatestClinicalData,
+  getPatient,
+  getPatientConsultations,
+  getPatientCounts,
+  getPatientPrescriptions,
+} from "./server-fetchers";
 
 async function getPatientShellInitialData(
   patientId: string
 ): Promise<PatientShellInitialData> {
   const [patient, latestClinical, counts, prescriptions, consultations] =
     await Promise.allSettled([
-      api.getPatient(patientId),
-      api.getLatestClinicalData(patientId),
-      api.getPatientCounts(patientId),
-      api.getPatientPrescriptions(patientId),
-      api.getPatientConsultations(patientId, { limit: 50 }),
+      getPatient(patientId),
+      getLatestClinicalData(patientId),
+      getPatientCounts(patientId),
+      getPatientPrescriptions(patientId),
+      getPatientConsultations(patientId, 50),
     ]);
   const initialData: PatientShellInitialData = {};
 
