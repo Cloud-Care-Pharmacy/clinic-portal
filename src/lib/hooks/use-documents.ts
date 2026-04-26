@@ -8,22 +8,26 @@ import type {
   DocumentVerifyPayload,
   DocumentSyncResponse,
 } from "@/types";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+type PatientDocumentsQueryOptions = {
+  category?: DocumentCategory;
+  status?: DocumentStatus;
+  source?: DocumentSource;
+  limit?: number;
+  offset?: number;
+  sort?: "created_at" | "filename" | "category";
+  order?: "asc" | "desc";
+};
 
 // ---- Fetch helpers ----
 
-async function fetchDocuments(
-  patientId: string,
-  opts?: {
-    category?: DocumentCategory;
-    status?: DocumentStatus;
-    source?: DocumentSource;
-    limit?: number;
-    offset?: number;
-    sort?: "created_at" | "filename" | "category";
-    order?: "asc" | "desc";
-  }
-) {
+async function fetchDocuments(patientId: string, opts?: PatientDocumentsQueryOptions) {
   const params = new URLSearchParams();
   if (opts?.category) params.set("category", opts.category);
   if (opts?.status) params.set("status", opts.status);
@@ -52,7 +56,13 @@ async function fetchDocuments(
 
 async function uploadDocument(
   patientId: string,
-  payload: { file: File; category: DocumentCategory; description?: string; expiry_date?: string; uploaded_by?: string }
+  payload: {
+    file: File;
+    category: DocumentCategory;
+    description?: string;
+    expiry_date?: string;
+    uploaded_by?: string;
+  }
 ) {
   const formData = new FormData();
   formData.append("file", payload.file);
@@ -138,19 +148,32 @@ async function syncEmailAttachments(patientId: string) {
 
 // ---- Hooks ----
 
+export function patientDocumentsQueryOptions(
+  patientId: string,
+  opts?: PatientDocumentsQueryOptions
+) {
+  return queryOptions({
+    queryKey: [
+      "patient-documents",
+      patientId,
+      opts?.category ?? null,
+      opts?.status ?? null,
+      opts?.source ?? null,
+      opts?.limit ?? null,
+      opts?.offset ?? null,
+      opts?.sort ?? null,
+      opts?.order ?? null,
+    ],
+    queryFn: () => fetchDocuments(patientId, opts),
+  });
+}
+
 export function usePatientDocuments(
   patientId: string | undefined,
-  opts?: {
-    category?: DocumentCategory;
-    status?: DocumentStatus;
-    source?: DocumentSource;
-    limit?: number;
-    offset?: number;
-  }
+  opts?: PatientDocumentsQueryOptions
 ) {
   return useQuery({
-    queryKey: ["patient-documents", patientId, opts],
-    queryFn: () => fetchDocuments(patientId!, opts),
+    ...patientDocumentsQueryOptions(patientId ?? "", opts),
     enabled: !!patientId,
   });
 }
@@ -174,8 +197,13 @@ export function useUploadDocument(patientId: string) {
 export function useUpdateDocument(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ documentId, data }: { documentId: string; data: DocumentUpdatePayload }) =>
-      updateDocument(patientId, documentId, data),
+    mutationFn: ({
+      documentId,
+      data,
+    }: {
+      documentId: string;
+      data: DocumentUpdatePayload;
+    }) => updateDocument(patientId, documentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-documents", patientId] });
     },
@@ -185,8 +213,13 @@ export function useUpdateDocument(patientId: string) {
 export function useVerifyDocument(patientId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ documentId, data }: { documentId: string; data: DocumentVerifyPayload }) =>
-      verifyDocument(patientId, documentId, data),
+    mutationFn: ({
+      documentId,
+      data,
+    }: {
+      documentId: string;
+      data: DocumentVerifyPayload;
+    }) => verifyDocument(patientId, documentId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["patient-documents", patientId] });
     },

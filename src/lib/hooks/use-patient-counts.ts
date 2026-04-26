@@ -1,5 +1,5 @@
 import type { PatientCountsResponse } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 async function fetchPatientCounts(patientId: string): Promise<PatientCountsResponse> {
   const res = await fetch(
@@ -9,10 +9,16 @@ async function fetchPatientCounts(patientId: string): Promise<PatientCountsRespo
   return res.json();
 }
 
+export function patientCountsQueryOptions(patientId: string) {
+  return queryOptions({
+    queryKey: ["patient-counts", patientId],
+    queryFn: () => fetchPatientCounts(patientId),
+  });
+}
+
 export function usePatientCounts(patientId: string | undefined) {
   return useQuery({
-    queryKey: ["patient-counts", patientId],
-    queryFn: () => fetchPatientCounts(patientId!),
+    ...patientCountsQueryOptions(patientId ?? ""),
     enabled: Boolean(patientId),
   });
 }

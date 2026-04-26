@@ -11,6 +11,8 @@ import type {
   LatestClinicalDataResponse,
   PatientDocumentsListResponse,
   PatientDocumentResponse,
+  PatientCountsResponse,
+  ConsultationsListResponse,
   DocumentUpdatePayload,
   DocumentVerifyPayload,
   DocumentSyncResponse,
@@ -97,6 +99,23 @@ class ApiClient {
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(`/api/entities/${encodeURIComponent(entityId)}/patients${qs}`);
+  }
+
+  async getPatientCounts(patientId: string): Promise<PatientCountsResponse> {
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}/counts`);
+  }
+
+  async getPatientConsultations(
+    patientId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<ConsultationsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/consultations${qs}`
+    );
   }
 
   // ---- Clinical Data ----

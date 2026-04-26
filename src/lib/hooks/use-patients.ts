@@ -4,7 +4,12 @@ import type {
   ClinicalDataListResponse,
   LatestClinicalDataResponse,
 } from "@/types";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 // ---- Fetch helpers ----
 
@@ -28,9 +33,7 @@ async function fetchPatients(entityId: string, limit = 50, offset = 0) {
 }
 
 async function fetchPatient(patientId: string) {
-  const res = await fetch(
-    `/api/proxy/patients/${encodeURIComponent(patientId)}`
-  );
+  const res = await fetch(`/api/proxy/patients/${encodeURIComponent(patientId)}`);
   if (!res.ok) throw new Error("Failed to fetch patient");
   return res.json() as Promise<{
     success: boolean;
@@ -39,14 +42,11 @@ async function fetchPatient(patientId: string) {
 }
 
 async function updatePatient(patientId: string, data: UpdatePatientPayload) {
-  const res = await fetch(
-    `/api/proxy/patients/${encodeURIComponent(patientId)}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }
-  );
+  const res = await fetch(`/api/proxy/patients/${encodeURIComponent(patientId)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Failed to update patient" }));
     throw new Error(err.error ?? "Failed to update patient");
@@ -79,6 +79,30 @@ async function fetchLatestClinicalData(patientId: string) {
 
 // ---- Hooks ----
 
+export function patientQueryOptions(patientId: string) {
+  return queryOptions({
+    queryKey: ["patient", patientId],
+    queryFn: () => fetchPatient(patientId),
+  });
+}
+
+export function clinicalDataQueryOptions(
+  patientId: string,
+  opts?: { limit?: number; offset?: number }
+) {
+  return queryOptions({
+    queryKey: ["clinical-data", patientId, opts?.limit, opts?.offset],
+    queryFn: () => fetchClinicalData(patientId, opts?.limit, opts?.offset),
+  });
+}
+
+export function latestClinicalDataQueryOptions(patientId: string) {
+  return queryOptions({
+    queryKey: ["clinical-data-latest", patientId],
+    queryFn: () => fetchLatestClinicalData(patientId),
+  });
+}
+
 export function usePatients(
   entityId: string | undefined,
   opts?: { limit?: number; offset?: number }
@@ -92,8 +116,7 @@ export function usePatients(
 
 export function usePatient(patientId: string | undefined) {
   return useQuery({
-    queryKey: ["patient", patientId],
-    queryFn: () => fetchPatient(patientId!),
+    ...patientQueryOptions(patientId ?? ""),
     enabled: !!patientId,
   });
 }
@@ -114,16 +137,14 @@ export function useClinicalData(
   opts?: { limit?: number; offset?: number }
 ) {
   return useQuery({
-    queryKey: ["clinical-data", patientId, opts?.limit, opts?.offset],
-    queryFn: () => fetchClinicalData(patientId!, opts?.limit, opts?.offset),
+    ...clinicalDataQueryOptions(patientId ?? "", opts),
     enabled: !!patientId,
   });
 }
 
 export function useLatestClinicalData(patientId: string | undefined) {
   return useQuery({
-    queryKey: ["clinical-data-latest", patientId],
-    queryFn: () => fetchLatestClinicalData(patientId!),
+    ...latestClinicalDataQueryOptions(patientId ?? ""),
     enabled: !!patientId,
   });
 }

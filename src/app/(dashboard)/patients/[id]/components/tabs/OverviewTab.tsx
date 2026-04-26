@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stethoscope, RotateCw, RefreshCw } from "lucide-react";
 import { cn, htmlToPlainText } from "@/lib/utils";
-import type { PatientMapping, ConsultationType, ParchmentPrescription } from "@/types";
+import type { ConsultationType, ParchmentPrescription } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { usePatientNotes } from "@/lib/hooks/use-notes";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { usePatientShell } from "../PatientShellContext";
 import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
@@ -98,12 +99,12 @@ function OverviewCard({
 /* ── Main component ── */
 
 interface OverviewTabProps {
-  patient: PatientMapping | undefined;
   patientId: string;
   onTabChange: (tab: string) => void;
 }
 
-export function OverviewTab({ patient, patientId, onTabChange }: OverviewTabProps) {
+export function OverviewTab({ patientId, onTabChange }: OverviewTabProps) {
+  const { patient } = usePatientShell();
   const [selectedPrescription, setSelectedPrescription] =
     useState<ParchmentPrescription | null>(null);
   const { data: consultsData, isLoading: loadingConsults } =

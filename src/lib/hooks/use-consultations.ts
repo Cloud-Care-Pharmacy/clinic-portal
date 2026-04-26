@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type {
   ConsultationsListResponse,
   ConsultationResponse,
@@ -89,10 +94,17 @@ async function deleteConsultationApi(
 
 // ---- Hooks ----
 
-export function useConsultations(patientId?: string) {
-  return useQuery({
+export function consultationsQueryOptions(patientId?: string) {
+  return queryOptions({
     queryKey: patientId ? ["consultations", patientId] : ["consultations"],
     queryFn: () => fetchConsultations(patientId),
+  });
+}
+
+export function useConsultations(patientId?: string) {
+  return useQuery({
+    ...consultationsQueryOptions(patientId),
+    enabled: patientId !== "",
   });
 }
 
@@ -118,10 +130,8 @@ export function useCreateConsultation() {
       notes?: string;
     }) => createConsultationApi(body),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["consultations"] });
-      queryClient.invalidateQueries({ queryKey: ["patient-counts"] });
-      queryClient.invalidateQueries({ queryKey: ["patient-activity"] });
       const patientId = res.data.consultation.patientId;
+      queryClient.invalidateQueries({ queryKey: ["consultations"], exact: true });
       queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
@@ -148,13 +158,11 @@ export function useUpdateConsultation() {
       doctorName?: string;
     }) => updateConsultationApi(id, body),
     onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["consultations"] });
       queryClient.invalidateQueries({
         queryKey: ["consultation", res.data.consultation.id],
       });
-      queryClient.invalidateQueries({ queryKey: ["patient-counts"] });
-      queryClient.invalidateQueries({ queryKey: ["patient-activity"] });
       const patientId = res.data.consultation.patientId;
+      queryClient.invalidateQueries({ queryKey: ["consultations"], exact: true });
       queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });

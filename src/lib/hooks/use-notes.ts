@@ -1,5 +1,10 @@
 import type { PatientNote, PatientNotesResponse, NoteCategory } from "@/types";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 // ---- Fetch helpers (via auth proxy → prescription-gateway) ----
 
@@ -57,10 +62,16 @@ async function deleteNote(
 
 // ---- Hooks ----
 
+export function patientNotesQueryOptions(patientId: string) {
+  return queryOptions({
+    queryKey: ["patient-notes", patientId],
+    queryFn: () => fetchNotes(patientId),
+  });
+}
+
 export function usePatientNotes(patientId: string | undefined) {
   return useQuery({
-    queryKey: ["patient-notes", patientId],
-    queryFn: () => fetchNotes(patientId!),
+    ...patientNotesQueryOptions(patientId ?? ""),
     enabled: !!patientId,
   });
 }

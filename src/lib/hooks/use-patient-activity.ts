@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import type {
   ActivityEntityType,
   ActivityEventCategory,
@@ -40,10 +40,16 @@ async function fetchPatientActivity(
   };
 }
 
+export function patientActivityQueryOptions(patientId: string) {
+  return queryOptions({
+    queryKey: ["patient-activity", patientId],
+    queryFn: () => fetchPatientActivity(patientId),
+  });
+}
+
 export function usePatientActivity(patientId: string | undefined) {
   const query = useQuery({
-    queryKey: ["patient-activity", patientId],
-    queryFn: () => fetchPatientActivity(patientId!),
+    ...patientActivityQueryOptions(patientId ?? ""),
     enabled: Boolean(patientId),
   });
 
