@@ -96,15 +96,17 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
           </div>
 
           {/* Identity + meta */}
-          <div className="flex-1 min-w-0">
+          <div className="flex min-h-14 flex-1 min-w-0 flex-col justify-between gap-1.5">
             {/* Name row — name/age left, PMS ID + Actions right */}
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-[22px] font-semibold leading-[1.2] tracking-[-0.01em]">
+            <div className="flex flex-wrap items-start gap-x-2.5 gap-y-1">
+              <h2 className="text-[22px] font-semibold leading-none tracking-[-0.01em]">
                 {displayName}
               </h2>
 
               {ageGender && (
-                <span className="text-sm text-muted-foreground">{ageGender}</span>
+                <span className="pt-1 text-sm leading-none text-muted-foreground">
+                  {ageGender}
+                </span>
               )}
 
               <div className="flex items-center gap-1.5">
@@ -207,7 +209,7 @@ export function PatientHeader({ patient, displayName }: PatientHeaderProps) {
             </div>
 
             {/* Meta row — location and patient tenure */}
-            <div className="flex flex-wrap items-center gap-4 mt-2 text-[13px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-[13px] leading-none text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="size-3.5" />
                 {locationText}
