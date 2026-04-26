@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
@@ -33,7 +34,7 @@ import type { UserRole } from "@/types";
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   roles?: UserRole[];
 }
 
@@ -83,6 +84,33 @@ interface SidebarProps {
   };
 }
 
+const sidebarTransition = "duration-200 ease-out motion-reduce:transition-none";
+
+function RevealText({
+  collapsed,
+  children,
+  className,
+}: {
+  collapsed: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "min-w-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity,transform]",
+        sidebarTransition,
+        collapsed
+          ? "max-w-0 -translate-x-1 opacity-0"
+          : "max-w-44 translate-x-0 opacity-100",
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const pathname = usePathname();
   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -91,16 +119,19 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-4 mx-3 my-1.5 px-4 py-2.5 text-sm rounded-lg transition-colors",
+        "my-1.5 flex items-center rounded-lg py-2.5 text-sm transition-all",
+        sidebarTransition,
         isActive
           ? "bg-primary text-primary-foreground font-medium"
           : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-        collapsed && "justify-center mx-1 px-3"
+        collapsed ? "mx-1 gap-0 px-5" : "mx-3 gap-4 px-4"
       )}
       title={collapsed ? item.label : undefined}
     >
-      {item.icon}
-      {!collapsed && <span>{item.label}</span>}
+      <span className="flex size-5 shrink-0 items-center justify-center">
+        {item.icon}
+      </span>
+      <RevealText collapsed={collapsed}>{item.label}</RevealText>
     </Link>
   );
 }
@@ -117,11 +148,17 @@ function NavGroup({
   if (items.length === 0) return null;
   return (
     <div>
-      {!collapsed && (
-        <p className="px-5 pb-2 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/40">
-          {title}
-        </p>
-      )}
+      <p
+        className={cn(
+          "overflow-hidden px-5 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/40 transition-all",
+          sidebarTransition,
+          collapsed
+            ? "max-h-0 -translate-x-1 pb-0 opacity-0"
+            : "max-h-6 translate-x-0 pb-2 opacity-100"
+        )}
+      >
+        {title}
+      </p>
       {items.map((item) => (
         <NavLink key={item.href} item={item} collapsed={collapsed} />
       ))}
@@ -148,21 +185,27 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       {/* Team / App Header */}
       <div
         className={cn(
-          "flex items-center gap-3 px-4 py-4",
-          collapsed && "justify-center px-2"
+          "flex items-center gap-3 overflow-hidden px-4 py-4 transition-all",
+          sidebarTransition
         )}
       >
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
           <Pill className="h-4 w-4" />
         </div>
-        {!collapsed && (
-          <div className="grid flex-1 text-sm leading-tight">
-            <span className="truncate font-semibold">Quity</span>
-            <span className="truncate text-xs text-sidebar-foreground/50">
-              Clinic Portal
-            </span>
-          </div>
-        )}
+        <div
+          className={cn(
+            "grid min-w-0 flex-1 overflow-hidden text-sm leading-tight transition-[max-width,opacity,transform]",
+            sidebarTransition,
+            collapsed
+              ? "max-w-0 -translate-x-1 opacity-0"
+              : "max-w-40 translate-x-0 opacity-100"
+          )}
+        >
+          <span className="truncate font-semibold">Quity</span>
+          <span className="truncate text-xs text-sidebar-foreground/50">
+            Clinic Portal
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -174,30 +217,49 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       </nav>
 
       {/* User profile */}
-      <div className={cn("px-3 py-3", collapsed && "px-2")}>
+      <div
+        className={cn(
+          "py-3 transition-[padding]",
+          sidebarTransition,
+          collapsed ? "px-2" : "px-3"
+        )}
+      >
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "flex w-full items-center gap-3 rounded-md p-2 text-sm hover:bg-sidebar-accent/50 transition-colors",
-              collapsed && "justify-center"
+              "flex w-full items-center rounded-md p-2 text-sm transition-all hover:bg-sidebar-accent/50",
+              sidebarTransition,
+              collapsed ? "gap-0" : "gap-3"
             )}
           >
-            <Avatar className="size-8">
+            <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-muted text-muted-foreground text-xs font-semibold">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            {!collapsed && (
-              <>
-                <div className="grid flex-1 text-start text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs text-sidebar-foreground/50">
-                    {user.email}
-                  </span>
-                </div>
-                <ChevronsUpDown className="ml-auto h-4 w-4 text-sidebar-foreground/50" />
-              </>
-            )}
+            <div
+              className={cn(
+                "grid min-w-0 flex-1 overflow-hidden text-start text-sm leading-tight transition-[max-width,opacity,transform]",
+                sidebarTransition,
+                collapsed
+                  ? "max-w-0 -translate-x-1 opacity-0"
+                  : "max-w-40 translate-x-0 opacity-100"
+              )}
+            >
+              <span className="truncate font-semibold">{user.name}</span>
+              <span className="truncate text-xs text-sidebar-foreground/50">
+                {user.email}
+              </span>
+            </div>
+            <ChevronsUpDown
+              className={cn(
+                "h-4 shrink-0 text-sidebar-foreground/50 transition-all",
+                sidebarTransition,
+                collapsed
+                  ? "ml-0 w-0 translate-x-1 opacity-0"
+                  : "ml-auto w-4 translate-x-0 opacity-100"
+              )}
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end" className="w-56">
             <DropdownMenuGroup>
@@ -244,8 +306,10 @@ export function Sidebar({ user }: SidebarProps) {
     <>
       {/* Desktop sidebar */}
       <aside
+        data-collapsed={collapsed}
         className={cn(
-          "hidden lg:flex flex-col bg-sidebar transition-all duration-200",
+          "hidden shrink-0 overflow-hidden bg-sidebar transition-[width] will-change-[width] lg:flex lg:flex-col",
+          sidebarTransition,
           collapsed ? "w-17" : "w-64"
         )}
       >
