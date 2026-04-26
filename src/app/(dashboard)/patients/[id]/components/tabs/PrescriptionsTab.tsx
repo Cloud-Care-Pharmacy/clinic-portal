@@ -76,8 +76,11 @@ export function PrescriptionsTab({ patientId }: PrescriptionsTabProps) {
         rows={prescriptions}
         columns={prescriptionColumns}
         autoHeight
+        pagination
         disableRowSelectionOnClick
-        pageSizeOptions={[10, 25]}
+        disableColumnMenu
+        columnHeaderHeight={44}
+        pageSizeOptions={[10, 25, 50]}
         rowHeight={56}
         initialState={{
           pagination: { paginationModel: { pageSize: 10 } },

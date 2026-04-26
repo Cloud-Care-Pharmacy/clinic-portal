@@ -6,6 +6,7 @@ import { dataGridSx } from "@/lib/datagrid-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
   Sheet,
   SheetContent,
@@ -16,14 +17,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { useClinicalData } from "@/lib/hooks/use-patients";
 import type { ClinicalDataRecord } from "@/types";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-AU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", {
@@ -164,7 +157,7 @@ function IntakeFormSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="overflow-y-auto w-full sm:min-w-[500px] sm:max-w-[580px] p-0"
+        className="overflow-y-auto w-full sm:min-w-125 sm:max-w-145 p-0"
       >
         <SheetHeader className="p-6 pb-4">
           <div className="flex items-center gap-2">
@@ -235,14 +228,7 @@ const historyColumns: GridColDef<ClinicalDataRecord>[] = [
     field: "safety_acknowledgment",
     headerName: "Status",
     width: 120,
-    renderCell: () => (
-      <Badge
-        variant="outline"
-        className="bg-status-success-bg text-status-success-fg border-status-success-border text-xs"
-      >
-        Completed
-      </Badge>
-    ),
+    renderCell: () => <StatusBadge variant="success">Completed</StatusBadge>,
   },
 ];
 
@@ -288,8 +274,11 @@ export function ClinicalHistoryTab({ patientId }: ClinicalHistoryTabProps) {
           rows={records}
           columns={historyColumns}
           autoHeight
+          pagination
           disableRowSelectionOnClick
-          pageSizeOptions={[10, 25]}
+          disableColumnMenu
+          columnHeaderHeight={44}
+          pageSizeOptions={[10, 25, 50]}
           rowHeight={56}
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
