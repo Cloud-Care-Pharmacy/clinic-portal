@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
-import type { PatientDocument, DocumentCategory, DocumentStatus } from "@/types";
+import type { PatientDocument, DocumentCategory } from "@/types";
 import {
   usePatientDocuments,
   useUploadDocument,
   useDeleteDocument,
   useVerifyDocument,
-  useSyncEmailAttachments,
 } from "@/lib/hooks/use-documents";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -53,13 +52,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Upload,
   Download,
   MoreHorizontal,
   CheckCircle,
   XCircle,
   Trash2,
-  RefreshCw,
   FileText,
   Calendar as CalendarIcon,
 } from "lucide-react";
@@ -105,28 +102,16 @@ interface DocumentsTabProps {
 
 export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
   const router = useRouter();
-  const [categoryFilter, setCategoryFilter] = useState<DocumentCategory | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const queryOpts: {
-    category?: DocumentCategory;
-    status?: DocumentStatus;
-  } = {};
-  if (categoryFilter !== "all") queryOpts.category = categoryFilter;
-  if (statusFilter !== "all") queryOpts.status = statusFilter;
-
-  const { data, isLoading, error } = usePatientDocuments(patientId, queryOpts);
+  const { data, isLoading, error } = usePatientDocuments(patientId);
   const deleteMutation = useDeleteDocument(patientId);
   const verifyMutation = useVerifyDocument(patientId);
-  const syncMutation = useSyncEmailAttachments(patientId);
-  const documentUploadOpen = uploadOpen || initialAction === "upload";
+  const documentUploadOpen = initialAction === "upload";
 
   const handleUploadOpenChange = (open: boolean) => {
-    setUploadOpen(open);
     if (!open && initialAction === "upload") {
       router.replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
         scroll: false,
@@ -176,17 +161,6 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
   const handleDownload = (doc: PatientDocument) => {
     const url = `/api/proxy/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(doc.id)}/download`;
     window.open(url, "_blank");
-  };
-
-  const handleSync = () => {
-    syncMutation.mutate(undefined, {
-      onSuccess: (res) => {
-        toast.success(
-          `Synced ${res.data.synced} attachment(s), skipped ${res.data.skipped}`
-        );
-      },
-      onError: (err) => toast.error(err.message),
-    });
   };
 
   const columns: GridColDef<PatientDocument>[] = [
@@ -307,63 +281,6 @@ export function DocumentsTab({ patientId, initialAction }: DocumentsTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          value={categoryFilter}
-          onValueChange={(v) => {
-            if (v) setCategoryFilter(v as DocumentCategory | "all");
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => {
-            if (v) setStatusFilter(v as DocumentStatus | "all");
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="uploaded">Uploaded</SelectItem>
-            <SelectItem value="verified">Verified</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSync}
-            disabled={syncMutation.isPending}
-          >
-            <RefreshCw
-              className={`mr-2 size-4 ${syncMutation.isPending ? "animate-spin" : ""}`}
-            />
-            Sync Emails
-          </Button>
-          <Button size="sm" onClick={() => setUploadOpen(true)}>
-            <Upload className="mr-2 size-4" />
-            Upload
-          </Button>
-        </div>
-      </div>
-
       {/* Table */}
       {documents.length === 0 ? (
         <EmptyState
