@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ExternalLink, Loader2, Pill } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ExternalLink, Loader2, SquarePen } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -31,6 +32,7 @@ export function ParchmentRedirectDialog({
   patientName,
 }: ParchmentRedirectDialogProps) {
   const mutation = useCreateParchmentPrescriptionLink();
+  const queryClient = useQueryClient();
   // Pre-opened tab reference — opened synchronously on click to avoid popup blockers.
   const pendingTabRef = useRef<Window | null>(null);
 
@@ -56,17 +58,14 @@ export function ParchmentRedirectDialog({
 
     mutation.mutate(patientId, {
       onSuccess: (response) => {
-        const url =
-          response.data?.url ??
-          (response.data?.parchmentPatientId
-            ? buildParchmentPatientUrl(response.data.parchmentPatientId)
-            : null);
-        if (!url) {
+        const parchmentPatientId = response.data?.parchmentPatientId;
+        if (!parchmentPatientId) {
           toast.error("Parchment did not return a patient identifier");
           if (pendingTabRef.current) pendingTabRef.current.close();
           pendingTabRef.current = null;
           return;
         }
+        const url = buildParchmentPatientUrl(parchmentPatientId);
         if (pendingTabRef.current && !pendingTabRef.current.closed) {
           pendingTabRef.current.location.href = url;
           pendingTabRef.current.focus();
@@ -75,7 +74,16 @@ export function ParchmentRedirectDialog({
           window.open(url, "_blank", "noopener,noreferrer");
         }
         pendingTabRef.current = null;
-        toast.success("Opened Parchment in a new tab");
+        // Refresh patient details so the newly linked Parchment ID is reflected locally.
+        if (response.data?.created) {
+          queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
+          queryClient.invalidateQueries({ queryKey: ["patients"] });
+        }
+        toast.success(
+          response.data?.created
+            ? "Patient created in Parchment"
+            : "Opened Parchment in a new tab"
+        );
         onOpenChange(false);
       },
       onError: (error) => {
@@ -103,8 +111,8 @@ export function ParchmentRedirectDialog({
       <DialogContent showCloseButton={!isLoading} className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
-              <Pill className="size-5" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
+              <SquarePen className="size-5" />
             </div>
             <div className="flex flex-col gap-1">
               <DialogTitle>Redirect to Parchment</DialogTitle>
@@ -127,7 +135,7 @@ export function ParchmentRedirectDialog({
             className="flex flex-col items-center gap-3 rounded-lg border border-border/60 bg-muted/40 px-4 py-6 text-center"
           >
             <div className="relative flex size-12 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
-              <Pill className="size-5" />
+              <SquarePen className="size-5" />
               <Loader2 className="absolute inset-0 m-auto size-12 animate-spin text-primary/70" />
             </div>
             <div className="flex flex-col gap-0.5">
