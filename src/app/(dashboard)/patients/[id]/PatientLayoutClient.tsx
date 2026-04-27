@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 type TabCountKey =
   | "consultations"
+  | "tasks"
   | "prescriptions"
   | "documents"
   | "clinical"
@@ -41,6 +42,11 @@ const TABS: {
     label: "Consultations",
     segment: "consultations",
     countKey: "consultations" as const,
+  },
+  {
+    label: "Tasks",
+    segment: "tasks",
+    countKey: "tasks" as const,
   },
   {
     label: "Prescriptions",
@@ -85,6 +91,9 @@ export default function PatientLayoutClient({
 
   const tabCounts: Record<TabCountKey, number | undefined> = {
     consultations: counts?.consultations,
+    tasks:
+      initialData?.tasks?.data?.pagination?.total ??
+      initialData?.tasks?.data?.tasks.length,
     prescriptions: rxData?.data?.prescriptions?.length,
     documents: counts?.documents,
     clinical: counts?.clinicalRecords,

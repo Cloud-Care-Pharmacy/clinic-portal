@@ -3,6 +3,7 @@ import { consultationsQueryOptions } from "@/lib/hooks/use-consultations";
 import { patientDocumentsQueryOptions } from "@/lib/hooks/use-documents";
 import { patientNotesQueryOptions } from "@/lib/hooks/use-notes";
 import { patientActivityQueryOptions } from "@/lib/hooks/use-patient-activity";
+import { patientTasksQueryOptions } from "@/lib/hooks/use-tasks";
 import {
   clinicalDataQueryOptions,
   latestClinicalDataQueryOptions,
@@ -12,6 +13,7 @@ import { prescriptionsQueryOptions } from "@/lib/hooks/use-prescriptions";
 export type PatientTabSegment =
   | ""
   | "consultations"
+  | "tasks"
   | "prescriptions"
   | "documents"
   | "clinical"
@@ -21,6 +23,7 @@ export type PatientTabSegment =
 const PATIENT_TAB_SEGMENTS: PatientTabSegment[] = [
   "",
   "consultations",
+  "tasks",
   "prescriptions",
   "documents",
   "clinical",
@@ -55,6 +58,14 @@ export function prefetchPatientTab(
       ]);
     case "consultations":
       return queryClient.prefetchQuery(consultationsQueryOptions(patientId));
+    case "tasks":
+      return queryClient.prefetchQuery(
+        patientTasksQueryOptions(patientId, {
+          status: ["open", "in_progress"],
+          sort: "dueAt",
+          order: "asc",
+        })
+      );
     case "prescriptions":
       return queryClient.prefetchQuery(prescriptionsQueryOptions(patientId));
     case "documents":

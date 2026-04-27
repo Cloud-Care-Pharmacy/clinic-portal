@@ -32,6 +32,12 @@ const statusToVariant: Record<string, StatusVariant> = {
   received: "info",
   uploaded: "info",
   scheduled: "info",
+  open: "warning",
+  in_progress: "info",
+  urgent: "danger",
+  high: "warning",
+  normal: "info",
+  low: "neutral",
 };
 
 interface StatusBadgeProps {

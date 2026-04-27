@@ -11,6 +11,7 @@ import type {
   LatestClinicalDataResponse,
   ParchmentPrescriptionsResponse,
   PatientNotesResponse,
+  TasksListResponse,
 } from "@/types";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
@@ -18,6 +19,7 @@ import { usePatientNotes } from "@/lib/hooks/use-notes";
 import { useLatestClinicalData } from "@/lib/hooks/use-patients";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PatientEditSheet } from "@/components/patients/ProfileTab";
+import { PatientTasksOverviewCard } from "@/components/tasks/PatientTasksOverviewCard";
 import { usePatientShell } from "../PatientShellContext";
 import { formatPrescriptionReference } from "@/components/prescriptions/PrescriptionDetailSheet";
 
@@ -131,6 +133,7 @@ interface OverviewTabProps {
   initialPrescriptions?: ParchmentPrescriptionsResponse;
   initialNotes?: PatientNotesResponse;
   initialLatestClinical?: LatestClinicalDataResponse;
+  initialTasks?: TasksListResponse;
 }
 
 export function OverviewTab({
@@ -139,6 +142,7 @@ export function OverviewTab({
   initialPrescriptions,
   initialNotes,
   initialLatestClinical,
+  initialTasks,
 }: OverviewTabProps) {
   const { patient } = usePatientShell();
   const [editPatientOpen, setEditPatientOpen] = useState(false);
@@ -226,6 +230,10 @@ export function OverviewTab({
     <>
       <div className="grid grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
         {/* ── LEFT COLUMN ── */}
+
+        <div className="col-span-12">
+          <PatientTasksOverviewCard patientId={patientId} initialTasks={initialTasks} />
+        </div>
 
         {/* Recent consultations — span-8 */}
         <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">

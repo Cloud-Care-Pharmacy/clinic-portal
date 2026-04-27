@@ -191,6 +191,8 @@ export interface SubmissionResult {
   email?: string;
   documentId?: string;
   isNewPatient?: boolean;
+  createdTaskIds?: string[];
+  createdTaskCount?: number;
 }
 
 // ============================================
@@ -548,6 +550,138 @@ export interface ConsultationsListResponse {
   };
 }
 
+// ============================================
+// Patient Task types (prescription-gateway: automated intake tasks)
+// ============================================
+
+export type TaskStatus = "open" | "in_progress" | "completed" | "cancelled";
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+export type TaskType =
+  | "review_intake"
+  | "schedule_consultation"
+  | "verify_identity"
+  | "request_missing_information"
+  | "clinical_follow_up"
+  | "manual";
+
+export type TaskSortField = "dueAt" | "createdAt" | "updatedAt" | "priority" | "status";
+
+export interface Task {
+  taskId: string;
+  entityId: string;
+  patientId: string;
+  patientName?: string | null;
+  source: "intake" | "manual" | "system" | string;
+  sourceEntityType?: string | null;
+  sourceEntityId?: string | null;
+  taskType: TaskType;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
+  assignedRole?: UserRole | null;
+  dueAt?: string | null;
+  metadata?: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+  completedBy?: string | null;
+  cancelledAt?: string | null;
+  cancelledBy?: string | null;
+}
+
+export interface TaskEvent {
+  eventId: string;
+  entityId: string;
+  taskId: string;
+  patientId: string;
+  eventType:
+    | "task-created"
+    | "task-assigned"
+    | "task-started"
+    | "task-completed"
+    | "task-cancelled"
+    | "task-updated";
+  actorUserId?: string | null;
+  actorName?: string | null;
+  actorRole?: UserRole | "system" | null;
+  source: "system" | "user" | "intake" | string;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface TasksQuery {
+  status?: TaskStatus | TaskStatus[];
+  priority?: TaskPriority | TaskPriority[];
+  taskType?: TaskType | TaskType[];
+  patientId?: string;
+  assignedUserId?: string;
+  assignedRole?: UserRole | UserRole[];
+  dueBefore?: string;
+  createdAfter?: string;
+  search?: string;
+  sort?: TaskSortField;
+  order?: SortOrder;
+  limit?: number;
+  offset?: number;
+}
+
+export interface TasksListResponse {
+  success: boolean;
+  data: {
+    patientId?: string;
+    tasks: Task[];
+    pagination?: { limit: number; offset: number; total: number };
+    filters?: Partial<TasksQuery>;
+  };
+}
+
+export interface TaskResponse {
+  success: boolean;
+  data: {
+    task: Task;
+    events?: TaskEvent[];
+  };
+}
+
+export interface TaskSummary {
+  openTaskCount: number;
+  inProgressTaskCount: number;
+  overdueTaskCount: number;
+  urgentTaskCount: number;
+  newIntakeTaskCount: number;
+}
+
+export interface TaskSummaryResponse {
+  success: boolean;
+  data: TaskSummary;
+}
+
+export interface CreateTaskPayload {
+  patientId: string;
+  taskType: TaskType;
+  title: string;
+  description?: string | null;
+  priority?: TaskPriority;
+  assignedUserId?: string | null;
+  assignedRole?: UserRole | null;
+  dueAt?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateTaskPayload {
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  assignedUserId?: string | null;
+  assignedRole?: UserRole | null;
+  dueAt?: string | null;
+  note?: string;
+}
+
 export interface Staff {
   id: string;
   name: string;
@@ -718,6 +852,11 @@ export type ActivityEventType =
   | "consultation-scheduled"
   | "consultation-completed"
   | "consultation-updated"
+  | "task-created"
+  | "task-assigned"
+  | "task-started"
+  | "task-completed"
+  | "task-cancelled"
   | "note-added"
   | "note-updated"
   | "note-deleted"
@@ -732,6 +871,7 @@ export type ActivityEventType =
 
 export type ActivityEventCategory =
   | "consultations"
+  | "tasks"
   | "notes"
   | "prescriptions"
   | "documents"
@@ -739,6 +879,7 @@ export type ActivityEventCategory =
 
 export type ActivityEntityType =
   | "consultation"
+  | "task"
   | "note"
   | "prescription"
   | "document"

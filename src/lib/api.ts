@@ -38,6 +38,12 @@ import type {
   EntityPrescriptionSummaryResponse,
   UpdateUserAvailabilityPayload,
   UserAvailabilityResponse,
+  CreateTaskPayload,
+  TaskResponse,
+  TasksListResponse,
+  TasksQuery,
+  TaskSummaryResponse,
+  UpdateTaskPayload,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
@@ -47,10 +53,32 @@ function categoryForActivityEntity(
   entityType: PatientActivityResponse["data"]["events"][number]["entityType"]
 ): PatientActivityResponse["data"]["events"][number]["category"] {
   if (entityType === "consultation") return "consultations";
+  if (entityType === "task") return "tasks";
   if (entityType === "note") return "notes";
   if (entityType === "prescription") return "prescriptions";
   if (entityType === "document") return "documents";
   return "system";
+}
+
+function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
+  const appendValue = (key: string, value?: string | string[]) => {
+    if (!value) return;
+    params.set(key, Array.isArray(value) ? value.join(",") : value);
+  };
+
+  appendValue("status", opts?.status);
+  appendValue("priority", opts?.priority);
+  appendValue("taskType", opts?.taskType);
+  appendValue("assignedRole", opts?.assignedRole);
+  if (opts?.patientId) params.set("patientId", opts.patientId);
+  if (opts?.assignedUserId) params.set("assignedUserId", opts.assignedUserId);
+  if (opts?.dueBefore) params.set("dueBefore", opts.dueBefore);
+  if (opts?.createdAfter) params.set("createdAfter", opts.createdAfter);
+  if (opts?.search) params.set("search", opts.search);
+  if (opts?.sort) params.set("sort", opts.sort);
+  if (opts?.order) params.set("order", opts.order);
+  if (opts?.limit) params.set("limit", String(opts.limit));
+  if (opts?.offset) params.set("offset", String(opts.offset));
 }
 
 class ApiClient {
@@ -207,6 +235,57 @@ class ApiClient {
         })),
       },
     };
+  }
+
+  // ---- Patient Tasks ----
+
+  async getTasks(opts?: TasksQuery): Promise<TasksListResponse> {
+    const params = new URLSearchParams();
+    appendTaskQueryParams(params, opts);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/tasks${qs}`);
+  }
+
+  async getPatientTasks(
+    patientId: string,
+    opts?: Omit<TasksQuery, "patientId">
+  ): Promise<TasksListResponse> {
+    const params = new URLSearchParams();
+    appendTaskQueryParams(params, opts);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/patients/${encodeURIComponent(patientId)}/tasks${qs}`);
+  }
+
+  async getTask(taskId: string): Promise<TaskResponse> {
+    return this.request(`/api/tasks/${encodeURIComponent(taskId)}`);
+  }
+
+  async createTask(data: CreateTaskPayload): Promise<TaskResponse> {
+    return this.request("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTask(taskId: string, data: UpdateTaskPayload): Promise<TaskResponse> {
+    return this.request(`/api/tasks/${encodeURIComponent(taskId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async completeTask(
+    taskId: string,
+    data?: { note?: string; outcome?: string }
+  ): Promise<TaskResponse> {
+    return this.request(`/api/tasks/${encodeURIComponent(taskId)}/complete`, {
+      method: "POST",
+      body: JSON.stringify(data ?? {}),
+    });
+  }
+
+  async getTaskSummary(): Promise<TaskSummaryResponse> {
+    return this.request("/api/tasks/summary");
   }
 
   // ---- Clinical Data ----

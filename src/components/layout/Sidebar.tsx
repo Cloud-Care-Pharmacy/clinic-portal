@@ -9,6 +9,7 @@ import {
   Users,
   FileText,
   Calendar,
+  ClipboardCheck,
   Shield,
   LogOut,
   Menu,
@@ -48,6 +49,11 @@ const generalNav: NavItem[] = [
     label: "Patients",
     href: "/patients",
     icon: <Users className="h-5 w-5" />,
+  },
+  {
+    label: "Tasks",
+    href: "/tasks",
+    icon: <ClipboardCheck className="h-5 w-5" />,
   },
   {
     label: "Prescriptions",

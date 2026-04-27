@@ -4,6 +4,7 @@ import type {
   ParchmentPrescriptionsResponse,
   PatientCountsResponse,
   PatientMapping,
+  TasksListResponse,
 } from "@/types";
 
 export interface PatientShellInitialData {
@@ -12,4 +13,5 @@ export interface PatientShellInitialData {
   counts?: PatientCountsResponse;
   prescriptions?: ParchmentPrescriptionsResponse;
   consultations?: ConsultationsListResponse;
+  tasks?: TasksListResponse;
 }

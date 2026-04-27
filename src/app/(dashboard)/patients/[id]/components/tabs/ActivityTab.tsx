@@ -16,6 +16,7 @@ import {
   CalendarPlus,
   FileCheck,
   FileX,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -29,6 +30,11 @@ const EVENT_ICONS: Record<ActivityEventType, React.ReactNode> = {
   "consultation-scheduled": <CalendarPlus className="h-4 w-4" />,
   "consultation-completed": <Stethoscope className="h-4 w-4" />,
   "consultation-updated": <Stethoscope className="h-4 w-4" />,
+  "task-created": <ClipboardCheck className="h-4 w-4" />,
+  "task-assigned": <ClipboardCheck className="h-4 w-4" />,
+  "task-started": <ClipboardCheck className="h-4 w-4" />,
+  "task-completed": <ClipboardCheck className="h-4 w-4" />,
+  "task-cancelled": <ClipboardCheck className="h-4 w-4" />,
   "note-added": <StickyNote className="h-4 w-4" />,
   "note-updated": <StickyNote className="h-4 w-4" />,
   "note-deleted": <StickyNote className="h-4 w-4" />,
@@ -44,6 +50,7 @@ const EVENT_ICONS: Record<ActivityEventType, React.ReactNode> = {
 
 const EVENT_TILE_CLASSES: Record<ActivityEventCategory, string> = {
   consultations: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  tasks: "bg-status-warning-bg text-status-warning-fg border-status-warning-border",
   notes: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
   prescriptions:
     "bg-status-accent-bg text-status-accent-fg border-status-accent-border",
@@ -55,6 +62,7 @@ type ActivityFilter = "all" | ActivityEventCategory;
 
 const FILTER_OPTIONS: { label: string; value: ActivityFilter }[] = [
   { label: "All", value: "all" },
+  { label: "Tasks", value: "tasks" },
   { label: "Notes", value: "notes" },
   { label: "Consults", value: "consultations" },
   { label: "Rx", value: "prescriptions" },

@@ -43,3 +43,13 @@ export const getPatientDocuments = cache((patientId: string) =>
 export const getPatientActivity = cache((patientId: string, limit = 50, offset = 0) =>
   api.getPatientActivity(patientId, { limit, offset })
 );
+
+export const getPatientTasks = cache((patientId: string, limit = 50, offset = 0) =>
+  api.getPatientTasks(patientId, {
+    limit,
+    offset,
+    status: ["open", "in_progress"],
+    sort: "dueAt",
+    order: "asc",
+  })
+);

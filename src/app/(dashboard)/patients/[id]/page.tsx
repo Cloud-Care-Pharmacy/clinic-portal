@@ -9,6 +9,7 @@ import {
   getPatientConsultations,
   getPatientNotes,
   getPatientPrescriptions,
+  getPatientTasks,
 } from "./server-fetchers";
 
 export default async function PatientOverviewPage({
@@ -18,12 +19,13 @@ export default async function PatientOverviewPage({
 }) {
   const { id } = await params;
 
-  const [consultations, prescriptions, notes, latestClinical] =
+  const [consultations, prescriptions, notes, latestClinical, tasks] =
     await Promise.allSettled([
       getPatientConsultations(id, 50),
       getPatientPrescriptions(id),
       getPatientNotes(id),
       getLatestClinicalData(id),
+      getPatientTasks(id, 5),
     ]);
 
   const initialPrescriptions =
@@ -44,6 +46,7 @@ export default async function PatientOverviewPage({
       initialLatestClinical={
         latestClinical.status === "fulfilled" ? latestClinical.value : undefined
       }
+      initialTasks={tasks.status === "fulfilled" ? tasks.value : undefined}
     />
   );
 }

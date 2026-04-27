@@ -12,18 +12,20 @@ import {
   getPatientConsultations,
   getPatientCounts,
   getPatientPrescriptions,
+  getPatientTasks,
 } from "./server-fetchers";
 
 async function getPatientShellInitialData(
   patientId: string
 ): Promise<PatientShellInitialData> {
-  const [patient, latestClinical, counts, prescriptions, consultations] =
+  const [patient, latestClinical, counts, prescriptions, consultations, tasks] =
     await Promise.allSettled([
       getPatient(patientId),
       getLatestClinicalData(patientId),
       getPatientCounts(patientId),
       getPatientPrescriptions(patientId),
       getPatientConsultations(patientId, 50),
+      getPatientTasks(patientId, 5),
     ]);
   const initialData: PatientShellInitialData = {};
 
@@ -57,6 +59,10 @@ async function getPatientShellInitialData(
 
   if (consultations.status === "fulfilled") {
     initialData.consultations = consultations.value;
+  }
+
+  if (tasks.status === "fulfilled") {
+    initialData.tasks = tasks.value;
   }
 
   return initialData;
