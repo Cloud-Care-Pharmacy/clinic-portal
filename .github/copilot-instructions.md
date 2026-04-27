@@ -2,7 +2,7 @@
 
 ## Design System
 
-**IMPORTANT:** Before creating or modifying any UI component, page, or layout, always consult the design system reference files in `.github/design/`:
+**IMPORTANT:** Before creating or modifying any UI component, page, section, dashboard section, or layout, always consult the design system reference files in `.github/design/`:
 
 - `.github/design/README.md` — Overview and quick-start
 - `.github/design/IMPLEMENTATION_GUIDE.md` — Detailed implementation patterns
@@ -11,7 +11,7 @@
 - `.github/design/tokens.json` — Design tokens (colors, spacing, typography)
 - `.github/design/design_system.html` — Visual reference for all components
 
-All UI work must follow the design system. When in doubt, check the design files first.
+This is mandatory when developing new sections or updating any layout, including page structure, spacing, grids, cards, navigation, and responsive behavior. All UI work must follow the design system. When in doubt, check the design files first.
 
 ## Overview
 
@@ -129,6 +129,7 @@ Browser → Next.js App → /api/proxy/[...path] → prescription-gateway (Cloud
 
 - Use `@/` path alias for all imports (maps to `src/`)
 - Prefer named exports over default exports (except page/layout components)
+- Before developing new sections or updating any layout, check `.github/design/` and follow the design guidelines.
 - Use `"use client"` directive only when component needs browser APIs, hooks, or interactivity
 - Keep Server Components as the default — push `"use client"` to the leaf
 - Use `cn()` utility from `@/lib/utils` for conditional class merging
