@@ -41,6 +41,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { matchesSearchQuery } from "@/lib/table-search";
 import { useDeletePatient } from "@/lib/hooks/use-patients";
 import type { PatientMapping, PatientPmsStatusFilter } from "@/types";
 
@@ -173,6 +174,44 @@ export function PatientTable({
     navigator.clipboard.writeText(email);
   }, []);
 
+  const hasActiveFilters = Boolean(searchQuery.trim()) || statusFilters.length > 0;
+  const visiblePatients = useMemo(
+    () =>
+      patients.filter((patient) => {
+        const pmsStatus: PatientPmsStatusFilter = patient.halaxyPatientId
+          ? "linked"
+          : "pending";
+
+        if (statusFilters.length > 0 && !statusFilters.includes(pmsStatus)) {
+          return false;
+        }
+
+        return matchesSearchQuery(searchQuery, [
+          patient.firstName,
+          patient.lastName,
+          [patient.firstName, patient.lastName].filter(Boolean).join(" "),
+          patient.originalEmail,
+          patient.generatedEmail,
+          patient.mobile,
+          patient.dateOfBirth,
+          patient.halaxyPatientId,
+          patient.pbsPatientId,
+          patient.city,
+          patient.state,
+          patient.postcode,
+          patient.country,
+          patient.medicareNumber,
+          pmsStatus === "linked" ? "linked" : "pending",
+        ]);
+      }),
+    [patients, searchQuery, statusFilters]
+  );
+
+  const clearFilters = useCallback(() => {
+    onSearchChange("");
+    onStatusFiltersChange([]);
+  }, [onSearchChange, onStatusFiltersChange]);
+
   const columns: GridColDef<PatientMapping>[] = [
     {
       field: "patientName",
@@ -289,7 +328,52 @@ export function PatientTable({
     return true;
   });
 
-  if (!loading && patients.length === 0) {
+  const toolbar = (
+    <FilterBar
+      searchPlaceholder="Filter patients…"
+      searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
+      filters={statusFilterDefs}
+      resultCount={
+        hasActiveFilters ? visiblePatients.length : (total ?? patients.length)
+      }
+      resultLabel="patients"
+      trailing={
+        <>
+          <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
+            <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
+              <SlidersHorizontal className="size-4 text-muted-foreground" />
+              View
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={4} className="w-60">
+              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map((key) => (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={columnVisibility[key]}
+                  onClick={() =>
+                    setColumnVisibility((prev) => ({
+                      ...prev,
+                      [key]: !prev[key],
+                    }))
+                  }
+                >
+                  {COLUMN_LABELS[key]}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Link href="/patients/new">
+            <Button size="sm" className="h-9">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Patient
+            </Button>
+          </Link>
+        </>
+      }
+    />
+  );
+
+  if (!loading && patients.length === 0 && !hasActiveFilters) {
     return (
       <EmptyState
         title="No patients yet"
@@ -300,53 +384,27 @@ export function PatientTable({
     );
   }
 
+  if (!loading && visiblePatients.length === 0) {
+    return (
+      <div style={{ width: "100%" }}>
+        {toolbar}
+        <EmptyState
+          title="No patients match your filters"
+          description="Adjust or clear the search and filters to see more records."
+          actionLabel="Clear filters"
+          onAction={clearFilters}
+          dashed
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100%" }}>
-      <FilterBar
-        searchPlaceholder="Filter patients…"
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        filters={statusFilterDefs}
-        resultCount={total ?? patients.length}
-        resultLabel="patients"
-        trailing={
-          <>
-            <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
-              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
-                <SlidersHorizontal className="size-4 text-muted-foreground" />
-                View
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" sideOffset={4} className="w-60">
-                {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
-                  (key) => (
-                    <DropdownMenuCheckboxItem
-                      key={key}
-                      checked={columnVisibility[key]}
-                      onClick={() =>
-                        setColumnVisibility((prev) => ({
-                          ...prev,
-                          [key]: !prev[key],
-                        }))
-                      }
-                    >
-                      {COLUMN_LABELS[key]}
-                    </DropdownMenuCheckboxItem>
-                  )
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Link href="/patients/new">
-              <Button size="sm" className="h-9">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Patient
-              </Button>
-            </Link>
-          </>
-        }
-      />
+      {toolbar}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
-          rows={patients}
+          rows={visiblePatients}
           columns={visibleColumns}
           loading={loading}
           autoHeight

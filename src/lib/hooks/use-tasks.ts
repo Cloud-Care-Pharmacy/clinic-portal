@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQuery,
@@ -172,6 +173,7 @@ export function tasksQueryOptions(opts?: TasksQuery) {
   return queryOptions({
     queryKey: taskQueryKey("tasks", opts),
     queryFn: () => fetchTasks(opts),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -182,6 +184,7 @@ export function patientTasksQueryOptions(
   return queryOptions({
     queryKey: taskQueryKey("patient-tasks", { ...opts, patientId }),
     queryFn: () => fetchPatientTasks(patientId, opts),
+    placeholderData: keepPreviousData,
   });
 }
 

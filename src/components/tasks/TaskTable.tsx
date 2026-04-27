@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType, ReactNode } from "react";
+import { useMemo, type ComponentType, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -26,6 +26,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { matchesSearchQuery } from "@/lib/table-search";
 import type { Task, TaskPriority, TaskStatus, TaskType, UserRole } from "@/types";
 import {
   formatTaskDueRelative,
@@ -206,6 +207,65 @@ export function TaskTable({
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
   trailing,
 }: TaskTableProps) {
+  const hasActiveFilters =
+    Boolean(searchQuery.trim()) ||
+    statusFilters.length > 0 ||
+    priorityFilters.length > 0 ||
+    typeFilters.length > 0 ||
+    roleFilters.length > 0;
+
+  const visibleTasks = useMemo(
+    () =>
+      tasks.filter((task) => {
+        if (statusFilters.length > 0 && !statusFilters.includes(task.status)) {
+          return false;
+        }
+        if (priorityFilters.length > 0 && !priorityFilters.includes(task.priority)) {
+          return false;
+        }
+        if (typeFilters.length > 0 && !typeFilters.includes(task.taskType)) {
+          return false;
+        }
+        if (
+          roleFilters.length > 0 &&
+          (!task.assignedRole || !roleFilters.includes(task.assignedRole))
+        ) {
+          return false;
+        }
+
+        return matchesSearchQuery(searchQuery, [
+          task.title,
+          getTaskDisplayTitle(task.taskType, task.title),
+          task.description,
+          task.patientName,
+          task.patientId,
+          task.taskId,
+          task.source,
+          task.assignedUserName,
+          assigneeLabel(task),
+          task.assignedRole ? formatRole(task.assignedRole) : undefined,
+          TASK_STATUS_LABELS[task.status],
+          TASK_PRIORITY_LABELS[task.priority],
+          TASK_TYPE_LABELS[task.taskType],
+          task.status,
+          task.priority,
+          task.taskType,
+          task.dueAt,
+          task.createdAt,
+          task.metadata,
+        ]);
+      }),
+    [priorityFilters, roleFilters, searchQuery, statusFilters, tasks, typeFilters]
+  );
+
+  const clearFilters = () => {
+    onSearchChange("");
+    onStatusFiltersChange([]);
+    onPriorityFiltersChange([]);
+    onTypeFiltersChange([]);
+    onRoleFiltersChange([]);
+  };
+
   const filters: FilterDefinition[] = [
     {
       key: "status",
@@ -387,13 +447,13 @@ export function TaskTable({
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
       filters={filters}
-      resultCount={total ?? tasks.length}
+      resultCount={hasActiveFilters ? visibleTasks.length : (total ?? tasks.length)}
       resultLabel="tasks"
       trailing={trailing}
     />
   );
 
-  if (!loading && tasks.length === 0) {
+  if (!loading && tasks.length === 0 && !hasActiveFilters) {
     return (
       <div style={{ width: "100%" }}>
         {toolbar}
@@ -407,12 +467,28 @@ export function TaskTable({
     );
   }
 
+  if (!loading && visibleTasks.length === 0) {
+    return (
+      <div style={{ width: "100%" }}>
+        {toolbar}
+        <EmptyState
+          icon={ClipboardCheck}
+          title="No tasks match your filters"
+          description="Adjust or clear the search and filters to see more records."
+          actionLabel="Clear filters"
+          onAction={clearFilters}
+          dashed
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100%" }}>
       {toolbar}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <DataGrid
-          rows={tasks}
+          rows={visibleTasks}
           columns={columns}
           getRowId={(row) => row.taskId}
           loading={loading}

@@ -8,6 +8,7 @@ import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar"
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { matchesSearchQuery } from "@/lib/table-search";
 import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
 
 interface ConsultationTableProps {
@@ -54,6 +55,44 @@ export function ConsultationTable({
   typeFilters,
   onTypeFiltersChange,
 }: ConsultationTableProps) {
+  const hasActiveFilters =
+    Boolean(searchQuery.trim()) || statusFilters.length > 0 || typeFilters.length > 0;
+
+  const visibleConsultations = useMemo(
+    () =>
+      consultations.filter((consultation) => {
+        if (statusFilters.length > 0 && !statusFilters.includes(consultation.status)) {
+          return false;
+        }
+        if (typeFilters.length > 0 && !typeFilters.includes(consultation.type)) {
+          return false;
+        }
+
+        return matchesSearchQuery(searchQuery, [
+          consultation.patientName,
+          consultation.doctorName,
+          consultation.patientId,
+          consultation.doctorId,
+          consultation.id,
+          consultation.status,
+          consultation.status.replace("-", " "),
+          consultation.type,
+          consultation.type.replace("-", " "),
+          consultation.scheduledAt,
+          consultation.completedAt,
+          consultation.notes,
+          consultation.outcome,
+        ]);
+      }),
+    [consultations, searchQuery, statusFilters, typeFilters]
+  );
+
+  const clearFilters = () => {
+    onSearchChange("");
+    onStatusFiltersChange([]);
+    onTypeFiltersChange([]);
+  };
+
   const filters: FilterDefinition[] = useMemo(
     () => [
       {
@@ -124,7 +163,20 @@ export function ConsultationTable({
     },
   ];
 
-  if (!loading && consultations.length === 0) {
+  const toolbar = (
+    <FilterBar
+      searchPlaceholder="Search consultations…"
+      searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
+      filters={filters}
+      resultCount={
+        hasActiveFilters ? visibleConsultations.length : (total ?? consultations.length)
+      }
+      resultLabel="consultations"
+    />
+  );
+
+  if (!loading && consultations.length === 0 && !hasActiveFilters) {
     return (
       <EmptyState
         title="No consultations yet"
@@ -135,19 +187,27 @@ export function ConsultationTable({
     );
   }
 
+  if (!loading && visibleConsultations.length === 0) {
+    return (
+      <div style={{ width: "100%" }}>
+        {toolbar}
+        <EmptyState
+          title="No consultations match your filters"
+          description="Adjust or clear the search and filters to see more records."
+          actionLabel="Clear filters"
+          onAction={clearFilters}
+          dashed
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ width: "100%" }}>
-      <FilterBar
-        searchPlaceholder="Search consultations…"
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        filters={filters}
-        resultCount={total ?? consultations.length}
-        resultLabel="consultations"
-      />
+      {toolbar}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <DataGrid
-          rows={consultations}
+          rows={visibleConsultations}
           columns={columns}
           loading={loading}
           autoHeight
