@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Loader2, SquarePen } from "lucide-react";
 import { toast } from "sonner";
@@ -33,17 +33,11 @@ export function ParchmentRedirectDialog({
 }: ParchmentRedirectDialogProps) {
   const mutation = useCreateParchmentPrescriptionLink();
   const queryClient = useQueryClient();
-  // Pre-opened tab reference — opened synchronously on click to avoid popup blockers.
-  const pendingTabRef = useRef<Window | null>(null);
 
   // Reset mutation state when the dialog closes so a fresh attempt is possible next time.
   useEffect(() => {
     if (!open) {
       mutation.reset();
-      if (pendingTabRef.current && !pendingTabRef.current.closed) {
-        pendingTabRef.current.close();
-      }
-      pendingTabRef.current = null;
     }
   }, [open, mutation]);
 
@@ -52,45 +46,40 @@ export function ParchmentRedirectDialog({
   function handleAcknowledge() {
     if (!patientId || isLoading) return;
 
-    // Open a blank tab synchronously inside the user gesture to bypass popup blockers.
-    // We update its location once Parchment returns the prescriber URL.
-    pendingTabRef.current = window.open("about:blank", "_blank");
-
     mutation.mutate(patientId, {
       onSuccess: (response) => {
         const parchmentPatientId = response.data?.parchmentPatientId;
         if (!parchmentPatientId) {
           toast.error("Parchment did not return a patient identifier");
-          if (pendingTabRef.current) pendingTabRef.current.close();
-          pendingTabRef.current = null;
           return;
         }
         const url = buildParchmentPatientUrl(parchmentPatientId);
-        if (pendingTabRef.current && !pendingTabRef.current.closed) {
-          pendingTabRef.current.location.href = url;
-          pendingTabRef.current.focus();
+        // Open the Parchment tab once we have the URL ready.
+        // Some browsers may block this if the API call took too long; we surface a
+        // fallback toast with a manual link in that case.
+        const opened = window.open(url, "_blank", "noopener,noreferrer");
+        if (!opened) {
+          toast.error("Your browser blocked the new tab. Allow popups and try again.", {
+            action: {
+              label: "Open Parchment",
+              onClick: () => window.open(url, "_blank", "noopener,noreferrer"),
+            },
+          });
         } else {
-          // Tab was blocked or closed — fall back to a normal open.
-          window.open(url, "_blank", "noopener,noreferrer");
+          toast.success(
+            response.data?.created
+              ? "Patient created in Parchment"
+              : "Opened Parchment in a new tab"
+          );
         }
-        pendingTabRef.current = null;
         // Refresh patient details so the newly linked Parchment ID is reflected locally.
         if (response.data?.created) {
           queryClient.invalidateQueries({ queryKey: ["patient", patientId] });
           queryClient.invalidateQueries({ queryKey: ["patients"] });
         }
-        toast.success(
-          response.data?.created
-            ? "Patient created in Parchment"
-            : "Opened Parchment in a new tab"
-        );
         onOpenChange(false);
       },
       onError: (error) => {
-        if (pendingTabRef.current && !pendingTabRef.current.closed) {
-          pendingTabRef.current.close();
-        }
-        pendingTabRef.current = null;
         toast.error(
           error instanceof Error
             ? error.message
