@@ -18,7 +18,22 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { Separator } from "@/components/ui/separator";
 import { useClinicalData, useApproveClinicalRecord } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
+import {
+  formatSlugList,
+  highRiskMedLabel,
+  medicalConditionLabel,
+  quitMethodLabel,
+  quitMotivationLabel,
+  smokingStatusLabel,
+  vapingStatusLabel,
+} from "@/components/patients/clinical-labels";
 import type { ClinicalDataListResponse, ClinicalDataRecord, UserRole } from "@/types";
+
+function nonEmpty(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-AU", {
@@ -74,112 +89,162 @@ function IntakeFormSheet({
     title: string;
     fields: { label: string; value: string }[];
   }[] = record
-    ? [
-        {
-          title: "SMOKING STATUS",
-          fields: [
-            { label: "Smoking status", value: record.smokingStatus },
-            ...(record.cigarettesPerDay
-              ? [{ label: "Cigarettes per day", value: record.cigarettesPerDay }]
-              : []),
-            ...(record.yearsSmoked
-              ? [{ label: "Years smoked", value: record.yearsSmoked }]
-              : []),
-            ...(record.timesTriedQuitting
-              ? [{ label: "Quit attempts", value: record.timesTriedQuitting }]
-              : []),
-            ...(record.lastCigarette
-              ? [{ label: "Last cigarette", value: record.lastCigarette }]
-              : []),
-          ],
-        },
-        {
-          title: "VAPING STATUS",
-          fields: [
-            { label: "Vaping status", value: record.vapingStatus },
-            ...(record.vapingMethod
-              ? [{ label: "Method", value: record.vapingMethod }]
-              : []),
-            ...(record.vapingStrength
-              ? [{ label: "Strength", value: record.vapingStrength }]
-              : []),
-            ...(record.vapingVolume
-              ? [{ label: "Volume", value: record.vapingVolume }]
-              : []),
-          ],
-        },
-        {
-          title: "MEDICAL CONDITIONS",
-          fields: [
-            {
-              label: "Has conditions",
-              value: record.hasMedicalConditions === "yes" ? "Yes" : "No",
-            },
-            ...(record.medicalConditions?.length
-              ? [
-                  {
-                    label: "Conditions",
-                    value: record.medicalConditions.join(", "),
-                  },
-                ]
-              : []),
-            ...(record.medicalConditionsOther
-              ? [
-                  {
-                    label: "Other conditions",
-                    value: record.medicalConditionsOther,
-                  },
-                ]
-              : []),
-          ],
-        },
-        {
-          title: "MEDICATIONS",
-          fields: [
-            {
-              label: "Takes medication",
-              value: record.takesMedication === "yes" ? "Yes" : "No",
-            },
-            ...(record.highRiskMedications?.length
-              ? [
-                  {
-                    label: "High-risk medications",
-                    value: record.highRiskMedications.join(", "),
-                  },
-                ]
-              : []),
-            ...(record.medicationsList
-              ? [{ label: "Medications list", value: record.medicationsList }]
-              : []),
-          ],
-        },
-        {
-          title: "RISK FACTORS",
-          fields: [
-            {
-              label: "Cardiovascular",
-              value: record.cardiovascular === "yes" ? "Yes" : "No",
-            },
-            {
-              label: "Pregnancy",
-              value:
-                record.pregnancy === "yes"
-                  ? "Yes"
-                  : record.pregnancy === "na"
-                    ? "N/A"
-                    : "No",
-            },
-          ],
-        },
-        ...(record.additionalNotes
-          ? [
+    ? (() => {
+        const isSmoker = record.smokingStatus !== "never-smoked-or-vaped";
+        const isVaping = record.vapingStatus === "yes";
+        const conditionsIncludeOther = record.medicalConditions?.includes("other");
+        const medsIncludeOther = record.highRiskMedications?.includes("other");
+
+        const quitMethodNotes = nonEmpty(record.quitMethodExplanation);
+        const vapingNotes = nonEmpty(record.vapingNotes);
+        const conditionsOther = nonEmpty(record.medicalConditionsOther);
+        const medicationsList = nonEmpty(record.medicationsList);
+        const additionalNotes = nonEmpty(record.additionalNotes);
+
+        return [
+          {
+            title: "SMOKING STATUS",
+            fields: [
               {
-                title: "ADDITIONAL NOTES",
-                fields: [{ label: "Notes", value: record.additionalNotes }],
+                label: "Smoking status",
+                value: smokingStatusLabel(record.smokingStatus),
               },
-            ]
-          : []),
-      ]
+              ...(isSmoker && record.cigarettesPerDay
+                ? [{ label: "Cigarettes per day", value: record.cigarettesPerDay }]
+                : []),
+              ...(isSmoker && record.yearsSmoked
+                ? [{ label: "Years smoked", value: record.yearsSmoked }]
+                : []),
+              ...(isSmoker && record.timesTriedQuitting
+                ? [{ label: "Quit attempts", value: record.timesTriedQuitting }]
+                : []),
+              ...(isSmoker && record.quitMotivation?.length
+                ? [
+                    {
+                      label: "Quit motivation",
+                      value: formatSlugList(record.quitMotivation, quitMotivationLabel),
+                    },
+                  ]
+                : []),
+              ...(isSmoker && record.quitMethods?.length
+                ? [
+                    {
+                      label: "Quit methods",
+                      value: formatSlugList(record.quitMethods, quitMethodLabel),
+                    },
+                  ]
+                : []),
+              ...(isSmoker && quitMethodNotes
+                ? [{ label: "Quit method notes", value: quitMethodNotes }]
+                : []),
+              ...(isSmoker && record.lastCigarette
+                ? [{ label: "Last cigarette", value: record.lastCigarette }]
+                : []),
+            ],
+          },
+          {
+            title: "VAPING STATUS",
+            fields: [
+              {
+                label: "Vaping status",
+                value: vapingStatusLabel(record.vapingStatus),
+              },
+              ...(isVaping && record.vapingMethod
+                ? [{ label: "Method", value: record.vapingMethod }]
+                : []),
+              ...(isVaping && record.vapingStrength
+                ? [{ label: "Strength", value: record.vapingStrength }]
+                : []),
+              ...(isVaping && record.vapingVolume
+                ? [{ label: "Volume", value: record.vapingVolume }]
+                : []),
+              ...(isVaping && vapingNotes
+                ? [{ label: "Notes", value: vapingNotes }]
+                : []),
+            ],
+          },
+          {
+            title: "MEDICAL CONDITIONS",
+            fields: [
+              {
+                label: "Has conditions",
+                value: record.hasMedicalConditions === "yes" ? "Yes" : "No",
+              },
+              ...(record.medicalConditions?.length
+                ? [
+                    {
+                      label: "Conditions",
+                      value: formatSlugList(
+                        record.medicalConditions,
+                        medicalConditionLabel
+                      ),
+                    },
+                  ]
+                : []),
+              ...(conditionsIncludeOther && conditionsOther
+                ? [{ label: "Other", value: conditionsOther }]
+                : []),
+            ],
+          },
+          {
+            title: "MEDICATIONS",
+            fields: [
+              {
+                label: "Takes medication",
+                value: record.takesMedication === "yes" ? "Yes" : "No",
+              },
+              ...(record.highRiskMedications?.length
+                ? [
+                    {
+                      label: "High-risk medications",
+                      value: formatSlugList(
+                        record.highRiskMedications,
+                        highRiskMedLabel
+                      ),
+                    },
+                  ]
+                : []),
+              ...(medsIncludeOther && medicationsList
+                ? [{ label: "Medications list", value: medicationsList }]
+                : []),
+            ],
+          },
+          {
+            title: "RISK FACTORS",
+            fields: [
+              {
+                label: "Cardiovascular",
+                value: record.cardiovascular === "yes" ? "Yes" : "No",
+              },
+              {
+                label: "Pregnancy",
+                value:
+                  record.pregnancy === "yes"
+                    ? "Yes"
+                    : record.pregnancy === "na"
+                      ? "N/A"
+                      : "No",
+              },
+              ...(record.safetyAcknowledgment
+                ? [
+                    {
+                      label: "Safety acknowledgment",
+                      value: record.safetyAcknowledgment === "yes" ? "Yes" : "No",
+                    },
+                  ]
+                : []),
+            ],
+          },
+          ...(additionalNotes
+            ? [
+                {
+                  title: "ADDITIONAL NOTES",
+                  fields: [{ label: "Notes", value: additionalNotes }],
+                },
+              ]
+            : []),
+        ];
+      })()
     : [];
 
   return (

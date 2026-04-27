@@ -7,7 +7,38 @@ import {
   emptyParchmentPrescriptionsResponse,
   normalizePatientPrescriptionsResponse,
 } from "@/lib/prescriptions";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery } from "@tanstack/react-query";
+
+export interface ParchmentPrescriptionLinkResponse {
+  success: boolean;
+  data: {
+    parchmentPatientId: string;
+    url?: string;
+  };
+}
+
+const PARCHMENT_PATIENT_URL_BASE = "https://portal.parchment.health/dashboard/patients";
+
+export function buildParchmentPatientUrl(parchmentPatientId: string): string {
+  return `${PARCHMENT_PATIENT_URL_BASE}/${encodeURIComponent(parchmentPatientId)}`;
+}
+
+async function createParchmentPrescriptionLink(patientId: string) {
+  const res = await fetch(
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/parchment/prescription-link`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Failed to create Parchment session" }));
+    throw new Error(err.error ?? "Failed to create Parchment session");
+  }
+  return res.json() as Promise<ParchmentPrescriptionLinkResponse>;
+}
 
 async function fetchPrescriptions(patientId: string) {
   const res = await fetch(
@@ -51,6 +82,12 @@ export function usePrescriptions(
     ...prescriptionsQueryOptions(patientId ?? ""),
     enabled: !!patientId,
     initialData,
+  });
+}
+
+export function useCreateParchmentPrescriptionLink() {
+  return useMutation({
+    mutationFn: (patientId: string) => createParchmentPrescriptionLink(patientId),
   });
 }
 

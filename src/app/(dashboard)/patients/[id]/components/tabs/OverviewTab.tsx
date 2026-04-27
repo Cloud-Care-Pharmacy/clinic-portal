@@ -231,9 +231,32 @@ export function OverviewTab({
       <div className="grid grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
         {/* ── LEFT COLUMN ── */}
 
-        <div className="col-span-12">
+        <div className="col-span-12 min-[1100px]:col-span-8 min-w-0">
           <PatientTasksOverviewCard patientId={patientId} initialTasks={initialTasks} />
         </div>
+
+        {/* Conditions — span-4 (no allergies) — moved up to balance Tasks row */}
+        <OverviewCard className="col-span-12 min-[1100px]:col-span-4 min-w-0">
+          <SectionHead
+            title="Conditions"
+            actionLabel="Edit"
+            actionHref={clinicalEditHref}
+          />
+          {conditions.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {conditions.map((c) => (
+                <span
+                  key={c}
+                  className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-status-neutral-bg text-status-neutral-fg border border-status-neutral-border"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">None recorded</p>
+          )}
+        </OverviewCard>
 
         {/* Recent consultations — span-8 */}
         <OverviewCard className="col-span-12 min-[1100px]:col-span-8 min-w-0">
@@ -303,29 +326,6 @@ export function OverviewTab({
                 );
               })}
             </div>
-          )}
-        </OverviewCard>
-
-        {/* Conditions — span-4 (no allergies) */}
-        <OverviewCard className="col-span-12 min-[1100px]:col-span-4 min-w-0">
-          <SectionHead
-            title="Conditions"
-            actionLabel="Edit"
-            actionHref={clinicalEditHref}
-          />
-          {conditions.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {conditions.map((c) => (
-                <span
-                  key={c}
-                  className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-status-neutral-bg text-status-neutral-fg border border-status-neutral-border"
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] text-muted-foreground">None recorded</p>
           )}
         </OverviewCard>
 
