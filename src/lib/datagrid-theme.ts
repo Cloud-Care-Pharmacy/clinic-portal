@@ -57,6 +57,8 @@ export const dataGridSx: SxProps<Theme> = {
     borderBottom: "1px solid var(--table-separator)",
     fontSize: 14,
     color: "var(--foreground)",
+    display: "flex",
+    alignItems: "center",
     padding: "0 16px",
     minWidth: 0,
   },
