@@ -229,7 +229,7 @@ export function OverviewTab({
 
   return (
     <>
-      <div className="grid grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
+      <div className="grid grid-flow-row-dense grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
         {/* ── LEFT COLUMN ── */}
 
         <div className="col-span-12 min-[1100px]:col-span-8 min-w-0">
