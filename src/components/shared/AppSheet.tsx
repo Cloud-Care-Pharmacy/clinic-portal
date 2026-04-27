@@ -68,7 +68,7 @@ export function AppSheet({
         {footer ? (
           <div
             className={cn(
-              "flex shrink-0 flex-col gap-2 border-t border-border bg-popover px-4 py-3 sm:flex-row sm:items-center sm:justify-end",
+              "flex shrink-0 flex-col gap-2 border-t border-border bg-popover px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end",
               footerClassName
             )}
           >
