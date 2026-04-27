@@ -62,6 +62,7 @@ import type { PatientSearchResult } from "@/types";
 
 const SEARCH_LIMIT = 20;
 const ALL_SCOPE_PATIENT_LIMIT = 4;
+const CLOSE_RESET_DELAY_MS = 220;
 const EMPTY_PATIENTS: PatientSearchResult[] = [];
 const ACTION_COMMANDS = SEARCH_COMMANDS.filter(
   (command) => command.group === "Actions"
@@ -198,6 +199,18 @@ export function PatientCommandPalette({
     return () => window.clearTimeout(timeout);
   }, [open]);
 
+  useEffect(() => {
+    if (open) return;
+
+    const timeout = window.setTimeout(() => {
+      setQuery("");
+      setScope("all");
+      setActiveIdx(0);
+    }, CLOSE_RESET_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [open]);
+
   const commandMatches = useMemo(
     () =>
       hasQuery
@@ -267,9 +280,6 @@ export function PatientCommandPalette({
   } satisfies Record<SearchScope, number>;
 
   function closePalette() {
-    setQuery("");
-    setScope("all");
-    setActiveIdx(0);
     onOpenChange(false);
   }
 

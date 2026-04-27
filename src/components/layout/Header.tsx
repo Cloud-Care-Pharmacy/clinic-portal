@@ -83,7 +83,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
           <button
             type="button"
             onClick={onSearchOpen}
-            className="hidden h-9 w-80 items-center gap-2.5 rounded-[10px] border border-input bg-background px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:inline-flex"
+            className="hidden h-9 w-80 items-center gap-2.5 rounded-lg border border-input bg-background px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:inline-flex"
             aria-label="Search patients with Command K or Control K"
           >
             <Search className="size-3.5 shrink-0" aria-hidden="true" />

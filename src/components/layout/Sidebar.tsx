@@ -7,7 +7,6 @@ import { useClerk } from "@clerk/nextjs";
 import {
   LayoutDashboard,
   Users,
-  FileText,
   Calendar,
   ClipboardCheck,
   Shield,
@@ -54,11 +53,6 @@ const generalNav: NavItem[] = [
     label: "Tasks",
     href: "/tasks",
     icon: <ClipboardCheck className="h-5 w-5" />,
-  },
-  {
-    label: "Prescriptions",
-    href: "/prescriptions",
-    icon: <FileText className="h-5 w-5" />,
   },
   {
     label: "Consultations",
