@@ -100,13 +100,7 @@ export function ParchmentRedirectDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent
-        showCloseButton={!isLoading}
-        className="sm:max-w-md"
-        onEscapeKeyDown={(event) => {
-          if (isLoading) event.preventDefault();
-        }}
-      >
+      <DialogContent showCloseButton={!isLoading} className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
