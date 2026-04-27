@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -79,6 +79,7 @@ interface TaskTableProps {
   showPatientColumn?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  trailing?: ReactNode;
 }
 
 function formatRole(role?: UserRole | null) {
@@ -203,6 +204,7 @@ export function TaskTable({
   showPatientColumn = true,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
+  trailing,
 }: TaskTableProps) {
   const filters: FilterDefinition[] = [
     {
@@ -379,27 +381,35 @@ export function TaskTable({
     ? allColumns
     : allColumns.filter((column) => column.field !== "patientName");
 
+  const toolbar = (
+    <FilterBar
+      searchPlaceholder="Search tasks or patients…"
+      searchQuery={searchQuery}
+      onSearchChange={onSearchChange}
+      filters={filters}
+      resultCount={total ?? tasks.length}
+      resultLabel="tasks"
+      trailing={trailing}
+    />
+  );
+
   if (!loading && tasks.length === 0) {
     return (
-      <EmptyState
-        icon={ClipboardCheck}
-        title={emptyTitle}
-        description={emptyDescription}
-        dashed
-      />
+      <div style={{ width: "100%" }}>
+        {toolbar}
+        <EmptyState
+          icon={ClipboardCheck}
+          title={emptyTitle}
+          description={emptyDescription}
+          dashed
+        />
+      </div>
     );
   }
 
   return (
     <div style={{ width: "100%" }}>
-      <FilterBar
-        searchPlaceholder="Search tasks or patients…"
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        filters={filters}
-        resultCount={total ?? tasks.length}
-        resultLabel="tasks"
-      />
+      {toolbar}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <DataGrid
           rows={tasks}

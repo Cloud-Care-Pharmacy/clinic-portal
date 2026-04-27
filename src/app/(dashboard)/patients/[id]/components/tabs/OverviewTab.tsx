@@ -144,7 +144,7 @@ export function OverviewTab({
   initialLatestClinical,
   initialTasks,
 }: OverviewTabProps) {
-  const { patient, displayName } = usePatientShell();
+  const { patient } = usePatientShell();
   const [editPatientOpen, setEditPatientOpen] = useState(false);
   const { data: consultsData, isLoading: loadingConsults } = useConsultations(
     patientId,
@@ -232,11 +232,7 @@ export function OverviewTab({
         {/* ── LEFT COLUMN ── */}
 
         <div className="col-span-12">
-          <PatientTasksOverviewCard
-            patientId={patientId}
-            patientName={displayName}
-            initialTasks={initialTasks}
-          />
+          <PatientTasksOverviewCard patientId={patientId} initialTasks={initialTasks} />
         </div>
 
         {/* Recent consultations — span-8 */}

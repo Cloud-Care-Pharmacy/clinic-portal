@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck, ListTodo } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ClipboardCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { usePatientTasks } from "@/lib/hooks/use-tasks";
 import type { Task, TasksListResponse } from "@/types";
 import {
@@ -20,7 +17,6 @@ import {
 
 interface PatientTasksOverviewCardProps {
   patientId: string;
-  patientName?: string;
   initialTasks?: TasksListResponse;
 }
 
@@ -56,10 +52,8 @@ function TaskRow({ task }: { task: Task }) {
 
 export function PatientTasksOverviewCard({
   patientId,
-  patientName,
   initialTasks,
 }: PatientTasksOverviewCardProps) {
-  const [newTaskOpen, setNewTaskOpen] = useState(false);
   const { data, isLoading, error } = usePatientTasks(
     patientId,
     {
@@ -86,14 +80,6 @@ export function PatientTasksOverviewCard({
           </h3>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="min-h-11"
-            onClick={() => setNewTaskOpen(true)}
-          >
-            <ListTodo className="size-4" />
-            New task
-          </Button>
           <Link
             href={`/patients/${encodeURIComponent(patientId)}/tasks`}
             scroll={false}
@@ -130,13 +116,6 @@ export function PatientTasksOverviewCard({
           )}
         </div>
       )}
-
-      <NewTaskSheet
-        open={newTaskOpen}
-        onOpenChange={setNewTaskOpen}
-        defaultPatientId={patientId}
-        defaultPatientName={patientName}
-      />
     </div>
   );
 }

@@ -133,15 +133,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Tasks"
-        actions={
-          <Button onClick={() => setNewTaskOpen(true)}>
-            <ListTodo className="size-4" />
-            New task
-          </Button>
-        }
-      />
+      <PageHeader title="Tasks" />
       <p className="-mt-4 text-sm text-muted-foreground">
         Review intake submissions, claim work, and move patients toward their next
         clinical action.
@@ -201,6 +193,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             }}
             onRowClick={setSelectedTask}
             onScheduleConsultation={setConsultationTask}
+            trailing={
+              <Button onClick={() => setNewTaskOpen(true)}>
+                <ListTodo className="size-4" />
+                New task
+              </Button>
+            }
           />
         )}
       </ErrorBoundary>
