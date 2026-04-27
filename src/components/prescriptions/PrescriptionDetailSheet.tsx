@@ -3,24 +3,18 @@
 import { Pill } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import type { ParchmentPrescription, PrescriptionMedication } from "@/types";
+import { usePrescription } from "@/lib/hooks/use-prescriptions";
+import {
+  formatPrescriptionDate,
+  formatPrescriptionReference,
+} from "@/lib/prescriptions";
+import type { ParchmentPrescriptionDetail, PatientPrescription } from "@/types";
 
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString("en-AU", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+export { formatPrescriptionReference } from "@/lib/prescriptions";
 
-export function formatPrescriptionReference(
-  prescription: ParchmentPrescription
-): string {
-  return `RX-${prescription.id.slice(-6).toUpperCase()}`;
-}
-
-function MedicationRow({ medication }: { medication: PrescriptionMedication }) {
+function MedicationCard({ detail }: { detail: ParchmentPrescriptionDetail }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-start gap-3">
@@ -30,29 +24,28 @@ function MedicationRow({ medication }: { medication: PrescriptionMedication }) {
         <div className="min-w-0 flex-1 space-y-2">
           <div>
             <p className="text-sm font-medium text-foreground wrap-break-word">
-              {medication.name}
+              {detail.itemName ?? detail.type ?? "Prescription item"}
             </p>
-            {medication.dosage && (
+            {detail.type && detail.itemName && (
               <p className="text-xs text-muted-foreground mt-0.5 wrap-break-word">
-                {medication.dosage}
+                {detail.type}
               </p>
             )}
           </div>
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
             <dt className="text-muted-foreground">Quantity</dt>
-            <dd className="text-right tabular-nums">{medication.quantity ?? "—"}</dd>
+            <dd className="text-right tabular-nums">{detail.quantity ?? "—"}</dd>
             <dt className="text-muted-foreground">Repeats</dt>
-            <dd className="text-right tabular-nums">{medication.repeats ?? 0}</dd>
-            <dt className="text-muted-foreground">Schedule</dt>
-            <dd className="text-right wrap-break-word">{medication.schedule ?? "—"}</dd>
+            <dd className="text-right tabular-nums">
+              {detail.repeatsAuthorised ?? "—"}
+            </dd>
+            <dt className="text-muted-foreground">Interval</dt>
+            <dd className="text-right wrap-break-word">
+              {detail.repeatIntervals ?? "—"}
+            </dd>
             <dt className="text-muted-foreground">PBS code</dt>
-            <dd className="text-right wrap-break-word">{medication.pbsCode ?? "—"}</dd>
+            <dd className="text-right wrap-break-word">{detail.pbsCode ?? "—"}</dd>
           </dl>
-          {medication.notes && (
-            <p className="text-xs text-muted-foreground wrap-break-word">
-              {medication.notes}
-            </p>
-          )}
         </div>
       </div>
     </div>
@@ -60,14 +53,18 @@ function MedicationRow({ medication }: { medication: PrescriptionMedication }) {
 }
 
 export function PrescriptionDetailSheet({
+  patientId,
   prescription,
   onClose,
 }: {
-  prescription: ParchmentPrescription | null;
+  patientId: string;
+  prescription: PatientPrescription | null;
   onClose: () => void;
 }) {
   const stash = useLastDefined(prescription);
+  const { data, isLoading, error } = usePrescription(patientId, prescription?.id);
   const reference = stash ? formatPrescriptionReference(stash) : "";
+  const detail = data?.data?.parchment ?? null;
 
   return (
     <AppSheet
@@ -76,7 +73,11 @@ export function PrescriptionDetailSheet({
         if (!open) onClose();
       }}
       title={reference}
-      description={stash ? `Prescription issued ${formatDate(stash.issuedAt)}` : ""}
+      description={
+        stash
+          ? `Prescription dated ${formatPrescriptionDate(stash.prescriptionDate)}`
+          : ""
+      }
     >
       {stash ? (
         <div className="space-y-5">
@@ -88,9 +89,9 @@ export function PrescriptionDetailSheet({
               </div>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Items</p>
+              <p className="text-xs text-muted-foreground">Prescribed</p>
               <p className="mt-1 font-medium tabular-nums">
-                {stash.medications.length}
+                {formatPrescriptionDate(stash.prescriptionDate)}
               </p>
             </div>
             <div>
@@ -100,37 +101,44 @@ export function PrescriptionDetailSheet({
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Expires</p>
-              <p className="mt-1 font-medium tabular-nums">
-                {formatDate(stash.expiresAt)}
+              <p className="text-xs text-muted-foreground">Parchment ID</p>
+              <p className="mt-1 font-mono text-xs wrap-break-word">
+                {stash.parchmentPrescriptionId}
               </p>
             </div>
           </div>
 
           <section className="space-y-3">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Medications in this prescription
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground">Medication</h3>
               <p className="text-xs text-muted-foreground">
-                Review each item included in the selected prescription.
+                Live detail fetched from Parchment.
               </p>
             </div>
-            <div className="space-y-3">
-              {stash.medications.map((medication) => (
-                <MedicationRow key={medication.id} medication={medication} />
-              ))}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-32 w-full rounded-xl" />
+            ) : error ? (
+              <p className="text-destructive text-sm">
+                Medication detail unavailable — try again or contact support.
+              </p>
+            ) : detail ? (
+              <MedicationCard detail={detail} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Medication detail unavailable — try again or contact support.
+              </p>
+            )}
+            {detail?.url && (
+              <a
+                href={detail.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Open in Parchment
+              </a>
+            )}
           </section>
-
-          {stash.notes && (
-            <section className="rounded-xl border border-border bg-card p-3">
-              <h3 className="text-sm font-semibold text-foreground">Notes</h3>
-              <p className="mt-1 text-sm text-muted-foreground wrap-break-word">
-                {stash.notes}
-              </p>
-            </section>
-          )}
         </div>
       ) : null}
     </AppSheet>

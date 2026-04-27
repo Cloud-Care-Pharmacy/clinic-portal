@@ -196,101 +196,70 @@ export interface SubmissionResult {
 }
 
 // ============================================
-// Parchment Prescription types
+// Patient Prescription types (local index + Parchment detail)
 // ============================================
 
-export interface PrescriptionMedicationApi {
-  id?: string;
-  itemName?: string;
-  name?: string;
-  product?: string;
-  medicationName?: string;
-  dosage?: string;
-  strength?: string;
-  quantity?: string | number;
-  repeatsAuthorised?: string | number;
-  repeats?: string | number;
-  repeatIntervals?: string;
-  pbsCode?: string;
-  notes?: string;
-}
-
-export interface Prescription extends PrescriptionMedicationApi {
-  id?: string;
-  type?: string;
-  url?: string;
-  scid?: string;
-  status?: string;
-  createdDate?: string;
-  createdAt?: string;
-  issuedAt?: string;
-  expiresAt?: string;
-  prescriberName?: string;
-  medications?: PrescriptionMedicationApi[];
-  items?: PrescriptionMedicationApi[];
-}
-
-export interface PrescriptionMedication {
-  id: string;
-  name: string;
-  dosage?: string;
-  quantity?: number;
-  repeats?: number;
-  schedule?: string;
-  pbsCode?: string;
-  notes?: string;
-}
-
-export interface PatientPrescriptionsApiResponse {
-  success: boolean;
-  data: {
-    patient?: {
-      id?: string;
-      firstName?: string;
-      lastName?: string;
-      dateOfBirth?: string;
-    };
-    prescriber?: {
-      firstName?: string;
-      lastName?: string;
-    };
-    prescriptions: Prescription[];
-    pagination?: {
-      count?: number;
-      hasNext?: boolean;
-      limit?: number;
-      lastKey?: string | null;
-    };
-  };
-}
-
-export interface ParchmentPrescription {
+/** Local prescription index row — populated by Parchment webhook. */
+export interface PatientPrescription {
   id: string;
   patientId: string;
-  prescriberId: string;
-  prescriberName?: string;
-  product: string;
-  dosage: string;
-  quantity?: number;
-  repeats?: number;
-  issuedAt: string;
-  expiresAt: string;
-  status: "active" | "expired" | "pending";
-  notes?: string;
-  medications: PrescriptionMedication[];
+  entityId: string | null;
+  parchmentPrescriptionId: string;
+  prescriptionDate: string; // ISO datetime
+  prescriberName: string | null;
+  status: string; // free-form from Parchment: 'active' | 'expired' | 'cancelled' | ...
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
 }
 
-export interface ParchmentPrescriptionsResponse {
-  success: boolean;
+/** Result of a sync from Parchment → local index. */
+export interface PrescriptionSyncResult {
+  patientId: string;
+  parchmentPatientId: string | null;
+  synced: number;
+  created: number;
+  updated: number;
+  skipped: boolean;
+  reason?: string;
+}
+
+/** Live medication payload fetched from Parchment for a single prescription. */
+export interface ParchmentPrescriptionDetail {
+  type?: string;
+  url?: string;
+  scid: string;
+  status: string;
+  createdDate: string;
+  itemName?: string;
+  quantity?: string;
+  repeatsAuthorised?: string;
+  repeatIntervals?: string;
+  pbsCode?: string;
+}
+
+export interface ListPrescriptionsResponse {
+  success: true;
   data: {
     patientId: string;
-    prescriptions: ParchmentPrescription[];
-    pagination: {
-      limit: number;
-      offset: number;
-      total: number;
-    };
+    prescriptions: PatientPrescription[];
+    pagination: { limit: number; offset: number; total: number };
+    sync: PrescriptionSyncResult | null;
   };
+}
+
+export interface GetPrescriptionResponse {
+  success: true;
+  data: {
+    prescription: PatientPrescription;
+    parchment: ParchmentPrescriptionDetail | null;
+  };
+}
+
+export interface SyncPrescriptionsResponse {
+  success: true;
+  data: { sync: PrescriptionSyncResult };
 }
 
 // ============================================

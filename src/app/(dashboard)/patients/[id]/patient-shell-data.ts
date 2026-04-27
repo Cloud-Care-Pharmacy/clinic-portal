@@ -1,7 +1,7 @@
 import type {
   ConsultationsListResponse,
   LatestClinicalDataResponse,
-  ParchmentPrescriptionsResponse,
+  ListPrescriptionsResponse,
   PatientCountsResponse,
   PatientMapping,
   TasksListResponse,
@@ -11,7 +11,7 @@ export interface PatientShellInitialData {
   patient?: { success: boolean; data: { patient: PatientMapping } };
   latestClinical?: LatestClinicalDataResponse;
   counts?: PatientCountsResponse;
-  prescriptions?: ParchmentPrescriptionsResponse;
+  prescriptions?: ListPrescriptionsResponse;
   consultations?: ConsultationsListResponse;
   tasks?: TasksListResponse;
 }

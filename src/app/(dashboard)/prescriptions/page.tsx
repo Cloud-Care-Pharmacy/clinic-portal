@@ -1,8 +1,5 @@
 import { api, ApiError } from "@/lib/api";
-import {
-  emptyParchmentPrescriptionsResponse,
-  normalizePatientPrescriptionsResponse,
-} from "@/lib/prescriptions";
+import { emptyListPrescriptionsResponse } from "@/lib/prescriptions";
 import { PrescriptionsClient } from "./PrescriptionsClient";
 
 const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
@@ -18,15 +15,12 @@ export default async function PrescriptionsPage({
       ? api.getPatients(ENTITY_ID, { limit: 50, offset: 0 }).catch(() => undefined)
       : Promise.resolve(undefined),
     patientId
-      ? api
-          .getPatientPrescriptions(patientId)
-          .then((payload) => normalizePatientPrescriptionsResponse(payload, patientId))
-          .catch((error) => {
-            if (error instanceof ApiError && error.status === 404) {
-              return emptyParchmentPrescriptionsResponse(patientId);
-            }
-            return undefined;
-          })
+      ? api.getPatientPrescriptions(patientId).catch((error) => {
+          if (error instanceof ApiError && error.status === 404) {
+            return emptyListPrescriptionsResponse(patientId);
+          }
+          return undefined;
+        })
       : Promise.resolve(undefined),
   ]);
 

@@ -4,7 +4,9 @@ import type {
   Entity,
   EmailRecord,
   EmailMetadata,
-  PatientPrescriptionsApiResponse,
+  GetPrescriptionResponse,
+  ListPrescriptionsResponse,
+  SyncPrescriptionsResponse,
   SubmissionResult,
   IntakeFormData,
   UpdatePatientPayload,
@@ -376,14 +378,34 @@ class ApiClient {
 
   async getPatientPrescriptions(
     patientId: string,
-    opts?: { limit?: number; offset?: number }
-  ): Promise<PatientPrescriptionsApiResponse> {
+    opts?: { status?: string; limit?: number; offset?: number; refresh?: boolean }
+  ): Promise<ListPrescriptionsResponse> {
     const params = new URLSearchParams();
+    if (opts?.status) params.set("status", opts.status);
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.refresh) params.set("refresh", "true");
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/prescriptions${qs}`
+    );
+  }
+
+  async getPatientPrescription(
+    patientId: string,
+    prescriptionId: string
+  ): Promise<GetPrescriptionResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/prescriptions/${encodeURIComponent(prescriptionId)}`
+    );
+  }
+
+  async syncPatientPrescriptions(
+    patientId: string
+  ): Promise<SyncPrescriptionsResponse> {
+    return this.request(
+      `/api/patients/${encodeURIComponent(patientId)}/prescriptions/sync`,
+      { method: "POST" }
     );
   }
 

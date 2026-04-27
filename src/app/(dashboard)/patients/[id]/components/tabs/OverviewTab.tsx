@@ -9,7 +9,7 @@ import type {
   ConsultationType,
   ConsultationsListResponse,
   LatestClinicalDataResponse,
-  ParchmentPrescriptionsResponse,
+  ListPrescriptionsResponse,
   PatientNotesResponse,
   TasksListResponse,
 } from "@/types";
@@ -130,7 +130,7 @@ function OverviewCard({
 interface OverviewTabProps {
   patientId: string;
   initialConsultations?: ConsultationsListResponse;
-  initialPrescriptions?: ParchmentPrescriptionsResponse;
+  initialPrescriptions?: ListPrescriptionsResponse;
   initialNotes?: PatientNotesResponse;
   initialLatestClinical?: LatestClinicalDataResponse;
   initialTasks?: TasksListResponse;
@@ -175,7 +175,8 @@ export function OverviewTab({
     .slice(0, 4);
 
   const latestPrescription = [...prescriptions].sort(
-    (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
+    (a, b) =>
+      new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
   )[0];
   const recentNotes = notes.slice(0, 3);
 
@@ -361,9 +362,10 @@ export function OverviewTab({
                   {formatPrescriptionReference(latestPrescription)}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Issued {fmtDate(latestPrescription.issuedAt)} ·{" "}
-                  {latestPrescription.medications.length} item
-                  {latestPrescription.medications.length === 1 ? "" : "s"}
+                  {fmtDate(latestPrescription.prescriptionDate)}
+                  {latestPrescription.prescriberName
+                    ? ` · ${latestPrescription.prescriberName}`
+                    : ""}
                 </p>
               </div>
               <StatusBadge status={latestPrescription.status} />

@@ -1,13 +1,16 @@
 import type {
   EntityPrescriptionSummaryResponse,
-  ParchmentPrescriptionsResponse,
-  PatientPrescriptionsApiResponse,
+  GetPrescriptionResponse,
+  ListPrescriptionsResponse,
+  SyncPrescriptionsResponse,
 } from "@/types";
+import { emptyListPrescriptionsResponse } from "@/lib/prescriptions";
 import {
-  emptyParchmentPrescriptionsResponse,
-  normalizePatientPrescriptionsResponse,
-} from "@/lib/prescriptions";
-import { queryOptions, useMutation, useQuery } from "@tanstack/react-query";
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 export interface ParchmentPrescriptionLinkResponse {
   success: boolean;
@@ -46,16 +49,55 @@ async function createParchmentPrescriptionLink(patientId: string) {
   return payload as ParchmentPrescriptionLinkResponse;
 }
 
-async function fetchPrescriptions(patientId: string) {
-  const res = await fetch(
-    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions`
-  );
+interface ListPrescriptionsOpts {
+  status?: string;
+  limit?: number;
+  offset?: number;
+  refresh?: boolean;
+}
+
+function buildPrescriptionsUrl(patientId: string, opts: ListPrescriptionsOpts) {
+  const params = new URLSearchParams();
+  if (opts.status) params.set("status", opts.status);
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.offset) params.set("offset", String(opts.offset));
+  if (opts.refresh) params.set("refresh", "true");
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  return `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions${qs}`;
+}
+
+async function fetchPrescriptions(patientId: string, opts: ListPrescriptionsOpts = {}) {
+  const res = await fetch(buildPrescriptionsUrl(patientId, opts));
   if (res.status === 404) {
-    return emptyParchmentPrescriptionsResponse(patientId);
+    return emptyListPrescriptionsResponse(patientId);
   }
   if (!res.ok) throw new Error("Failed to fetch prescriptions");
-  const payload = (await res.json()) as PatientPrescriptionsApiResponse;
-  return normalizePatientPrescriptionsResponse(payload, patientId);
+  return (await res.json()) as ListPrescriptionsResponse;
+}
+
+async function fetchPrescription(patientId: string, prescriptionId: string) {
+  const res = await fetch(
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions/${encodeURIComponent(prescriptionId)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch prescription");
+  return (await res.json()) as GetPrescriptionResponse;
+}
+
+async function syncPrescriptions(patientId: string) {
+  const res = await fetch(
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions/sync`,
+    { method: "POST" }
+  );
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({ error: "Sync failed" }));
+    const message =
+      (payload as { error?: string }).error ??
+      (res.status === 400
+        ? "Patient is not linked to Parchment yet."
+        : "Failed to sync prescriptions from Parchment.");
+    throw new Error(message);
+  }
+  return (await res.json()) as SyncPrescriptionsResponse;
 }
 
 async function fetchEntityPrescriptionSummary(
@@ -82,12 +124,38 @@ export function prescriptionsQueryOptions(patientId: string) {
 
 export function usePrescriptions(
   patientId: string | undefined,
-  initialData?: ParchmentPrescriptionsResponse
+  initialData?: ListPrescriptionsResponse
 ) {
   return useQuery({
     ...prescriptionsQueryOptions(patientId ?? ""),
     enabled: !!patientId,
     initialData,
+  });
+}
+
+export function usePrescription(
+  patientId: string | undefined,
+  prescriptionId: string | undefined
+) {
+  return useQuery({
+    queryKey: ["prescription", patientId, prescriptionId],
+    queryFn: () => fetchPrescription(patientId!, prescriptionId!),
+    enabled: !!patientId && !!prescriptionId,
+  });
+}
+
+export function useSyncPrescriptions(patientId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => {
+      if (!patientId) throw new Error("Missing patient ID");
+      return syncPrescriptions(patientId);
+    },
+    onSuccess: () => {
+      if (patientId) {
+        queryClient.invalidateQueries({ queryKey: ["prescriptions", patientId] });
+      }
+    },
   });
 }
 

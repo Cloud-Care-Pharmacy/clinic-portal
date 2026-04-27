@@ -63,7 +63,8 @@ export const PatientStatStrip = memo(function PatientStatStrip({
     )[0];
 
   const latestPrescription = [...prescriptions].sort(
-    (a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime()
+    (a, b) =>
+      new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
   )[0];
 
   // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
@@ -132,16 +133,19 @@ export const PatientStatStrip = memo(function PatientStatStrip({
         label="Latest prescription"
         value={
           latestPrescription
-            ? new Date(latestPrescription.issuedAt).toLocaleDateString("en-AU", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })
+            ? new Date(latestPrescription.prescriptionDate).toLocaleDateString(
+                "en-AU",
+                {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }
+              )
             : "—"
         }
         subText={
           latestPrescription
-            ? `${latestPrescription.medications.length} item${latestPrescription.medications.length === 1 ? "" : "s"}`
+            ? (latestPrescription.prescriberName ?? "Prescription on record")
             : "No prescriptions"
         }
       />

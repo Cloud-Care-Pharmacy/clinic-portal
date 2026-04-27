@@ -1,8 +1,5 @@
 import { ApiError } from "@/lib/api";
-import {
-  emptyParchmentPrescriptionsResponse,
-  normalizePatientPrescriptionsResponse,
-} from "@/lib/prescriptions";
+import { emptyListPrescriptionsResponse } from "@/lib/prescriptions";
 import { OverviewTab } from "./components/tabs/OverviewTab";
 import {
   getLatestClinicalData,
@@ -30,9 +27,9 @@ export default async function PatientOverviewPage({
 
   const initialPrescriptions =
     prescriptions.status === "fulfilled"
-      ? normalizePatientPrescriptionsResponse(prescriptions.value, id)
+      ? prescriptions.value
       : prescriptions.reason instanceof ApiError && prescriptions.reason.status === 404
-        ? emptyParchmentPrescriptionsResponse(id)
+        ? emptyListPrescriptionsResponse(id)
         : undefined;
 
   return (

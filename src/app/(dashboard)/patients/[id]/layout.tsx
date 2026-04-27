@@ -1,8 +1,5 @@
 import { ApiError } from "@/lib/api";
-import {
-  emptyParchmentPrescriptionsResponse,
-  normalizePatientPrescriptionsResponse,
-} from "@/lib/prescriptions";
+import { emptyListPrescriptionsResponse } from "@/lib/prescriptions";
 import { notFound } from "next/navigation";
 import PatientLayoutClient from "./PatientLayoutClient";
 import type { PatientShellInitialData } from "./patient-shell-data";
@@ -46,15 +43,12 @@ async function getPatientShellInitialData(
   }
 
   if (prescriptions.status === "fulfilled") {
-    initialData.prescriptions = normalizePatientPrescriptionsResponse(
-      prescriptions.value,
-      patientId
-    );
+    initialData.prescriptions = prescriptions.value;
   } else if (
     prescriptions.reason instanceof ApiError &&
     prescriptions.reason.status === 404
   ) {
-    initialData.prescriptions = emptyParchmentPrescriptionsResponse(patientId);
+    initialData.prescriptions = emptyListPrescriptionsResponse(patientId);
   }
 
   if (consultations.status === "fulfilled") {

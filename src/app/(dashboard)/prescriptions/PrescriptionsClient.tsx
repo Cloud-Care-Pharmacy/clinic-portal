@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import {
   Select,
@@ -10,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -17,19 +20,19 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatients } from "@/lib/hooks/use-patients";
-import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
+import { usePrescriptions, useSyncPrescriptions } from "@/lib/hooks/use-prescriptions";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
 import type {
-  ParchmentPrescription,
-  ParchmentPrescriptionsResponse,
+  ListPrescriptionsResponse,
+  PatientPrescription,
   PatientsListResponse,
 } from "@/types";
 
-const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
+const prescriptionColumns: GridColDef<PatientPrescription>[] = [
   {
     field: "id",
     headerName: "Prescription",
@@ -44,42 +47,24 @@ const prescriptionColumns: GridColDef<ParchmentPrescription>[] = [
           {formatPrescriptionReference(params.row)}
         </p>
         <p
-          className="truncate text-xs text-muted-foreground"
-          title={params.row.product}
+          className="truncate text-xs text-muted-foreground font-mono"
+          title={params.row.parchmentPrescriptionId}
         >
-          {params.row.product}
+          {params.row.parchmentPrescriptionId}
         </p>
       </div>
     ),
   },
   {
-    field: "medications",
-    headerName: "Items",
-    width: 90,
-    align: "right",
-    headerAlign: "right",
-    renderCell: (params) => (
-      <span className="w-full text-right tabular-nums">
-        {params.row.medications.length}
-      </span>
-    ),
-  },
-  {
     field: "prescriberName",
     headerName: "Prescribed by",
-    width: 160,
-    valueFormatter: (value: string | undefined) => value ?? "—",
+    width: 180,
+    valueFormatter: (value: string | null | undefined) => value ?? "—",
   },
   {
-    field: "issuedAt",
-    headerName: "Issued",
-    width: 120,
-    valueFormatter: (value: string) => new Date(value).toLocaleDateString("en-AU"),
-  },
-  {
-    field: "expiresAt",
-    headerName: "Expires",
-    width: 120,
+    field: "prescriptionDate",
+    headerName: "Date",
+    width: 130,
     valueFormatter: (value: string) => new Date(value).toLocaleDateString("en-AU"),
   },
   {
@@ -95,10 +80,25 @@ function PrescriptionGrid({
   initialPrescriptions,
 }: {
   patientId: string;
-  initialPrescriptions?: ParchmentPrescriptionsResponse;
+  initialPrescriptions?: ListPrescriptionsResponse;
 }) {
   const { data, isLoading, error } = usePrescriptions(patientId, initialPrescriptions);
-  const [selected, setSelected] = useState<ParchmentPrescription | null>(null);
+  const sync = useSyncPrescriptions(patientId);
+  const [selected, setSelected] = useState<PatientPrescription | null>(null);
+
+  const prescriptions = data?.data?.prescriptions ?? [];
+
+  function handleRefresh() {
+    sync.mutate(undefined, {
+      onSuccess: (res) => {
+        const { synced, created, updated } = res.data.sync;
+        toast.success(
+          `Synced ${synced} prescriptions (${created} new, ${updated} updated)`
+        );
+      },
+      onError: (err: Error) => toast.error(err.message),
+    });
+  }
 
   if (isLoading)
     return (
@@ -116,38 +116,50 @@ function PrescriptionGrid({
       </div>
     );
 
-  const prescriptions = data?.data?.prescriptions ?? [];
-
-  if (prescriptions.length === 0)
-    return (
-      <EmptyState
-        title="No prescriptions"
-        description="This patient has no prescriptions on record."
-      />
-    );
-
   return (
     <>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <DataGrid
-          rows={prescriptions}
-          columns={prescriptionColumns}
-          autoHeight
-          disableRowSelectionOnClick
-          disableColumnMenu
-          columnHeaderHeight={44}
-          pageSizeOptions={[10, 25]}
-          rowHeight={56}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          onRowClick={(params: GridRowParams<ParchmentPrescription>) =>
-            setSelected(params.row)
-          }
-          sx={dataGridSx}
-        />
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={sync.isPending}
+        >
+          <RefreshCw className={`size-4 ${sync.isPending ? "animate-spin" : ""}`} />
+          {sync.isPending ? "Syncing…" : "Refresh from Parchment"}
+        </Button>
       </div>
+
+      {prescriptions.length === 0 ? (
+        <EmptyState
+          title="No prescriptions"
+          description="No prescriptions on record yet. Click ‘Refresh from Parchment’ to pull the latest."
+        />
+      ) : (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <DataGrid
+            rows={prescriptions}
+            columns={prescriptionColumns}
+            autoHeight
+            disableRowSelectionOnClick
+            disableColumnMenu
+            columnHeaderHeight={44}
+            pageSizeOptions={[10, 25]}
+            rowHeight={56}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10 } },
+              sorting: { sortModel: [{ field: "prescriptionDate", sort: "desc" }] },
+            }}
+            onRowClick={(params: GridRowParams<PatientPrescription>) =>
+              setSelected(params.row)
+            }
+            sx={dataGridSx}
+          />
+        </div>
+      )}
+
       <PrescriptionDetailSheet
+        patientId={patientId}
         prescription={selected}
         onClose={() => setSelected(null)}
       />
@@ -159,7 +171,7 @@ interface PrescriptionsClientProps {
   entityId: string;
   selectedPatientId: string;
   initialPatients?: PatientsListResponse;
-  initialPrescriptions?: ParchmentPrescriptionsResponse;
+  initialPrescriptions?: ListPrescriptionsResponse;
 }
 
 export function PrescriptionsClient({
@@ -221,10 +233,12 @@ export function PrescriptionsClient({
 
       {selectedPatientId && (
         <ErrorBoundary>
-          <PrescriptionGrid
-            patientId={selectedPatientId}
-            initialPrescriptions={initialPrescriptions}
-          />
+          <div className="space-y-4">
+            <PrescriptionGrid
+              patientId={selectedPatientId}
+              initialPrescriptions={initialPrescriptions}
+            />
+          </div>
         </ErrorBoundary>
       )}
     </div>
