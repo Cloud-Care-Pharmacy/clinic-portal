@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { CacheProvider } from "@emotion/react";
 import createCache from "@emotion/cache";
+import type {} from "@mui/x-data-grid/themeAugmentation";
 import type { ReactNode } from "react";
 import { readTokens } from "@/lib/mui-tokens";
 
@@ -30,6 +31,19 @@ export function MuiThemeProvider({ children }: { children: ReactNode }) {
             secondary: tokens.mutedForeground,
           },
           divider: tokens.border,
+          DataGrid: {
+            bg: "var(--background)",
+            headerBg: "var(--table-header)",
+            pinnedBg: "var(--card)",
+          },
+        },
+        components: {
+          MuiDataGrid: {
+            defaultProps: {
+              columnHeaderHeight: 44,
+              disableColumnMenu: true,
+            },
+          },
         },
         typography: {
           fontFamily: "Outfit, sans-serif",
@@ -39,7 +53,7 @@ export function MuiThemeProvider({ children }: { children: ReactNode }) {
           borderRadius: 16,
         },
       }),
-    [tokens]
+    []
   );
 
   return (

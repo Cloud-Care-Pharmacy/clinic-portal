@@ -13,15 +13,8 @@ export const dataGridSx: SxProps<Theme> = {
   overflow: "hidden",
   fontFamily: "Outfit, sans-serif",
   fontSize: 14,
-  backgroundColor: "var(--table-row)",
 
   /* ---- Header row ---- */
-  "& .MuiDataGrid-columnHeaders": {
-    backgroundColor: "var(--table-header)",
-    borderBottom: "1px solid var(--table-separator)",
-    minHeight: "44px !important",
-    maxHeight: "44px !important",
-  },
   "& .MuiDataGrid-columnHeader": {
     padding: "0 16px",
   },
@@ -38,49 +31,34 @@ export const dataGridSx: SxProps<Theme> = {
     textTransform: "none",
     letterSpacing: 0,
   },
-  "& .MuiDataGrid-columnHeader:focus": {
+  "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-cell:focus": {
     outline: "none",
   },
-  "& .MuiDataGrid-columnHeader:focus-visible": {
+  "& .MuiDataGrid-columnHeader:focus-visible, & .MuiDataGrid-cell:focus-visible": {
     outline: "2px solid var(--ring)",
     outlineOffset: -2,
   },
 
   /* ---- Body rows ---- */
   "& .MuiDataGrid-row": {
-    backgroundColor: "var(--table-row)",
     cursor: "pointer",
     transition: "background-color .12s",
   },
   "& .MuiDataGrid-row:hover": {
     backgroundColor: "var(--table-row-hover)",
   },
-  "& .MuiDataGrid-row.Mui-selected": {
-    backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--table-row))",
-    "&:hover": {
+  "& .MuiDataGrid-row.Mui-selected, & .MuiDataGrid-row.Mui-selected.Mui-hovered, & .MuiDataGrid-row.Mui-selected:hover":
+    {
       backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--table-row))",
     },
-  },
 
   /* ---- Cells ---- */
   "& .MuiDataGrid-cell": {
     borderBottom: "1px solid var(--table-separator)",
     fontSize: 14,
     color: "var(--foreground)",
-    display: "flex",
-    alignItems: "center",
     padding: "0 16px",
     minWidth: 0,
-  },
-  "& .MuiDataGrid-cell:focus": {
-    outline: "none",
-  },
-  "& .MuiDataGrid-cell:focus-visible": {
-    outline: "2px solid var(--ring)",
-    outlineOffset: -2,
-  },
-  "& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell": {
-    borderBottom: "none",
   },
 
   /* ---- Footer ---- */
@@ -88,20 +66,12 @@ export const dataGridSx: SxProps<Theme> = {
     borderTop: "1px solid var(--table-separator)",
     backgroundColor: "var(--card)",
   },
-  "& .MuiDataGrid-selectedRowCount": {
-    fontFamily: "Outfit, sans-serif",
-    fontSize: 13,
-    color: "var(--muted-foreground)",
-  },
-  "& .MuiTablePagination-root": {
-    fontFamily: "Outfit, sans-serif",
-    fontSize: 13,
-    color: "var(--muted-foreground)",
-  },
-  "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows": {
-    fontFamily: "Outfit, sans-serif",
-    fontSize: 13,
-  },
+  "& .MuiTablePagination-root, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiDataGrid-selectedRowCount":
+    {
+      fontFamily: "Outfit, sans-serif",
+      fontSize: 13,
+      color: "var(--muted-foreground)",
+    },
 
   /* ---- Chrome ---- */
   "& .MuiCheckbox-root": {
@@ -112,9 +82,6 @@ export const dataGridSx: SxProps<Theme> = {
     color: "var(--border)",
     opacity: 0,
     transition: "opacity .15s",
-  },
-  "& .MuiDataGrid-menuIcon": {
-    display: "none",
   },
   "& .MuiDataGrid-columnHeader:hover .MuiDataGrid-columnSeparator": {
     opacity: 1,
