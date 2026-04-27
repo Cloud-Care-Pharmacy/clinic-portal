@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { ChevronRight, PanelLeftClose, PanelLeftOpen, Search } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { useSidebarState } from "@/components/providers/SidebarProvider";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 
@@ -82,14 +83,12 @@ export function Header({ onSearchOpen }: HeaderProps) {
           <button
             type="button"
             onClick={onSearchOpen}
-            className="hidden h-9 w-64 items-center gap-2 rounded-lg border border-input bg-background px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:inline-flex"
+            className="hidden h-9 w-80 items-center gap-2.5 rounded-[10px] border border-input bg-background px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:inline-flex"
             aria-label="Search patients with Command K or Control K"
           >
-            <Search className="size-4 shrink-0" />
-            <span className="flex-1">Search patients…</span>
-            <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-              ⌘K
-            </kbd>
+            <Search className="size-3.5 shrink-0" aria-hidden="true" />
+            <span className="flex-1 truncate">Search patients, prescriptions…</span>
+            <Kbd>⌘ K</Kbd>
           </button>
         </div>
       </div>
