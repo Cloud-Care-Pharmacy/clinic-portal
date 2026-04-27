@@ -385,7 +385,7 @@ export function OverviewTab({
               actionLabel="Edit"
               onAction={() => setEditPatientOpen(true)}
             />
-            <dl className="grid grid-cols-[96px_1fr] gap-x-4 gap-y-2.5 text-[13px]">
+            <dl className="grid grid-cols-[96px_1fr] gap-x-4 gap-y-4 text-[13px]">
               <dt className="text-muted-foreground">DOB</dt>
               <dd className="font-medium min-w-0 wrap-break-word">
                 {(() => {
