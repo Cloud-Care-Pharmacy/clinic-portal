@@ -6,12 +6,48 @@ import {
 } from "@tanstack/react-query";
 import type {
   CreateTaskPayload,
+  Task,
   TaskResponse,
   TasksListResponse,
   TasksQuery,
   TaskSummaryResponse,
   UpdateTaskPayload,
 } from "@/types";
+
+const EMPTY_TASKS: Task[] = [];
+
+function emptyTasksResponse(opts?: TasksQuery, patientId?: string): TasksListResponse {
+  return {
+    success: true,
+    data: {
+      ...(patientId ? { patientId } : {}),
+      tasks: EMPTY_TASKS,
+      pagination: {
+        limit: opts?.limit ?? 50,
+        offset: opts?.offset ?? 0,
+        total: 0,
+      },
+      filters: opts,
+    },
+  };
+}
+
+function emptyTaskSummaryResponse(): TaskSummaryResponse {
+  return {
+    success: true,
+    data: {
+      openTaskCount: 0,
+      inProgressTaskCount: 0,
+      overdueTaskCount: 0,
+      urgentTaskCount: 0,
+      newIntakeTaskCount: 0,
+    },
+  };
+}
+
+function isTaskEndpointUnavailable(status: number) {
+  return [404, 500, 501, 502, 503, 504].includes(status);
+}
 
 function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
   const appendValue = (key: string, value?: string | string[]) => {
@@ -59,6 +95,7 @@ async function fetchTasks(opts?: TasksQuery): Promise<TasksListResponse> {
   const params = new URLSearchParams();
   appendTaskQueryParams(params, opts);
   const res = await fetch(`/api/proxy/tasks?${params}`);
+  if (isTaskEndpointUnavailable(res.status)) return emptyTasksResponse(opts);
   if (!res.ok) throw new Error("Failed to fetch tasks");
   return res.json();
 }
@@ -72,6 +109,9 @@ async function fetchPatientTasks(
   const res = await fetch(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/tasks?${params}`
   );
+  if (isTaskEndpointUnavailable(res.status)) {
+    return emptyTasksResponse(opts, patientId);
+  }
   if (!res.ok) throw new Error("Failed to fetch patient tasks");
   return res.json();
 }
@@ -84,6 +124,7 @@ async function fetchTask(taskId: string): Promise<TaskResponse> {
 
 async function fetchTaskSummary(): Promise<TaskSummaryResponse> {
   const res = await fetch("/api/proxy/tasks/summary");
+  if (isTaskEndpointUnavailable(res.status)) return emptyTaskSummaryResponse();
   if (!res.ok) throw new Error("Failed to fetch task summary");
   return res.json();
 }
