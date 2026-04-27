@@ -8,8 +8,14 @@ export interface RedFlagResult {
 /**
  * Computes red flag status from clinical data.
  * A red flag is raised when any medical history question is answered "yes".
+ * Once the record has been approved by a reviewer, red flags are suppressed
+ * because the clinician has already reviewed the responses.
  */
 export function computeRedFlags(record: ClinicalDataRecord): RedFlagResult {
+  if (record.reviewStatus === "approved") {
+    return { hasRedFlag: false, triggers: [] };
+  }
+
   const triggers: string[] = [];
 
   if (record.hasMedicalConditions === "yes") {
