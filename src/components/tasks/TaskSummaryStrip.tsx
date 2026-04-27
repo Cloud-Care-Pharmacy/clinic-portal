@@ -1,7 +1,15 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { AlarmClockOff, ClipboardCheck, Flag, ListChecks } from "lucide-react";
+import {
+  AlarmClockOff,
+  ClipboardCheck,
+  Flag,
+  ListChecks,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types";
 import { isTaskOverdue } from "@/components/tasks/task-format";
@@ -19,23 +27,26 @@ interface TaskSummaryStripProps {
 
 const cardStyles: Record<
   TaskSummaryKey,
-  { icon: ComponentType<{ className?: string }>; tone: string }
+  {
+    badgeIcon: ComponentType<{ className?: string }>;
+    detailIcon: ComponentType<{ className?: string }>;
+  }
 > = {
   open: {
-    icon: ListChecks,
-    tone: "border-status-info-border bg-status-info-bg text-status-info-fg",
+    badgeIcon: ListChecks,
+    detailIcon: TrendingUp,
   },
   overdue: {
-    icon: AlarmClockOff,
-    tone: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
+    badgeIcon: AlarmClockOff,
+    detailIcon: TrendingDown,
   },
   urgent: {
-    icon: Flag,
-    tone: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+    badgeIcon: Flag,
+    detailIcon: TrendingUp,
   },
   intake: {
-    icon: ClipboardCheck,
-    tone: "border-status-accent-border bg-status-accent-bg text-status-accent-fg",
+    badgeIcon: ClipboardCheck,
+    detailIcon: TrendingUp,
   },
 };
 
@@ -68,32 +79,41 @@ export function TaskSummaryStrip({
       key: "open" as const,
       label: "Open tasks",
       value: activeTasks.length,
-      meta: `${inProgressCount} in progress`,
+      badge: `${inProgressCount} in progress`,
+      description: "Active work queue",
+      subtitle: "Ready for clinical action",
     },
     {
       key: "overdue" as const,
       label: "Overdue",
       value: overdueCount,
-      meta: overdueCount > 0 ? `${overdueCount} need attention` : "All on schedule",
+      badge: overdueCount > 0 ? `${overdueCount} overdue` : "On schedule",
+      description: overdueCount > 0 ? "Needs attention" : "All on schedule",
+      subtitle: "Tasks past due",
     },
     {
       key: "urgent" as const,
       label: "Urgent priority",
       value: urgentCount,
-      meta: urgentCount > 0 ? `${urgentCount} red-flag intake` : "No urgent items",
+      badge: urgentCount > 0 ? `${urgentCount} urgent` : "None",
+      description: urgentCount > 0 ? "Red-flag work" : "No urgent items",
+      subtitle: "Highest-priority queue",
     },
     {
       key: "intake" as const,
       label: "New intake reviews",
       value: intakeCount,
-      meta: `+${recentIntakeCount} in last 24h`,
+      badge: `+${recentIntakeCount} in last 24h`,
+      description: "Intake submissions",
+      subtitle: "Awaiting clinical review",
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => {
-        const Icon = cardStyles[card.key].icon;
+        const BadgeIcon = cardStyles[card.key].badgeIcon;
+        const DetailIcon = cardStyles[card.key].detailIcon;
         const isActive = activeKey === card.key;
 
         return (
@@ -102,27 +122,34 @@ export function TaskSummaryStrip({
             type="button"
             onClick={() => onSelect(card.key)}
             className={cn(
-              "rounded-2xl border border-border bg-card p-4 text-left shadow-xs transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              isActive && "border-primary ring-2 ring-primary/20"
+              "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-left text-sm text-card-foreground ring-1 ring-foreground/10 transition-[box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              isActive && "ring-2 ring-primary/30"
             )}
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[13px] font-medium text-muted-foreground">
+            <span className="flex items-center justify-between gap-3 px-4 pb-2">
+              <span className="text-[15px] font-medium text-foreground/75">
                 {card.label}
               </span>
-              <span
-                className={cn(
-                  "flex size-8 items-center justify-center rounded-[10px] border",
-                  cardStyles[card.key].tone
-                )}
+              <Badge
+                variant="outline"
+                className="gap-1 rounded-full border-foreground/10 bg-popover/70 text-xs font-medium"
               >
-                <Icon className="size-4" />
+                <BadgeIcon className="h-3 w-3" />
+                {card.badge}
+              </Badge>
+            </span>
+            <span className="space-y-3 px-4">
+              <span className="stat-number block tabular-nums">{card.value}</span>
+              <span className="block">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                  {card.description}
+                  <DetailIcon className="h-4 w-4" />
+                </span>
+                <span className="mt-1 block text-[13px] text-foreground/55">
+                  {card.subtitle}
+                </span>
               </span>
-            </div>
-            <div className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
-              {card.value}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">{card.meta}</p>
+            </span>
           </button>
         );
       })}

@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { ListTodo } from "lucide-react";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { TaskQueueTabs, type TaskQueueTab } from "@/components/tasks/TaskQueueTabs";
@@ -24,12 +27,13 @@ import type {
 } from "@/types";
 
 interface TasksClientProps {
+  entityId: string;
   initialTasks?: TasksListResponse;
 }
 
 const EMPTY_TASKS: Task[] = [];
 
-export function TasksClient({ initialTasks }: TasksClientProps) {
+export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState<TaskQueueTab>("all");
   const [activeSummary, setActiveSummary] = useState<TaskSummaryKey | null>(null);
@@ -41,6 +45,7 @@ export function TasksClient({ initialTasks }: TasksClientProps) {
   const [dueBefore, setDueBefore] = useState<string | undefined>();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [consultationTask, setConsultationTask] = useState<Task | null>(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   const currentUserId = user?.id;
 
@@ -128,7 +133,15 @@ export function TasksClient({ initialTasks }: TasksClientProps) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Tasks" />
+      <PageHeader
+        title="Tasks"
+        actions={
+          <Button onClick={() => setNewTaskOpen(true)}>
+            <ListTodo className="size-4" />
+            New task
+          </Button>
+        }
+      />
       <p className="-mt-4 text-sm text-muted-foreground">
         Review intake submissions, claim work, and move patients toward their next
         clinical action.
@@ -208,6 +221,12 @@ export function TasksClient({ initialTasks }: TasksClientProps) {
         }}
         defaultPatientId={consultationTask?.patientId}
         defaultPatientName={consultationTask?.patientName ?? undefined}
+      />
+
+      <NewTaskSheet
+        open={newTaskOpen}
+        onOpenChange={setNewTaskOpen}
+        entityId={entityId}
       />
     </div>
   );

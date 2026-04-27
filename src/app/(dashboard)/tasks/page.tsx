@@ -1,6 +1,8 @@
 import { api } from "@/lib/api";
 import { TasksClient } from "./TasksClient";
 
+const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
+
 export default async function TasksPage() {
   const initialTasks = await api
     .getTasks({
@@ -11,5 +13,5 @@ export default async function TasksPage() {
     })
     .catch(() => undefined);
 
-  return <TasksClient initialTasks={initialTasks} />;
+  return <TasksClient entityId={ENTITY_ID} initialTasks={initialTasks} />;
 }

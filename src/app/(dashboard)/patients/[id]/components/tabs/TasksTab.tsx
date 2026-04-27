@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ListTodo } from "lucide-react";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { TaskTable } from "@/components/tasks/TaskTable";
+import { Button } from "@/components/ui/button";
 import { usePatientTasks } from "@/lib/hooks/use-tasks";
 import type {
   Task,
@@ -39,6 +42,7 @@ export function TasksTab({
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
   const [selectedFromRow, setSelectedFromRow] = useState<Task | null>(null);
   const [consultationTask, setConsultationTask] = useState<Task | null>(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   const query = useMemo(
     () => ({
@@ -102,6 +106,19 @@ export function TasksTab({
 
   return (
     <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold tracking-[-0.01em]">Tasks</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create follow-ups and review queue items for this patient.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => setNewTaskOpen(true)}>
+          <ListTodo className="size-4" />
+          New task
+        </Button>
+      </div>
+
       <TaskTable
         tasks={tasks}
         total={data?.data.pagination?.total}
@@ -120,7 +137,7 @@ export function TasksTab({
         onScheduleConsultation={handleScheduleConsultation}
         showPatientColumn={false}
         emptyTitle="No tasks for this patient"
-        emptyDescription="Automated intake review tasks and follow-up tasks will appear here."
+        emptyDescription="Create a manual follow-up, or review automated intake tasks when they appear."
       />
 
       <TaskDetailSheet
@@ -139,6 +156,13 @@ export function TasksTab({
         }}
         defaultPatientId={patientId}
         defaultPatientName={consultationTask?.patientName || patientName}
+      />
+
+      <NewTaskSheet
+        open={newTaskOpen}
+        onOpenChange={setNewTaskOpen}
+        defaultPatientId={patientId}
+        defaultPatientName={patientName}
       />
     </>
   );

@@ -27,9 +27,11 @@ import {
   Flag,
   Trash2,
   Copy,
+  ListTodo,
 } from "lucide-react";
 import type { PatientMapping } from "@/types";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import {
@@ -93,6 +95,7 @@ export const PatientHeader = memo(
   function PatientHeader({ patient, displayName, statData }: PatientHeaderProps) {
     const router = useRouter();
     const [consultationOpen, setConsultationOpen] = useState(false);
+    const [newTaskOpen, setNewTaskOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
     const deleteMutation = useDeletePatient();
@@ -216,6 +219,13 @@ export const PatientHeader = memo(
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={actionsDisabled}
+                      onClick={() => setNewTaskOpen(true)}
+                    >
+                      <ListTodo className="mr-2 size-4" />
+                      New task
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={actionsDisabled}
                       onClick={() => navigateTo("documents", "upload")}
                     >
                       <Upload className="mr-2 size-4" />
@@ -276,6 +286,13 @@ export const PatientHeader = memo(
         <NewConsultationSheet
           open={consultationOpen}
           onOpenChange={setConsultationOpen}
+          defaultPatientId={patientId}
+          defaultPatientName={displayName === "Loading…" ? "" : displayName}
+        />
+
+        <NewTaskSheet
+          open={newTaskOpen}
+          onOpenChange={setNewTaskOpen}
           defaultPatientId={patientId}
           defaultPatientName={displayName === "Loading…" ? "" : displayName}
         />

@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, ListTodo } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { usePatientTasks } from "@/lib/hooks/use-tasks";
 import type { Task, TasksListResponse } from "@/types";
 import {
@@ -17,6 +20,7 @@ import {
 
 interface PatientTasksOverviewCardProps {
   patientId: string;
+  patientName?: string;
   initialTasks?: TasksListResponse;
 }
 
@@ -52,8 +56,10 @@ function TaskRow({ task }: { task: Task }) {
 
 export function PatientTasksOverviewCard({
   patientId,
+  patientName,
   initialTasks,
 }: PatientTasksOverviewCardProps) {
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
   const { data, isLoading, error } = usePatientTasks(
     patientId,
     {
@@ -79,13 +85,23 @@ export function PatientTasksOverviewCard({
             Open tasks
           </h3>
         </div>
-        <Link
-          href={`/patients/${encodeURIComponent(patientId)}/tasks`}
-          scroll={false}
-          className="inline-flex min-h-11 items-center rounded-md text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          View all
-        </Link>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={() => setNewTaskOpen(true)}
+          >
+            <ListTodo className="size-4" />
+            New task
+          </Button>
+          <Link
+            href={`/patients/${encodeURIComponent(patientId)}/tasks`}
+            scroll={false}
+            className="inline-flex min-h-11 items-center rounded-md text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            View all
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
@@ -114,6 +130,13 @@ export function PatientTasksOverviewCard({
           )}
         </div>
       )}
+
+      <NewTaskSheet
+        open={newTaskOpen}
+        onOpenChange={setNewTaskOpen}
+        defaultPatientId={patientId}
+        defaultPatientName={patientName}
+      />
     </div>
   );
 }
