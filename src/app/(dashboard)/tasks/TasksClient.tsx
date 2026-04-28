@@ -125,7 +125,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     canUseInitialTasks ? initialTasks : undefined
   );
   const tasks = data?.data.tasks ?? EMPTY_TASKS;
-  const summaryTasks = initialTasks?.data.tasks ?? data?.data.tasks ?? EMPTY_TASKS;
+  const summaryTasks = data?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
 
   // Derive the effective selection by intersecting with the visible tasks so
   // ids removed by tab/filter changes (or backend refresh) are dropped without
@@ -136,37 +136,61 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     return selectedIds.filter((id) => visibleIds.has(id));
   }, [selectedIds, tasks]);
 
-  const claimableSelectedIds = useMemo(() => {
-    if (effectiveSelectedIds.length === 0) return EMPTY_STRING_ARRAY;
+  const selectedActiveTasks = useMemo(() => {
+    if (effectiveSelectedIds.length === 0) return EMPTY_TASKS;
     const selected = new Set(effectiveSelectedIds);
-    return tasks
-      .filter(
-        (task) =>
-          selected.has(task.taskId) &&
-          task.status !== "completed" &&
-          task.status !== "cancelled"
-      )
-      .map((task) => task.taskId);
+    return tasks.filter(
+      (task) =>
+        selected.has(task.taskId) &&
+        task.status !== "completed" &&
+        task.status !== "cancelled"
+    );
   }, [effectiveSelectedIds, tasks]);
 
+  const tasksToClaim = useMemo(() => {
+    if (!currentUserId) return EMPTY_TASKS;
+    return selectedActiveTasks.filter(
+      (task) => task.assignedUserId !== currentUserId || Boolean(task.assignedRole)
+    );
+  }, [currentUserId, selectedActiveTasks]);
+
+  const tasksToStart = useMemo(
+    () => selectedActiveTasks.filter((task) => task.status !== "in_progress"),
+    [selectedActiveTasks]
+  );
+
+  const claimAndStartCount = useMemo(
+    () =>
+      new Set([
+        ...tasksToClaim.map((task) => task.taskId),
+        ...tasksToStart.map((task) => task.taskId),
+      ]).size,
+    [tasksToClaim, tasksToStart]
+  );
+
   async function handleClaimSelected(options: { start: boolean }) {
-    if (!currentUserId || claimableSelectedIds.length === 0) return;
-    const ids = claimableSelectedIds;
+    if (!currentUserId || selectedActiveTasks.length === 0) return;
+    const claimIds = tasksToClaim.map((task) => task.taskId);
+    const startIds = options.start ? tasksToStart.map((task) => task.taskId) : [];
+    const ids = Array.from(new Set([...claimIds, ...startIds]));
+    if (ids.length === 0) return;
     const currentUserName =
       user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
     for (const id of ids) {
-      pending[id] = { assignee: true, status: options.start };
+      pending[id] = {
+        assignee: claimIds.includes(id),
+        status: startIds.includes(id),
+      };
     }
     setPendingClaimUpdates((prev) => ({ ...prev, ...pending }));
     try {
       const result = await claimTasksMutation.mutateAsync({
-        taskIds: ids,
+        taskIds: claimIds,
+        startTaskIds: startIds,
         assignedUserId: currentUserId,
-        ...(options.start ? { status: "in_progress" as const } : {}),
-        note: options.start
-          ? `Claimed and started by ${currentUserName}`
-          : `Claimed by ${currentUserName}`,
+        claimNote: `Claimed by ${currentUserName}`,
+        startNote: "Task started",
       });
       if (result.succeeded.length > 0) {
         const verb = options.start ? "Claimed and started" : "Claimed";
@@ -294,7 +318,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                         variant="secondary"
                         disabled={
                           !currentUserId ||
-                          claimableSelectedIds.length === 0 ||
+                          claimAndStartCount === 0 ||
                           claimTasksMutation.isPending
                         }
                       />
@@ -303,23 +327,29 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                     <UserCheck className="size-4" />
                     {claimTasksMutation.isPending
                       ? "Claiming…"
-                      : `Claim ${claimableSelectedIds.length} task${
-                          claimableSelectedIds.length === 1 ? "" : "s"
-                        }`}
+                      : `Bulk actions (${selectedActiveTasks.length})`}
                     <ChevronDown className="size-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={4} className="w-56">
                     <DropdownMenuItem
+                      disabled={
+                        tasksToClaim.length === 0 || claimTasksMutation.isPending
+                      }
                       onClick={() => handleClaimSelected({ start: false })}
                     >
                       <UserCheck />
-                      Claim
+                      Claim {tasksToClaim.length} task
+                      {tasksToClaim.length === 1 ? "" : "s"}
                     </DropdownMenuItem>
                     <DropdownMenuItem
+                      disabled={
+                        claimAndStartCount === 0 || claimTasksMutation.isPending
+                      }
                       onClick={() => handleClaimSelected({ start: true })}
                     >
                       <Play />
-                      Claim and start
+                      Claim and start {claimAndStartCount} task
+                      {claimAndStartCount === 1 ? "" : "s"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

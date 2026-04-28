@@ -11,7 +11,6 @@ import type {
   TaskResponse,
   TasksListResponse,
   TasksQuery,
-  TaskStatus,
   TaskSummaryResponse,
   UpdateTaskPayload,
 } from "@/types";
@@ -270,9 +269,10 @@ export function useCompleteTask() {
 
 export interface ClaimTasksInput {
   taskIds: string[];
+  startTaskIds?: string[];
   assignedUserId: string;
-  status?: TaskStatus;
-  note?: string;
+  claimNote?: string;
+  startNote?: string;
 }
 
 export interface ClaimTasksResult {
@@ -282,26 +282,40 @@ export interface ClaimTasksResult {
 
 async function claimTasks({
   taskIds,
+  startTaskIds = [],
   assignedUserId,
-  status,
-  note,
+  claimNote,
+  startNote,
 }: ClaimTasksInput): Promise<ClaimTasksResult> {
+  const taskIdsToClaim = new Set(taskIds);
+  const taskIdsToStart = new Set(startTaskIds);
+  const affectedTaskIds = Array.from(new Set([...taskIds, ...startTaskIds]));
+
   const results = await Promise.allSettled(
-    taskIds.map((taskId) =>
-      updateTask({
-        taskId,
-        assignedUserId,
-        assignedRole: null,
-        ...(status ? { status } : {}),
-        ...(note ? { note } : {}),
-      })
-    )
+    affectedTaskIds.map(async (taskId) => {
+      if (taskIdsToClaim.has(taskId)) {
+        await updateTask({
+          taskId,
+          assignedUserId,
+          assignedRole: null,
+          ...(claimNote ? { note: claimNote } : {}),
+        });
+      }
+
+      if (taskIdsToStart.has(taskId)) {
+        await updateTask({
+          taskId,
+          status: "in_progress",
+          ...(startNote ? { note: startNote } : {}),
+        });
+      }
+    })
   );
 
   const succeeded: string[] = [];
   const failed: Array<{ taskId: string; error: string }> = [];
   results.forEach((result, index) => {
-    const taskId = taskIds[index];
+    const taskId = affectedTaskIds[index];
     if (result.status === "fulfilled") {
       succeeded.push(taskId);
     } else {
@@ -317,6 +331,35 @@ export function useClaimTasks() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: claimTasks,
-    onSettled: () => invalidateTaskQueries(queryClient),
+    onSettled: async (_data, _error, variables) => {
+      const invalidations: Array<Promise<unknown>> = [];
+
+      invalidations.push(queryClient.invalidateQueries({ queryKey: ["tasks"] }));
+      invalidations.push(
+        queryClient.invalidateQueries({ queryKey: ["patient-tasks"] })
+      );
+      invalidations.push(queryClient.invalidateQueries({ queryKey: ["task-summary"] }));
+      invalidations.push(
+        queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
+      );
+      invalidations.push(
+        queryClient.invalidateQueries({ queryKey: ["dashboard-recent-activity"] })
+      );
+
+      if (!variables) {
+        await Promise.all(invalidations);
+        return;
+      }
+      const affectedTaskIds = new Set([
+        ...variables.taskIds,
+        ...(variables.startTaskIds ?? []),
+      ]);
+      for (const taskId of affectedTaskIds) {
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: ["task", taskId] })
+        );
+      }
+      await Promise.all(invalidations);
+    },
   });
 }

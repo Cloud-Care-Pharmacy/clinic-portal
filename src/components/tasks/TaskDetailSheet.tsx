@@ -84,6 +84,10 @@ export function TaskDetailSheet({
 
   const canAction =
     activeTask.status !== "completed" && activeTask.status !== "cancelled";
+  const isAssignedToCurrentUser =
+    Boolean(user?.id) &&
+    activeTask.assignedUserId === user?.id &&
+    !activeTask.assignedRole;
   const currentRole = (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
   const currentUserName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
@@ -99,6 +103,7 @@ export function TaskDetailSheet({
   }
 
   function handleClaim() {
+    if (!user?.id || isAssignedToCurrentUser) return;
     handleUpdate(
       {
         taskId: activeTask.taskId,
@@ -168,12 +173,12 @@ export function TaskDetailSheet({
             <>
               <Button
                 variant="outline"
-                disabled={isPending}
+                disabled={isPending || !user?.id || isAssignedToCurrentUser}
                 onClick={handleClaim}
                 title={`Claim as ${currentRole}`}
               >
                 <UserCheck className="size-4" />
-                Claim
+                {isAssignedToCurrentUser ? "Claimed" : "Claim"}
               </Button>
               {activeTask.status === "open" && (
                 <Button variant="outline" disabled={isPending} onClick={handleStart}>
