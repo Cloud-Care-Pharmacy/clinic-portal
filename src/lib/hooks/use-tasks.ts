@@ -11,6 +11,7 @@ import type {
   TaskResponse,
   TasksListResponse,
   TasksQuery,
+  TaskStatus,
   TaskSummaryResponse,
   UpdateTaskPayload,
 } from "@/types";
@@ -264,5 +265,50 @@ export function useCompleteTask() {
   return useMutation({
     mutationFn: completeTask,
     onSuccess: (response) => invalidateTaskQueries(queryClient, response),
+  });
+}
+
+export interface ClaimTasksInput {
+  taskIds: string[];
+  assignedUserId: string;
+  status?: TaskStatus;
+}
+
+export interface ClaimTasksResult {
+  succeeded: string[];
+  failed: Array<{ taskId: string; error: string }>;
+}
+
+async function claimTasks({
+  taskIds,
+  assignedUserId,
+  status,
+}: ClaimTasksInput): Promise<ClaimTasksResult> {
+  const results = await Promise.allSettled(
+    taskIds.map((taskId) =>
+      updateTask({ taskId, assignedUserId, ...(status ? { status } : {}) })
+    )
+  );
+
+  const succeeded: string[] = [];
+  const failed: Array<{ taskId: string; error: string }> = [];
+  results.forEach((result, index) => {
+    const taskId = taskIds[index];
+    if (result.status === "fulfilled") {
+      succeeded.push(taskId);
+    } else {
+      const error =
+        result.reason instanceof Error ? result.reason.message : "Failed to claim task";
+      failed.push({ taskId, error });
+    }
+  });
+  return { succeeded, failed };
+}
+
+export function useClaimTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: claimTasks,
+    onSettled: () => invalidateTaskQueries(queryClient),
   });
 }

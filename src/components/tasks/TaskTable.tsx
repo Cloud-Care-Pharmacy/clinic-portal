@@ -15,7 +15,12 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRowParams,
+  type GridRowSelectionModel,
+} from "@mui/x-data-grid";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,6 +83,10 @@ interface TaskTableProps {
   onRowClick: (task: Task) => void;
   onScheduleConsultation?: (task: Task) => void;
   showPatientColumn?: boolean;
+  selectionEnabled?: boolean;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+  bulkActions?: ReactNode;
   emptyTitle?: string;
   emptyDescription?: string;
   trailing?: ReactNode;
@@ -203,6 +212,10 @@ export function TaskTable({
   onRowClick,
   onScheduleConsultation,
   showPatientColumn = true,
+  selectionEnabled = false,
+  selectedIds,
+  onSelectionChange,
+  bulkActions,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
   trailing,
@@ -449,7 +462,14 @@ export function TaskTable({
       filters={filters}
       resultCount={hasActiveFilters ? visibleTasks.length : (total ?? tasks.length)}
       resultLabel="tasks"
-      trailing={trailing}
+      trailing={
+        bulkActions || trailing ? (
+          <div className="flex items-center gap-2">
+            {bulkActions}
+            {trailing}
+          </div>
+        ) : undefined
+      }
     />
   );
 
@@ -494,6 +514,28 @@ export function TaskTable({
           loading={loading}
           autoHeight
           pagination
+          checkboxSelection={selectionEnabled}
+          rowSelectionModel={
+            selectionEnabled
+              ? { type: "include", ids: new Set<string>(selectedIds ?? []) }
+              : undefined
+          }
+          onRowSelectionModelChange={
+            selectionEnabled && onSelectionChange
+              ? (model: GridRowSelectionModel) => {
+                  if (model.type === "include") {
+                    onSelectionChange(Array.from(model.ids).map(String));
+                  } else {
+                    const excluded = model.ids;
+                    onSelectionChange(
+                      visibleTasks
+                        .map((task) => task.taskId)
+                        .filter((id) => !excluded.has(id))
+                    );
+                  }
+                }
+              : undefined
+          }
           disableRowSelectionOnClick
           disableColumnMenu
           columnHeaderHeight={44}
