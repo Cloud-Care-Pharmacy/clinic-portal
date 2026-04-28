@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   CalendarPlus,
@@ -33,7 +32,7 @@ import {
   useUpdateTask,
 } from "@/lib/hooks/use-tasks";
 import { cn } from "@/lib/utils";
-import type { Task, TaskEvent, TaskResponse, UserRole } from "@/types";
+import type { Task, TaskEvent, TaskResponse } from "@/types";
 import {
   formatTaskDateTime,
   TASK_PRIORITY_LABELS,
@@ -75,7 +74,6 @@ export function TaskDetailSheet({
   onScheduleConsultation,
 }: TaskDetailSheetProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
-  const { user } = useUser();
   const claimTask = useClaimTasks();
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
@@ -91,11 +89,6 @@ export function TaskDetailSheet({
 
   const canAction =
     activeTask.status !== "completed" && activeTask.status !== "cancelled";
-  const isAssignedToCurrentUser =
-    Boolean(user?.id) &&
-    activeTask.assignedUserId === user?.id &&
-    !activeTask.assignedRole;
-  const currentRole = (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
   const assignedToLabel =
     activeTask.assignedUserName ||
     (activeTask.assignedUserId
@@ -115,16 +108,13 @@ export function TaskDetailSheet({
   }
 
   function handleClaim() {
-    if (!user?.id || isAssignedToCurrentUser) return;
     claimTask.mutate(
       { taskIds: [activeTask.taskId], action: "claim" },
       {
         onSuccess: (response) => {
-          if (response.data.claimed.length > 0) toast.success("Task claimed");
-          if (response.data.skipped.length > 0)
-            toast.info(response.data.skipped[0].reason);
-          if (response.data.failed.length > 0)
-            toast.error(response.data.failed[0].error);
+          if (response.claimed.length > 0) toast.success("Task claimed");
+          if (response.skipped.length > 0) toast.info(response.skipped[0].reason);
+          if (response.failed.length > 0) toast.error(response.failed[0].error);
         },
         onError: (error) => toast.error(error.message),
       }
@@ -187,14 +177,9 @@ export function TaskDetailSheet({
         footer={
           canAction ? (
             <>
-              <Button
-                variant="outline"
-                disabled={isPending || !user?.id || isAssignedToCurrentUser}
-                onClick={handleClaim}
-                title={`Claim as ${currentRole}`}
-              >
+              <Button variant="outline" disabled={isPending} onClick={handleClaim}>
                 <UserCheck className="size-4" />
-                {isAssignedToCurrentUser ? "Claimed" : "Claim"}
+                Claim
               </Button>
               {activeTask.status === "open" && (
                 <Button variant="outline" disabled={isPending} onClick={handleStart}>

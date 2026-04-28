@@ -651,24 +651,26 @@ export interface UpdateTaskPayload {
   note?: string;
 }
 
-export type BulkTaskClaimAction = "claim" | "claim_and_start";
+export type BulkTaskAction = "claim" | "claim_and_start";
 
-export interface BulkClaimTasksPayload {
+export interface BulkClaimTasksRequest {
   taskIds: string[];
-  action: BulkTaskClaimAction;
+  action: BulkTaskAction;
+}
+
+export interface BulkTaskResult {
+  action: BulkTaskAction;
+  requested: number;
+  claimed: string[];
+  started: string[];
+  skipped: Array<{ taskId: string; reason: string }>;
+  failed: Array<{ taskId: string; error: string }>;
+  tasks: Task[];
 }
 
 export interface BulkClaimTasksResponse {
-  success: boolean;
-  data: {
-    action: BulkTaskClaimAction;
-    requested: number;
-    claimed: string[];
-    started: string[];
-    skipped: Array<{ taskId: string; reason: string }>;
-    failed: Array<{ taskId: string; error: string }>;
-    tasks: Task[];
-  };
+  success: true;
+  data: BulkTaskResult;
 }
 
 export interface Staff {

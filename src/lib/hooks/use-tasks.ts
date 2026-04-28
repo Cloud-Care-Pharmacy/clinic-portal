@@ -6,8 +6,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type {
-  BulkClaimTasksPayload,
+  BulkClaimTasksRequest,
   BulkClaimTasksResponse,
+  BulkTaskResult,
   CreateTaskPayload,
   Task,
   TaskResponse,
@@ -245,6 +246,62 @@ function invalidateTaskQueries(
   }
 }
 
+function mergeUpdatedTasks(tasks: Task[], updatedTasks: Task[]) {
+  if (updatedTasks.length === 0 || tasks.length === 0) return tasks;
+
+  const updates = new Map(updatedTasks.map((task) => [task.taskId, task]));
+  let changed = false;
+  const merged = tasks.map((task) => {
+    const updated = updates.get(task.taskId);
+    if (!updated) return task;
+    changed = true;
+    return updated;
+  });
+
+  return changed ? merged : tasks;
+}
+
+function updateBulkTaskCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  result: BulkTaskResult
+) {
+  const updatedTasks = result.tasks;
+  if (updatedTasks.length === 0) return;
+
+  const updateTaskList = (existing: TasksListResponse | undefined) => {
+    if (!existing) return existing;
+    return {
+      ...existing,
+      data: {
+        ...existing.data,
+        tasks: mergeUpdatedTasks(existing.data.tasks, updatedTasks),
+      },
+    } satisfies TasksListResponse;
+  };
+
+  queryClient.setQueriesData<TasksListResponse>(
+    { queryKey: ["tasks"] },
+    updateTaskList
+  );
+  queryClient.setQueriesData<TasksListResponse>(
+    { queryKey: ["patient-tasks"] },
+    updateTaskList
+  );
+
+  for (const task of updatedTasks) {
+    queryClient.setQueryData<TaskResponse>(["task", task.taskId], (existing) => {
+      if (!existing) return existing;
+      return {
+        ...existing,
+        data: {
+          ...existing.data,
+          task,
+        },
+      };
+    });
+  }
+}
+
 export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -269,10 +326,8 @@ export function useCompleteTask() {
   });
 }
 
-async function claimTasks(
-  body: BulkClaimTasksPayload
-): Promise<BulkClaimTasksResponse> {
-  const res = await fetch("/api/tasks/bulk-claim", {
+async function claimTasks(body: BulkClaimTasksRequest): Promise<BulkTaskResult> {
+  const res = await fetch("/api/proxy/tasks/bulk-claim", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -283,14 +338,19 @@ async function claimTasks(
     throw new Error(err.error ?? "Failed to claim tasks");
   }
 
-  return res.json();
+  const payload = (await res.json()) as
+    | BulkClaimTasksResponse
+    | { success: false; error?: string };
+  if (!payload.success) throw new Error(payload.error ?? "Failed to claim tasks");
+  return payload.data;
 }
 
 export function useClaimTasks() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: claimTasks,
-    onSettled: async (response) => {
+    onSuccess: (result) => updateBulkTaskCaches(queryClient, result),
+    onSettled: async (result) => {
       const invalidations: Array<Promise<unknown>> = [];
 
       invalidations.push(queryClient.invalidateQueries({ queryKey: ["tasks"] }));
@@ -305,12 +365,21 @@ export function useClaimTasks() {
         queryClient.invalidateQueries({ queryKey: ["dashboard-recent-activity"] })
       );
 
-      const affectedTaskIds = new Set(
-        response?.data.tasks.map((task) => task.taskId) ?? []
+      const affectedTaskIds = new Set(result?.tasks.map((task) => task.taskId) ?? []);
+      const affectedPatientIds = new Set(
+        result?.tasks.map((task) => task.patientId).filter(Boolean) ?? []
       );
       for (const taskId of affectedTaskIds) {
         invalidations.push(
           queryClient.invalidateQueries({ queryKey: ["task", taskId] })
+        );
+      }
+      for (const patientId of affectedPatientIds) {
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] })
+        );
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] })
         );
       }
       await Promise.all(invalidations);

@@ -26,7 +26,8 @@ import { TaskTable } from "@/components/tasks/TaskTable";
 import type { TaskAssignmentFilter } from "@/components/tasks/TaskTable";
 import { useClaimTasks, useTasks } from "@/lib/hooks/use-tasks";
 import type {
-  BulkTaskClaimAction,
+  BulkTaskAction,
+  BulkTaskResult,
   Task,
   TaskPriority,
   TaskStatus,
@@ -43,6 +44,52 @@ interface TasksClientProps {
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
 const CURRENT_USER_UNAVAILABLE = "__current_user_unavailable__";
+
+function pluralizeTask(count: number) {
+  return `task${count === 1 ? "" : "s"}`;
+}
+
+function outcomeDetails(items: string[]) {
+  const details = Array.from(new Set(items.filter(Boolean))).slice(0, 3);
+  if (items.length > details.length) {
+    details.push("More details are available in the task history.");
+  }
+  return details.join("\n");
+}
+
+function showBulkClaimResult(result: BulkTaskResult) {
+  const successMessages: string[] = [];
+  if (result.claimed.length > 0) {
+    successMessages.push(
+      `Claimed ${result.claimed.length} ${pluralizeTask(result.claimed.length)}.`
+    );
+  }
+  if (result.started.length > 0) {
+    successMessages.push(
+      `Started ${result.started.length} ${pluralizeTask(result.started.length)}.`
+    );
+  }
+
+  if (successMessages.length > 0) toast.success(successMessages.join(" "));
+
+  if (result.skipped.length > 0) {
+    toast.info(
+      `Skipped ${result.skipped.length} ${pluralizeTask(result.skipped.length)}.`,
+      {
+        description: outcomeDetails(result.skipped.map((item) => item.reason)),
+      }
+    );
+  }
+
+  if (result.failed.length > 0) {
+    toast.error(
+      `Failed ${result.failed.length} ${pluralizeTask(result.failed.length)}.`,
+      {
+        description: outcomeDetails(result.failed.map((item) => item.error)),
+      }
+    );
+  }
+}
 
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
@@ -152,7 +199,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     return selectedIds.filter((id) => visibleIds.has(id));
   }, [selectedIds, tasks]);
 
-  async function handleClaimSelected(action: BulkTaskClaimAction) {
+  async function handleClaimSelected(action: BulkTaskAction) {
     if (effectiveSelectedIds.length === 0) return;
     const ids = effectiveSelectedIds;
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
@@ -168,28 +215,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         taskIds: ids,
         action,
       });
-
-      const { claimed, started, skipped, failed } = result.data;
-      if (action === "claim") {
-        toast.success(
-          `Claimed ${claimed.length} task${claimed.length === 1 ? "" : "s"}`
-        );
-      } else if (claimed.length > 0 || started.length > 0) {
-        toast.success(
-          `Claimed ${claimed.length} and started ${started.length} task${
-            started.length === 1 ? "" : "s"
-          }`
-        );
-      }
-
-      if (skipped.length > 0) {
-        toast.info(`Skipped ${skipped.length} task${skipped.length === 1 ? "" : "s"}`);
-      }
-      if (failed.length > 0) {
-        toast.error(
-          `Failed to update ${failed.length} task${failed.length === 1 ? "" : "s"}`
-        );
-      }
+      showBulkClaimResult(result);
     } finally {
       setPendingClaimUpdates((prev) => {
         const next = { ...prev };
