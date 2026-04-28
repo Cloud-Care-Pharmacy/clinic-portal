@@ -89,6 +89,8 @@ interface TaskTableProps {
   onSelectionChange?: (ids: string[]) => void;
   bulkActions?: ReactNode;
   pendingUpdates?: Record<string, { assignee?: boolean; status?: boolean }>;
+  currentUserId?: string;
+  currentUserName?: string;
   emptyTitle?: string;
   emptyDescription?: string;
   trailing?: ReactNode;
@@ -99,8 +101,14 @@ function formatRole(role?: UserRole | null) {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function assigneeLabel(task: Task) {
+function assigneeLabel(task: Task, currentUserId?: string, currentUserName?: string) {
   if (task.assignedUserName) return task.assignedUserName;
+  if (task.assignedUserId) {
+    if (currentUserId && task.assignedUserId === currentUserId) {
+      return currentUserName || "You";
+    }
+    return "Assigned user";
+  }
   if (task.assignedRole) return `${formatRole(task.assignedRole)} queue`;
   return "Unassigned";
 }
@@ -116,14 +124,24 @@ function initials(value?: string | null) {
   );
 }
 
-function AssigneeCell({ task }: { task: Task }) {
-  if (task.assignedUserName) {
+function AssigneeCell({
+  task,
+  currentUserId,
+  currentUserName,
+}: {
+  task: Task;
+  currentUserId?: string;
+  currentUserName?: string;
+}) {
+  const label = assigneeLabel(task, currentUserId, currentUserName);
+
+  if (task.assignedUserName || task.assignedUserId) {
     return (
-      <div className="flex min-w-0 items-center gap-2" title={task.assignedUserName}>
+      <div className="flex min-w-0 items-center gap-2" title={label}>
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">
-          {initials(task.assignedUserName)}
+          {initials(label)}
         </span>
-        <span className="truncate text-sm">{task.assignedUserName}</span>
+        <span className="truncate text-sm">{label}</span>
       </div>
     );
   }
@@ -219,6 +237,8 @@ export function TaskTable({
   onSelectionChange,
   bulkActions,
   pendingUpdates,
+  currentUserId,
+  currentUserName,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
   trailing,
@@ -258,7 +278,7 @@ export function TaskTable({
           task.taskId,
           task.source,
           task.assignedUserName,
-          assigneeLabel(task),
+          assigneeLabel(task, currentUserId, currentUserName),
           task.assignedRole ? formatRole(task.assignedRole) : undefined,
           TASK_STATUS_LABELS[task.status],
           TASK_PRIORITY_LABELS[task.priority],
@@ -271,7 +291,16 @@ export function TaskTable({
           task.metadata,
         ]);
       }),
-    [priorityFilters, roleFilters, searchQuery, statusFilters, tasks, typeFilters]
+    [
+      currentUserId,
+      currentUserName,
+      priorityFilters,
+      roleFilters,
+      searchQuery,
+      statusFilters,
+      tasks,
+      typeFilters,
+    ]
   );
 
   const clearFilters = () => {
@@ -401,7 +430,7 @@ export function TaskTable({
       field: "assignedUserName",
       headerName: "Assigned to",
       width: 180,
-      valueGetter: (_value, row) => assigneeLabel(row),
+      valueGetter: (_value, row) => assigneeLabel(row, currentUserId, currentUserName),
       renderCell: (params) => {
         if (pendingUpdates?.[params.row.taskId]?.assignee) {
           return (
@@ -411,7 +440,13 @@ export function TaskTable({
             </div>
           );
         }
-        return <AssigneeCell task={params.row} />;
+        return (
+          <AssigneeCell
+            task={params.row}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
+          />
+        );
       },
     },
     {

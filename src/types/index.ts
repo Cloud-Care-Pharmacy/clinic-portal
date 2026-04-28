@@ -651,6 +651,26 @@ export interface UpdateTaskPayload {
   note?: string;
 }
 
+export type BulkTaskClaimAction = "claim" | "claim_and_start";
+
+export interface BulkClaimTasksPayload {
+  taskIds: string[];
+  action: BulkTaskClaimAction;
+}
+
+export interface BulkClaimTasksResponse {
+  success: boolean;
+  data: {
+    action: BulkTaskClaimAction;
+    requested: number;
+    claimed: string[];
+    started: string[];
+    skipped: Array<{ taskId: string; reason: string }>;
+    failed: Array<{ taskId: string; error: string }>;
+    tasks: Task[];
+  };
+}
+
 export interface Staff {
   id: string;
   name: string;

@@ -6,6 +6,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type {
+  BulkClaimTasksPayload,
+  BulkClaimTasksResponse,
   CreateTaskPayload,
   Task,
   TaskResponse,
@@ -267,71 +269,28 @@ export function useCompleteTask() {
   });
 }
 
-export interface ClaimTasksInput {
-  taskIds: string[];
-  startTaskIds?: string[];
-  assignedUserId: string;
-  claimNote?: string;
-  startNote?: string;
-}
-
-export interface ClaimTasksResult {
-  succeeded: string[];
-  failed: Array<{ taskId: string; error: string }>;
-}
-
-async function claimTasks({
-  taskIds,
-  startTaskIds = [],
-  assignedUserId,
-  claimNote,
-  startNote,
-}: ClaimTasksInput): Promise<ClaimTasksResult> {
-  const taskIdsToClaim = new Set(taskIds);
-  const taskIdsToStart = new Set(startTaskIds);
-  const affectedTaskIds = Array.from(new Set([...taskIds, ...startTaskIds]));
-
-  const results = await Promise.allSettled(
-    affectedTaskIds.map(async (taskId) => {
-      if (taskIdsToClaim.has(taskId)) {
-        await updateTask({
-          taskId,
-          assignedUserId,
-          assignedRole: null,
-          ...(claimNote ? { note: claimNote } : {}),
-        });
-      }
-
-      if (taskIdsToStart.has(taskId)) {
-        await updateTask({
-          taskId,
-          status: "in_progress",
-          ...(startNote ? { note: startNote } : {}),
-        });
-      }
-    })
-  );
-
-  const succeeded: string[] = [];
-  const failed: Array<{ taskId: string; error: string }> = [];
-  results.forEach((result, index) => {
-    const taskId = affectedTaskIds[index];
-    if (result.status === "fulfilled") {
-      succeeded.push(taskId);
-    } else {
-      const error =
-        result.reason instanceof Error ? result.reason.message : "Failed to claim task";
-      failed.push({ taskId, error });
-    }
+async function claimTasks(
+  body: BulkClaimTasksPayload
+): Promise<BulkClaimTasksResponse> {
+  const res = await fetch("/api/tasks/bulk-claim", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  return { succeeded, failed };
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to claim tasks" }));
+    throw new Error(err.error ?? "Failed to claim tasks");
+  }
+
+  return res.json();
 }
 
 export function useClaimTasks() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: claimTasks,
-    onSettled: async (_data, _error, variables) => {
+    onSettled: async (response) => {
       const invalidations: Array<Promise<unknown>> = [];
 
       invalidations.push(queryClient.invalidateQueries({ queryKey: ["tasks"] }));
@@ -346,14 +305,9 @@ export function useClaimTasks() {
         queryClient.invalidateQueries({ queryKey: ["dashboard-recent-activity"] })
       );
 
-      if (!variables) {
-        await Promise.all(invalidations);
-        return;
-      }
-      const affectedTaskIds = new Set([
-        ...variables.taskIds,
-        ...(variables.startTaskIds ?? []),
-      ]);
+      const affectedTaskIds = new Set(
+        response?.data.tasks.map((task) => task.taskId) ?? []
+      );
       for (const taskId of affectedTaskIds) {
         invalidations.push(
           queryClient.invalidateQueries({ queryKey: ["task", taskId] })

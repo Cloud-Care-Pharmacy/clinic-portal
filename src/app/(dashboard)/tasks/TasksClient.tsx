@@ -25,6 +25,7 @@ import {
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { useClaimTasks, useTasks } from "@/lib/hooks/use-tasks";
 import type {
+  BulkTaskClaimAction,
   Task,
   TaskPriority,
   TaskStatus,
@@ -60,6 +61,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   >({});
 
   const currentUserId = user?.id;
+  const currentUserName =
+    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
   const claimTasksMutation = useClaimTasks();
 
   function handleTabChange(tab: TaskQueueTab) {
@@ -136,75 +139,42 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     return selectedIds.filter((id) => visibleIds.has(id));
   }, [selectedIds, tasks]);
 
-  const selectedActiveTasks = useMemo(() => {
-    if (effectiveSelectedIds.length === 0) return EMPTY_TASKS;
-    const selected = new Set(effectiveSelectedIds);
-    return tasks.filter(
-      (task) =>
-        selected.has(task.taskId) &&
-        task.status !== "completed" &&
-        task.status !== "cancelled"
-    );
-  }, [effectiveSelectedIds, tasks]);
-
-  const tasksToClaim = useMemo(() => {
-    if (!currentUserId) return EMPTY_TASKS;
-    return selectedActiveTasks.filter(
-      (task) => task.assignedUserId !== currentUserId || Boolean(task.assignedRole)
-    );
-  }, [currentUserId, selectedActiveTasks]);
-
-  const tasksToStart = useMemo(
-    () => selectedActiveTasks.filter((task) => task.status !== "in_progress"),
-    [selectedActiveTasks]
-  );
-
-  const claimAndStartCount = useMemo(
-    () =>
-      new Set([
-        ...tasksToClaim.map((task) => task.taskId),
-        ...tasksToStart.map((task) => task.taskId),
-      ]).size,
-    [tasksToClaim, tasksToStart]
-  );
-
-  async function handleClaimSelected(options: { start: boolean }) {
-    if (!currentUserId || selectedActiveTasks.length === 0) return;
-    const claimIds = tasksToClaim.map((task) => task.taskId);
-    const startIds = options.start ? tasksToStart.map((task) => task.taskId) : [];
-    const ids = Array.from(new Set([...claimIds, ...startIds]));
-    if (ids.length === 0) return;
-    const currentUserName =
-      user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
+  async function handleClaimSelected(action: BulkTaskClaimAction) {
+    if (effectiveSelectedIds.length === 0) return;
+    const ids = effectiveSelectedIds;
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
     for (const id of ids) {
       pending[id] = {
-        assignee: claimIds.includes(id),
-        status: startIds.includes(id),
+        assignee: true,
+        status: action === "claim_and_start",
       };
     }
     setPendingClaimUpdates((prev) => ({ ...prev, ...pending }));
     try {
       const result = await claimTasksMutation.mutateAsync({
-        taskIds: claimIds,
-        startTaskIds: startIds,
-        assignedUserId: currentUserId,
-        claimNote: `Claimed by ${currentUserName}`,
-        startNote: "Task started",
+        taskIds: ids,
+        action,
       });
-      if (result.succeeded.length > 0) {
-        const verb = options.start ? "Claimed and started" : "Claimed";
+
+      const { claimed, started, skipped, failed } = result.data;
+      if (action === "claim") {
         toast.success(
-          `${verb} ${result.succeeded.length} task${
-            result.succeeded.length === 1 ? "" : "s"
+          `Claimed ${claimed.length} task${claimed.length === 1 ? "" : "s"}`
+        );
+      } else if (claimed.length > 0 || started.length > 0) {
+        toast.success(
+          `Claimed ${claimed.length} and started ${started.length} task${
+            started.length === 1 ? "" : "s"
           }`
         );
       }
-      if (result.failed.length > 0) {
+
+      if (skipped.length > 0) {
+        toast.info(`Skipped ${skipped.length} task${skipped.length === 1 ? "" : "s"}`);
+      }
+      if (failed.length > 0) {
         toast.error(
-          `Failed to claim ${result.failed.length} task${
-            result.failed.length === 1 ? "" : "s"
-          }`
+          `Failed to update ${failed.length} task${failed.length === 1 ? "" : "s"}`
         );
       }
     } finally {
@@ -309,6 +279,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             selectedIds={effectiveSelectedIds}
             onSelectionChange={setSelectedIds}
             pendingUpdates={pendingClaimUpdates}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
                 <DropdownMenu>
@@ -318,7 +290,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                         variant="secondary"
                         disabled={
                           !currentUserId ||
-                          claimAndStartCount === 0 ||
+                          effectiveSelectedIds.length === 0 ||
                           claimTasksMutation.isPending
                         }
                       />
@@ -327,29 +299,23 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                     <UserCheck className="size-4" />
                     {claimTasksMutation.isPending
                       ? "Claiming…"
-                      : `Bulk actions (${selectedActiveTasks.length})`}
+                      : `Bulk actions (${effectiveSelectedIds.length})`}
                     <ChevronDown className="size-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" sideOffset={4} className="w-56">
                     <DropdownMenuItem
-                      disabled={
-                        tasksToClaim.length === 0 || claimTasksMutation.isPending
-                      }
-                      onClick={() => handleClaimSelected({ start: false })}
+                      disabled={claimTasksMutation.isPending}
+                      onClick={() => handleClaimSelected("claim")}
                     >
                       <UserCheck />
-                      Claim {tasksToClaim.length} task
-                      {tasksToClaim.length === 1 ? "" : "s"}
+                      Claim selected
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      disabled={
-                        claimAndStartCount === 0 || claimTasksMutation.isPending
-                      }
-                      onClick={() => handleClaimSelected({ start: true })}
+                      disabled={claimTasksMutation.isPending}
+                      onClick={() => handleClaimSelected("claim_and_start")}
                     >
                       <Play />
-                      Claim and start {claimAndStartCount} task
-                      {claimAndStartCount === 1 ? "" : "s"}
+                      Claim and start selected
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -269,9 +269,14 @@ class ApiClient {
     });
   }
 
-  async updateTask(taskId: string, data: UpdateTaskPayload): Promise<TaskResponse> {
+  async updateTask(
+    taskId: string,
+    data: UpdateTaskPayload,
+    opts?: { actorUserId?: string }
+  ): Promise<TaskResponse> {
     return this.request(`/api/tasks/${encodeURIComponent(taskId)}`, {
       method: "PATCH",
+      headers: opts?.actorUserId ? { "X-Clerk-User-Id": opts.actorUserId } : undefined,
       body: JSON.stringify(data),
     });
   }

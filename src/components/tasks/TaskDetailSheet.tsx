@@ -26,7 +26,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
+import {
+  useClaimTasks,
+  useCompleteTask,
+  useTask,
+  useUpdateTask,
+} from "@/lib/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import type { Task, TaskEvent, TaskResponse, UserRole } from "@/types";
 import {
@@ -71,12 +76,14 @@ export function TaskDetailSheet({
 }: TaskDetailSheetProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const { user } = useUser();
+  const claimTask = useClaimTasks();
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
   const { data } = useTask(task?.taskId, buildInitialResponse(task));
   const detailTask = data?.data.task ?? task;
   const events = data?.data.events ?? [];
-  const isPending = updateTask.isPending || completeTask.isPending;
+  const isPending =
+    claimTask.isPending || updateTask.isPending || completeTask.isPending;
 
   if (!detailTask) return null;
 
@@ -91,6 +98,15 @@ export function TaskDetailSheet({
   const currentRole = (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
   const currentUserName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
+  const assignedToLabel =
+    activeTask.assignedUserName ||
+    (activeTask.assignedUserId
+      ? activeTask.assignedUserId === user?.id
+        ? currentUserName
+        : "Assigned user"
+      : activeTask.assignedRole
+        ? `${activeTask.assignedRole} queue`
+        : "Unassigned");
 
   function handleUpdate(
     payload: Parameters<typeof updateTask.mutate>[0],
@@ -104,14 +120,18 @@ export function TaskDetailSheet({
 
   function handleClaim() {
     if (!user?.id || isAssignedToCurrentUser) return;
-    handleUpdate(
+    claimTask.mutate(
+      { taskIds: [activeTask.taskId], action: "claim" },
       {
-        taskId: activeTask.taskId,
-        assignedUserId: user?.id ?? null,
-        assignedRole: null,
-        note: `Claimed by ${currentUserName}`,
-      },
-      "Task claimed"
+        onSuccess: (response) => {
+          if (response.data.claimed.length > 0) toast.success("Task claimed");
+          if (response.data.skipped.length > 0)
+            toast.info(response.data.skipped[0].reason);
+          if (response.data.failed.length > 0)
+            toast.error(response.data.failed[0].error);
+        },
+        onError: (error) => toast.error(error.message),
+      }
     );
   }
 
@@ -225,15 +245,7 @@ export function TaskDetailSheet({
                 label="Created"
                 value={formatTaskDateTime(activeTask.createdAt)}
               />
-              <DetailRow
-                label="Assigned to"
-                value={
-                  activeTask.assignedUserName ||
-                  (activeTask.assignedRole
-                    ? `${activeTask.assignedRole} queue`
-                    : "Unassigned")
-                }
-              />
+              <DetailRow label="Assigned to" value={assignedToLabel} />
               <DetailRow label="Source" value={activeTask.source} />
             </dl>
           </section>
