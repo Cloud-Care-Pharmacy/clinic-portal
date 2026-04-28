@@ -57,6 +57,15 @@ const TYPE_OPTIONS: TaskType[] = [
   "manual",
 ];
 const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
+const ASSIGNMENT_OPTIONS = ["mine", "unassigned"] as const;
+
+export type TaskAssignmentFilter = (typeof ASSIGNMENT_OPTIONS)[number];
+type TaskTableFilterKey = "status" | "assignment" | "priority" | "type" | "role";
+
+const TASK_ASSIGNMENT_LABELS: Record<TaskAssignmentFilter, string> = {
+  mine: "My tasks",
+  unassigned: "Unassigned",
+};
 
 const TASK_TYPE_ICONS: Record<TaskType, ComponentType<{ className?: string }>> = {
   review_intake: ClipboardCheck,
@@ -81,6 +90,9 @@ interface TaskTableProps {
   onTypeFiltersChange: (value: TaskType[]) => void;
   roleFilters: UserRole[];
   onRoleFiltersChange: (value: UserRole[]) => void;
+  assignmentFilters?: TaskAssignmentFilter[];
+  onAssignmentFiltersChange?: (value: TaskAssignmentFilter[]) => void;
+  currentUserId?: string;
   onRowClick: (task: Task) => void;
   onScheduleConsultation?: (task: Task) => void;
   showPatientColumn?: boolean;
@@ -91,6 +103,7 @@ interface TaskTableProps {
   pendingUpdates?: Record<string, { assignee?: boolean; status?: boolean }>;
   emptyTitle?: string;
   emptyDescription?: string;
+  hiddenFilterKeys?: TaskTableFilterKey[];
   trailing?: ReactNode;
 }
 
@@ -214,6 +227,9 @@ export function TaskTable({
   onTypeFiltersChange,
   roleFilters,
   onRoleFiltersChange,
+  assignmentFilters = [],
+  onAssignmentFiltersChange,
+  currentUserId,
   onRowClick,
   onScheduleConsultation,
   showPatientColumn = true,
@@ -224,11 +240,13 @@ export function TaskTable({
   pendingUpdates,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
+  hiddenFilterKeys = [],
   trailing,
 }: TaskTableProps) {
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
     statusFilters.length > 0 ||
+    assignmentFilters.length > 0 ||
     priorityFilters.length > 0 ||
     typeFilters.length > 0 ||
     roleFilters.length > 0;
@@ -238,6 +256,21 @@ export function TaskTable({
       tasks.filter((task) => {
         if (statusFilters.length > 0 && !statusFilters.includes(task.status)) {
           return false;
+        }
+        if (assignmentFilters.length > 0) {
+          const matchesMine = Boolean(
+            currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
+          );
+          const matchesUnassigned = !task.assignedUserId && !task.assignedRole;
+
+          if (
+            !(
+              (assignmentFilters.includes("mine") && matchesMine) ||
+              (assignmentFilters.includes("unassigned") && matchesUnassigned)
+            )
+          ) {
+            return false;
+          }
         }
         if (priorityFilters.length > 0 && !priorityFilters.includes(task.priority)) {
           return false;
@@ -274,50 +307,93 @@ export function TaskTable({
           task.metadata,
         ]);
       }),
-    [priorityFilters, roleFilters, searchQuery, statusFilters, tasks, typeFilters]
+    [
+      assignmentFilters,
+      currentUserId,
+      priorityFilters,
+      roleFilters,
+      searchQuery,
+      statusFilters,
+      tasks,
+      typeFilters,
+    ]
   );
 
   const clearFilters = () => {
     onSearchChange("");
     onStatusFiltersChange([]);
+    onAssignmentFiltersChange?.([]);
     onPriorityFiltersChange([]);
     onTypeFiltersChange([]);
     onRoleFiltersChange([]);
   };
 
+  const hiddenFilters = new Set<TaskTableFilterKey>(hiddenFilterKeys);
   const filters: FilterDefinition[] = [
-    {
-      key: "status",
-      label: "Status",
-      options: STATUS_OPTIONS,
-      value: statusFilters,
-      onChange: (value) => onStatusFiltersChange(value as TaskStatus[]),
-      formatOption: (option) => TASK_STATUS_LABELS[option as TaskStatus],
-    },
-    {
-      key: "priority",
-      label: "Priority",
-      options: PRIORITY_OPTIONS,
-      value: priorityFilters,
-      onChange: (value) => onPriorityFiltersChange(value as TaskPriority[]),
-      formatOption: (option) => TASK_PRIORITY_LABELS[option as TaskPriority],
-    },
-    {
-      key: "type",
-      label: "Type",
-      options: TYPE_OPTIONS,
-      value: typeFilters,
-      onChange: (value) => onTypeFiltersChange(value as TaskType[]),
-      formatOption: (option) => TASK_TYPE_LABELS[option as TaskType],
-    },
-    {
-      key: "role",
-      label: "Queue",
-      options: ROLE_OPTIONS,
-      value: roleFilters,
-      onChange: (value) => onRoleFiltersChange(value as UserRole[]),
-      formatOption: (option) => formatRole(option as UserRole),
-    },
+    ...(!hiddenFilters.has("status")
+      ? [
+          {
+            key: "status",
+            label: "Status",
+            options: STATUS_OPTIONS,
+            value: statusFilters,
+            onChange: (value: string[]) => onStatusFiltersChange(value as TaskStatus[]),
+            formatOption: (option: string) => TASK_STATUS_LABELS[option as TaskStatus],
+          },
+        ]
+      : []),
+    ...(!hiddenFilters.has("assignment") && onAssignmentFiltersChange
+      ? [
+          {
+            key: "assignment",
+            label: "Assignment",
+            options: [...ASSIGNMENT_OPTIONS],
+            value: assignmentFilters,
+            onChange: (value: string[]) =>
+              onAssignmentFiltersChange(value as TaskAssignmentFilter[]),
+            formatOption: (option: string) =>
+              TASK_ASSIGNMENT_LABELS[option as TaskAssignmentFilter],
+          },
+        ]
+      : []),
+    ...(!hiddenFilters.has("priority")
+      ? [
+          {
+            key: "priority",
+            label: "Priority",
+            options: PRIORITY_OPTIONS,
+            value: priorityFilters,
+            onChange: (value: string[]) =>
+              onPriorityFiltersChange(value as TaskPriority[]),
+            formatOption: (option: string) =>
+              TASK_PRIORITY_LABELS[option as TaskPriority],
+          },
+        ]
+      : []),
+    ...(!hiddenFilters.has("type")
+      ? [
+          {
+            key: "type",
+            label: "Type",
+            options: TYPE_OPTIONS,
+            value: typeFilters,
+            onChange: (value: string[]) => onTypeFiltersChange(value as TaskType[]),
+            formatOption: (option: string) => TASK_TYPE_LABELS[option as TaskType],
+          },
+        ]
+      : []),
+    ...(!hiddenFilters.has("role")
+      ? [
+          {
+            key: "role",
+            label: "Queue",
+            options: ROLE_OPTIONS,
+            value: roleFilters,
+            onChange: (value: string[]) => onRoleFiltersChange(value as UserRole[]),
+            formatOption: (option: string) => formatRole(option as UserRole),
+          },
+        ]
+      : []),
   ];
 
   const allColumns: GridColDef<Task>[] = [

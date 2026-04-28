@@ -17,12 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
-import { TaskQueueTabs, type TaskQueueTab } from "@/components/tasks/TaskQueueTabs";
+import { TaskQueueTabs } from "@/components/tasks/TaskQueueTabs";
 import {
   TaskSummaryStrip,
   type TaskSummaryKey,
 } from "@/components/tasks/TaskSummaryStrip";
 import { TaskTable } from "@/components/tasks/TaskTable";
+import type { TaskAssignmentFilter } from "@/components/tasks/TaskTable";
 import { useClaimTasks, useTasks } from "@/lib/hooks/use-tasks";
 import type {
   BulkTaskClaimAction,
@@ -41,13 +42,16 @@ interface TasksClientProps {
 
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
+const CURRENT_USER_UNAVAILABLE = "__current_user_unavailable__";
 
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<TaskQueueTab>("all");
   const [activeSummary, setActiveSummary] = useState<TaskSummaryKey | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
+  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>(
+    []
+  );
   const [priorityFilters, setPriorityFilters] = useState<TaskPriority[]>([]);
   const [typeFilters, setTypeFilters] = useState<TaskType[]>([]);
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
@@ -63,22 +67,31 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const currentUserId = user?.id;
   const claimTasksMutation = useClaimTasks();
 
-  function handleTabChange(tab: TaskQueueTab) {
-    setActiveTab(tab);
+  function handleAssignmentFiltersChange(value: TaskAssignmentFilter[]) {
     setActiveSummary(null);
     setDueBefore(undefined);
     setSelectedIds([]);
+    setAssignmentFilters(value);
+  }
 
-    if (tab === "all") setStatusFilters([]);
-    if (tab === "open") setStatusFilters(["open"]);
-    if (tab === "in_progress") setStatusFilters(["in_progress"]);
-    if (tab === "mine") setStatusFilters(["open", "in_progress"]);
-    if (tab === "completed") setStatusFilters(["completed", "cancelled"]);
+  function handleStatusFiltersChange(value: TaskStatus[]) {
+    setActiveSummary(null);
+    setDueBefore(undefined);
+    setSelectedIds([]);
+    setStatusFilters(value);
+  }
+
+  function handleQuickFiltersClear() {
+    setActiveSummary(null);
+    setDueBefore(undefined);
+    setSelectedIds([]);
+    setAssignmentFilters([]);
+    setStatusFilters([]);
   }
 
   function handleSummarySelect(key: TaskSummaryKey) {
     setActiveSummary(key);
-    setActiveTab("all");
+    setAssignmentFilters([]);
     setStatusFilters(["open", "in_progress"]);
     setDueBefore(key === "overdue" ? new Date().toISOString() : undefined);
     setPriorityFilters(key === "urgent" ? ["urgent"] : []);
@@ -91,19 +104,19 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       offset: 0,
       search: searchQuery.trim() || undefined,
       status: statusFilters.length > 0 ? statusFilters : undefined,
+      assignedUserId:
+        assignmentFilters.length === 1 && assignmentFilters[0] === "mine"
+          ? (currentUserId ?? CURRENT_USER_UNAVAILABLE)
+          : undefined,
       priority: priorityFilters.length > 0 ? priorityFilters : undefined,
       taskType: typeFilters.length > 0 ? typeFilters : undefined,
       assignedRole: roleFilters.length > 0 ? roleFilters : undefined,
-      assignedUserId:
-        activeTab === "mine"
-          ? (currentUserId ?? "__current_user_unavailable__")
-          : undefined,
       dueBefore,
       sort: "dueAt" as const,
       order: "asc" as const,
     }),
     [
-      activeTab,
+      assignmentFilters,
       currentUserId,
       dueBefore,
       priorityFilters,
@@ -114,10 +127,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     ]
   );
   const canUseInitialTasks =
-    activeTab === "all" &&
     !dueBefore &&
     !searchQuery.trim() &&
     statusFilters.length === 0 &&
+    assignmentFilters.length === 0 &&
     priorityFilters.length === 0 &&
     typeFilters.length === 0 &&
     roleFilters.length === 0;
@@ -185,18 +198,18 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     }
   }
 
-  const tabCounts = useMemo(
+  const quickFilterCounts = useMemo(
     () => ({
-      all: summaryTasks.length,
       open: summaryTasks.filter((task) => task.status === "open").length,
       in_progress: summaryTasks.filter((task) => task.status === "in_progress").length,
       mine: currentUserId
         ? summaryTasks.filter(
-            (task) =>
-              task.assignedUserId === currentUserId &&
-              (task.status === "open" || task.status === "in_progress")
+            (task) => task.assignedUserId === currentUserId && !task.assignedRole
           ).length
         : 0,
+      unassigned: summaryTasks.filter(
+        (task) => !task.assignedUserId && !task.assignedRole
+      ).length,
       completed: summaryTasks.filter(
         (task) => task.status === "completed" || task.status === "cancelled"
       ).length,
@@ -219,9 +232,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       />
 
       <TaskQueueTabs
-        activeTab={activeTab}
-        counts={tabCounts}
-        onTabChange={handleTabChange}
+        assignmentFilters={assignmentFilters}
+        statusFilters={statusFilters}
+        counts={quickFilterCounts}
+        onAssignmentFiltersChange={handleAssignmentFiltersChange}
+        onStatusFiltersChange={handleStatusFiltersChange}
+        onClearFilters={handleQuickFiltersClear}
       />
 
       <ErrorBoundary>
@@ -247,12 +263,19 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             }}
             statusFilters={statusFilters}
             onStatusFiltersChange={(value) => {
-              setActiveTab("all");
               setActiveSummary(null);
               setDueBefore(undefined);
               setSelectedIds([]);
               setStatusFilters(value);
             }}
+            assignmentFilters={assignmentFilters}
+            onAssignmentFiltersChange={(value) => {
+              setActiveSummary(null);
+              setDueBefore(undefined);
+              setSelectedIds([]);
+              setAssignmentFilters(value);
+            }}
+            currentUserId={currentUserId}
             priorityFilters={priorityFilters}
             onPriorityFiltersChange={(value) => {
               setActiveSummary(null);
@@ -277,6 +300,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             selectedIds={effectiveSelectedIds}
             onSelectionChange={setSelectedIds}
             pendingUpdates={pendingClaimUpdates}
+            hiddenFilterKeys={["status", "assignment"]}
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
                 <DropdownMenu>
