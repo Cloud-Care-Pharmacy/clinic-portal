@@ -104,7 +104,6 @@ export function TaskDetailSheet({
         taskId: activeTask.taskId,
         assignedUserId: user?.id ?? null,
         assignedRole: null,
-        status: "in_progress",
         note: `Claimed by ${currentUserName}`,
       },
       "Task claimed"

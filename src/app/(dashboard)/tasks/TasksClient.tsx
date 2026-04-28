@@ -55,6 +55,9 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const [consultationTask, setConsultationTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingClaimUpdates, setPendingClaimUpdates] = useState<
+    Record<string, { assignee?: boolean; status?: boolean }>
+  >({});
 
   const currentUserId = user?.id;
   const claimTasksMutation = useClaimTasks();
@@ -148,27 +151,46 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
 
   async function handleClaimSelected(options: { start: boolean }) {
     if (!currentUserId || claimableSelectedIds.length === 0) return;
-    const result = await claimTasksMutation.mutateAsync({
-      taskIds: claimableSelectedIds,
-      assignedUserId: currentUserId,
-      ...(options.start ? { status: "in_progress" as const } : {}),
-    });
-    if (result.succeeded.length > 0) {
-      const verb = options.start ? "Claimed and started" : "Claimed";
-      toast.success(
-        `${verb} ${result.succeeded.length} task${
-          result.succeeded.length === 1 ? "" : "s"
-        }`
-      );
+    const ids = claimableSelectedIds;
+    const currentUserName =
+      user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
+    const pending: Record<string, { assignee: boolean; status: boolean }> = {};
+    for (const id of ids) {
+      pending[id] = { assignee: true, status: options.start };
     }
-    if (result.failed.length > 0) {
-      toast.error(
-        `Failed to claim ${result.failed.length} task${
-          result.failed.length === 1 ? "" : "s"
-        }`
-      );
+    setPendingClaimUpdates((prev) => ({ ...prev, ...pending }));
+    try {
+      const result = await claimTasksMutation.mutateAsync({
+        taskIds: ids,
+        assignedUserId: currentUserId,
+        ...(options.start ? { status: "in_progress" as const } : {}),
+        note: options.start
+          ? `Claimed and started by ${currentUserName}`
+          : `Claimed by ${currentUserName}`,
+      });
+      if (result.succeeded.length > 0) {
+        const verb = options.start ? "Claimed and started" : "Claimed";
+        toast.success(
+          `${verb} ${result.succeeded.length} task${
+            result.succeeded.length === 1 ? "" : "s"
+          }`
+        );
+      }
+      if (result.failed.length > 0) {
+        toast.error(
+          `Failed to claim ${result.failed.length} task${
+            result.failed.length === 1 ? "" : "s"
+          }`
+        );
+      }
+    } finally {
+      setPendingClaimUpdates((prev) => {
+        const next = { ...prev };
+        for (const id of ids) delete next[id];
+        return next;
+      });
+      setSelectedIds([]);
     }
-    setSelectedIds([]);
   }
 
   const tabCounts = useMemo(
@@ -262,6 +284,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             selectionEnabled
             selectedIds={effectiveSelectedIds}
             onSelectionChange={setSelectedIds}
+            pendingUpdates={pendingClaimUpdates}
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
                 <DropdownMenu>

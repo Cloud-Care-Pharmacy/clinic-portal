@@ -32,6 +32,7 @@ import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar"
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Task, TaskPriority, TaskStatus, TaskType, UserRole } from "@/types";
 import {
   formatTaskDueRelative,
@@ -87,6 +88,7 @@ interface TaskTableProps {
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   bulkActions?: ReactNode;
+  pendingUpdates?: Record<string, { assignee?: boolean; status?: boolean }>;
   emptyTitle?: string;
   emptyDescription?: string;
   trailing?: ReactNode;
@@ -216,6 +218,7 @@ export function TaskTable({
   selectedIds,
   onSelectionChange,
   bulkActions,
+  pendingUpdates,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
   trailing,
@@ -383,18 +386,33 @@ export function TaskTable({
       field: "status",
       headerName: "Status",
       width: 130,
-      renderCell: (params) => (
-        <StatusBadge variant={TASK_STATUS_VARIANTS[params.row.status]}>
-          {TASK_STATUS_LABELS[params.row.status]}
-        </StatusBadge>
-      ),
+      renderCell: (params) => {
+        if (pendingUpdates?.[params.row.taskId]?.status) {
+          return <Skeleton className="h-5 w-20 rounded-full" />;
+        }
+        return (
+          <StatusBadge variant={TASK_STATUS_VARIANTS[params.row.status]}>
+            {TASK_STATUS_LABELS[params.row.status]}
+          </StatusBadge>
+        );
+      },
     },
     {
       field: "assignedUserName",
       headerName: "Assigned to",
       width: 180,
       valueGetter: (_value, row) => assigneeLabel(row),
-      renderCell: (params) => <AssigneeCell task={params.row} />,
+      renderCell: (params) => {
+        if (pendingUpdates?.[params.row.taskId]?.assignee) {
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <Skeleton className="size-7 shrink-0 rounded-full" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          );
+        }
+        return <AssigneeCell task={params.row} />;
+      },
     },
     {
       field: "dueAt",

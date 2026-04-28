@@ -272,6 +272,7 @@ export interface ClaimTasksInput {
   taskIds: string[];
   assignedUserId: string;
   status?: TaskStatus;
+  note?: string;
 }
 
 export interface ClaimTasksResult {
@@ -283,10 +284,17 @@ async function claimTasks({
   taskIds,
   assignedUserId,
   status,
+  note,
 }: ClaimTasksInput): Promise<ClaimTasksResult> {
   const results = await Promise.allSettled(
     taskIds.map((taskId) =>
-      updateTask({ taskId, assignedUserId, ...(status ? { status } : {}) })
+      updateTask({
+        taskId,
+        assignedUserId,
+        assignedRole: null,
+        ...(status ? { status } : {}),
+        ...(note ? { note } : {}),
+      })
     )
   );
 
