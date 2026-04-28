@@ -96,14 +96,10 @@ export function TaskDetailSheet({
     activeTask.assignedUserId === user?.id &&
     !activeTask.assignedRole;
   const currentRole = (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
-  const currentUserName =
-    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
   const assignedToLabel =
     activeTask.assignedUserName ||
     (activeTask.assignedUserId
-      ? activeTask.assignedUserId === user?.id
-        ? currentUserName
-        : "Assigned user"
+      ? "Assigned user"
       : activeTask.assignedRole
         ? `${activeTask.assignedRole} queue`
         : "Unassigned");

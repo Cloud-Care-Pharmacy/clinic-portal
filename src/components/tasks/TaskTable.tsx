@@ -89,8 +89,6 @@ interface TaskTableProps {
   onSelectionChange?: (ids: string[]) => void;
   bulkActions?: ReactNode;
   pendingUpdates?: Record<string, { assignee?: boolean; status?: boolean }>;
-  currentUserId?: string;
-  currentUserName?: string;
   emptyTitle?: string;
   emptyDescription?: string;
   trailing?: ReactNode;
@@ -101,14 +99,9 @@ function formatRole(role?: UserRole | null) {
   return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
-function assigneeLabel(task: Task, currentUserId?: string, currentUserName?: string) {
+function assigneeLabel(task: Task) {
   if (task.assignedUserName) return task.assignedUserName;
-  if (task.assignedUserId) {
-    if (currentUserId && task.assignedUserId === currentUserId) {
-      return currentUserName || "You";
-    }
-    return "Assigned user";
-  }
+  if (task.assignedUserId) return "Assigned user";
   if (task.assignedRole) return `${formatRole(task.assignedRole)} queue`;
   return "Unassigned";
 }
@@ -124,16 +117,8 @@ function initials(value?: string | null) {
   );
 }
 
-function AssigneeCell({
-  task,
-  currentUserId,
-  currentUserName,
-}: {
-  task: Task;
-  currentUserId?: string;
-  currentUserName?: string;
-}) {
-  const label = assigneeLabel(task, currentUserId, currentUserName);
+function AssigneeCell({ task }: { task: Task }) {
+  const label = assigneeLabel(task);
 
   if (task.assignedUserName || task.assignedUserId) {
     return (
@@ -237,8 +222,6 @@ export function TaskTable({
   onSelectionChange,
   bulkActions,
   pendingUpdates,
-  currentUserId,
-  currentUserName,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
   trailing,
@@ -278,7 +261,7 @@ export function TaskTable({
           task.taskId,
           task.source,
           task.assignedUserName,
-          assigneeLabel(task, currentUserId, currentUserName),
+          assigneeLabel(task),
           task.assignedRole ? formatRole(task.assignedRole) : undefined,
           TASK_STATUS_LABELS[task.status],
           TASK_PRIORITY_LABELS[task.priority],
@@ -291,16 +274,7 @@ export function TaskTable({
           task.metadata,
         ]);
       }),
-    [
-      currentUserId,
-      currentUserName,
-      priorityFilters,
-      roleFilters,
-      searchQuery,
-      statusFilters,
-      tasks,
-      typeFilters,
-    ]
+    [priorityFilters, roleFilters, searchQuery, statusFilters, tasks, typeFilters]
   );
 
   const clearFilters = () => {
@@ -430,7 +404,7 @@ export function TaskTable({
       field: "assignedUserName",
       headerName: "Assigned to",
       width: 180,
-      valueGetter: (_value, row) => assigneeLabel(row, currentUserId, currentUserName),
+      valueGetter: (_value, row) => assigneeLabel(row),
       renderCell: (params) => {
         if (pendingUpdates?.[params.row.taskId]?.assignee) {
           return (
@@ -440,13 +414,7 @@ export function TaskTable({
             </div>
           );
         }
-        return (
-          <AssigneeCell
-            task={params.row}
-            currentUserId={currentUserId}
-            currentUserName={currentUserName}
-          />
-        );
+        return <AssigneeCell task={params.row} />;
       },
     },
     {

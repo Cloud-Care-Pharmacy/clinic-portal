@@ -61,8 +61,6 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   >({});
 
   const currentUserId = user?.id;
-  const currentUserName =
-    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current user";
   const claimTasksMutation = useClaimTasks();
 
   function handleTabChange(tab: TaskQueueTab) {
@@ -279,8 +277,6 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             selectedIds={effectiveSelectedIds}
             onSelectionChange={setSelectedIds}
             pendingUpdates={pendingClaimUpdates}
-            currentUserId={currentUserId}
-            currentUserName={currentUserName}
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
                 <DropdownMenu>
