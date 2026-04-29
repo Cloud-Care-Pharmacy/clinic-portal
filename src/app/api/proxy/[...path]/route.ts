@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787").replace(/\/$/, "");
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787").replace(
+  /\/$/,
+  ""
+);
 const API_SECRET = process.env.API_SECRET ?? "";
 
 /**
@@ -25,6 +29,11 @@ async function handler(
   req.nextUrl.searchParams.forEach((value, key) => {
     url.searchParams.set(key, value);
   });
+
+  if (path[0] === "entities" && path[2] === "patients") {
+    const sort = toBackendPatientSort(url.searchParams.get("sort") ?? undefined);
+    if (sort) url.searchParams.set("sort", sort);
+  }
 
   const headers: Record<string, string> = {
     "X-API-Key": API_SECRET,
@@ -73,11 +82,15 @@ async function handler(
 
   const data = await backendRes.text();
 
-  return new NextResponse(data, {
+  if (!data) {
+    return new NextResponse(null, { status: backendRes.status });
+  }
+
+  const payload = JSON.parse(data);
+  const normalized = normalizeApiPayload(payload, backendPath);
+
+  return NextResponse.json(normalized, {
     status: backendRes.status,
-    headers: {
-      "Content-Type": backendRes.headers.get("content-type") ?? "application/json",
-    },
   });
 }
 

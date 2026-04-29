@@ -47,6 +47,7 @@ import type {
   TaskSummaryResponse,
   UpdateTaskPayload,
 } from "@/types";
+import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 const API_SECRET = process.env.API_SECRET ?? "";
@@ -111,7 +112,8 @@ class ApiClient {
       throw new ApiError(res.status, body.error ?? "Request failed", body.details);
     }
 
-    return res.json() as Promise<T>;
+    const payload = await res.json();
+    return normalizeApiPayload<T>(payload, path);
   }
 
   // ---- Entities ----
@@ -151,7 +153,7 @@ class ApiClient {
     if (opts?.offset) params.set("offset", String(opts.offset));
     if (opts?.search) params.set("search", opts.search);
     if (opts?.pmsStatus) params.set("pmsStatus", opts.pmsStatus);
-    if (opts?.sort) params.set("sort", opts.sort);
+    if (opts?.sort) params.set("sort", toBackendPatientSort(opts.sort));
     if (opts?.order) params.set("order", opts.order);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(`/api/entities/${encodeURIComponent(entityId)}/patients${qs}`);
