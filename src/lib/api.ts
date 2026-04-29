@@ -153,7 +153,8 @@ class ApiClient {
     if (opts?.offset) params.set("offset", String(opts.offset));
     if (opts?.search) params.set("search", opts.search);
     if (opts?.pmsStatus) params.set("pmsStatus", opts.pmsStatus);
-    if (opts?.sort) params.set("sort", toBackendPatientSort(opts.sort));
+    const backendSort = toBackendPatientSort(opts?.sort);
+    if (backendSort) params.set("sort", backendSort);
     if (opts?.order) params.set("order", opts.order);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(`/api/entities/${encodeURIComponent(entityId)}/patients${qs}`);
