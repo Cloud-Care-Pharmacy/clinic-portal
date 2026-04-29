@@ -89,3 +89,33 @@ export const dataGridSx: SxProps<Theme> = {
     opacity: 1,
   },
 };
+
+/**
+ * DataGrid variant for task/worklist tables whose row actions must remain
+ * visible while horizontally scrolling wide clinical records.
+ */
+export const dataGridPinnedActionsSx: SxProps<Theme> = [
+  dataGridSx,
+  {
+    "& .MuiDataGrid-columnHeader.data-grid-pinned-actions, & .MuiDataGrid-cell.data-grid-pinned-actions":
+      {
+        position: "sticky",
+        right: 0,
+        backgroundColor: "var(--card)",
+        boxShadow: "-1px 0 0 var(--table-separator)",
+      },
+    "& .MuiDataGrid-columnHeader.data-grid-pinned-actions": {
+      zIndex: 4,
+    },
+    "& .MuiDataGrid-cell.data-grid-pinned-actions": {
+      zIndex: 3,
+    },
+    "& .MuiDataGrid-row:hover .MuiDataGrid-cell.data-grid-pinned-actions": {
+      backgroundColor: "var(--table-row-hover)",
+    },
+    "& .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell.data-grid-pinned-actions, & .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell.data-grid-pinned-actions":
+      {
+        backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--table-row))",
+      },
+  },
+];

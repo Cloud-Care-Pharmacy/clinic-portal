@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { dataGridSx } from "@/lib/datagrid-theme";
+import { dataGridPinnedActionsSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task, TaskPriority, TaskStatus, TaskType, UserRole } from "@/types";
@@ -642,6 +642,8 @@ export function TaskTable({
       width: 170,
       align: "right",
       headerAlign: "right",
+      cellClassName: "data-grid-pinned-actions",
+      headerClassName: "data-grid-pinned-actions",
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -762,7 +764,7 @@ export function TaskTable({
           rowHeight={72}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           onRowClick={(params: GridRowParams<Task>) => onRowClick(params.row)}
-          sx={dataGridSx}
+          sx={dataGridPinnedActionsSx}
         />
       </div>
     </div>
