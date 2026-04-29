@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus, TaskType } from "@/types";
+import type { Task, TaskPriority, TaskStatus, TaskType } from "@/types";
 
 const TASK_TIME_REFERENCE_MS = Date.now();
 
@@ -94,4 +94,28 @@ export function getTaskDisplayTitle(taskType: TaskType, title: string) {
   const typeLabel = TASK_TYPE_LABELS[taskType] ?? taskType;
   const prefixPattern = new RegExp(`^${escapeRegExp(typeLabel)}\\s*[—–-]\\s*`, "i");
   return title.replace(prefixPattern, "");
+}
+
+function metadataString(task: Task, keys: string[]) {
+  if (!task.metadata) return undefined;
+
+  for (const key of keys) {
+    const value = task.metadata[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
+  }
+
+  return undefined;
+}
+
+export function getTaskPatientPhone(task: Task) {
+  return metadataString(task, [
+    "phone",
+    "mobile",
+    "mobileNumber",
+    "patientPhone",
+    "patient_phone",
+    "patientMobile",
+    "patient_mobile",
+  ]);
 }

@@ -29,6 +29,8 @@ export interface FilterDefinition {
 }
 
 interface FilterBarProps {
+  /** Left-side content before search (quick presets, tabs, etc.) */
+  leading?: React.ReactNode;
   /** Search input placeholder */
   searchPlaceholder?: string;
   /** Current search query */
@@ -46,6 +48,7 @@ interface FilterBarProps {
 }
 
 export function FilterBar({
+  leading,
   searchPlaceholder = "Search…",
   searchQuery,
   onSearchChange,
@@ -57,8 +60,10 @@ export function FilterBar({
   const activeCount = filters.reduce((sum, f) => sum + f.value.length, 0);
 
   return (
-    <div className="flex items-center justify-between gap-3 mb-4">
-      <div className="flex items-center gap-2">
+    <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {leading}
+
         {/* Search input */}
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -66,7 +71,7 @@ export function FilterBar({
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-9 w-[250px] pl-8"
+            className="h-9 w-64 pl-8"
           />
           {searchQuery && (
             <button
@@ -139,7 +144,7 @@ function FilterPill({ filter }: { filter: FilterDefinition }) {
           </Badge>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={4} className="w-[220px]">
+      <DropdownMenuContent align="start" sideOffset={4} className="w-55">
         {options.map((option) => (
           <DropdownMenuCheckboxItem
             key={option}

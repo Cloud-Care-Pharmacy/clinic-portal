@@ -1,39 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useUser } from "@clerk/nextjs";
-import { ChevronDown, ListTodo, Play, UserCheck } from "lucide-react";
+import { Check, Plus, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
-import { TaskQueueTabs, type TaskQueueTab } from "@/components/tasks/TaskQueueTabs";
+import { TaskTable, type TaskAssignmentFilter } from "@/components/tasks/TaskTable";
 import {
-  TaskSummaryStrip,
-  type TaskSummaryKey,
-} from "@/components/tasks/TaskSummaryStrip";
-import { TaskTable } from "@/components/tasks/TaskTable";
-import type { TaskAssignmentFilter } from "@/components/tasks/TaskTable";
-import { useClaimTasks, useTasks } from "@/lib/hooks/use-tasks";
+  TaskCallDialog,
+  TaskOutcomeDialog,
+  type TaskCallData,
+  type TaskOutcomeMode,
+  type TaskOutcomeSubmission,
+} from "@/components/tasks/TaskCallWorkflow";
+import {
+  useCreateConsultation,
+  useUpdateConsultation,
+} from "@/lib/hooks/use-consultations";
+import { useClaimTasks, useTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
+import { cn } from "@/lib/utils";
+import { getTaskPatientPhone } from "@/components/tasks/task-format";
 import type {
   BulkTaskAction,
   BulkTaskResult,
+  ConsultationType,
   Task,
-  TaskPriority,
   TaskStatus,
-  TaskType,
   TasksListResponse,
-  UserRole,
 } from "@/types";
 
 interface TasksClientProps {
@@ -41,9 +39,13 @@ interface TasksClientProps {
   initialTasks?: TasksListResponse;
 }
 
+type TaskPreset = "unassigned" | "mine_active" | "completed";
+
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
 const CURRENT_USER_UNAVAILABLE = "__current_user_unavailable__";
+const ACTIVE_STATUSES: TaskStatus[] = ["open", "in_progress"];
+const COMPLETED_STATUSES: TaskStatus[] = ["completed", "cancelled"];
 
 function pluralizeTask(count: number) {
   return `task${count === 1 ? "" : "s"}`;
@@ -91,60 +93,74 @@ function showBulkClaimResult(result: BulkTaskResult) {
   }
 }
 
+function isMine(task: Task, currentUserId?: string) {
+  return Boolean(
+    currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
+  );
+}
+
+function isUnassigned(task: Task) {
+  return !task.assignedUserId && !task.assignedRole;
+}
+
+function isActive(task: Task) {
+  return task.status === "open" || task.status === "in_progress";
+}
+
+function taskConsultationType(task: Task): ConsultationType {
+  if (task.taskType === "review_intake") return "initial";
+  if (task.taskType === "schedule_consultation") return "initial";
+  if (task.taskType === "manual") return "follow-up";
+  return "follow-up";
+}
+
+function taskNoteForOutcome(
+  task: Task,
+  submission: TaskOutcomeSubmission,
+  mode: TaskOutcomeMode
+) {
+  const parts = [
+    `Outcome: ${submission.outcomeId}`,
+    `Mode: ${mode}`,
+    submission.durationLabel ? `Duration: ${submission.durationLabel}` : undefined,
+    submission.notes ? `Notes: ${submission.notes}` : undefined,
+    submission.followupNote ? `Follow-up: ${submission.followupNote}` : undefined,
+    task.description ? `Previous task note: ${task.description}` : undefined,
+  ].filter(Boolean);
+
+  return parts.join("\n");
+}
+
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState<TaskQueueTab>("all");
-  const [activeSummary, setActiveSummary] = useState<TaskSummaryKey | null>(null);
+  const currentUserId = user?.id;
+  const currentDoctorName =
+    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current doctor";
+
+  const [activePreset, setActivePreset] = useState<TaskPreset>("unassigned");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
-  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>(
-    []
-  );
-  const [priorityFilters, setPriorityFilters] = useState<TaskPriority[]>([]);
-  const [typeFilters, setTypeFilters] = useState<TaskType[]>([]);
-  const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
-  const [dueBefore, setDueBefore] = useState<string | undefined>();
+  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
+  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
+    "unassigned",
+  ]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [consultationTask, setConsultationTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [activeCallTask, setActiveCallTask] = useState<Task | null>(null);
+  const [outcomeState, setOutcomeState] = useState<{
+    task: Task;
+    mode: TaskOutcomeMode;
+    callData?: TaskCallData;
+  } | null>(null);
   const [pendingClaimUpdates, setPendingClaimUpdates] = useState<
     Record<string, { assignee?: boolean; status?: boolean }>
   >({});
+  const [pendingActionIds, setPendingActionIds] = useState<string[]>([]);
 
-  const currentUserId = user?.id;
   const claimTasksMutation = useClaimTasks();
-
-  function handleTabChange(tab: TaskQueueTab) {
-    setActiveTab(tab);
-    setActiveSummary(null);
-    setDueBefore(undefined);
-    setSelectedIds([]);
-    setAssignmentFilters([]);
-
-    if (tab === "all") setStatusFilters([]);
-    if (tab === "open") setStatusFilters(["open"]);
-    if (tab === "in_progress") setStatusFilters(["in_progress"]);
-    if (tab === "mine") {
-      setStatusFilters([]);
-      setAssignmentFilters(["mine"]);
-    }
-    if (tab === "unassigned") {
-      setStatusFilters([]);
-      setAssignmentFilters(["unassigned"]);
-    }
-    if (tab === "completed") setStatusFilters(["completed", "cancelled"]);
-  }
-
-  function handleSummarySelect(key: TaskSummaryKey) {
-    setActiveSummary(key);
-    setActiveTab("all");
-    setAssignmentFilters([]);
-    setStatusFilters(["open", "in_progress"]);
-    setDueBefore(key === "overdue" ? new Date().toISOString() : undefined);
-    setPriorityFilters(key === "urgent" ? ["urgent"] : []);
-    setTypeFilters(key === "intake" ? ["review_intake"] : []);
-  }
+  const updateTaskMutation = useUpdateTask();
+  const createConsultationMutation = useCreateConsultation();
+  const updateConsultationMutation = useUpdateConsultation();
 
   const query = useMemo(
     () => ({
@@ -156,52 +172,64 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         assignmentFilters.length === 1 && assignmentFilters[0] === "mine"
           ? (currentUserId ?? CURRENT_USER_UNAVAILABLE)
           : undefined,
-      priority: priorityFilters.length > 0 ? priorityFilters : undefined,
-      taskType: typeFilters.length > 0 ? typeFilters : undefined,
-      assignedRole: roleFilters.length > 0 ? roleFilters : undefined,
-      dueBefore,
       sort: "dueAt" as const,
       order: "asc" as const,
     }),
-    [
-      assignmentFilters,
-      currentUserId,
-      dueBefore,
-      priorityFilters,
-      roleFilters,
-      searchQuery,
-      statusFilters,
-      typeFilters,
-    ]
+    [assignmentFilters, currentUserId, searchQuery, statusFilters]
   );
-  const canUseInitialTasks =
-    activeTab === "all" &&
-    !dueBefore &&
-    !searchQuery.trim() &&
-    statusFilters.length === 0 &&
-    assignmentFilters.length === 0 &&
-    priorityFilters.length === 0 &&
-    typeFilters.length === 0 &&
-    roleFilters.length === 0;
-  const { data, isLoading, error } = useTasks(
-    query,
-    canUseInitialTasks ? initialTasks : undefined
-  );
-  const tasks = data?.data.tasks ?? EMPTY_TASKS;
-  const summaryTasks = data?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
 
-  // Derive the effective selection by intersecting with the visible tasks so
-  // ids removed by tab/filter changes (or backend refresh) are dropped without
-  // touching state inside an effect.
+  const { data: allTasksData } = useTasks(
+    { limit: 200, offset: 0, sort: "dueAt", order: "asc" },
+    initialTasks
+  );
+  const { data, isLoading, error } = useTasks(query);
+  const tasks = data?.data.tasks ?? EMPTY_TASKS;
+  const summaryTasks =
+    allTasksData?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
+
   const effectiveSelectedIds = useMemo(() => {
     if (selectedIds.length === 0) return EMPTY_STRING_ARRAY;
     const visibleIds = new Set(tasks.map((task) => task.taskId));
     return selectedIds.filter((id) => visibleIds.has(id));
   }, [selectedIds, tasks]);
 
-  async function handleClaimSelected(action: BulkTaskAction) {
-    if (effectiveSelectedIds.length === 0) return;
-    const ids = effectiveSelectedIds;
+  const presetCounts = useMemo(
+    () => ({
+      unassigned: summaryTasks.filter((task) => isUnassigned(task) && isActive(task))
+        .length,
+      mine_active: summaryTasks.filter(
+        (task) => isMine(task, currentUserId) && isActive(task)
+      ).length,
+      completed: summaryTasks.filter(
+        (task) =>
+          isMine(task, currentUserId) && COMPLETED_STATUSES.includes(task.status)
+      ).length,
+    }),
+    [currentUserId, summaryTasks]
+  );
+
+  function switchPreset(preset: TaskPreset) {
+    setActivePreset(preset);
+    setSelectedIds([]);
+
+    if (preset === "unassigned") {
+      setStatusFilters(ACTIVE_STATUSES);
+      setAssignmentFilters(["unassigned"]);
+      return;
+    }
+
+    if (preset === "mine_active") {
+      setStatusFilters(ACTIVE_STATUSES);
+      setAssignmentFilters(["mine"]);
+      return;
+    }
+
+    setStatusFilters(COMPLETED_STATUSES);
+    setAssignmentFilters(["mine"]);
+  }
+
+  async function claimTaskIds(ids: string[], action: BulkTaskAction) {
+    if (ids.length === 0) return;
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
     for (const id of ids) {
       pending[id] = {
@@ -210,11 +238,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       };
     }
     setPendingClaimUpdates((prev) => ({ ...prev, ...pending }));
+    setPendingActionIds((prev) => Array.from(new Set([...prev, ...ids])));
+
     try {
-      const result = await claimTasksMutation.mutateAsync({
-        taskIds: ids,
-        action,
-      });
+      const result = await claimTasksMutation.mutateAsync({ taskIds: ids, action });
       showBulkClaimResult(result);
     } finally {
       setPendingClaimUpdates((prev) => {
@@ -222,55 +249,167 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         for (const id of ids) delete next[id];
         return next;
       });
+      setPendingActionIds((prev) => prev.filter((id) => !ids.includes(id)));
       setSelectedIds([]);
     }
   }
 
-  const tabCounts = useMemo(
-    () => ({
-      all: summaryTasks.length,
-      open: summaryTasks.filter((task) => task.status === "open").length,
-      in_progress: summaryTasks.filter((task) => task.status === "in_progress").length,
-      mine: currentUserId
-        ? summaryTasks.filter(
-            (task) => task.assignedUserId === currentUserId && !task.assignedRole
-          ).length
-        : 0,
-      unassigned: summaryTasks.filter(
-        (task) => !task.assignedUserId && !task.assignedRole
-      ).length,
-      completed: summaryTasks.filter(
-        (task) => task.status === "completed" || task.status === "cancelled"
-      ).length,
-    }),
-    [currentUserId, summaryTasks]
+  async function handleClaimSelected() {
+    await claimTaskIds(effectiveSelectedIds, "claim");
+  }
+
+  async function handleClaimTask(task: Task) {
+    await claimTaskIds([task.taskId], "claim");
+  }
+
+  async function handleCallTask(task: Task) {
+    const phone = getTaskPatientPhone(task);
+    if (!phone) {
+      toast.error("No phone number is available for this task.");
+      return;
+    }
+
+    setPendingActionIds((prev) => Array.from(new Set([...prev, task.taskId])));
+    try {
+      if (task.status === "open") {
+        await updateTaskMutation.mutateAsync({
+          taskId: task.taskId,
+          status: "in_progress",
+        });
+      }
+      setActiveCallTask({
+        ...task,
+        status: task.status === "open" ? "in_progress" : task.status,
+      });
+      globalThis.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
+      toast.info("Dial started. Pick an outcome when the call ends.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start call.");
+    } finally {
+      setPendingActionIds((prev) => prev.filter((id) => id !== task.taskId));
+    }
+  }
+
+  async function handleManualLog(task: Task) {
+    setPendingActionIds((prev) => Array.from(new Set([...prev, task.taskId])));
+    try {
+      if (isUnassigned(task)) {
+        await claimTasksMutation.mutateAsync({
+          taskIds: [task.taskId],
+          action: "claim",
+        });
+      }
+      setOutcomeState({
+        task: { ...task, assignedUserId: currentUserId },
+        mode: "manual",
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to prepare manual log.");
+    } finally {
+      setPendingActionIds((prev) => prev.filter((id) => id !== task.taskId));
+    }
+  }
+
+  function handleHangUp(callData: TaskCallData) {
+    if (!activeCallTask) return;
+    setOutcomeState({ task: activeCallTask, mode: "hangup", callData });
+    setActiveCallTask(null);
+  }
+
+  async function handleOutcomeSubmit(submission: TaskOutcomeSubmission) {
+    if (!outcomeState) return;
+    const { task, mode } = outcomeState;
+    setPendingActionIds((prev) => Array.from(new Set([...prev, task.taskId])));
+
+    try {
+      if (submission.status === "completed") {
+        const consultation = await createConsultationMutation.mutateAsync({
+          patientId: task.patientId,
+          patientName: task.patientName || "Patient",
+          doctorId: currentUserId,
+          doctorName: currentDoctorName,
+          scheduledAt: new Date().toISOString(),
+          type: taskConsultationType(task),
+          duration: submission.durationSeconds,
+          notes: submission.notes || submission.followupNote,
+        });
+
+        await updateConsultationMutation.mutateAsync({
+          id: consultation.data.consultation.id,
+          status: "completed",
+          completedAt: new Date().toISOString(),
+          outcome: submission.outcomeId,
+          notes: submission.notes || submission.followupNote || null,
+          duration: submission.durationSeconds ?? null,
+        });
+      }
+
+      await updateTaskMutation.mutateAsync({
+        taskId: task.taskId,
+        status: submission.status,
+        note: taskNoteForOutcome(task, submission, mode),
+      });
+
+      setOutcomeState(null);
+      toast.success(
+        submission.status === "completed"
+          ? "Consultation finalised."
+          : "Call outcome saved."
+      );
+      if (submission.status === "completed") switchPreset("completed");
+      else switchPreset("mine_active");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save outcome.");
+    } finally {
+      setPendingActionIds((prev) => prev.filter((id) => id !== task.taskId));
+    }
+  }
+
+  const quickFilters = (
+    <div className="flex flex-wrap items-center gap-2">
+      <PresetButton
+        active={activePreset === "unassigned"}
+        tone="warning"
+        icon={UsersRound}
+        count={presetCounts.unassigned}
+        onClick={() => switchPreset("unassigned")}
+      >
+        Unassigned
+      </PresetButton>
+      <PresetButton
+        active={activePreset === "mine_active"}
+        tone="primary"
+        icon={UserRound}
+        count={presetCounts.mine_active}
+        onClick={() => switchPreset("mine_active")}
+      >
+        My tasks
+      </PresetButton>
+      <PresetButton
+        active={activePreset === "completed"}
+        tone="success"
+        icon={Check}
+        count={presetCounts.completed}
+        onClick={() => switchPreset("completed")}
+      >
+        Completed
+      </PresetButton>
+    </div>
   );
 
   return (
     <div className="space-y-6">
       <PageHeader title="Tasks" />
-      <p className="-mt-4 text-sm text-muted-foreground">
-        Review intake submissions, claim work, and move patients toward their next
-        clinical action.
+      <p className="-mt-4 max-w-3xl text-sm text-muted-foreground">
+        Claim work from the unassigned queue, dial through Aircall, and log the
+        structured outcome without leaving this screen.
       </p>
-
-      <TaskSummaryStrip
-        tasks={summaryTasks}
-        activeKey={activeSummary}
-        onSelect={handleSummarySelect}
-      />
-
-      <TaskQueueTabs
-        activeTab={activeTab}
-        counts={tabCounts}
-        onTabChange={handleTabChange}
-      />
 
       <ErrorBoundary>
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-12 w-full" />
+              <Skeleton key={index} className="h-14 w-full" />
             ))}
           </div>
         ) : error ? (
@@ -288,91 +427,72 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
               setSearchQuery(value);
             }}
             statusFilters={statusFilters}
-            onStatusFiltersChange={(value) => {
-              setActiveTab("all");
-              setActiveSummary(null);
-              setDueBefore(undefined);
-              setSelectedIds([]);
-              setStatusFilters(value);
-            }}
+            onStatusFiltersChange={setStatusFilters}
             assignmentFilters={assignmentFilters}
-            onAssignmentFiltersChange={(value) => {
-              setActiveTab("all");
-              setActiveSummary(null);
-              setDueBefore(undefined);
-              setSelectedIds([]);
-              setAssignmentFilters(value);
-            }}
+            onAssignmentFiltersChange={setAssignmentFilters}
             currentUserId={currentUserId}
-            priorityFilters={priorityFilters}
-            onPriorityFiltersChange={(value) => {
-              setActiveSummary(null);
-              setSelectedIds([]);
-              setPriorityFilters(value);
-            }}
-            typeFilters={typeFilters}
-            onTypeFiltersChange={(value) => {
-              setActiveSummary(null);
-              setSelectedIds([]);
-              setTypeFilters(value);
-            }}
-            roleFilters={roleFilters}
-            onRoleFiltersChange={(value) => {
-              setActiveSummary(null);
-              setSelectedIds([]);
-              setRoleFilters(value);
-            }}
+            priorityFilters={[]}
+            onPriorityFiltersChange={() => undefined}
+            typeFilters={[]}
+            onTypeFiltersChange={() => undefined}
+            roleFilters={[]}
+            onRoleFiltersChange={() => undefined}
             onRowClick={setSelectedTask}
-            onScheduleConsultation={setConsultationTask}
-            selectionEnabled
+            selectionEnabled={activePreset === "unassigned"}
             selectedIds={effectiveSelectedIds}
             onSelectionChange={setSelectedIds}
             pendingUpdates={pendingClaimUpdates}
+            pendingActionIds={pendingActionIds}
+            showFilterControls={false}
+            quickFilters={quickFilters}
+            onClaimTask={handleClaimTask}
+            onCallTask={handleCallTask}
+            onManualLogTask={handleManualLog}
+            emptyTitle={
+              activePreset === "unassigned"
+                ? "All tasks are claimed"
+                : activePreset === "mine_active"
+                  ? "Your queue is clear"
+                  : "No tasks in this view"
+            }
+            emptyDescription={
+              activePreset === "unassigned"
+                ? "Nice work. Check back later when new intake or follow-up work arrives."
+                : activePreset === "mine_active"
+                  ? "Try the Unassigned preset to claim more work."
+                  : "Completed and closed work will appear here after outcomes are saved."
+            }
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="secondary"
-                        disabled={
-                          !currentUserId ||
-                          effectiveSelectedIds.length === 0 ||
-                          claimTasksMutation.isPending
-                        }
-                      />
-                    }
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium tabular-nums">
+                    {effectiveSelectedIds.length} selected
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedIds([])}
+                    disabled={claimTasksMutation.isPending}
                   >
-                    <UserCheck className="size-4" />
-                    {claimTasksMutation.isPending
-                      ? "Claiming…"
-                      : `Bulk actions (${effectiveSelectedIds.length})`}
-                    <ChevronDown className="size-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" sideOffset={4} className="w-56">
-                    <DropdownMenuItem
-                      disabled={claimTasksMutation.isPending}
-                      onClick={() => handleClaimSelected("claim")}
-                    >
-                      <UserCheck />
-                      Claim selected
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      disabled={claimTasksMutation.isPending}
-                      onClick={() => handleClaimSelected("claim_and_start")}
-                    >
-                      <Play />
-                      Claim and start selected
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    Clear
+                  </Button>
+                  <Button
+                    onClick={handleClaimSelected}
+                    disabled={!currentUserId || claimTasksMutation.isPending}
+                  >
+                    <Check className="size-4" />
+                    Claim {effectiveSelectedIds.length}{" "}
+                    {pluralizeTask(effectiveSelectedIds.length)}
+                  </Button>
+                </div>
               ) : undefined
             }
             trailing={
-              <Button onClick={() => setNewTaskOpen(true)}>
-                <ListTodo className="size-4" />
-                New task
-              </Button>
+              effectiveSelectedIds.length === 0 ? (
+                <Button onClick={() => setNewTaskOpen(true)}>
+                  <Plus className="size-4" />
+                  New task
+                </Button>
+              ) : undefined
             }
           />
         )}
@@ -384,17 +504,39 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         onOpenChange={(open) => {
           if (!open) setSelectedTask(null);
         }}
-        onScheduleConsultation={setConsultationTask}
       />
 
-      <NewConsultationSheet
-        open={Boolean(consultationTask)}
-        onOpenChange={(open) => {
-          if (!open) setConsultationTask(null);
-        }}
-        defaultPatientId={consultationTask?.patientId}
-        defaultPatientName={consultationTask?.patientName ?? undefined}
-      />
+      {activeCallTask && (
+        <TaskCallDialog
+          key={activeCallTask.taskId}
+          task={activeCallTask}
+          open
+          onCancel={() => setActiveCallTask(null)}
+          onHangUp={handleHangUp}
+        />
+      )}
+
+      {outcomeState && (
+        <TaskOutcomeDialog
+          key={`${outcomeState.task.taskId}-${outcomeState.mode}`}
+          task={outcomeState.task}
+          mode={outcomeState.mode}
+          callData={outcomeState.callData}
+          open
+          submitting={
+            updateTaskMutation.isPending ||
+            createConsultationMutation.isPending ||
+            updateConsultationMutation.isPending
+          }
+          onCancel={() => {
+            if (outcomeState.mode === "hangup") {
+              setActiveCallTask(outcomeState.task);
+            }
+            setOutcomeState(null);
+          }}
+          onSubmit={handleOutcomeSubmit}
+        />
+      )}
 
       <NewTaskSheet
         open={newTaskOpen}
@@ -402,5 +544,57 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         entityId={entityId}
       />
     </div>
+  );
+}
+
+function PresetButton({
+  active,
+  tone,
+  icon: Icon,
+  count,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  tone: "warning" | "primary" | "success";
+  icon: LucideIcon;
+  count: number;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        !active && "border-border bg-popover text-muted-foreground hover:bg-muted",
+        active &&
+          tone === "warning" &&
+          "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+        active &&
+          tone === "success" &&
+          "border-status-success-border bg-status-success-bg text-status-success-fg",
+        active &&
+          tone === "primary" &&
+          "border-primary bg-primary text-primary-foreground"
+      )}
+    >
+      <Icon className="size-3.5" />
+      <span>{children}</span>
+      <span
+        className={cn(
+          "rounded-full px-1.5 font-mono text-xs font-semibold tabular-nums",
+          !active && "bg-muted text-muted-foreground",
+          active && tone === "warning" && "bg-status-warning-fg text-status-warning-bg",
+          active && tone === "success" && "bg-status-success-fg text-status-success-bg",
+          active &&
+            tone === "primary" &&
+            "bg-primary-foreground/20 text-primary-foreground"
+        )}
+      >
+        {count}
+      </span>
+    </button>
   );
 }

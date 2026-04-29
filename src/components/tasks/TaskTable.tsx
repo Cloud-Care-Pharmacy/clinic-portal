@@ -5,13 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CalendarPlus,
+  Check,
   ClipboardCheck,
   Eye,
   FileQuestion,
+  FileText,
   HeartPulse,
   IdCard,
   ListTodo,
   MoreHorizontal,
+  Phone,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -27,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -38,6 +42,7 @@ import {
   formatTaskDueRelative,
   formatTaskDate,
   getTaskDisplayTitle,
+  getTaskPatientPhone,
   isTaskOverdue,
   TASK_PRIORITY_LABELS,
   TASK_PRIORITY_VARIANTS,
@@ -99,6 +104,12 @@ interface TaskTableProps {
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   bulkActions?: ReactNode;
+  quickFilters?: ReactNode;
+  showFilterControls?: boolean;
+  onClaimTask?: (task: Task) => void;
+  onCallTask?: (task: Task) => void;
+  onManualLogTask?: (task: Task) => void;
+  pendingActionIds?: string[];
   pendingUpdates?: Record<string, { assignee?: boolean; status?: boolean }>;
   emptyTitle?: string;
   emptyDescription?: string;
@@ -161,16 +172,123 @@ function AssigneeCell({ task }: { task: Task }) {
   return <span className="text-sm italic text-muted-foreground">Unassigned</span>;
 }
 
+function isTaskCompleted(task: Task) {
+  return task.status === "completed" || task.status === "cancelled";
+}
+
+function isTaskAssignedToCurrentUser(task: Task, currentUserId?: string) {
+  return Boolean(
+    currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
+  );
+}
+
+function isTaskUnassigned(task: Task) {
+  return !task.assignedUserId && !task.assignedRole;
+}
+
 function ActionsCell({
   task,
   onView,
   onScheduleConsultation,
+  onClaimTask,
+  onCallTask,
+  onManualLogTask,
+  currentUserId,
+  pending,
 }: {
   task: Task;
   onView: () => void;
   onScheduleConsultation?: (task: Task) => void;
+  onClaimTask?: (task: Task) => void;
+  onCallTask?: (task: Task) => void;
+  onManualLogTask?: (task: Task) => void;
+  currentUserId?: string;
+  pending?: boolean;
 }) {
   const router = useRouter();
+  const completed = isTaskCompleted(task);
+  const unassigned = isTaskUnassigned(task);
+  const mine = isTaskAssignedToCurrentUser(task, currentUserId);
+
+  if (onClaimTask || onCallTask || onManualLogTask) {
+    if (completed) {
+      return (
+        <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
+          <Check className="size-3.5" />
+          {task.status === "cancelled" ? "Closed" : "Done"}
+        </span>
+      );
+    }
+
+    if (unassigned) {
+      return (
+        <div
+          className="flex justify-end gap-1"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {onClaimTask && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 rounded-full px-3"
+              disabled={pending}
+              onClick={() => onClaimTask(task)}
+            >
+              <UserRound className="size-3.5" />
+              {pending ? "Claiming…" : "Claim"}
+            </Button>
+          )}
+          {onManualLogTask && (
+            <Button
+              size="icon-sm"
+              variant="outline"
+              className="size-11 rounded-full"
+              disabled={pending}
+              onClick={() => onManualLogTask(task)}
+              aria-label="Log call outcome manually"
+              title="Log call outcome manually"
+            >
+              <FileText className="size-3.5" />
+            </Button>
+          )}
+        </div>
+      );
+    }
+
+    if (mine) {
+      return (
+        <div
+          className="flex justify-end gap-1"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {onCallTask && (
+            <Button
+              size="sm"
+              className="h-11 rounded-full px-3"
+              disabled={pending}
+              onClick={() => onCallTask(task)}
+            >
+              <Phone className="size-3.5" />
+              Call
+            </Button>
+          )}
+          {onManualLogTask && (
+            <Button
+              size="icon-sm"
+              variant="outline"
+              className="size-11 rounded-full"
+              disabled={pending}
+              onClick={() => onManualLogTask(task)}
+              aria-label="Log call outcome manually"
+              title="Log call outcome manually"
+            >
+              <FileText className="size-3.5" />
+            </Button>
+          )}
+        </div>
+      );
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -235,6 +353,12 @@ export function TaskTable({
   selectedIds,
   onSelectionChange,
   bulkActions,
+  quickFilters,
+  showFilterControls = true,
+  onClaimTask,
+  onCallTask,
+  onManualLogTask,
+  pendingActionIds = [],
   pendingUpdates,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
@@ -404,30 +528,33 @@ export function TaskTable({
     {
       field: "patientName",
       headerName: "Patient",
-      flex: 1,
-      minWidth: 210,
+      flex: 1.25,
+      minWidth: 220,
       valueFormatter: (value: string | null | undefined) => value || "—",
-      renderCell: (params) => (
-        <Link
-          href={`/patients/${encodeURIComponent(params.row.patientId)}`}
-          onClick={(event) => event.stopPropagation()}
-          scroll={false}
-          title={params.row.patientName || params.row.patientId}
-          className="flex min-w-0 items-center gap-2 text-foreground hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
-            {initials(params.row.patientName)}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium">
-              {params.row.patientName || "Open patient"}
+      renderCell: (params) => {
+        const phone = getTaskPatientPhone(params.row);
+        return (
+          <Link
+            href={`/patients/${encodeURIComponent(params.row.patientId)}`}
+            onClick={(event) => event.stopPropagation()}
+            scroll={false}
+            title={params.row.patientName || params.row.patientId}
+            className="flex min-w-0 items-center gap-2 text-foreground hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold text-secondary-foreground">
+              {initials(params.row.patientName)}
             </span>
-            <span className="block truncate text-xs text-muted-foreground">
-              {params.row.patientId}
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium">
+                {params.row.patientName || "Open patient"}
+              </span>
+              <span className="block truncate font-mono text-xs text-muted-foreground">
+                {phone ?? params.row.patientId}
+              </span>
             </span>
-          </span>
-        </Link>
-      ),
+          </Link>
+        );
+      },
     },
     {
       field: "priority",
@@ -511,8 +638,10 @@ export function TaskTable({
     },
     {
       field: "actions",
-      headerName: "",
-      width: 64,
+      headerName: "Action",
+      width: 170,
+      align: "right",
+      headerAlign: "right",
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -520,6 +649,11 @@ export function TaskTable({
           task={params.row}
           onView={() => onRowClick(params.row)}
           onScheduleConsultation={onScheduleConsultation}
+          onClaimTask={onClaimTask}
+          onCallTask={onCallTask}
+          onManualLogTask={onManualLogTask}
+          currentUserId={currentUserId}
+          pending={pendingActionIds.includes(params.row.taskId)}
         />
       ),
     },
@@ -531,11 +665,18 @@ export function TaskTable({
 
   const toolbar = (
     <FilterBar
+      leading={quickFilters}
       searchPlaceholder="Search tasks or patients…"
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
-      filters={filters}
-      resultCount={hasActiveFilters ? visibleTasks.length : (total ?? tasks.length)}
+      filters={showFilterControls ? filters : []}
+      resultCount={
+        bulkActions
+          ? undefined
+          : hasActiveFilters
+            ? visibleTasks.length
+            : (total ?? tasks.length)
+      }
       resultLabel="tasks"
       trailing={
         bulkActions || trailing ? (
@@ -590,6 +731,9 @@ export function TaskTable({
           autoHeight
           pagination
           checkboxSelection={selectionEnabled}
+          isRowSelectable={(params) =>
+            isTaskUnassigned(params.row) && !isTaskCompleted(params.row)
+          }
           rowSelectionModel={
             selectionEnabled
               ? { type: "include", ids: new Set<string>(selectedIds ?? []) }
@@ -615,7 +759,7 @@ export function TaskTable({
           disableColumnMenu
           columnHeaderHeight={44}
           pageSizeOptions={[10, 25, 50]}
-          rowHeight={64}
+          rowHeight={72}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           onRowClick={(params: GridRowParams<Task>) => onRowClick(params.row)}
           sx={dataGridSx}

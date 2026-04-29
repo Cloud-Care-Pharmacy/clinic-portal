@@ -6,7 +6,7 @@ const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
 export default async function TasksPage() {
   const initialTasks = await api
     .getTasks({
-      limit: 50,
+      limit: 200,
       offset: 0,
       sort: "dueAt",
       order: "asc",
