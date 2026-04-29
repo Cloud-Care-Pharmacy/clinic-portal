@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   CalendarPlus,
@@ -26,7 +27,6 @@ import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import {
-  useClaimTasks,
   useCompleteTask,
   useTask,
   useUpdateTask,
@@ -74,14 +74,13 @@ export function TaskDetailSheet({
   onScheduleConsultation,
 }: TaskDetailSheetProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
-  const claimTask = useClaimTasks();
+  const { user } = useUser();
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
   const { data } = useTask(task?.taskId, buildInitialResponse(task));
   const detailTask = data?.data.task ?? task;
   const events = data?.data.events ?? [];
-  const isPending =
-    claimTask.isPending || updateTask.isPending || completeTask.isPending;
+  const isPending = updateTask.isPending || completeTask.isPending;
 
   if (!detailTask) return null;
 
@@ -108,16 +107,19 @@ export function TaskDetailSheet({
   }
 
   function handleClaim() {
-    claimTask.mutate(
-      { taskIds: [activeTask.taskId], action: "claim" },
+    if (!user?.id) {
+      toast.error("Unable to claim task without a signed-in user");
+      return;
+    }
+
+    handleUpdate(
       {
-        onSuccess: (response) => {
-          if (response.claimed.length > 0) toast.success("Task claimed");
-          if (response.skipped.length > 0) toast.info(response.skipped[0].reason);
-          if (response.failed.length > 0) toast.error(response.failed[0].error);
-        },
-        onError: (error) => toast.error(error.message),
-      }
+        taskId: activeTask.taskId,
+        assignedUserId: user.id,
+        assignedRole: null,
+        note: "Task claimed",
+      },
+      "Task claimed"
     );
   }
 
@@ -177,7 +179,11 @@ export function TaskDetailSheet({
         footer={
           canAction ? (
             <>
-              <Button variant="outline" disabled={isPending} onClick={handleClaim}>
+              <Button
+                variant="outline"
+                disabled={isPending || !user?.id}
+                onClick={handleClaim}
+              >
                 <UserCheck className="size-4" />
                 Claim
               </Button>

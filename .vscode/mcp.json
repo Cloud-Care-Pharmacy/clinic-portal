@@ -7,7 +7,7 @@
     "FastMeds": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "apidog-mcp-server@latest", "--site-id=768878"]
+      "args": ["-y", "apidog-mcp-server@latest", "--site-id=768952"]
     }
   }
 }
