@@ -26,10 +26,10 @@ import {
   formatTaskDate,
   formatTaskDueRelative,
   getTaskDisplayTitle,
-  getTaskPatientPhone,
   TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
 } from "@/components/tasks/task-format";
+import { usePatient } from "@/lib/hooks/use-patients";
 import { cn } from "@/lib/utils";
 import type { Task, TaskStatus } from "@/types";
 
@@ -171,6 +171,7 @@ export function TaskCallDialog({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const { savingLabel, markSaving } = useSavingLabel();
+  const patientQuery = usePatient(task?.patientId);
 
   useEffect(() => {
     if (!open) return;
@@ -182,7 +183,7 @@ export function TaskCallDialog({
   if (!open || !task) return null;
 
   const durationLabel = formatDuration(seconds);
-  const phone = getTaskPatientPhone(task);
+  const phone = patientQuery.data?.data?.patient?.mobile?.trim() || undefined;
   const patientName = task.patientName || "Patient";
   const displayTitle = getTaskDisplayTitle(task.taskType, task.title);
 

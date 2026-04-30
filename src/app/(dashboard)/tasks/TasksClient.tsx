@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { Check, Plus, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
@@ -23,8 +24,8 @@ import {
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
 import { useClaimTasks, useTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
+import { patientQueryOptions } from "@/lib/hooks/use-patients";
 import { cn } from "@/lib/utils";
-import { getTaskPatientPhone } from "@/components/tasks/task-format";
 import type {
   BulkTaskAction,
   BulkTaskResult,
@@ -133,6 +134,7 @@ function taskNoteForOutcome(
 
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
+  const queryClient = useQueryClient();
   const currentUserId = user?.id;
   const currentDoctorName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current doctor";
@@ -263,14 +265,17 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   }
 
   async function handleCallTask(task: Task) {
-    const phone = getTaskPatientPhone(task);
-    if (!phone) {
-      toast.error("No phone number is available for this task.");
-      return;
-    }
-
     setPendingActionIds((prev) => Array.from(new Set([...prev, task.taskId])));
     try {
+      const patientResponse = await queryClient.fetchQuery(
+        patientQueryOptions(task.patientId)
+      );
+      const phone = patientResponse?.data?.patient?.mobile?.trim();
+      if (!phone) {
+        toast.error("No phone number on file for this patient.");
+        return;
+      }
+
       if (task.status === "open") {
         await updateTaskMutation.mutateAsync({
           taskId: task.taskId,
