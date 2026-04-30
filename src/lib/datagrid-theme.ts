@@ -94,10 +94,23 @@ export const dataGridSx: SxProps<Theme> = {
    * (`palette.DataGrid.pinnedBg` / `headerBg`) in `MuiThemeProvider`, so
    * pinned columns inherit the correct tokens automatically.
    *
-   * The only gap MUI doesn't paint is the scrollbar gutter aligned with
-   * the right-pinned column — fill it with the header token at the top
-   * and the card token below so it blends into the rounded wrapper.
+   * MUI v9 quirk: data rows (`MuiDataGrid-row`) get `width: var(--DataGrid-rowWidth)`
+   * which lets the `cellEmpty` filler (`flex: 1`) stretch and push the
+   * right-pinned cell to the row's right edge. The column header row
+   * (`GridColumnHeaderRow` styled component) ships only with
+   * `display: flex` and no width, so its `filler--horizontal` (which uses
+   * `width: var(--DataGrid-horizontalFiller)` = 0px) cannot grow — the
+   * pinned-right header ends up sitting right after the last regular
+   * header instead of at the right edge, creating the illusion that the
+   * header isn't pinned. Force the header row to match the data row width.
    */
+  "& .MuiDataGrid-columnHeaders > div[role='row']": {
+    width: "var(--DataGrid-rowWidth)",
+  },
+
+  // Fill the scrollbar gutter so the pinned-right edge meets the table
+  // border cleanly (no white "steel gap" between the pinned column and
+  // the rounded corner of the wrapper).
   "& .MuiDataGrid-scrollbarFiller--pinnedRight": {
     backgroundColor: "var(--table-header)",
   },
