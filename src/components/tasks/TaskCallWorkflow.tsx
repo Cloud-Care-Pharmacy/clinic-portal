@@ -225,6 +225,21 @@ function formatTaskReferenceStatus(task: Task) {
   return TASK_STATUS_LABELS[task.status].toLowerCase();
 }
 
+function LiveStatusDot({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "relative inline-flex size-2.5 items-center justify-center",
+        className
+      )}
+      aria-hidden="true"
+    >
+      <span className="absolute inline-flex size-full rounded-full bg-(--feedback-success) opacity-40 motion-safe:animate-ping motion-safe:animation-duration-[1.4s] motion-reduce:hidden" />
+      <span className="relative inline-flex size-2 rounded-full bg-(--feedback-success)" />
+    </span>
+  );
+}
+
 export function TaskCallDialog({
   task,
   open,
@@ -304,10 +319,7 @@ export function TaskCallDialog({
         onClick={() => setMinimized(false)}
         className="fixed right-6 bottom-6 z-60 flex h-14 min-w-60 items-center gap-3 rounded-full border border-border bg-popover px-4 text-left shadow-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <span
-          className="size-2 rounded-full bg-(--feedback-success)"
-          aria-hidden="true"
-        />
+        <LiveStatusDot />
         <span className="flex size-8 items-center justify-center rounded-full bg-status-accent-bg text-xs font-semibold text-status-accent-fg">
           {taskInitials(task)}
         </span>
@@ -385,7 +397,7 @@ export function TaskCallDialog({
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--feedback-success)">
-                    <span className="size-2 rounded-full bg-(--feedback-success)" />
+                    <LiveStatusDot />
                     Connected
                   </p>
                   <p className="mt-1 font-mono text-2xl font-semibold tabular-nums tracking-wider">
