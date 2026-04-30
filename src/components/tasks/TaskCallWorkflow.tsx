@@ -602,7 +602,7 @@ export function TaskOutcomeDialog({
         overlayClassName="bg-foreground/40"
         className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-150"
       >
-        <DialogHeader className="border-b border-border p-5">
+        <DialogHeader className="gap-0 border-b border-border px-5 py-4">
           <div className="mb-3 flex items-center gap-2">
             <span
               className={cn(
@@ -634,7 +634,7 @@ export function TaskOutcomeDialog({
               ? `Log call outcome — ${task.patientName || "patient"}`
               : `How did the call with ${(task.patientName || "the patient").split(" ")[0]} end?`}
           </DialogTitle>
-          <DialogDescription className="mt-2">
+          <DialogDescription className="mt-1.5 leading-5">
             {isManual
               ? "Use this when you've already spoken to the patient (in person, by phone, or outside Aircall) and just need to record the result."
               : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
@@ -734,7 +734,7 @@ export function TaskOutcomeDialog({
           </div>
         )}
 
-        <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row">
+        <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row sm:justify-between">
           <p className="max-w-xs text-xs leading-5 text-muted-foreground">
             {outcome.status === "completed"
               ? "This will create a finalised consultation linked to the task."
