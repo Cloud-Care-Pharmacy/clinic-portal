@@ -115,8 +115,13 @@ export function NewTaskSheet({
   const priorityValue = useWatch({ control: form.control, name: "priority" });
   const assignedRoleValue = useWatch({ control: form.control, name: "assignedRole" });
   const isDirty = form.formState.isDirty;
+  const shouldShowPatientSearch =
+    !defaultPatientId &&
+    !selectedPatient &&
+    Boolean(entityId) &&
+    Boolean(patientNameValue?.trim());
   const canSearchPatients =
-    open && !defaultPatientId && Boolean(entityId) && Boolean(patientNameValue?.trim());
+    open && shouldShowPatientSearch;
   const { data: patientSearchData, isFetching: searchingPatients } = usePatientSearch(
     canSearchPatients ? entityId : undefined,
     {
@@ -235,7 +240,7 @@ export function NewTaskSheet({
                 setSelectedPatient(null);
               }}
             />
-            {!defaultPatientId && entityId && patientNameValue && (
+            {shouldShowPatientSearch && (
               <div className="rounded-lg border bg-popover p-1 shadow-sm">
                 {searchingPatients ? (
                   <p className="px-3 py-2 text-sm text-muted-foreground">

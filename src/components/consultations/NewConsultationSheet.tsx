@@ -142,8 +142,14 @@ export function NewConsultationSheet({
     ? MINUTE_OPTIONS
     : [minute, ...MINUTE_OPTIONS];
   const isSubmitting = createConsultation.isPending || updateConsultation.isPending;
+  const shouldShowPatientSearch =
+    !isEditing &&
+    !defaultPatientId &&
+    !selectedPatient &&
+    Boolean(entityId) &&
+    Boolean(patientNameValue?.trim());
   const canSearchPatients =
-    open && !isEditing && !defaultPatientId && Boolean(entityId);
+    open && shouldShowPatientSearch;
   const { data: patientSearchData, isFetching: searchingPatients } = usePatientSearch(
     canSearchPatients ? entityId : undefined,
     { q: patientNameValue?.trim() ?? "", limit: 8 }
@@ -339,7 +345,7 @@ export function NewConsultationSheet({
               setSelectedPatient(null);
             }}
           />
-          {!isEditing && !defaultPatientId && entityId && patientNameValue && (
+          {shouldShowPatientSearch && (
             <div className="rounded-lg border bg-popover p-1 shadow-sm">
               {searchingPatients ? (
                 <p className="px-3 py-2 text-sm text-muted-foreground">
