@@ -37,14 +37,6 @@ export function MuiThemeProvider({ children }: { children: ReactNode }) {
             pinnedBg: "var(--card)",
           },
         },
-        components: {
-          MuiDataGrid: {
-            defaultProps: {
-              columnHeaderHeight: 44,
-              disableColumnMenu: true,
-            },
-          },
-        },
         typography: {
           fontFamily: "Outfit, sans-serif",
           fontSize: 14,

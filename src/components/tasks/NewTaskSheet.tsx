@@ -1,9 +1,19 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -95,6 +105,7 @@ export function NewTaskSheet({
   const [selectedPatient, setSelectedPatient] = useState<PatientSearchResult | null>(
     null
   );
+  const [discardConfirmOpen, setDiscardConfirmOpen] = useState(false);
   const form = useForm<FormData>({
     defaultValues: getDefaultValues(defaultPatientName),
   });
@@ -102,6 +113,7 @@ export function NewTaskSheet({
   const taskTypeValue = useWatch({ control: form.control, name: "taskType" });
   const priorityValue = useWatch({ control: form.control, name: "priority" });
   const assignedRoleValue = useWatch({ control: form.control, name: "assignedRole" });
+  const isDirty = form.formState.isDirty;
   const canSearchPatients =
     open && !defaultPatientId && Boolean(entityId) && Boolean(patientNameValue?.trim());
   const { data: patientSearchData, isFetching: searchingPatients } = usePatientSearch(
@@ -116,6 +128,36 @@ export function NewTaskSheet({
   function resetForm() {
     form.reset(getDefaultValues(defaultPatientName));
     setSelectedPatient(null);
+  }
+
+  useEffect(() => {
+    if (!open || !isDirty) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, open]);
+
+  function requestOpenChange(nextOpen: boolean) {
+    if (!nextOpen && createTask.isPending) return;
+
+    if (!nextOpen && isDirty) {
+      setDiscardConfirmOpen(true);
+      return;
+    }
+
+    if (!nextOpen) resetForm();
+    onOpenChange(nextOpen);
+  }
+
+  function discardDraft() {
+    resetForm();
+    setDiscardConfirmOpen(false);
+    onOpenChange(false);
   }
 
   function setFieldError(issue: z.core.$ZodIssue) {
@@ -164,195 +206,223 @@ export function NewTaskSheet({
   }
 
   return (
-    <AppSheet
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) resetForm();
-        onOpenChange(nextOpen);
-      }}
-      title="New task"
-      description="Create a manual follow-up or queue item for a patient."
-      footer={
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              resetForm();
-              onOpenChange(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" form={formId} disabled={createTask.isPending}>
-            {createTask.isPending ? "Creating…" : "Create task"}
-          </Button>
-        </>
-      }
-    >
-      <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="taskPatientName">Patient</Label>
-          <Input
-            id="taskPatientName"
-            placeholder="Search for a patient"
-            {...form.register("patientName")}
-            disabled={Boolean(defaultPatientId)}
-            onChange={(event) => {
-              form.setValue("patientName", event.target.value, { shouldDirty: true });
-              setSelectedPatient(null);
-            }}
-          />
-          {!defaultPatientId && entityId && patientNameValue && (
-            <div className="rounded-lg border bg-popover p-1 shadow-sm">
-              {searchingPatients ? (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  Searching patients…
-                </p>
-              ) : patientOptions.length > 0 ? (
-                patientOptions.map((patient) => {
-                  const label = patientLabel(patient);
-                  return (
-                    <button
-                      type="button"
-                      key={patient.id}
-                      className="flex min-h-11 w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                      onClick={() => {
-                        setSelectedPatient(patient);
-                        form.setValue("patientName", label, {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        });
-                        form.clearErrors("patientName");
-                      }}
-                    >
-                      <span className="font-medium">{label}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {patient.dateOfBirth ?? "DOB not recorded"}
-                        {patient.halaxyPatientId
-                          ? ` · PMS ${patient.halaxyPatientId}`
-                          : " · PMS pending"}
-                      </span>
-                    </button>
-                  );
-                })
-              ) : (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  No matching patients found.
-                </p>
-              )}
-            </div>
-          )}
-          {!defaultPatientId && !entityId && (
-            <p className="text-xs text-muted-foreground">
-              Open a patient profile to create a patient-specific task.
-            </p>
-          )}
-          {form.formState.errors.patientName && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.patientName.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="taskTitle">Title</Label>
-          <Input
-            id="taskTitle"
-            placeholder="e.g. Follow up missing documents"
-            {...form.register("title")}
-          />
-          {form.formState.errors.title && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.title.message}
-            </p>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="taskType">Type</Label>
-          <Select
-            value={taskTypeValue}
-            onValueChange={(value) => {
-              if (value) form.setValue("taskType", value as TaskType);
-            }}
-          >
-            <SelectTrigger id="taskType" className="w-full">
-              <SelectValue placeholder="Select task type" />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_TYPE_OPTIONS.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {TASK_TYPE_LABELS[value]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
+    <>
+      <AppSheet
+        open={open}
+        onOpenChange={requestOpenChange}
+        title="New task"
+        description="Create a manual follow-up or queue item for a patient."
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={createTask.isPending}
+              onClick={() => requestOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form={formId} disabled={createTask.isPending}>
+              {createTask.isPending ? "Creating…" : "Create task"}
+            </Button>
+          </>
+        }
+      >
+        <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="taskPriority">Priority</Label>
+            <Label htmlFor="taskPatientName">Patient</Label>
+            <Input
+              id="taskPatientName"
+              placeholder="Search for a patient"
+              {...form.register("patientName")}
+              disabled={Boolean(defaultPatientId)}
+              onChange={(event) => {
+                form.setValue("patientName", event.target.value, { shouldDirty: true });
+                setSelectedPatient(null);
+              }}
+            />
+            {!defaultPatientId && entityId && patientNameValue && (
+              <div className="rounded-lg border bg-popover p-1 shadow-sm">
+                {searchingPatients ? (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    Searching patients…
+                  </p>
+                ) : patientOptions.length > 0 ? (
+                  patientOptions.map((patient) => {
+                    const label = patientLabel(patient);
+                    return (
+                      <button
+                        type="button"
+                        key={patient.id}
+                        className="flex min-h-11 w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          form.setValue("patientName", label, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
+                          form.clearErrors("patientName");
+                        }}
+                      >
+                        <span className="font-medium">{label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {patient.dateOfBirth ?? "DOB not recorded"}
+                          {patient.halaxyPatientId
+                            ? ` · PMS ${patient.halaxyPatientId}`
+                            : " · PMS pending"}
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    No matching patients found.
+                  </p>
+                )}
+              </div>
+            )}
+            {!defaultPatientId && !entityId && (
+              <p className="text-xs text-muted-foreground">
+                Open a patient profile to create a patient-specific task.
+              </p>
+            )}
+            {form.formState.errors.patientName && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.patientName.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="taskTitle">Title</Label>
+            <Input
+              id="taskTitle"
+              placeholder="e.g. Follow up missing documents"
+              {...form.register("title")}
+            />
+            {form.formState.errors.title && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.title.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="taskType">Type</Label>
             <Select
-              value={priorityValue}
+              value={taskTypeValue}
               onValueChange={(value) => {
-                if (value) form.setValue("priority", value as TaskPriority);
+                if (value) {
+                  form.setValue("taskType", value as TaskType, { shouldDirty: true });
+                }
               }}
             >
-              <SelectTrigger id="taskPriority" className="w-full">
-                <SelectValue placeholder="Select priority" />
+              <SelectTrigger id="taskType" className="w-full">
+                <SelectValue placeholder="Select task type" />
               </SelectTrigger>
               <SelectContent>
-                {PRIORITY_OPTIONS.map((value) => (
+                {TASK_TYPE_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
-                    {TASK_PRIORITY_LABELS[value]}
+                    {TASK_TYPE_LABELS[value]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="taskAssignedRole">Queue</Label>
-            <Select
-              value={assignedRoleValue}
-              onValueChange={(value) => {
-                if (value) form.setValue("assignedRole", value as RoleSelectValue);
-              }}
-            >
-              <SelectTrigger id="taskAssignedRole" className="w-full">
-                <SelectValue placeholder="Select queue" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                <SelectItem value="staff">Staff queue</SelectItem>
-                <SelectItem value="doctor">Doctor queue</SelectItem>
-                <SelectItem value="admin">Admin queue</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="taskPriority">Priority</Label>
+              <Select
+                value={priorityValue}
+                onValueChange={(value) => {
+                  if (value) {
+                    form.setValue("priority", value as TaskPriority, {
+                      shouldDirty: true,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger id="taskPriority" className="w-full">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {TASK_PRIORITY_LABELS[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="taskAssignedRole">Queue</Label>
+              <Select
+                value={assignedRoleValue}
+                onValueChange={(value) => {
+                  if (value) {
+                    form.setValue("assignedRole", value as RoleSelectValue, {
+                      shouldDirty: true,
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger id="taskAssignedRole" className="w-full">
+                  <SelectValue placeholder="Select queue" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="staff">Staff queue</SelectItem>
+                  <SelectItem value="doctor">Doctor queue</SelectItem>
+                  <SelectItem value="admin">Admin queue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="taskDueAt">Due date</Label>
-          <Input id="taskDueAt" type="datetime-local" {...form.register("dueAt")} />
-          {form.formState.errors.dueAt && (
-            <p className="text-sm text-destructive">
-              {form.formState.errors.dueAt.message}
-            </p>
-          )}
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="taskDueAt">Due date</Label>
+            <Input id="taskDueAt" type="datetime-local" {...form.register("dueAt")} />
+            {form.formState.errors.dueAt && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.dueAt.message}
+              </p>
+            )}
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="taskDescription">Description</Label>
-          <Textarea
-            id="taskDescription"
-            placeholder="Optional context for the person completing this task."
-            className="min-h-28"
-            {...form.register("description")}
-          />
-        </div>
-      </form>
-    </AppSheet>
+          <div className="space-y-2">
+            <Label htmlFor="taskDescription">Description</Label>
+            <Textarea
+              id="taskDescription"
+              placeholder="Optional context for the person completing this task."
+              className="min-h-28"
+              {...form.register("description")}
+            />
+          </div>
+        </form>
+      </AppSheet>
+
+      <AlertDialog open={discardConfirmOpen} onOpenChange={setDiscardConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard task draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear the patient, task details, due date, and notes you have
+              entered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={discardDraft}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard draft
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

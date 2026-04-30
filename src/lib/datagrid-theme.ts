@@ -89,29 +89,7 @@ export const dataGridSx: SxProps<Theme> = {
     opacity: 1,
   },
 
-  /* ---- Pinned columns (DataGridPro native pinning) ---------------------
-   * Cell + header backgrounds are configured globally via the MUI theme
-   * (`palette.DataGrid.pinnedBg` / `headerBg`) in `MuiThemeProvider`, so
-   * pinned columns inherit the correct tokens automatically.
-   */
-
-  // Fill the scrollbar gutter so the pinned-right edge meets the table
-  // border cleanly (no white "steel gap" between the pinned column and
-  // the rounded corner of the wrapper).
-  "& .MuiDataGrid-scrollbarFiller--pinnedRight": {
-    backgroundColor: "var(--table-header)",
-  },
-  "& .MuiDataGrid-filler--pinnedRight": {
+  "& .MuiDataGrid-filler": {
     backgroundColor: "var(--card)",
   },
-  // Keep pinned cells in sync with row-level hover / selection states so
-  // the pinned column doesn't visually detach from the row.
-  "& .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row:hover .MuiDataGrid-cell--pinnedRight":
-    {
-      backgroundColor: "var(--table-row-hover)",
-    },
-  "& .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected .MuiDataGrid-cell--pinnedRight, & .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedLeft, & .MuiDataGrid-row.Mui-selected:hover .MuiDataGrid-cell--pinnedRight":
-    {
-      backgroundColor: "color-mix(in srgb, var(--primary) 8%, var(--table-row))",
-    },
 };

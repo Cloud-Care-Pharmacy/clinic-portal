@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -135,42 +135,21 @@ function taskMetadataList(task: Task, keys: string[]) {
   return [];
 }
 
-function useSavingLabel() {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [savingLabel, setSavingLabel] = useState("Saved just now");
-
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    },
-    []
-  );
-
-  function markSaving() {
-    setSavingLabel("Saving…");
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => setSavingLabel("Saved just now"), 600);
-  }
-
-  return { savingLabel, markSaving };
-}
-
 export function TaskCallDialog({
   task,
   open,
-  onCancel,
-  onHangUp,
+  cancelAction,
+  hangUpAction,
 }: {
   task: Task | null;
   open: boolean;
-  onCancel: () => void;
-  onHangUp: (callData: TaskCallData) => void;
+  cancelAction: () => void;
+  hangUpAction: (callData: TaskCallData) => void;
 }) {
   const [seconds, setSeconds] = useState(0);
   const [notes, setNotes] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
-  const { savingLabel, markSaving } = useSavingLabel();
   const patientQuery = usePatient(task?.patientId);
 
   useEffect(() => {
@@ -189,7 +168,6 @@ export function TaskCallDialog({
 
   function handleNoteChange(value: string) {
     setNotes(value);
-    markSaving();
   }
 
   function insertSnippet(label: string) {
@@ -227,7 +205,7 @@ export function TaskCallDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen) onCancel();
+        if (!nextOpen) cancelAction();
       }}
     >
       <DialogContent
@@ -245,12 +223,10 @@ export function TaskCallDialog({
                 <div className="flex items-center gap-3">
                   <span className="relative flex size-9 items-center justify-center rounded-lg border border-status-success-border bg-status-success-bg text-xs font-bold text-status-success-fg">
                     <span className="absolute -top-1 -right-1 size-2 rounded-full bg-status-success-fg" />
-                    AC
+                    <Phone className="size-4" />
                   </span>
                   <div>
-                    <p className="overline text-status-success-fg">
-                      On call via Aircall
-                    </p>
+                    <p className="overline text-status-success-fg">Phone call</p>
                     <DialogTitle className="mt-1 text-lg font-semibold">
                       {patientName}
                     </DialogTitle>
@@ -277,9 +253,7 @@ export function TaskCallDialog({
 
             <div className="border-b border-border bg-muted px-5 py-3 text-sm text-muted-foreground">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>
-                  Mute, hold, transfer, and hang-up live in your Aircall extension.
-                </span>
+                <span>Mute, hold, transfer, and hang-up stay in your phone app.</span>
                 {phone ? (
                   <Button
                     variant="outline"
@@ -289,7 +263,7 @@ export function TaskCallDialog({
                     }}
                   >
                     <ExternalLink className="size-3.5" />
-                    Open Aircall
+                    Call patient
                   </Button>
                 ) : null}
               </div>
@@ -311,14 +285,13 @@ export function TaskCallDialog({
               <div className="mb-2 flex items-center justify-between gap-3">
                 <label className="overline">Consultation notes</label>
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <Check className="size-3" />
-                  {savingLabel}
+                  Saved when an outcome is selected
                 </span>
               </div>
               <Textarea
                 value={notes}
                 onChange={(event) => handleNoteChange(event.target.value)}
-                placeholder="Write as you talk — every keystroke saves to this draft consultation."
+                placeholder="Write as you talk. Notes are saved when you choose an outcome."
                 className="min-h-52 resize-y bg-background text-sm"
               />
               <div className="mt-3 flex flex-wrap gap-2">
@@ -346,13 +319,13 @@ export function TaskCallDialog({
                 {detailsOpen ? "Hide patient details" : "Open patient details"}
               </Button>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={onCancel}>
+                <Button variant="ghost" onClick={cancelAction}>
                   Cancel
                 </Button>
                 <Button
                   variant="destructive"
                   onClick={() =>
-                    onHangUp({ durationSeconds: seconds, durationLabel, notes })
+                    hangUpAction({ durationSeconds: seconds, durationLabel, notes })
                   }
                 >
                   I&apos;ve hung up — finalise
@@ -444,16 +417,16 @@ export function TaskOutcomeDialog({
   mode,
   callData,
   open,
-  onCancel,
-  onSubmit,
+  cancelAction,
+  submitAction,
   submitting,
 }: {
   task: Task | null;
   mode: TaskOutcomeMode;
   callData?: TaskCallData;
   open: boolean;
-  onCancel: () => void;
-  onSubmit: (submission: TaskOutcomeSubmission) => void;
+  cancelAction: () => void;
+  submitAction: (submission: TaskOutcomeSubmission) => void;
   submitting?: boolean;
 }) {
   const [selected, setSelected] = useState<TaskOutcomeId>("reached");
@@ -473,7 +446,7 @@ export function TaskOutcomeDialog({
 
   function handleSubmit() {
     if (isInvalid) return;
-    onSubmit({
+    submitAction({
       outcomeId: selected,
       status: outcome.status,
       notes: isManual ? manualNotes.trim() : (callData?.notes.trim() ?? ""),
@@ -524,7 +497,7 @@ export function TaskOutcomeDialog({
           </DialogTitle>
           <DialogDescription className="mt-2">
             {isManual
-              ? "Use this for calls already completed outside the live Aircall flow."
+              ? "Use this for calls already completed outside the live dialer flow."
               : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
                   callData?.notes
                     ? `${callData.notes.length} chars of notes`
@@ -643,7 +616,7 @@ export function TaskOutcomeDialog({
               : "Notes are kept with the task so you can resume from My tasks."}
           </p>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={onCancel} disabled={submitting}>
+            <Button variant="ghost" onClick={cancelAction} disabled={submitting}>
               {isManual ? "Cancel" : "Back to call"}
             </Button>
             <Button onClick={handleSubmit} disabled={isInvalid || submitting}>

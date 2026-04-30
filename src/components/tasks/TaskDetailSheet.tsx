@@ -26,11 +26,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import {
-  useCompleteTask,
-  useTask,
-  useUpdateTask,
-} from "@/lib/hooks/use-tasks";
+import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import type { Task, TaskEvent, TaskResponse } from "@/types";
 import {
@@ -147,17 +143,19 @@ export function TaskDetailSheet({
     );
   }
 
-  function handleCancel() {
-    handleUpdate(
-      {
+  async function handleCancel() {
+    try {
+      await updateTask.mutateAsync({
         taskId: activeTask.taskId,
         status: "cancelled",
         note: "Task cancelled",
-      },
-      "Task cancelled"
-    );
-    setCancelOpen(false);
-    onOpenChange(false);
+      });
+      toast.success("Task cancelled");
+      setCancelOpen(false);
+      onOpenChange(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to cancel task");
+    }
   }
 
   return (

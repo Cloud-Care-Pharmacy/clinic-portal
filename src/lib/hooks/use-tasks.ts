@@ -18,39 +18,26 @@ import type {
   UpdateTaskPayload,
 } from "@/types";
 
-const EMPTY_TASKS: Task[] = [];
+const TASK_API_UNAVAILABLE = "Task API is not available in this backend environment.";
 
-function emptyTasksResponse(opts?: TasksQuery, patientId?: string): TasksListResponse {
-  return {
-    success: true,
-    data: {
-      ...(patientId ? { patientId } : {}),
-      tasks: EMPTY_TASKS,
-      pagination: {
-        limit: opts?.limit ?? 50,
-        offset: opts?.offset ?? 0,
-        total: 0,
-      },
-      filters: opts,
-    },
-  };
+async function taskErrorMessage(res: Response, fallback: string) {
+  const payload = (await res.json().catch(() => undefined)) as
+    | { error?: string; details?: string; code?: string }
+    | undefined;
+
+  if (payload?.details) return payload.details;
+  if (payload?.error) return payload.error;
+
+  if (res.status === 404 || res.status === 501) {
+    return TASK_API_UNAVAILABLE;
+  }
+
+  return fallback;
 }
 
-function emptyTaskSummaryResponse(): TaskSummaryResponse {
-  return {
-    success: true,
-    data: {
-      openTaskCount: 0,
-      inProgressTaskCount: 0,
-      overdueTaskCount: 0,
-      urgentTaskCount: 0,
-      newIntakeTaskCount: 0,
-    },
-  };
-}
-
-function isTaskEndpointUnavailable(status: number) {
-  return [404, 500, 501, 502, 503, 504].includes(status);
+async function assertTaskResponse(res: Response, fallback: string) {
+  if (res.ok) return;
+  throw new Error(await taskErrorMessage(res, fallback));
 }
 
 function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
@@ -99,9 +86,40 @@ async function fetchTasks(opts?: TasksQuery): Promise<TasksListResponse> {
   const params = new URLSearchParams();
   appendTaskQueryParams(params, opts);
   const res = await fetch(`/api/proxy/tasks?${params}`);
-  if (isTaskEndpointUnavailable(res.status)) return emptyTasksResponse(opts);
-  if (!res.ok) throw new Error("Failed to fetch tasks");
+  await assertTaskResponse(res, "Failed to fetch tasks");
   return res.json();
+}
+
+async function fetchAllTasks(opts?: TasksQuery): Promise<TasksListResponse> {
+  const pageSize = Math.min(Math.max(opts?.limit ?? 100, 1), 100);
+  const firstPage = await fetchTasks({ ...opts, limit: pageSize, offset: 0 });
+  const tasks = [...firstPage.data.tasks];
+  const total = firstPage.data.pagination?.total ?? tasks.length;
+  const offsets = Array.from(
+    { length: Math.max(0, Math.ceil((total - pageSize) / pageSize)) },
+    (_, index) => pageSize + index * pageSize
+  );
+  const remainingPages = await Promise.all(
+    offsets.map((offset) => fetchTasks({ ...opts, limit: pageSize, offset }))
+  );
+
+  for (const page of remainingPages) {
+    tasks.push(...page.data.tasks);
+  }
+
+  return {
+    ...firstPage,
+    data: {
+      ...firstPage.data,
+      tasks,
+      pagination: {
+        limit: tasks.length,
+        offset: 0,
+        total,
+      },
+      filters: opts,
+    },
+  };
 }
 
 async function fetchPatientTasks(
@@ -113,23 +131,19 @@ async function fetchPatientTasks(
   const res = await fetch(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/tasks?${params}`
   );
-  if (isTaskEndpointUnavailable(res.status)) {
-    return emptyTasksResponse(opts, patientId);
-  }
-  if (!res.ok) throw new Error("Failed to fetch patient tasks");
+  await assertTaskResponse(res, "Failed to fetch patient tasks");
   return res.json();
 }
 
 async function fetchTask(taskId: string): Promise<TaskResponse> {
   const res = await fetch(`/api/proxy/tasks/${encodeURIComponent(taskId)}`);
-  if (!res.ok) throw new Error("Failed to fetch task");
+  await assertTaskResponse(res, "Failed to fetch task");
   return res.json();
 }
 
 async function fetchTaskSummary(): Promise<TaskSummaryResponse> {
   const res = await fetch("/api/proxy/tasks/summary");
-  if (isTaskEndpointUnavailable(res.status)) return emptyTaskSummaryResponse();
-  if (!res.ok) throw new Error("Failed to fetch task summary");
+  await assertTaskResponse(res, "Failed to fetch task summary");
   return res.json();
 }
 
@@ -139,10 +153,7 @@ async function createTask(body: CreateTaskPayload): Promise<TaskResponse> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Failed to create task" }));
-    throw new Error(err.error ?? "Failed to create task");
-  }
+  await assertTaskResponse(res, "Failed to create task");
   return res.json();
 }
 
@@ -155,10 +166,7 @@ async function updateTask({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Failed to update task" }));
-    throw new Error(err.error ?? "Failed to update task");
-  }
+  await assertTaskResponse(res, "Failed to update task");
   return res.json();
 }
 
@@ -169,13 +177,27 @@ async function completeTask({
   taskId: string;
   note?: string;
 }): Promise<TaskResponse> {
-  return updateTask({ taskId, status: "completed", note });
+  const res = await fetch(`/api/proxy/tasks/${encodeURIComponent(taskId)}/complete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
+  await assertTaskResponse(res, "Failed to complete task");
+  return res.json();
 }
 
 export function tasksQueryOptions(opts?: TasksQuery) {
   return queryOptions({
     queryKey: taskQueryKey("tasks", opts),
     queryFn: () => fetchTasks(opts),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function allTasksQueryOptions(opts?: TasksQuery) {
+  return queryOptions({
+    queryKey: taskQueryKey("tasks-all", opts),
+    queryFn: () => fetchAllTasks(opts),
     placeholderData: keepPreviousData,
   });
 }
@@ -194,6 +216,13 @@ export function patientTasksQueryOptions(
 export function useTasks(opts?: TasksQuery, initialData?: TasksListResponse) {
   return useQuery({
     ...tasksQueryOptions(opts),
+    initialData,
+  });
+}
+
+export function useAllTasks(opts?: TasksQuery, initialData?: TasksListResponse) {
+  return useQuery({
+    ...allTasksQueryOptions(opts),
     initialData,
   });
 }
@@ -232,6 +261,7 @@ function invalidateTaskQueries(
   response?: TaskResponse
 ) {
   const task = response?.data.task;
+  queryClient.invalidateQueries({ queryKey: ["tasks-all"] });
   queryClient.invalidateQueries({ queryKey: ["tasks"] });
   queryClient.invalidateQueries({ queryKey: ["patient-tasks"] });
   queryClient.invalidateQueries({ queryKey: ["task-summary"] });
@@ -279,6 +309,10 @@ function updateBulkTaskCaches(
     } satisfies TasksListResponse;
   };
 
+  queryClient.setQueriesData<TasksListResponse>(
+    { queryKey: ["tasks-all"] },
+    updateTaskList
+  );
   queryClient.setQueriesData<TasksListResponse>(
     { queryKey: ["tasks"] },
     updateTaskList
@@ -334,8 +368,7 @@ async function claimTasks(body: BulkClaimTasksRequest): Promise<BulkTaskResult> 
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Failed to claim tasks" }));
-    throw new Error(err.error ?? "Failed to claim tasks");
+    throw new Error(await taskErrorMessage(res, "Failed to claim tasks"));
   }
 
   const payload = (await res.json()) as
@@ -353,6 +386,7 @@ export function useClaimTasks() {
     onSettled: async (result) => {
       const invalidations: Array<Promise<unknown>> = [];
 
+      invalidations.push(queryClient.invalidateQueries({ queryKey: ["tasks-all"] }));
       invalidations.push(queryClient.invalidateQueries({ queryKey: ["tasks"] }));
       invalidations.push(
         queryClient.invalidateQueries({ queryKey: ["patient-tasks"] })

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Plus, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { TaskTable, type TaskAssignmentFilter } from "@/components/tasks/TaskTable";
+import { TaskQueueBulkActions } from "@/components/tasks/TaskQueueBulkActions";
+import {
+  TaskQueuePresetBar,
+  type TaskQueuePreset,
+} from "@/components/tasks/TaskQueuePresetBar";
 import {
   TaskCallDialog,
   TaskOutcomeDialog,
@@ -23,11 +28,9 @@ import {
   useCreateConsultation,
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
-import { useClaimTasks, useTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
+import { useAllTasks, useClaimTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
 import { patientQueryOptions } from "@/lib/hooks/use-patients";
-import { cn } from "@/lib/utils";
 import type {
-  BulkTaskAction,
   BulkTaskResult,
   ConsultationType,
   Task,
@@ -40,11 +43,8 @@ interface TasksClientProps {
   initialTasks?: TasksListResponse;
 }
 
-type TaskPreset = "unassigned" | "mine_active" | "completed";
-
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
-const CURRENT_USER_UNAVAILABLE = "__current_user_unavailable__";
 const ACTIVE_STATUSES: TaskStatus[] = ["open", "in_progress"];
 const COMPLETED_STATUSES: TaskStatus[] = ["completed", "cancelled"];
 
@@ -139,7 +139,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const currentDoctorName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current doctor";
 
-  const [activePreset, setActivePreset] = useState<TaskPreset>("unassigned");
+  const [activePreset, setActivePreset] = useState<TaskQueuePreset>("unassigned");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
   const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
@@ -164,30 +164,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const createConsultationMutation = useCreateConsultation();
   const updateConsultationMutation = useUpdateConsultation();
 
-  const query = useMemo(
-    () => ({
-      limit: 50,
-      offset: 0,
-      search: searchQuery.trim() || undefined,
-      status: statusFilters.length > 0 ? statusFilters : undefined,
-      assignedUserId:
-        assignmentFilters.length === 1 && assignmentFilters[0] === "mine"
-          ? (currentUserId ?? CURRENT_USER_UNAVAILABLE)
-          : undefined,
-      sort: "dueAt" as const,
-      order: "asc" as const,
-    }),
-    [assignmentFilters, currentUserId, searchQuery, statusFilters]
-  );
-
-  const { data: allTasksData } = useTasks(
-    { limit: 200, offset: 0, sort: "dueAt", order: "asc" },
+  const { data, isLoading, error } = useAllTasks(
+    { sort: "dueAt", order: "asc" },
     initialTasks
   );
-  const { data, isLoading, error } = useTasks(query);
   const tasks = data?.data.tasks ?? EMPTY_TASKS;
-  const summaryTasks =
-    allTasksData?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
+  const summaryTasks = data?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
 
   const effectiveSelectedIds = useMemo(() => {
     if (selectedIds.length === 0) return EMPTY_STRING_ARRAY;
@@ -210,7 +192,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     [currentUserId, summaryTasks]
   );
 
-  function switchPreset(preset: TaskPreset) {
+  function switchPreset(preset: TaskQueuePreset) {
     setActivePreset(preset);
     setSelectedIds([]);
 
@@ -230,7 +212,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     setAssignmentFilters(["mine"]);
   }
 
-  async function claimTaskIds(ids: string[], action: BulkTaskAction) {
+  async function claimTaskIds(ids: string[], action: "claim" | "claim_and_start") {
     if (ids.length === 0) return;
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
     for (const id of ids) {
@@ -245,6 +227,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     try {
       const result = await claimTasksMutation.mutateAsync({ taskIds: ids, action });
       showBulkClaimResult(result);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to claim tasks.");
     } finally {
       setPendingClaimUpdates((prev) => {
         const next = { ...prev };
@@ -370,44 +354,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     }
   }
 
-  const quickFilters = (
-    <div className="flex flex-wrap items-center gap-2">
-      <PresetButton
-        active={activePreset === "unassigned"}
-        tone="warning"
-        icon={UsersRound}
-        count={presetCounts.unassigned}
-        onClick={() => switchPreset("unassigned")}
-      >
-        Unassigned
-      </PresetButton>
-      <PresetButton
-        active={activePreset === "mine_active"}
-        tone="primary"
-        icon={UserRound}
-        count={presetCounts.mine_active}
-        onClick={() => switchPreset("mine_active")}
-      >
-        My tasks
-      </PresetButton>
-      <PresetButton
-        active={activePreset === "completed"}
-        tone="success"
-        icon={Check}
-        count={presetCounts.completed}
-        onClick={() => switchPreset("completed")}
-      >
-        Completed
-      </PresetButton>
-    </div>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader title="Tasks" />
       <p className="-mt-4 max-w-3xl text-sm text-muted-foreground">
-        Claim work from the unassigned queue, dial through Aircall, and log the
-        structured outcome without leaving this screen.
+        Claim work from the unassigned queue, start a phone call, and log the structured
+        outcome without leaving this screen.
       </p>
 
       <ErrorBoundary>
@@ -449,7 +401,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             pendingUpdates={pendingClaimUpdates}
             pendingActionIds={pendingActionIds}
             showFilterControls={false}
-            quickFilters={quickFilters}
+            quickFilters={
+              <TaskQueuePresetBar
+                activePreset={activePreset}
+                counts={presetCounts}
+                onPresetChange={switchPreset}
+              />
+            }
             onClaimTask={handleClaimTask}
             onCallTask={handleCallTask}
             onManualLogTask={handleManualLog}
@@ -469,26 +427,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             }
             bulkActions={
               effectiveSelectedIds.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium tabular-nums">
-                    {effectiveSelectedIds.length} selected
-                  </span>
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedIds([])}
-                    disabled={claimTasksMutation.isPending}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    onClick={handleClaimSelected}
-                    disabled={!currentUserId || claimTasksMutation.isPending}
-                  >
-                    <Check className="size-4" />
-                    Claim {effectiveSelectedIds.length}{" "}
-                    {pluralizeTask(effectiveSelectedIds.length)}
-                  </Button>
-                </div>
+                <TaskQueueBulkActions
+                  selectedCount={effectiveSelectedIds.length}
+                  pending={claimTasksMutation.isPending}
+                  canClaim={Boolean(currentUserId)}
+                  onClear={() => setSelectedIds([])}
+                  onClaim={handleClaimSelected}
+                />
               ) : undefined
             }
             trailing={
@@ -516,8 +461,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           key={activeCallTask.taskId}
           task={activeCallTask}
           open
-          onCancel={() => setActiveCallTask(null)}
-          onHangUp={handleHangUp}
+          cancelAction={() => setActiveCallTask(null)}
+          hangUpAction={handleHangUp}
         />
       )}
 
@@ -533,13 +478,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             createConsultationMutation.isPending ||
             updateConsultationMutation.isPending
           }
-          onCancel={() => {
+          cancelAction={() => {
             if (outcomeState.mode === "hangup") {
               setActiveCallTask(outcomeState.task);
             }
             setOutcomeState(null);
           }}
-          onSubmit={handleOutcomeSubmit}
+          submitAction={handleOutcomeSubmit}
         />
       )}
 
@@ -549,57 +494,5 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         entityId={entityId}
       />
     </div>
-  );
-}
-
-function PresetButton({
-  active,
-  tone,
-  icon: Icon,
-  count,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  tone: "warning" | "primary" | "success";
-  icon: LucideIcon;
-  count: number;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        !active && "border-border bg-popover text-muted-foreground hover:bg-muted",
-        active &&
-          tone === "warning" &&
-          "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
-        active &&
-          tone === "success" &&
-          "border-status-success-border bg-status-success-bg text-status-success-fg",
-        active &&
-          tone === "primary" &&
-          "border-primary bg-primary text-primary-foreground"
-      )}
-    >
-      <Icon className="size-3.5" />
-      <span>{children}</span>
-      <span
-        className={cn(
-          "rounded-full px-1.5 font-mono text-xs font-semibold tabular-nums",
-          !active && "bg-muted text-muted-foreground",
-          active && tone === "warning" && "bg-status-warning-fg text-status-warning-bg",
-          active && tone === "success" && "bg-status-success-fg text-status-success-bg",
-          active &&
-            tone === "primary" &&
-            "bg-primary-foreground/20 text-primary-foreground"
-        )}
-      >
-        {count}
-      </span>
-    </button>
   );
 }
