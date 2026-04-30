@@ -148,8 +148,7 @@ export function NewConsultationSheet({
     !selectedPatient &&
     Boolean(entityId) &&
     Boolean(patientNameValue?.trim());
-  const canSearchPatients =
-    open && shouldShowPatientSearch;
+  const canSearchPatients = open && shouldShowPatientSearch;
   const { data: patientSearchData, isFetching: searchingPatients } = usePatientSearch(
     canSearchPatients ? entityId : undefined,
     { q: patientNameValue?.trim() ?? "", limit: 8 }
