@@ -1,5 +1,22 @@
 # Project Guidelines
 
+## Mandatory Context Workflow
+
+Before making **any** change (code, docs, config, UI, workflow, dependency, or PR-related), always check and apply the repository guidance sources below:
+
+1. **Instructions:** read `.github/copilot-instructions.md` and any relevant files in `.github/instructions/` whose `applyTo` pattern or description matches the target files or task.
+2. **Skills:** inspect `.github/skills/` and load any relevant `SKILL.md` for the task domain before planning or editing.
+3. **Prompts:** inspect `.github/prompts/` for matching task prompts before scaffolding, syncing backend work, or using a repeatable workflow.
+4. **Design:** check `.github/design/README.md` and `.github/design/NON_NEGOTIABLES.md` for every change to confirm whether design rules apply. Before any UI, layout, styling, page, table, card, navigation, spacing, responsive, or visual-copy change, also consult the full design system references listed below.
+5. **Conflicts:** follow the most specific applicable guidance. If guidance conflicts or is unclear, stop and ask for clarification before editing.
+
+Before creating or updating a PR:
+
+- Re-check the applicable instructions, skills, prompts, and design docs against the final diff.
+- Read `.github/pull_request_template.md` and use it for the PR body.
+- Run the validation commands required by the applicable guidance, or document why they could not be run.
+- Summarize which guidance sources were checked and include relevant test/build results in the PR description.
+
 ## Design System
 
 **IMPORTANT:** Before creating or modifying any UI component, page, section, dashboard section, or layout, always consult the design system reference files in `.github/design/`:
