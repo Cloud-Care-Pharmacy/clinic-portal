@@ -101,8 +101,19 @@ export const dataGridPinnedActionsSx: SxProps<Theme> = [
       {
         position: "sticky",
         right: 0,
+        overflow: "visible",
         backgroundColor: "var(--card)",
         boxShadow: "-1px 0 0 var(--table-separator)",
+      },
+    "& .MuiDataGrid-columnHeader.data-grid-pinned-actions::after, & .MuiDataGrid-cell.data-grid-pinned-actions::after":
+      {
+        content: '""',
+        position: "absolute",
+        insetBlock: 0,
+        right: "calc(-1 * var(--DataGrid-horizontalFiller))",
+        width: "var(--DataGrid-horizontalFiller)",
+        pointerEvents: "none",
+        background: "inherit",
       },
     "& .MuiDataGrid-columnHeader.data-grid-pinned-actions": {
       zIndex: 4,
