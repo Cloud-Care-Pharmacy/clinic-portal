@@ -747,6 +747,8 @@ export function TaskTable({
           }
           disableRowSelectionOnClick
           disableColumnMenu
+          autosizeOnMount
+          autosizeOptions={{ includeHeaders: true, expand: true }}
           columnHeaderHeight={44}
           pageSizeOptions={[10, 25, 50]}
           rowHeight={72}
