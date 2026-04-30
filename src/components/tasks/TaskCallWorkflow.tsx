@@ -579,6 +579,12 @@ export function TaskOutcomeDialog({
   const outcome = OUTCOMES.find((item) => item.id === selected) ?? OUTCOMES[0];
   const requiresReason = selected === "abandoned";
   const requiresManualNotes = isManual && selected === "reached";
+  const showsOutcomeNotes =
+    requiresManualNotes ||
+    selected === "voicemail" ||
+    selected === "callback" ||
+    selected === "wrong-time" ||
+    selected === "abandoned";
   const isInvalid =
     (requiresReason && !followupNote.trim()) ||
     (requiresManualNotes && !manualNotes.trim());
@@ -645,7 +651,7 @@ export function TaskOutcomeDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4">
+        <div className={cn("px-4 pt-4", showsOutcomeNotes ? "pb-1" : "pb-4")}>
           <div className="space-y-1.5">
             {OUTCOMES.map((item) => {
               const active = selected === item.id;
@@ -692,7 +698,7 @@ export function TaskOutcomeDialog({
         </div>
 
         {isManual && selected === "reached" && (
-          <div className="px-5 pt-1 pb-4">
+          <div className="px-5 pt-0 pb-4">
             <label className={OVERLINE_CLASS}>Consultation notes</label>
             <Textarea
               value={manualNotes}
@@ -717,7 +723,7 @@ export function TaskOutcomeDialog({
           selected === "callback" ||
           selected === "wrong-time" ||
           selected === "abandoned") && (
-          <div className="px-5 pt-1 pb-4">
+          <div className="px-5 pt-0 pb-4">
             <label className={OVERLINE_CLASS}>
               {selected === "abandoned" ? "Reason required" : "Follow-up note"}
             </label>
