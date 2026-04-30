@@ -330,52 +330,52 @@ export function TaskCallDialog({
         <DialogContent
           showCloseButton={false}
           className={cn(
-            "max-h-[calc(100vh-3rem)] gap-0 overflow-hidden border border-border p-0 shadow-xl sm:max-w-236",
-            detailsOpen && "sm:max-w-316"
+            "max-h-[calc(100vh-3rem)] gap-0 overflow-hidden border border-border p-0 shadow-xl sm:max-w-135",
+            detailsOpen && "sm:max-w-215"
           )}
         >
           <div className="flex min-h-0">
             <div className="flex min-w-0 flex-1 flex-col">
-              <DialogHeader className="border-b border-border px-5 py-4 sm:px-8">
+              <DialogHeader className="border-b border-border px-5 py-2.5">
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-(--feedback-success) text-sm font-bold text-(--feedback-success-foreground)">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-8 items-center justify-center rounded-lg bg-(--feedback-success) text-xs font-bold text-(--feedback-success-foreground)">
                       AC
                     </span>
                     <div>
-                      <DialogTitle className="text-base font-semibold tracking-wide">
+                      <DialogTitle className="text-sm font-semibold tracking-wide">
                         AIRCALL · ACTIVE CALL
                       </DialogTitle>
-                      <DialogDescription className="mt-1 text-base">
+                      <DialogDescription className="mt-0.5 text-xs">
                         Mute, hold, transfer, hang up — in the Aircall extension
                       </DialogDescription>
                     </div>
                   </div>
                   <Button
                     variant="outline"
-                    size="icon-lg"
-                    className="rounded-xl bg-background focus-visible:border-border"
+                    size="icon-sm"
+                    className="rounded-lg bg-background focus-visible:border-border focus-visible:ring-2 focus-visible:ring-border/60"
                     onClick={() => setMinimized(true)}
                     aria-label="Minimize call"
                   >
-                    <ChevronDown className="size-5" />
+                    <ChevronDown className="size-4" />
                   </Button>
                 </div>
               </DialogHeader>
 
-              <section className="flex items-center justify-between gap-5 border-b border-border px-5 py-7 sm:px-8">
-                <div className="flex min-w-0 items-center gap-5">
-                  <span className="flex size-16 shrink-0 items-center justify-center rounded-full bg-status-accent-bg text-xl font-semibold text-status-accent-fg sm:size-23 sm:text-2xl">
+              <section className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">
+                <div className="flex min-w-0 items-center gap-4">
+                  <span className="flex size-13 shrink-0 items-center justify-center rounded-full bg-status-accent-bg text-base font-semibold text-status-accent-fg">
                     {taskInitials(task)}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-2xl font-semibold sm:text-3xl">
+                    <p className="truncate text-lg font-semibold" title={patientName}>
                       {patientName}
                     </p>
-                    <p className="mt-2 text-base text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {patientDetailsLine}
                     </p>
-                    <p className="mt-2 text-base text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       For task:{" "}
                       <span className="font-semibold text-foreground">
                         {displayTitle} — {taskReferenceStatus}
@@ -384,17 +384,17 @@ export function TaskCallDialog({
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="inline-flex items-center gap-2 text-lg font-semibold text-(--feedback-success)">
-                    <span className="size-3 rounded-full bg-(--feedback-success)" />
+                  <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--feedback-success)">
+                    <span className="size-2 rounded-full bg-(--feedback-success)" />
                     Connected
                   </p>
-                  <p className="mt-2 font-mono text-4xl font-semibold tabular-nums tracking-wider">
+                  <p className="mt-1 font-mono text-2xl font-semibold tabular-nums tracking-wider">
                     {durationLabel}
                   </p>
                 </div>
               </section>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-7 sm:px-8">
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
                   <label className={OVERLINE_CLASS}>Consultation notes — draft</label>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
@@ -406,15 +406,16 @@ export function TaskCallDialog({
                   value={notes}
                   onChange={(event) => handleNoteChange(event.target.value)}
                   placeholder="Write as you talk — every keystroke saves to the draft consultation. Try the snippets below."
-                  className="min-h-72 resize-y bg-background text-lg leading-relaxed"
+                  className="min-h-40 resize-y bg-background text-sm leading-relaxed"
                 />
-                <div className="mt-5 flex flex-wrap gap-3">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {["BP", "Symptoms", "Plan", "Rx", "Follow-up"].map((label) => (
                     <Button
                       key={label}
                       type="button"
                       variant="outline"
-                      className="h-11 rounded-full px-5 text-base text-muted-foreground"
+                      size="sm"
+                      className="rounded-full px-3 text-muted-foreground"
                       onClick={() => insertSnippet(label)}
                     >
                       +{label}
@@ -423,10 +424,10 @@ export function TaskCallDialog({
                 </div>
               </div>
 
-              <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-5 sm:flex-row sm:px-8">
+              <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row">
                 <Button
                   variant="outline"
-                  className="h-12 rounded-2xl px-7 text-base"
+                  className="h-9 rounded-xl px-4 text-sm"
                   onClick={() => setDetailsOpen((value) => !value)}
                 >
                   <UserRound className="size-4" />
@@ -435,19 +436,19 @@ export function TaskCallDialog({
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
-                    className="h-12 rounded-2xl px-7 text-base"
+                    className="h-9 rounded-xl px-4 text-sm"
                     onClick={requestCancel}
                   >
                     Cancel call
                   </Button>
                   <Button
-                    className="h-12 rounded-2xl px-7 text-base"
+                    className="h-9 rounded-xl px-4 text-sm"
                     onClick={() =>
                       hangUpAction({ durationSeconds: seconds, durationLabel, notes })
                     }
                   >
                     I&apos;ve hung up — finalise
-                    <ArrowRight className="size-5" />
+                    <ArrowRight className="size-4" />
                   </Button>
                 </div>
               </DialogFooter>
