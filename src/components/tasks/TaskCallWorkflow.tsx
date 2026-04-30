@@ -734,17 +734,26 @@ export function TaskOutcomeDialog({
           </div>
         )}
 
-        <DialogFooter className="items-center justify-between gap-3 p-5">
-          <p className="max-w-xs text-xs text-muted-foreground">
+        <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row">
+          <p className="max-w-xs text-xs leading-5 text-muted-foreground">
             {outcome.status === "completed"
               ? "This will create a finalised consultation linked to the task."
               : "Notes are kept with the task so you can resume from My tasks."}
           </p>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={cancelAction} disabled={submitting}>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              className="h-9 rounded-xl px-4 text-sm"
+              onClick={cancelAction}
+              disabled={submitting}
+            >
               {isManual ? "Cancel" : "Back to call"}
             </Button>
-            <Button onClick={handleSubmit} disabled={isInvalid || submitting}>
+            <Button
+              className="h-9 rounded-xl px-4 text-sm"
+              onClick={handleSubmit}
+              disabled={isInvalid || submitting}
+            >
               <span>
                 {submitting
                   ? "Saving…"
