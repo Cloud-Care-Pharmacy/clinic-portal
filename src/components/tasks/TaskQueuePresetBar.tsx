@@ -66,7 +66,7 @@ function PresetButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         !active && "border-border bg-popover text-muted-foreground hover:bg-muted",
         active &&
           tone === "warning" &&

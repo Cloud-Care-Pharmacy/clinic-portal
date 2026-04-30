@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { usePatientSearch } from "@/lib/hooks/use-patients";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
+import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import type { PatientSearchResult, TaskPriority, TaskType, UserRole } from "@/types";
 import { TASK_PRIORITY_LABELS, TASK_TYPE_LABELS } from "@/components/tasks/task-format";
 
@@ -130,17 +131,10 @@ export function NewTaskSheet({
     setSelectedPatient(null);
   }
 
-  useEffect(() => {
-    if (!open || !isDirty) return;
-
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty, open]);
+  useUnsavedChangesGuard({
+    active: open && isDirty,
+    message: "Discard unsaved task draft?",
+  });
 
   function requestOpenChange(nextOpen: boolean) {
     if (!nextOpen && createTask.isPending) return;
@@ -414,10 +408,7 @@ export function NewTaskSheet({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={discardDraft}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction variant="destructive" onClick={discardDraft}>
               Discard draft
             </AlertDialogAction>
           </AlertDialogFooter>

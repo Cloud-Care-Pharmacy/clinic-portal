@@ -302,10 +302,13 @@ export function TaskTable({
               <Icon className="size-3.5" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium" title={params.row.title}>
+              <p className="truncate text-sm font-medium" title={displayTitle}>
                 {displayTitle}
               </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              <p
+                className="mt-0.5 truncate text-xs text-muted-foreground"
+                title={TASK_TYPE_LABELS[params.row.taskType] ?? params.row.taskType}
+              >
                 {TASK_TYPE_LABELS[params.row.taskType] ?? params.row.taskType}
               </p>
             </div>
@@ -336,7 +339,10 @@ export function TaskTable({
               <span className="block truncate text-sm font-medium">
                 {params.row.patientName || "Open patient"}
               </span>
-              <span className="block truncate font-mono text-xs text-muted-foreground">
+              <span
+                className="block truncate font-mono text-xs text-muted-foreground"
+                title={phone ?? params.row.patientId}
+              >
                 {phone ?? params.row.patientId}
               </span>
             </span>

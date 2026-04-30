@@ -27,10 +27,10 @@ export function TaskQueueBulkActions({
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium tabular-nums">{selectedCount} selected</span>
-      <Button variant="outline" onClick={onClear} disabled={pending}>
+      <Button variant="outline" className="h-11" onClick={onClear} disabled={pending}>
         Clear
       </Button>
-      <Button onClick={onClaim} disabled={!canClaim || pending}>
+      <Button className="h-11" onClick={onClaim} disabled={!canClaim || pending}>
         <Check className="size-4" />
         Claim {selectedCount} {pluralizeTask(selectedCount)}
       </Button>

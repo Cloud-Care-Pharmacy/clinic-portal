@@ -5,7 +5,7 @@
 Before making **any** change (code, docs, config, UI, workflow, dependency, or PR-related), always check and apply the repository guidance sources below:
 
 1. **Instructions:** read `.github/copilot-instructions.md` and any relevant files in `.github/instructions/` whose `applyTo` pattern or description matches the target files or task.
-2. **Skills:** inspect `.github/skills/` and load any relevant `SKILL.md` for the task domain before planning or editing.
+2. **Skills:** use `.github/skills/` as the workspace skill source of truth. Inspect its subdirectories and load any relevant `.github/skills/<skill-name>/SKILL.md` for the task domain before planning or editing.
 3. **Prompts:** inspect `.github/prompts/` for matching task prompts before scaffolding, syncing backend work, or using a repeatable workflow.
 4. **Design:** check `.github/design/README.md` and `.github/design/NON_NEGOTIABLES.md` for every change to confirm whether design rules apply. Before any UI, layout, styling, page, table, card, navigation, spacing, responsive, or visual-copy change, also consult the full design system references listed below.
 5. **Conflicts:** follow the most specific applicable guidance. If guidance conflicts or is unclear, stop and ask for clarification before editing.
@@ -16,6 +16,13 @@ Before creating or updating a PR:
 - Read `.github/pull_request_template.md` and use it for the PR body.
 - Run the validation commands required by the applicable guidance, or document why they could not be run.
 - Summarize which guidance sources were checked and include relevant test/build results in the PR description.
+
+## Skills
+
+- Workspace skills live in `.github/skills/<skill-name>/SKILL.md`; this is the canonical location for this repository.
+- Do not rely on `.agents/skills/` for project guidance. If an installed skill appears there, use the matching copy under `.github/skills/` or move/sync it into `.github/skills/` before relying on it.
+- When a skill includes supporting files such as `rules/`, `AGENTS.md`, templates, or metadata, read the relevant supporting files after `SKILL.md` if the task needs that detail.
+- For React or Next.js performance work, reviewing, or refactoring, load `.github/skills/vercel-react-best-practices/SKILL.md` and any relevant rule files it references.
 
 ## Design System
 

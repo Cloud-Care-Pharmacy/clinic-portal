@@ -12,6 +12,17 @@ import {
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import {
   formatTaskDate,
   formatTaskDueRelative,
@@ -150,7 +162,14 @@ export function TaskCallDialog({
   const [notes, setNotes] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
+  const [discardNotesOpen, setDiscardNotesOpen] = useState(false);
   const patientQuery = usePatient(task?.patientId);
+  const hasUnsavedNotes = notes.trim().length > 0;
+
+  useUnsavedChangesGuard({
+    active: open && hasUnsavedNotes,
+    message: "Discard unsaved call notes?",
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -168,6 +187,20 @@ export function TaskCallDialog({
 
   function handleNoteChange(value: string) {
     setNotes(value);
+  }
+
+  function requestCancel() {
+    if (hasUnsavedNotes) {
+      setDiscardNotesOpen(true);
+      return;
+    }
+
+    cancelAction();
+  }
+
+  function discardNotes() {
+    setDiscardNotesOpen(false);
+    cancelAction();
   }
 
   function insertSnippet(label: string) {
@@ -202,142 +235,163 @@ export function TaskCallDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) cancelAction();
-      }}
-    >
-      <DialogContent
-        showCloseButton={false}
-        overlayClassName="bg-foreground/55 backdrop-blur-sm"
-        className={cn(
-          "max-h-[calc(100vh-3rem)] gap-0 overflow-hidden p-0 sm:max-w-145",
-          detailsOpen && "sm:max-w-220"
-        )}
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) requestCancel();
+        }}
       >
-        <div className="flex min-h-0">
-          <div className="flex min-w-0 flex-1 flex-col">
-            <DialogHeader className="border-b border-border p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex size-9 items-center justify-center rounded-lg border border-status-success-border bg-status-success-bg text-xs font-bold text-status-success-fg">
-                    <span className="absolute -top-1 -right-1 size-2 rounded-full bg-status-success-fg" />
-                    <Phone className="size-4" />
-                  </span>
-                  <div>
-                    <p className="overline text-status-success-fg">Phone call</p>
-                    <DialogTitle className="mt-1 text-lg font-semibold">
-                      {patientName}
-                    </DialogTitle>
-                    <DialogDescription className="mt-1 font-mono text-xs">
-                      {phone ?? "No phone number on this task"}
-                    </DialogDescription>
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="bg-foreground/55 backdrop-blur-sm"
+          className={cn(
+            "max-h-[calc(100vh-3rem)] gap-0 overflow-hidden p-0 sm:max-w-145",
+            detailsOpen && "sm:max-w-220"
+          )}
+        >
+          <div className="flex min-h-0">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <DialogHeader className="border-b border-border p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex size-9 items-center justify-center rounded-lg border border-status-success-border bg-status-success-bg text-xs font-bold text-status-success-fg">
+                      <span className="absolute -top-1 -right-1 size-2 rounded-full bg-status-success-fg" />
+                      <Phone className="size-4" />
+                    </span>
+                    <div>
+                      <p className="overline text-status-success-fg">Phone call</p>
+                      <DialogTitle className="mt-1 text-lg font-semibold">
+                        {patientName}
+                      </DialogTitle>
+                      <DialogDescription className="mt-1 font-mono text-xs">
+                        {phone ?? "No phone number on this task"}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-lg font-semibold tabular-nums">
+                      {durationLabel}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setMinimized(true)}
+                      aria-label="Minimize call"
+                    >
+                      <ChevronDown className="size-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-lg font-semibold tabular-nums">
-                    {durationLabel}
+              </DialogHeader>
+
+              <div className="border-b border-border bg-muted px-5 py-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <span>Mute, hold, transfer, and hang-up stay in your phone app.</span>
+                  {phone ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        globalThis.location.href = `tel:${phone}`;
+                      }}
+                    >
+                      <ExternalLink className="size-3.5" />
+                      Call patient
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="flex size-14 items-center justify-center rounded-full bg-secondary text-base font-semibold text-secondary-foreground">
+                    {taskInitials(task)}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setMinimized(true)}
-                    aria-label="Minimize call"
-                  >
-                    <ChevronDown className="size-4" />
-                  </Button>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{displayTitle}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {TASK_TYPE_LABELS[task.taskType]} · Due{" "}
+                      {formatTaskDate(task.dueAt)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </DialogHeader>
 
-            <div className="border-b border-border bg-muted px-5 py-3 text-sm text-muted-foreground">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span>Mute, hold, transfer, and hang-up stay in your phone app.</span>
-                {phone ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      globalThis.location.href = `tel:${phone}`;
-                    }}
-                  >
-                    <ExternalLink className="size-3.5" />
-                    Call patient
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex size-14 items-center justify-center rounded-full bg-secondary text-base font-semibold text-secondary-foreground">
-                  {taskInitials(task)}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{displayTitle}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {TASK_TYPE_LABELS[task.taskType]} · Due {formatTaskDate(task.dueAt)}
-                  </p>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="overline">Consultation notes</label>
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    Saved when an outcome is selected
+                  </span>
+                </div>
+                <Textarea
+                  value={notes}
+                  onChange={(event) => handleNoteChange(event.target.value)}
+                  placeholder="Write as you talk. Notes are saved when you choose an outcome."
+                  className="min-h-52 resize-y bg-background text-sm"
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["BP", "Symptoms", "Plan", "Rx", "Follow-up"].map((label) => (
+                    <Button
+                      key={label}
+                      type="button"
+                      variant="dashed"
+                      size="xs"
+                      className="rounded-full"
+                      onClick={() => insertSnippet(label)}
+                    >
+                      + {label}
+                    </Button>
+                  ))}
                 </div>
               </div>
 
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <label className="overline">Consultation notes</label>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  Saved when an outcome is selected
-                </span>
-              </div>
-              <Textarea
-                value={notes}
-                onChange={(event) => handleNoteChange(event.target.value)}
-                placeholder="Write as you talk. Notes are saved when you choose an outcome."
-                className="min-h-52 resize-y bg-background text-sm"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                {["BP", "Symptoms", "Plan", "Rx", "Follow-up"].map((label) => (
-                  <Button
-                    key={label}
-                    type="button"
-                    variant="dashed"
-                    size="xs"
-                    className="rounded-full"
-                    onClick={() => insertSnippet(label)}
-                  >
-                    + {label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <DialogFooter className="items-center justify-between gap-3 p-5">
-              <Button
-                variant="outline"
-                onClick={() => setDetailsOpen((value) => !value)}
-              >
-                <UserRound className="size-4" />
-                {detailsOpen ? "Hide patient details" : "Open patient details"}
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" onClick={cancelAction}>
-                  Cancel
-                </Button>
+              <DialogFooter className="items-center justify-between gap-3 p-5">
                 <Button
-                  variant="destructive"
-                  onClick={() =>
-                    hangUpAction({ durationSeconds: seconds, durationLabel, notes })
-                  }
+                  variant="outline"
+                  onClick={() => setDetailsOpen((value) => !value)}
                 >
-                  I&apos;ve hung up — finalise
+                  <UserRound className="size-4" />
+                  {detailsOpen ? "Hide patient details" : "Open patient details"}
                 </Button>
-              </div>
-            </DialogFooter>
-          </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" onClick={requestCancel}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() =>
+                      hangUpAction({ durationSeconds: seconds, durationLabel, notes })
+                    }
+                  >
+                    I&apos;ve hung up — finalise
+                  </Button>
+                </div>
+              </DialogFooter>
+            </div>
 
-          {detailsOpen && <TaskPatientDetails task={task} />}
-        </div>
-      </DialogContent>
-    </Dialog>
+            {detailsOpen && <TaskPatientDetails task={task} />}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={discardNotesOpen} onOpenChange={setDiscardNotesOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard call notes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will clear the notes entered for this call before an outcome is
+              selected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={discardNotes}>
+              Discard notes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -577,11 +631,11 @@ export function TaskOutcomeDialog({
             />
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <label className="overline">Call duration</label>
-              <input
+              <Input
                 value={manualDuration}
                 onChange={(event) => setManualDuration(event.target.value)}
                 placeholder="e.g. 4 min"
-                className="h-8 w-36 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="w-36 bg-background text-sm"
               />
               <span className="text-xs text-muted-foreground">Optional</span>
             </div>

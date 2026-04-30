@@ -19,6 +19,8 @@ import type {
 } from "@/types";
 
 const TASK_API_UNAVAILABLE = "Task API is not available in this backend environment.";
+const ALL_TASKS_PAGE_SIZE = 100;
+const ALL_TASKS_MAX_CONCURRENT_PAGES = 4;
 
 async function taskErrorMessage(res: Response, fallback: string) {
   const payload = (await res.json().catch(() => undefined)) as
@@ -91,7 +93,7 @@ async function fetchTasks(opts?: TasksQuery): Promise<TasksListResponse> {
 }
 
 async function fetchAllTasks(opts?: TasksQuery): Promise<TasksListResponse> {
-  const pageSize = Math.min(Math.max(opts?.limit ?? 100, 1), 100);
+  const pageSize = Math.min(Math.max(opts?.limit ?? ALL_TASKS_PAGE_SIZE, 1), 100);
   const firstPage = await fetchTasks({ ...opts, limit: pageSize, offset: 0 });
   const tasks = [...firstPage.data.tasks];
   const total = firstPage.data.pagination?.total ?? tasks.length;
@@ -99,9 +101,16 @@ async function fetchAllTasks(opts?: TasksQuery): Promise<TasksListResponse> {
     { length: Math.max(0, Math.ceil((total - pageSize) / pageSize)) },
     (_, index) => pageSize + index * pageSize
   );
-  const remainingPages = await Promise.all(
-    offsets.map((offset) => fetchTasks({ ...opts, limit: pageSize, offset }))
-  );
+  const remainingPages: TasksListResponse[] = [];
+
+  for (let index = 0; index < offsets.length; index += ALL_TASKS_MAX_CONCURRENT_PAGES) {
+    const batch = offsets.slice(index, index + ALL_TASKS_MAX_CONCURRENT_PAGES);
+    remainingPages.push(
+      ...(await Promise.all(
+        batch.map((offset) => fetchTasks({ ...opts, limit: pageSize, offset }))
+      ))
+    );
+  }
 
   for (const page of remainingPages) {
     tasks.push(...page.data.tasks);
