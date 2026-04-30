@@ -19,11 +19,11 @@ import {
   UsersRound,
 } from "lucide-react";
 import {
-  DataGrid,
+  DataGridPro,
   type GridColDef,
   type GridRowParams,
   type GridRowSelectionModel,
-} from "@mui/x-data-grid";
+} from "@mui/x-data-grid-pro";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { dataGridPinnedActionsSx } from "@/lib/datagrid-theme";
+import { dataGridSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Task, TaskPriority, TaskStatus, TaskType, UserRole } from "@/types";
@@ -642,8 +642,6 @@ export function TaskTable({
       width: 170,
       align: "right",
       headerAlign: "right",
-      cellClassName: "data-grid-pinned-actions",
-      headerClassName: "data-grid-pinned-actions",
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -725,7 +723,7 @@ export function TaskTable({
     <div style={{ width: "100%" }}>
       {toolbar}
       <div className="overflow-hidden rounded-xl border border-border bg-card">
-        <DataGrid
+        <DataGridPro
           rows={visibleTasks}
           columns={columns}
           getRowId={(row) => row.taskId}
@@ -762,9 +760,12 @@ export function TaskTable({
           columnHeaderHeight={44}
           pageSizeOptions={[10, 25, 50]}
           rowHeight={72}
-          initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+            pinnedColumns: { right: ["actions"] },
+          }}
           onRowClick={(params: GridRowParams<Task>) => onRowClick(params.row)}
-          sx={dataGridPinnedActionsSx}
+          sx={dataGridSx}
         />
       </div>
     </div>
