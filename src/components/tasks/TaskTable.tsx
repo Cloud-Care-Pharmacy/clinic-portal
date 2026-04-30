@@ -502,8 +502,6 @@ export function TaskTable({
     {
       field: "title",
       headerName: "Task",
-      flex: 1.55,
-      minWidth: 260,
       renderCell: (params) => {
         const Icon = TASK_TYPE_ICONS[params.row.taskType] ?? ClipboardCheck;
         const displayTitle = getTaskDisplayTitle(params.row.taskType, params.row.title);
@@ -528,8 +526,6 @@ export function TaskTable({
     {
       field: "patientName",
       headerName: "Patient",
-      flex: 1.25,
-      minWidth: 220,
       valueFormatter: (value: string | null | undefined) => value || "—",
       renderCell: (params) => {
         const phone = getTaskPatientPhone(params.row);
@@ -559,7 +555,6 @@ export function TaskTable({
     {
       field: "priority",
       headerName: "Priority",
-      width: 120,
       renderCell: (params) => (
         <StatusBadge variant={TASK_PRIORITY_VARIANTS[params.row.priority]}>
           {TASK_PRIORITY_LABELS[params.row.priority]}
@@ -569,7 +564,6 @@ export function TaskTable({
     {
       field: "status",
       headerName: "Status",
-      width: 130,
       renderCell: (params) => {
         if (pendingUpdates?.[params.row.taskId]?.status) {
           return <Skeleton className="h-5 w-20 rounded-full" />;
@@ -584,7 +578,6 @@ export function TaskTable({
     {
       field: "assignedUserName",
       headerName: "Assigned to",
-      width: 180,
       valueGetter: (_value, row) => assigneeLabel(row),
       renderCell: (params) => {
         if (pendingUpdates?.[params.row.taskId]?.assignee) {
@@ -601,7 +594,6 @@ export function TaskTable({
     {
       field: "dueAt",
       headerName: "Due",
-      width: 150,
       renderCell: (params) => {
         const overdue =
           params.row.status !== "completed" &&
@@ -633,13 +625,11 @@ export function TaskTable({
     {
       field: "createdAt",
       headerName: "Created",
-      width: 130,
       valueFormatter: (value: string) => formatTaskDate(value),
     },
     {
       field: "actions",
       headerName: "Action",
-      width: 170,
       align: "right",
       headerAlign: "right",
       sortable: false,
