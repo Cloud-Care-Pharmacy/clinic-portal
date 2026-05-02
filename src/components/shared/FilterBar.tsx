@@ -60,18 +60,18 @@ export function FilterBar({
   const activeCount = filters.reduce((sum, f) => sum + f.value.length, 0);
 
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
         {leading}
 
         {/* Search input */}
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="h-9 w-64 pl-8"
+            className="h-9 w-full pl-8"
           />
           {searchQuery && (
             <button
@@ -101,9 +101,9 @@ export function FilterBar({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 ml-auto">
         {resultCount !== undefined && (
-          <span className="text-sm text-muted-foreground tabular-nums">
+          <span className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
             {resultCount} {resultLabel}
           </span>
         )}

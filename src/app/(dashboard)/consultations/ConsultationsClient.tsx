@@ -138,7 +138,7 @@ export function ConsultationsClient({
         title="Consultations"
         description="Schedule, review, and follow up on patient consultations."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <SegmentedControl
               value={viewMode}
               onChange={toggleView}
@@ -156,7 +156,8 @@ export function ConsultationsClient({
               ]}
             />
             <Button size="sm" className="h-8" onClick={() => setSheetOpen(true)}>
-              + Schedule Consultation
+              <span className="sm:hidden">+ Schedule</span>
+              <span className="hidden sm:inline">+ Schedule Consultation</span>
             </Button>
           </div>
         }
