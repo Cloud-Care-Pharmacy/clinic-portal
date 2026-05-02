@@ -5,7 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, User as UserIcon, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,12 +43,66 @@ const STATUS_LABELS: Record<ConsultationStatus, string> = {
   "no-show": "No-show",
 };
 
+const TYPE_OPTIONS: Array<{
+  value: ConsultationType;
+  label: string;
+  description: string;
+  duration: number;
+  dotClass: string;
+}> = [
+  {
+    value: "initial",
+    label: "Initial",
+    description: "First visit · 45 min",
+    duration: 45,
+    dotClass: "bg-status-info-fg",
+  },
+  {
+    value: "follow-up",
+    label: "Follow-up",
+    description: "Review · 30 min",
+    duration: 30,
+    dotClass: "bg-status-accent-fg",
+  },
+  {
+    value: "renewal",
+    label: "Renewal",
+    description: "Script renewal · 15 min",
+    duration: 15,
+    dotClass: "bg-status-success-fg",
+  },
+];
+
+const DURATION_OPTIONS = ["15", "30", "45", "60"];
+
+const DELIVERY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "telehealth-video", label: "Telehealth (video)" },
+  { value: "telehealth-phone", label: "Telehealth (phone)" },
+  { value: "in-person", label: "In-person" },
+];
+
+// Suggested time slots — placeholder until a doctor-availability endpoint exists.
+const SUGGESTED_SLOTS: Array<{
+  hour: string;
+  minute: string;
+  period: "AM" | "PM";
+  label: string;
+}> = [
+  { hour: "08", minute: "30", period: "AM", label: "8:30" },
+  { hour: "09", minute: "00", period: "AM", label: "9:00" },
+  { hour: "10", minute: "15", period: "AM", label: "10:15" },
+  { hour: "11", minute: "00", period: "AM", label: "11:00" },
+  { hour: "02", minute: "30", period: "PM", label: "2:30" },
+  { hour: "04", minute: "00", period: "PM", label: "4:00" },
+];
+
 const schema = z.object({
   patientName: z.string().min(1, "Patient name is required"),
   doctorName: z.string().min(1, "Doctor name is required"),
   type: z.string().min(1, "Type is required"),
   scheduledAt: z.string().min(1, "Date & time is required"),
   duration: z.string().optional(),
+  delivery: z.string().optional(),
   notes: z.string().optional(),
   status: z.string().optional(),
   outcome: z.string().optional(),
@@ -88,7 +142,13 @@ function getDefaultValues(
     doctorName: consultation?.doctorName ?? "",
     type: consultation?.type ?? "initial",
     scheduledAt: consultation?.scheduledAt ?? "",
-    duration: consultation?.duration ? String(consultation.duration) : "30",
+    duration: consultation?.duration
+      ? String(consultation.duration)
+      : String(
+          TYPE_OPTIONS.find((t) => t.value === (consultation?.type ?? "initial"))
+            ?.duration ?? 30
+        ),
+    delivery: "telehealth-video",
     notes: consultation?.notes ?? "",
     status: consultation?.status ?? "scheduled",
     outcome: consultation?.outcome ?? "",
@@ -139,10 +199,16 @@ export function NewConsultationSheet({
     defaultValues: getDefaultValues(defaultPatientName, consultation),
   });
   const patientNameValue = useWatch({ control: form.control, name: "patientName" });
+  const doctorNameValue = useWatch({ control: form.control, name: "doctorName" });
   const typeValue = useWatch({ control: form.control, name: "type" });
+  const durationValue = useWatch({ control: form.control, name: "duration" });
+  const deliveryValue = useWatch({ control: form.control, name: "delivery" });
   const notesValue = useWatch({ control: form.control, name: "notes" });
   const statusValue = useWatch({ control: form.control, name: "status" });
   const outcomeValue = useWatch({ control: form.control, name: "outcome" });
+  const durationOptions = DURATION_OPTIONS.includes(durationValue ?? "")
+    ? DURATION_OPTIONS
+    : [...(durationValue ? [durationValue] : []), ...DURATION_OPTIONS];
   const minuteOptions = MINUTE_OPTIONS.includes(minute)
     ? MINUTE_OPTIONS
     : [minute, ...MINUTE_OPTIONS];
@@ -219,6 +285,18 @@ export function NewConsultationSheet({
       if (date) setCalendarOpen(false);
     },
     [hour, minute, period, updateScheduledAt]
+  );
+
+  const handleSlotSelect = useCallback(
+    (h: string, m: string, p: "AM" | "PM") => {
+      setHour(h);
+      setMinute(m);
+      setPeriod(p);
+      const date = selectedDate ?? new Date();
+      if (!selectedDate) setSelectedDate(date);
+      updateScheduledAt(date, h, m, p);
+    },
+    [selectedDate, updateScheduledAt]
   );
 
   const displayValue = selectedDate
@@ -347,17 +425,38 @@ export function NewConsultationSheet({
     >
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="patientName">Patient Name</Label>
-          <Input
-            id="patientName"
-            placeholder="Enter patient name"
-            {...form.register("patientName")}
-            disabled={isEditing || !!defaultPatientName}
-            onChange={(event) => {
-              form.setValue("patientName", event.target.value, { shouldDirty: true });
-              setSelectedPatient(null);
-            }}
-          />
+          <Label htmlFor="patientName">
+            Patient <span className="text-destructive">*</span>
+          </Label>
+          {selectedPatient || isEditing || defaultPatientName ? (
+            <div className="flex h-10 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm">
+              <UserIcon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+              <span className="flex-1 truncate">{patientNameValue || "Patient"}</span>
+              {!isEditing && !defaultPatientName && (
+                <button
+                  type="button"
+                  aria-label="Clear patient"
+                  className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm"
+                  onClick={() => {
+                    setSelectedPatient(null);
+                    form.setValue("patientName", "", { shouldDirty: true });
+                  }}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <Input
+              id="patientName"
+              placeholder="Enter patient name"
+              {...form.register("patientName")}
+              onChange={(event) => {
+                form.setValue("patientName", event.target.value, { shouldDirty: true });
+                setSelectedPatient(null);
+              }}
+            />
+          )}
           {shouldShowPatientSearch && (
             <div className="rounded-lg border bg-popover p-1 shadow-sm">
               {searchingPatients ? (
@@ -410,12 +509,29 @@ export function NewConsultationSheet({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="doctorName">Doctor</Label>
-          <Input
-            id="doctorName"
-            placeholder="Enter doctor name"
-            {...form.register("doctorName")}
-          />
+          <Label htmlFor="doctorName">
+            Doctor <span className="text-destructive">*</span>
+          </Label>
+          <UISelect
+            value={doctorNameValue || currentDoctorName}
+            onValueChange={(v) => {
+              if (v) form.setValue("doctorName", v, { shouldDirty: true });
+            }}
+          >
+            <UISelectTrigger id="doctorName">
+              <UISelectValue placeholder="Select doctor" />
+            </UISelectTrigger>
+            <UISelectContent>
+              {currentDoctorName && (
+                <UISelectItem value={currentDoctorName}>
+                  {currentDoctorName}
+                </UISelectItem>
+              )}
+              {doctorNameValue && doctorNameValue !== currentDoctorName && (
+                <UISelectItem value={doctorNameValue}>{doctorNameValue}</UISelectItem>
+              )}
+            </UISelectContent>
+          </UISelect>
           {form.formState.errors.doctorName && (
             <p className="text-sm text-destructive">
               {form.formState.errors.doctorName.message}
@@ -424,52 +540,95 @@ export function NewConsultationSheet({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="type">Type</Label>
-          <UISelect
-            value={typeValue}
-            onValueChange={(v) => {
-              if (v) form.setValue("type", v);
-            }}
+          <Label>
+            Type <span className="text-destructive">*</span>
+          </Label>
+          <div
+            role="radiogroup"
+            aria-label="Consultation type"
+            className="grid grid-cols-1 gap-2 sm:grid-cols-3"
           >
-            <UISelectTrigger id="type">
-              <UISelectValue placeholder="Select type" />
-            </UISelectTrigger>
-            <UISelectContent>
-              <UISelectItem value="initial">Initial Assessment</UISelectItem>
-              <UISelectItem value="follow-up">Follow-up</UISelectItem>
-              <UISelectItem value="renewal">Prescription Renewal</UISelectItem>
-            </UISelectContent>
-          </UISelect>
+            {TYPE_OPTIONS.map((option) => {
+              const selected = typeValue === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => {
+                    form.setValue("type", option.value, { shouldDirty: true });
+                    form.setValue("duration", String(option.duration), {
+                      shouldDirty: true,
+                    });
+                  }}
+                  className={cn(
+                    "flex flex-col items-start gap-1 rounded-lg border bg-transparent p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    selected
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-input hover:border-foreground/30"
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      aria-hidden="true"
+                      className={cn("h-2 w-2 rounded-full", option.dotClass)}
+                    />
+                    {option.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {form.formState.errors.type && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.type.message}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
-          <Label>Date & Time</Label>
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-            <PopoverTrigger
-              className={cn(
-                "flex h-10 w-full items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-                !displayValue && "text-muted-foreground",
-                form.formState.errors.scheduledAt &&
-                  "border-destructive ring-3 ring-destructive/20"
-              )}
-            >
-              <span>{displayValue ?? "Pick a date & time"}</span>
-              <CalendarIcon className="h-4 w-4 opacity-50" />
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                captionLayout="dropdown"
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                defaultMonth={selectedDate ?? new Date()}
-                startMonth={new Date()}
-                endMonth={new Date(2030, 11)}
-              />
-            </PopoverContent>
-          </Popover>
+          <Label>
+            Date &amp; time <span className="text-destructive">*</span>
+          </Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger
+                className={cn(
+                  "flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                  !displayValue && "text-muted-foreground",
+                  form.formState.errors.scheduledAt &&
+                    "border-destructive ring-3 ring-destructive/20"
+                )}
+              >
+                <span>
+                  {selectedDate
+                    ? selectedDate.toLocaleDateString("en-AU", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : "Pick a date"}
+                </span>
+                <CalendarIcon className="h-4 w-4 opacity-50" />
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  captionLayout="dropdown"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  defaultMonth={selectedDate ?? new Date()}
+                  startMonth={new Date()}
+                  endMonth={new Date(2030, 11)}
+                />
+              </PopoverContent>
+            </Popover>
 
-          <div className="flex items-center gap-2">
             <UISelect
               value={hour}
               onValueChange={(v) => {
@@ -533,6 +692,34 @@ export function NewConsultationSheet({
             </UISelect>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            {SUGGESTED_SLOTS.map((slot) => {
+              const isActive =
+                hour === slot.hour && minute === slot.minute && period === slot.period;
+              return (
+                <button
+                  key={slot.label}
+                  type="button"
+                  onClick={() => handleSlotSelect(slot.hour, slot.minute, slot.period)}
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    isActive
+                      ? "border-primary text-primary"
+                      : "border-input text-foreground hover:border-foreground/30"
+                  )}
+                >
+                  {slot.label}
+                </button>
+              );
+            })}
+          </div>
+          {currentDoctorName && (
+            <p className="text-xs text-muted-foreground">
+              Slots shown are {currentDoctorName.replace(/^Dr\.?\s*/i, "")}&rsquo;s open
+              windows on this day.
+            </p>
+          )}
+
           {form.formState.errors.scheduledAt && (
             <p className="text-sm text-destructive">
               {form.formState.errors.scheduledAt.message}
@@ -541,14 +728,43 @@ export function NewConsultationSheet({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="duration">Duration (minutes)</Label>
-          <Input
-            id="duration"
-            type="number"
-            min="5"
-            max="120"
-            {...form.register("duration")}
-          />
+          <Label>Duration &amp; delivery</Label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <UISelect
+              value={durationValue ?? ""}
+              onValueChange={(v) => {
+                if (v) form.setValue("duration", v, { shouldDirty: true });
+              }}
+            >
+              <UISelectTrigger>
+                <UISelectValue placeholder="Duration" />
+              </UISelectTrigger>
+              <UISelectContent>
+                {durationOptions.map((val) => (
+                  <UISelectItem key={val} value={val}>
+                    {val} minutes
+                  </UISelectItem>
+                ))}
+              </UISelectContent>
+            </UISelect>
+            <UISelect
+              value={deliveryValue ?? ""}
+              onValueChange={(v) => {
+                if (v) form.setValue("delivery", v, { shouldDirty: true });
+              }}
+            >
+              <UISelectTrigger>
+                <UISelectValue placeholder="Delivery" />
+              </UISelectTrigger>
+              <UISelectContent>
+                {DELIVERY_OPTIONS.map((option) => (
+                  <UISelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </UISelectItem>
+                ))}
+              </UISelectContent>
+            </UISelect>
+          </div>
         </div>
 
         <div className="space-y-2">
