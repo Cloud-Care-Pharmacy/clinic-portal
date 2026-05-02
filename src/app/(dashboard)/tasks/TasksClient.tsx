@@ -15,7 +15,7 @@ import { TaskTable, type TaskAssignmentFilter } from "@/components/tasks/TaskTab
 import { TaskQueueBulkActions } from "@/components/tasks/TaskQueueBulkActions";
 import {
   TaskQueuePresetBar,
-  type TaskQueuePreset,
+  FALLBACK_TASK_PRESETS,
 } from "@/components/tasks/TaskQueuePresetBar";
 import {
   TaskCallDialog,
@@ -29,12 +29,18 @@ import {
   useDeleteConsultation,
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
-import { useAllTasks, useClaimTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
+import {
+  useAllTasks,
+  useClaimTasks,
+  useTaskPresets,
+  useUpdateTask,
+} from "@/lib/hooks/use-tasks";
 import { patientQueryOptions } from "@/lib/hooks/use-patients";
 import type {
   BulkTaskResult,
   ConsultationType,
   Task,
+  TaskQueuePresetDef,
   TaskStatus,
   TasksListResponse,
 } from "@/types";
@@ -47,7 +53,6 @@ interface TasksClientProps {
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
 const ACTIVE_STATUSES: TaskStatus[] = ["open", "in_progress"];
-const COMPLETED_STATUSES: TaskStatus[] = ["completed", "cancelled"];
 
 function pluralizeTask(count: number) {
   return `task${count === 1 ? "" : "s"}`;
@@ -95,18 +100,70 @@ function showBulkClaimResult(result: BulkTaskResult) {
   }
 }
 
-function isMine(task: Task, currentUserId?: string) {
-  return Boolean(
-    currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
-  );
-}
-
 function isUnassigned(task: Task) {
   return !task.assignedUserId && !task.assignedRole;
 }
 
-function isActive(task: Task) {
-  return task.status === "open" || task.status === "in_progress";
+function asArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value))
+    return value.filter((v): v is string => typeof v === "string");
+  if (typeof value === "string") return [value];
+  return undefined;
+}
+
+/** Resolve the literal "<self>" placeholder used in preset filter values. */
+function resolveAssignedUserId(value: unknown, currentUserId?: string) {
+  if (value === "<self>") return currentUserId ?? undefined;
+  if (typeof value === "string") return value;
+  return undefined;
+}
+
+function matchesPresetFilter(
+  task: Task,
+  filter: Record<string, unknown>,
+  currentUserId?: string
+) {
+  const statuses = asArray(filter.status);
+  if (statuses && !statuses.includes(task.status)) return false;
+
+  if ("assignedUserId" in filter) {
+    const raw = filter.assignedUserId;
+    if (raw === null) {
+      if (!isUnassigned(task)) return false;
+    } else {
+      const resolved = resolveAssignedUserId(raw, currentUserId);
+      if (!resolved) return false;
+      if (task.assignedUserId !== resolved) return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Translate a backend preset filter into the local FilterBar state machine.
+ * The local UI uses two slots: status and an assignment bucket.
+ */
+function presetToLocalFilters(
+  preset: { filter: Record<string, unknown> },
+  currentUserId?: string
+): { statusFilters: TaskStatus[]; assignmentFilters: TaskAssignmentFilter[] } {
+  const statuses = (asArray(preset.filter.status) as TaskStatus[] | undefined) ?? [];
+  const statusFilters: TaskStatus[] =
+    statuses.length > 0
+      ? statuses.filter((s): s is TaskStatus =>
+          ["open", "in_progress", "completed", "cancelled"].includes(s)
+        )
+      : ACTIVE_STATUSES;
+
+  const assignmentFilters: TaskAssignmentFilter[] = [];
+  if ("assignedUserId" in preset.filter) {
+    const raw = preset.filter.assignedUserId;
+    if (raw === null) assignmentFilters.push("unassigned");
+    else if (raw === "<self>" || raw === currentUserId) assignmentFilters.push("mine");
+  }
+
+  return { statusFilters, assignmentFilters };
 }
 
 function taskConsultationType(task: Task): ConsultationType {
@@ -138,7 +195,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const queryClient = useQueryClient();
   const currentUserId = user?.id;
 
-  const [activePreset, setActivePreset] = useState<TaskQueuePreset>("unassigned");
+  const presetsQuery = useTaskPresets();
+  const presets = presetsQuery.data?.data.presets ?? FALLBACK_TASK_PRESETS;
+
+  const [activePreset, setActivePreset] = useState<string>("unassigned");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
   const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
@@ -177,39 +237,29 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     return selectedIds.filter((id) => visibleIds.has(id));
   }, [selectedIds, tasks]);
 
-  const presetCounts = useMemo(
-    () => ({
-      unassigned: summaryTasks.filter((task) => isUnassigned(task) && isActive(task))
-        .length,
-      mine_active: summaryTasks.filter(
-        (task) => isMine(task, currentUserId) && isActive(task)
-      ).length,
-      completed: summaryTasks.filter(
-        (task) =>
-          isMine(task, currentUserId) && COMPLETED_STATUSES.includes(task.status)
-      ).length,
-    }),
-    [currentUserId, summaryTasks]
-  );
+  const presetCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const preset of presets) {
+      counts[preset.id] = summaryTasks.filter((task) =>
+        matchesPresetFilter(task, preset.filter, currentUserId)
+      ).length;
+    }
+    return counts;
+  }, [currentUserId, summaryTasks, presets]);
 
-  function switchPreset(preset: TaskQueuePreset) {
-    setActivePreset(preset);
+  function applyPreset(preset: TaskQueuePresetDef) {
+    setActivePreset(preset.id);
     setSelectedIds([]);
+    const { statusFilters: nextStatuses, assignmentFilters: nextAssign } =
+      presetToLocalFilters(preset, currentUserId);
+    setStatusFilters(nextStatuses);
+    setAssignmentFilters(nextAssign);
+  }
 
-    if (preset === "unassigned") {
-      setStatusFilters(ACTIVE_STATUSES);
-      setAssignmentFilters(["unassigned"]);
-      return;
-    }
-
-    if (preset === "mine_active") {
-      setStatusFilters(ACTIVE_STATUSES);
-      setAssignmentFilters(["mine"]);
-      return;
-    }
-
-    setStatusFilters(COMPLETED_STATUSES);
-    setAssignmentFilters(["mine"]);
+  function switchPresetById(id: string) {
+    const preset = presets.find((p) => p.id === id);
+    if (preset) applyPreset(preset);
+    else setActivePreset(id);
   }
 
   async function claimTaskIds(ids: string[], action: "claim" | "claim_and_start") {
@@ -351,8 +401,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           ? "Consultation finalised."
           : "Call outcome saved."
       );
-      if (submission.status === "completed") switchPreset("completed");
-      else switchPreset("mine_active");
+      if (submission.status === "completed") switchPresetById("completed");
+      else switchPresetById("mine_active");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save outcome.");
     } finally {
@@ -409,9 +459,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             showFilterControls={false}
             quickFilters={
               <TaskQueuePresetBar
+                presets={presets}
                 activePreset={activePreset}
                 counts={presetCounts}
-                onPresetChange={switchPreset}
+                onPresetChange={applyPreset}
               />
             }
             onClaimTask={handleClaimTask}

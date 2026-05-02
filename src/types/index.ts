@@ -617,6 +617,18 @@ export interface Task {
   completedBy?: string | null;
   cancelledAt?: string | null;
   cancelledBy?: string | null;
+  /** Server-computed: dueAt < server now AND status not in {completed, cancelled}. */
+  isOverdue?: boolean;
+  /** Server-computed: dueAt when isOverdue is true, otherwise null. */
+  overdueSince?: string | null;
+  /** Normalized patient contact, sourced from the linked patient row. */
+  patientContact?: TaskPatientContact | null;
+}
+
+export interface TaskPatientContact {
+  phone: string | null;
+  email: string | null;
+  fullName: string;
 }
 
 export interface TaskEvent {
@@ -655,6 +667,8 @@ export interface TasksQuery {
   order?: SortOrder;
   limit?: number;
   offset?: number;
+  /** When true, request the full set in one call (server caps at 2000). */
+  all?: boolean;
 }
 
 export interface TasksListResponse {
@@ -662,8 +676,42 @@ export interface TasksListResponse {
   data: {
     patientId?: string;
     tasks: Task[];
-    pagination?: { limit: number; offset: number; total: number };
+    pagination?: {
+      limit: number;
+      offset: number;
+      total: number;
+      /** Present (and true) when ?all=true hit the server cap. */
+      truncated?: boolean;
+    };
     filters?: Partial<TasksQuery>;
+  };
+}
+
+export type TaskQueuePresetTone =
+  | "info"
+  | "success"
+  | "warning"
+  | "danger"
+  | "neutral"
+  | "primary";
+
+export interface TaskQueuePresetDef {
+  id: string;
+  label: string;
+  tone: TaskQueuePresetTone;
+  /** Lucide icon name (lowercase, kebab-case). */
+  icon: string;
+  /**
+   * Filter values use the same shape as TasksQuery. The literal string "<self>"
+   * is a placeholder that the client substitutes with the calling user id.
+   */
+  filter: Record<string, unknown>;
+}
+
+export interface TaskQueuePresetsResponse {
+  success: boolean;
+  data: {
+    presets: TaskQueuePresetDef[];
   };
 }
 

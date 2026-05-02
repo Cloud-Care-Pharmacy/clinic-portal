@@ -401,7 +401,7 @@ export function TaskTable({
         const overdue =
           params.row.status !== "completed" &&
           params.row.status !== "cancelled" &&
-          isTaskOverdue(params.row.dueAt);
+          isTaskOverdue(params.row);
         return (
           <span
             className={

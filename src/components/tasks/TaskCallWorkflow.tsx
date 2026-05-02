@@ -218,7 +218,7 @@ function formatPatientDetailsLine({
 }
 
 function formatTaskReferenceStatus(task: Task) {
-  if (isTaskOverdue(task.dueAt) && !["completed", "cancelled"].includes(task.status)) {
+  if (isTaskOverdue(task) && !["completed", "cancelled"].includes(task.status)) {
     return "overdue";
   }
 

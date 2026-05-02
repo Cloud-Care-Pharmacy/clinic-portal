@@ -11,6 +11,7 @@ import type {
   BulkTaskResult,
   CreateTaskPayload,
   Task,
+  TaskQueuePresetsResponse,
   TaskResponse,
   TasksListResponse,
   TasksQuery,
@@ -19,27 +20,53 @@ import type {
 } from "@/types";
 
 const TASK_API_UNAVAILABLE = "Task API is not available in this backend environment.";
-const ALL_TASKS_PAGE_SIZE = 100;
-const ALL_TASKS_MAX_CONCURRENT_PAGES = 4;
 
-async function taskErrorMessage(res: Response, fallback: string) {
+export class TaskApiError extends Error {
+  readonly code?: string;
+  readonly status: number;
+  readonly details?: unknown;
+  constructor(message: string, status: number, code?: string, details?: unknown) {
+    super(message);
+    this.name = "TaskApiError";
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+async function taskErrorPayload(
+  res: Response,
+  fallback: string
+): Promise<TaskApiError> {
   const payload = (await res.json().catch(() => undefined)) as
-    | { error?: string; details?: string; code?: string }
+    | {
+        error?: string | { code?: string; message?: string; details?: unknown };
+        details?: string;
+        code?: string;
+      }
     | undefined;
 
-  if (payload?.details) return payload.details;
-  if (payload?.error) return payload.error;
-
-  if (res.status === 404 || res.status === 501) {
-    return TASK_API_UNAVAILABLE;
+  // New envelope: { success:false, error: { code, message, details } }
+  if (payload && typeof payload.error === "object" && payload.error !== null) {
+    return new TaskApiError(
+      payload.error.message ?? fallback,
+      res.status,
+      payload.error.code,
+      payload.error.details
+    );
   }
 
-  return fallback;
+  const message =
+    payload?.details ??
+    (typeof payload?.error === "string" ? payload.error : undefined) ??
+    (res.status === 404 || res.status === 501 ? TASK_API_UNAVAILABLE : fallback);
+
+  return new TaskApiError(message, res.status, payload?.code);
 }
 
 async function assertTaskResponse(res: Response, fallback: string) {
   if (res.ok) return;
-  throw new Error(await taskErrorMessage(res, fallback));
+  throw await taskErrorPayload(res, fallback);
 }
 
 function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
@@ -59,8 +86,12 @@ function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
   if (opts?.search) params.set("search", opts.search);
   if (opts?.sort) params.set("sort", opts.sort);
   if (opts?.order) params.set("order", opts.order);
-  params.set("limit", String(opts?.limit ?? 50));
-  params.set("offset", String(opts?.offset ?? 0));
+  if (opts?.all) {
+    params.set("all", "true");
+  } else {
+    params.set("limit", String(opts?.limit ?? 50));
+    params.set("offset", String(opts?.offset ?? 0));
+  }
 }
 
 function taskQueryKey(prefix: string, opts?: TasksQuery) {
@@ -79,8 +110,8 @@ function taskQueryKey(prefix: string, opts?: TasksQuery) {
     opts?.search ?? "",
     opts?.sort ?? "",
     opts?.order ?? "",
-    opts?.limit ?? 50,
-    opts?.offset ?? 0,
+    opts?.all ? "all" : (opts?.limit ?? 50),
+    opts?.all ? 0 : (opts?.offset ?? 0),
   ];
 }
 
@@ -93,42 +124,13 @@ async function fetchTasks(opts?: TasksQuery): Promise<TasksListResponse> {
 }
 
 async function fetchAllTasks(opts?: TasksQuery): Promise<TasksListResponse> {
-  const pageSize = Math.min(Math.max(opts?.limit ?? ALL_TASKS_PAGE_SIZE, 1), 100);
-  const firstPage = await fetchTasks({ ...opts, limit: pageSize, offset: 0 });
-  const tasks = [...firstPage.data.tasks];
-  const total = firstPage.data.pagination?.total ?? tasks.length;
-  const offsets = Array.from(
-    { length: Math.max(0, Math.ceil((total - pageSize) / pageSize)) },
-    (_, index) => pageSize + index * pageSize
-  );
-  const remainingPages: TasksListResponse[] = [];
-
-  for (let index = 0; index < offsets.length; index += ALL_TASKS_MAX_CONCURRENT_PAGES) {
-    const batch = offsets.slice(index, index + ALL_TASKS_MAX_CONCURRENT_PAGES);
-    remainingPages.push(
-      ...(await Promise.all(
-        batch.map((offset) => fetchTasks({ ...opts, limit: pageSize, offset }))
-      ))
+  const response = await fetchTasks({ ...opts, all: true });
+  if (response.data.pagination?.truncated && process.env.NODE_ENV !== "production") {
+    console.warn(
+      "[tasks] /api/tasks?all=true was truncated at the server cap (2000 rows)."
     );
   }
-
-  for (const page of remainingPages) {
-    tasks.push(...page.data.tasks);
-  }
-
-  return {
-    ...firstPage,
-    data: {
-      ...firstPage.data,
-      tasks,
-      pagination: {
-        limit: tasks.length,
-        offset: 0,
-        total,
-      },
-      filters: opts,
-    },
-  };
+  return response;
 }
 
 async function fetchPatientTasks(
@@ -153,6 +155,12 @@ async function fetchTask(taskId: string): Promise<TaskResponse> {
 async function fetchTaskSummary(): Promise<TaskSummaryResponse> {
   const res = await fetch("/api/proxy/tasks/summary");
   await assertTaskResponse(res, "Failed to fetch task summary");
+  return res.json();
+}
+
+async function fetchTaskPresets(): Promise<TaskQueuePresetsResponse> {
+  const res = await fetch("/api/proxy/tasks/presets");
+  await assertTaskResponse(res, "Failed to fetch task presets");
   return res.json();
 }
 
@@ -262,6 +270,17 @@ export function useTaskSummary(initialData?: TaskSummaryResponse) {
     queryKey: ["task-summary"],
     queryFn: fetchTaskSummary,
     initialData,
+  });
+}
+
+export function useTaskPresets() {
+  return useQuery({
+    queryKey: ["task-presets"],
+    queryFn: fetchTaskPresets,
+    // Presets are config; cache aggressively.
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: false,
   });
 }
 
@@ -377,13 +396,14 @@ async function claimTasks(body: BulkClaimTasksRequest): Promise<BulkTaskResult> 
   });
 
   if (!res.ok) {
-    throw new Error(await taskErrorMessage(res, "Failed to claim tasks"));
+    throw await taskErrorPayload(res, "Failed to claim tasks");
   }
 
   const payload = (await res.json()) as
     | BulkClaimTasksResponse
     | { success: false; error?: string };
-  if (!payload.success) throw new Error(payload.error ?? "Failed to claim tasks");
+  if (!payload.success)
+    throw new TaskApiError(payload.error ?? "Failed to claim tasks", res.status);
   return payload.data;
 }
 

@@ -1,7 +1,5 @@
 import type { Task, TaskPriority, TaskStatus, TaskType } from "@/types";
 
-const TASK_TIME_REFERENCE_MS = Date.now();
-
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
   open: "Open",
   in_progress: "In progress",
@@ -65,8 +63,16 @@ export function formatTaskDateTime(value?: string | null) {
   });
 }
 
-export function isTaskOverdue(value?: string | null) {
-  return Boolean(value && new Date(value).getTime() < TASK_TIME_REFERENCE_MS);
+export function isTaskOverdue(
+  task: Pick<Task, "isOverdue" | "dueAt" | "status">
+): boolean {
+  // Prefer the server-computed flag.
+  if (typeof task.isOverdue === "boolean") return task.isOverdue;
+
+  // Fallback (one-release safety net while older payloads still flow through).
+  if (!task.dueAt) return false;
+  if (task.status === "completed" || task.status === "cancelled") return false;
+  return new Date(task.dueAt).getTime() < Date.now();
 }
 
 export function formatTaskDueRelative(value?: string | null, status?: TaskStatus) {
@@ -74,7 +80,7 @@ export function formatTaskDueRelative(value?: string | null, status?: TaskStatus
   if (status === "completed") return "Completed";
   if (status === "cancelled") return "Cancelled";
 
-  const diff = new Date(value).getTime() - TASK_TIME_REFERENCE_MS;
+  const diff = new Date(value).getTime() - Date.now();
   const absoluteDiff = Math.abs(diff);
   const isPast = diff < 0;
   const minutes = Math.max(1, Math.round(absoluteDiff / 60_000));
@@ -90,6 +96,11 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * The backend now strips the `<TypeLabel> — ` prefix on write, so `task.title`
+ * should already be clean. This helper remains as a one-release safety net for
+ * legacy rows that have not been backfilled.
+ */
 export function getTaskDisplayTitle(taskType: TaskType, title: string) {
   const typeLabel = TASK_TYPE_LABELS[taskType] ?? taskType;
   const prefixPattern = new RegExp(`^${escapeRegExp(typeLabel)}\\s*[—–-]\\s*`, "i");
@@ -109,6 +120,11 @@ function metadataString(task: Task, keys: string[]) {
 }
 
 export function getTaskPatientPhone(task: Task) {
+  // Prefer the server-normalized contact block.
+  const fromContact = task.patientContact?.phone?.trim();
+  if (fromContact) return fromContact;
+
+  // Fallback (one-release safety net for legacy responses still using metadata).
   return metadataString(task, [
     "phone",
     "mobile",

@@ -31,9 +31,7 @@ const PRIORITY_DOT: Record<Task["priority"], string> = {
 
 function TaskRow({ task }: { task: Task }) {
   const overdue =
-    isTaskOverdue(task.dueAt) &&
-    task.status !== "completed" &&
-    task.status !== "cancelled";
+    isTaskOverdue(task) && task.status !== "completed" && task.status !== "cancelled";
   const due = formatTaskDueRelative(task.dueAt, task.status);
 
   return (
@@ -123,8 +121,7 @@ export function PatientTasksOverviewCard({
   const openCount = tasks.filter((t) => t.status === "open").length;
   const inProgressCount = tasks.filter((t) => t.status === "in_progress").length;
   const overdueCount = tasks.filter(
-    (t) =>
-      isTaskOverdue(t.dueAt) && t.status !== "completed" && t.status !== "cancelled"
+    (t) => isTaskOverdue(t) && t.status !== "completed" && t.status !== "cancelled"
   ).length;
 
   return (
