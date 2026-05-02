@@ -1,17 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import type {
-  ActivityEntityType,
-  ActivityEventCategory,
-  PatientActivityResponse,
-} from "@/types";
-
-function categoryForEntity(entityType: ActivityEntityType): ActivityEventCategory {
-  if (entityType === "consultation") return "consultations";
-  if (entityType === "note") return "notes";
-  if (entityType === "prescription") return "prescriptions";
-  if (entityType === "document") return "documents";
-  return "system";
-}
+import type { PatientActivityResponse } from "@/types";
 
 async function fetchPatientActivity(
   patientId: string,
@@ -26,18 +14,7 @@ async function fetchPatientActivity(
     `/api/proxy/patients/${encodeURIComponent(patientId)}/activity?${params}`
   );
   if (!res.ok) throw new Error("Failed to fetch patient activity");
-  const payload = (await res.json()) as PatientActivityResponse;
-
-  return {
-    ...payload,
-    data: {
-      ...payload.data,
-      events: payload.data.events.map((event) => ({
-        ...event,
-        category: event.category ?? categoryForEntity(event.entityType),
-      })),
-    },
-  };
+  return (await res.json()) as PatientActivityResponse;
 }
 
 export function patientActivityQueryOptions(patientId: string) {

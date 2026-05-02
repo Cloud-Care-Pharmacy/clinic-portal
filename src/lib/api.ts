@@ -52,17 +52,6 @@ import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 const API_SECRET = process.env.API_SECRET ?? "";
 
-function categoryForActivityEntity(
-  entityType: PatientActivityResponse["data"]["events"][number]["entityType"]
-): PatientActivityResponse["data"]["events"][number]["category"] {
-  if (entityType === "consultation") return "consultations";
-  if (entityType === "task") return "tasks";
-  if (entityType === "note") return "notes";
-  if (entityType === "prescription") return "prescriptions";
-  if (entityType === "document") return "documents";
-  return "system";
-}
-
 function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
   const appendValue = (key: string, value?: string | string[]) => {
     if (!value) return;
@@ -226,20 +215,9 @@ class ApiClient {
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    const payload = await this.request<PatientActivityResponse>(
+    return this.request<PatientActivityResponse>(
       `/api/patients/${encodeURIComponent(patientId)}/activity${qs}`
     );
-
-    return {
-      ...payload,
-      data: {
-        ...payload.data,
-        events: payload.data.events.map((event) => ({
-          ...event,
-          category: event.category ?? categoryForActivityEntity(event.entityType),
-        })),
-      },
-    };
   }
 
   // ---- Patient Tasks ----
