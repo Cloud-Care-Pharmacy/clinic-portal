@@ -16,11 +16,19 @@ import {
   Trash2,
   Pill,
   ExternalLink,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -145,63 +153,66 @@ export function ConsultationDetailSheet({
     });
   }
 
+  const isPending = updateConsultation.isPending || deleteConsultation.isPending;
+
   const footerActions = consultation ? (
-    <>
-      <Button
-        variant="outline"
-        onClick={() => setDeleteOpen(true)}
-        disabled={updateConsultation.isPending || deleteConsultation.isPending}
-        className="gap-1.5"
-      >
-        <Trash2 className="h-4 w-4" />
-        Delete
-      </Button>
-      {onEdit && (
+    <div className="flex w-full items-center justify-between gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+          disabled={isPending}
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" side="top" className="w-56">
+          {onEdit && (
+            <DropdownMenuItem onClick={() => onEdit(consultation)}>
+              <Pencil className="h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {isScheduled && (
+            <>
+              <DropdownMenuItem onClick={() => handleStatusChange("no-show")}>
+                <AlertTriangle className="h-4 w-4" />
+                Mark as no-show
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleStatusChange("cancelled")}>
+                <XCircle className="h-4 w-4" />
+                Cancel consultation
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {isScheduled ? (
+        <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
+          <CheckCircle2 className="h-4 w-4" />
+          {showOutcomeInput
+            ? updateConsultation.isPending
+              ? "Saving…"
+              : "Confirm complete"
+            : "Mark completed"}
+        </Button>
+      ) : onEdit ? (
         <Button
           variant="outline"
           onClick={() => onEdit(consultation)}
-          disabled={updateConsultation.isPending || deleteConsultation.isPending}
+          disabled={isPending}
           className="gap-1.5"
         >
           <Pencil className="h-4 w-4" />
           Edit
         </Button>
-      )}
-      {isScheduled && (
-        <>
-          <Button
-            variant="outline"
-            onClick={() => handleStatusChange("cancelled")}
-            disabled={updateConsultation.isPending || deleteConsultation.isPending}
-            className="gap-1.5"
-          >
-            <XCircle className="h-4 w-4" />
-            Cancel consultation
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleStatusChange("no-show")}
-            disabled={updateConsultation.isPending || deleteConsultation.isPending}
-            className="gap-1.5"
-          >
-            <AlertTriangle className="h-4 w-4" />
-            No-show
-          </Button>
-          <Button
-            onClick={handleComplete}
-            disabled={updateConsultation.isPending || deleteConsultation.isPending}
-            className="gap-1.5"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            {showOutcomeInput
-              ? updateConsultation.isPending
-                ? "Saving…"
-                : "Confirm complete"
-              : "Mark completed"}
-          </Button>
-        </>
-      )}
-    </>
+      ) : null}
+    </div>
   ) : undefined;
 
   return (
@@ -232,7 +243,15 @@ export function ConsultationDetailSheet({
             </div>
 
             <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
-              {consultation.patientName}
+              <Link
+                href={`/patients/${consultation.patientId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                {consultation.patientName}
+                <ExternalLink className="h-3 w-3" />
+              </Link>
             </DetailRow>
 
             <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">

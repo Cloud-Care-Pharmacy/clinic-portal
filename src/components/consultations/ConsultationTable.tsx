@@ -7,7 +7,8 @@ import {
   type GridPaginationModel,
   type GridRowParams,
 } from "@mui/x-data-grid";
-import { CalendarRange, X } from "lucide-react";
+import Link from "next/link";
+import { CalendarRange, ExternalLink, X } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
@@ -276,7 +277,7 @@ export function ConsultationTable({
         const initials = getInitials(name);
         const color = colorFromName(name);
         return (
-          <div className="flex items-center gap-3 py-1">
+          <div className="group/patient flex items-center gap-3 py-1">
             <Avatar size="default">
               <AvatarFallback className={cn("text-xs font-semibold", color)}>
                 {initials}
@@ -288,6 +289,16 @@ export function ConsultationTable({
                 {params.row.patientId}
               </span>
             </div>
+            <Link
+              href={`/patients/${params.row.patientId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${name} in new tab`}
+              onClick={(e) => e.stopPropagation()}
+              className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-hover/patient:opacity-100"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
           </div>
         );
       },
