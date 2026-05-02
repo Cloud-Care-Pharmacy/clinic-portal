@@ -6,18 +6,81 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Consultation, ConsultationType } from "@/types";
 
-const TYPE_COLORS: Record<ConsultationType, string> = {
-  initial: "bg-status-info-fg",
-  "follow-up": "bg-status-accent-fg",
-  renewal: "bg-status-success-fg",
+const TYPE_STYLES: Record<
+  ConsultationType,
+  { bg: string; border: string; text: string; label: string }
+> = {
+  initial: {
+    bg: "bg-status-info-bg",
+    border: "border-status-info-fg",
+    text: "text-status-info-fg",
+    label: "Initial",
+  },
+  "follow-up": {
+    bg: "bg-status-accent-bg",
+    border: "border-status-accent-fg",
+    text: "text-status-accent-fg",
+    label: "Follow-up",
+  },
+  renewal: {
+    bg: "bg-status-success-bg",
+    border: "border-status-success-fg",
+    text: "text-status-success-fg",
+    label: "Renewal",
+  },
 };
 
 const STATUS_OPACITY: Record<string, string> = {
   scheduled: "opacity-100",
-  completed: "opacity-60",
-  cancelled: "opacity-40 line-through",
-  "no-show": "opacity-40",
+  completed: "opacity-70",
+  cancelled: "opacity-50 line-through",
+  "no-show": "opacity-50",
 };
+
+function formatShortName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  return `${first.charAt(0).toUpperCase()}. ${last}`;
+}
+
+function EventChip({
+  consultation,
+  onClick,
+}: {
+  consultation: Consultation;
+  onClick: () => void;
+}) {
+  const style = TYPE_STYLES[consultation.type];
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "group w-full text-left rounded-md border-l-4 pl-2 pr-1.5 py-1 transition-colors hover:brightness-95",
+        style.bg,
+        style.border,
+        STATUS_OPACITY[consultation.status]
+      )}
+    >
+      <span
+        className={cn(
+          "block w-fit rounded-sm bg-white/60 px-1 py-px font-mono text-[10px] leading-none tracking-tight text-foreground/70"
+        )}
+      >
+        {formatTime(consultation.scheduledAt)}
+      </span>
+      <span
+        className={cn(
+          "mt-1 block truncate text-[11px] font-medium leading-tight",
+          style.text
+        )}
+      >
+        {formatShortName(consultation.patientName)} — {style.label}
+      </span>
+    </button>
+  );
+}
 
 interface ConsultationCalendarProps {
   consultations: Consultation[];
@@ -105,7 +168,7 @@ function MonthView({
         {Array.from({ length: startOffset }).map((_, i) => (
           <div
             key={`empty-${i}`}
-            className="min-h-[100px] border-b border-r bg-muted/20"
+            className="min-h-[140px] border-b border-r bg-muted/20"
           />
         ))}
 
@@ -119,7 +182,7 @@ function MonthView({
             <div
               key={day}
               className={cn(
-                "min-h-[100px] border-b border-r p-1",
+                "min-h-[140px] border-b border-r p-1.5",
                 isToday && "bg-primary/5"
               )}
             >
@@ -131,19 +194,13 @@ function MonthView({
               >
                 {day}
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {dayConsultations.slice(0, 3).map((c) => (
-                  <button
+                  <EventChip
                     key={c.id}
+                    consultation={c}
                     onClick={() => onEventClick(c)}
-                    className={cn(
-                      "w-full text-left text-[11px] leading-tight rounded px-1 py-0.5 text-white truncate hover:opacity-80 transition-opacity",
-                      TYPE_COLORS[c.type],
-                      STATUS_OPACITY[c.status]
-                    )}
-                  >
-                    {formatTime(c.scheduledAt)} {c.patientName}
-                  </button>
+                  />
                 ))}
                 {dayConsultations.length > 3 && (
                   <p className="text-[10px] text-muted-foreground px-1">
@@ -215,21 +272,11 @@ function WeekView({
                       new Date(b.scheduledAt).getTime()
                   )
                   .map((c) => (
-                    <button
+                    <EventChip
                       key={c.id}
+                      consultation={c}
                       onClick={() => onEventClick(c)}
-                      className={cn(
-                        "w-full text-left text-xs rounded p-1.5 text-white hover:opacity-80 transition-opacity",
-                        TYPE_COLORS[c.type],
-                        STATUS_OPACITY[c.status]
-                      )}
-                    >
-                      <p className="font-medium truncate">
-                        {formatTime(c.scheduledAt)}
-                      </p>
-                      <p className="truncate">{c.patientName}</p>
-                      <p className="truncate text-white/80">{c.doctorName}</p>
-                    </button>
+                    />
                   ))}
               </div>
             </div>
