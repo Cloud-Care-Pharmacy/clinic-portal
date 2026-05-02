@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -13,6 +14,8 @@ import {
   FileText,
   Pencil,
   Trash2,
+  Pill,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
@@ -34,6 +37,8 @@ import {
   useUpdateConsultation,
   useDeleteConsultation,
 } from "@/lib/hooks/use-consultations";
+import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
+import { formatPrescriptionDate } from "@/lib/prescriptions";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type { Consultation, ConsultationType } from "@/types";
 
@@ -82,6 +87,9 @@ export function ConsultationDetailSheet({
   const [showOutcomeInput, setShowOutcomeInput] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const consultation = useLastDefined(input);
+  const prescriptionsQuery = usePrescriptions(consultation?.patientId);
+  const recentPrescriptions =
+    prescriptionsQuery.data?.data.prescriptions.slice(0, 5) ?? [];
 
   const isScheduled = consultation?.status === "scheduled";
 
@@ -280,6 +288,52 @@ export function ConsultationDetailSheet({
                 />
               </DetailRow>
             )}
+
+            <Separator />
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Pill className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Recent prescriptions</p>
+                </div>
+                <Link
+                  href={`/patients/${consultation.patientId}/prescriptions`}
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View all
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              </div>
+              {prescriptionsQuery.isLoading ? (
+                <p className="text-xs text-muted-foreground">Loading…</p>
+              ) : recentPrescriptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No prescriptions on record for this patient.
+                </p>
+              ) : (
+                <ul className="space-y-1 rounded-md border bg-muted/30 p-2 text-sm">
+                  {recentPrescriptions.map((rx) => (
+                    <li key={rx.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        <span className="font-medium">
+                          {formatPrescriptionDate(rx.prescriptionDate)}
+                        </span>
+                        {rx.prescriberName && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            · {rx.prescriberName}
+                          </span>
+                        )}
+                      </span>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {rx.status}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             {/* Actions for scheduled consultations */}
             {isScheduled && (

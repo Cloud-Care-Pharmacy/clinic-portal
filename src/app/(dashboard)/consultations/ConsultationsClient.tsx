@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { GridPaginationModel } from "@mui/x-data-grid";
-import { CalendarDays, Download, Table2 } from "lucide-react";
+import { CalendarDays, Table2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -22,6 +22,23 @@ import type {
 
 type ViewMode = "table" | "calendar";
 
+export interface DateRangeFilter {
+  from?: Date;
+  to?: Date;
+}
+
+function startOfDayIso(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function endOfDayIso(date: Date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString();
+}
+
 interface ConsultationsClientProps {
   entityId: string;
   initialConsultations?: ConsultationsListResponse;
@@ -37,6 +54,8 @@ export function ConsultationsClient({
   const [searchQuery, setSearchQueryRaw] = useState("");
   const [statusFilters, setStatusFiltersRaw] = useState<ConsultationStatus[]>([]);
   const [typeFilters, setTypeFiltersRaw] = useState<ConsultationType[]>([]);
+  const [doctorFilters, setDoctorFiltersRaw] = useState<string[]>([]);
+  const [dateRange, setDateRangeRaw] = useState<DateRangeFilter>({});
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: 25,
@@ -63,6 +82,14 @@ export function ConsultationsClient({
     setTypeFiltersRaw(value);
     resetToFirstPage();
   }
+  function setDoctorFilters(value: string[]) {
+    setDoctorFiltersRaw(value);
+    resetToFirstPage();
+  }
+  function setDateRange(value: DateRangeFilter) {
+    setDateRangeRaw(value);
+    resetToFirstPage();
+  }
 
   const query = {
     limit: paginationModel.pageSize,
@@ -70,6 +97,9 @@ export function ConsultationsClient({
     search: searchQuery.trim() || undefined,
     status: statusFilters.length === 1 ? statusFilters[0] : undefined,
     type: typeFilters.length === 1 ? typeFilters[0] : undefined,
+    doctorId: doctorFilters.length === 1 ? doctorFilters[0] : undefined,
+    from: dateRange.from ? startOfDayIso(dateRange.from) : undefined,
+    to: dateRange.to ? endOfDayIso(dateRange.to) : undefined,
     sort: "scheduledAt" as const,
     order: "desc" as const,
   };
@@ -80,7 +110,20 @@ export function ConsultationsClient({
       : undefined,
     query
   );
-  const consultations = data?.data?.consultations ?? [];
+  const consultations = useMemo(() => data?.data?.consultations ?? [], [data]);
+
+  const doctorOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const c of consultations) {
+      const id = c.doctorId || c.doctorName;
+      if (id && !seen.has(id)) {
+        seen.set(id, c.doctorName || id);
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  }, [consultations]);
 
   function toggleView(mode: ViewMode) {
     setViewMode(mode);
@@ -112,10 +155,6 @@ export function ConsultationsClient({
                 },
               ]}
             />
-            <Button variant="outline" size="sm" className="h-8 gap-1.5">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
             <Button size="sm" className="h-8" onClick={() => setSheetOpen(true)}>
               + Schedule Consultation
             </Button>
@@ -147,6 +186,11 @@ export function ConsultationsClient({
               onStatusFiltersChange={setStatusFilters}
               typeFilters={typeFilters}
               onTypeFiltersChange={setTypeFilters}
+              doctorOptions={doctorOptions}
+              doctorFilters={doctorFilters}
+              onDoctorFiltersChange={setDoctorFilters}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
               total={data?.data?.pagination?.total}
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}

@@ -1,21 +1,26 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   DataGrid,
   type GridColDef,
   type GridPaginationModel,
   type GridRowParams,
 } from "@mui/x-data-grid";
+import { CalendarRange, X } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
 import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
+import type { DateRangeFilter } from "@/app/(dashboard)/consultations/ConsultationsClient";
 
 const TYPE_DOT: Record<ConsultationType, string> = {
   initial: "bg-status-info-fg",
@@ -105,6 +110,11 @@ interface ConsultationTableProps {
   onStatusFiltersChange: (value: ConsultationStatus[]) => void;
   typeFilters: ConsultationType[];
   onTypeFiltersChange: (value: ConsultationType[]) => void;
+  doctorOptions: Array<{ id: string; name: string }>;
+  doctorFilters: string[];
+  onDoctorFiltersChange: (value: string[]) => void;
+  dateRange: DateRangeFilter;
+  onDateRangeChange: (value: DateRangeFilter) => void;
   paginationModel: GridPaginationModel;
   onPaginationModelChange: (model: GridPaginationModel) => void;
 }
@@ -138,11 +148,21 @@ export function ConsultationTable({
   onStatusFiltersChange,
   typeFilters,
   onTypeFiltersChange,
+  doctorOptions,
+  doctorFilters,
+  onDoctorFiltersChange,
+  dateRange,
+  onDateRangeChange,
   paginationModel,
   onPaginationModelChange,
 }: ConsultationTableProps) {
   const hasActiveFilters =
-    Boolean(searchQuery.trim()) || statusFilters.length > 0 || typeFilters.length > 0;
+    Boolean(searchQuery.trim()) ||
+    statusFilters.length > 0 ||
+    typeFilters.length > 0 ||
+    doctorFilters.length > 0 ||
+    Boolean(dateRange.from) ||
+    Boolean(dateRange.to);
 
   const visibleConsultations = useMemo(
     () =>
@@ -152,6 +172,23 @@ export function ConsultationTable({
         }
         if (typeFilters.length > 0 && !typeFilters.includes(consultation.type)) {
           return false;
+        }
+        if (doctorFilters.length > 0) {
+          const key = consultation.doctorId || consultation.doctorName;
+          if (!key || !doctorFilters.includes(key)) return false;
+        }
+        if (dateRange.from || dateRange.to) {
+          const t = new Date(consultation.scheduledAt).getTime();
+          if (dateRange.from) {
+            const fromT = new Date(dateRange.from);
+            fromT.setHours(0, 0, 0, 0);
+            if (t < fromT.getTime()) return false;
+          }
+          if (dateRange.to) {
+            const toT = new Date(dateRange.to);
+            toT.setHours(23, 59, 59, 999);
+            if (t > toT.getTime()) return false;
+          }
         }
 
         return matchesSearchQuery(searchQuery, [
@@ -170,17 +207,27 @@ export function ConsultationTable({
           consultation.outcome,
         ]);
       }),
-    [consultations, searchQuery, statusFilters, typeFilters]
+    [
+      consultations,
+      searchQuery,
+      statusFilters,
+      typeFilters,
+      doctorFilters,
+      dateRange.from,
+      dateRange.to,
+    ]
   );
 
   const clearFilters = () => {
     onSearchChange("");
     onStatusFiltersChange([]);
     onTypeFiltersChange([]);
+    onDoctorFiltersChange([]);
+    onDateRangeChange({});
   };
 
-  const filters: FilterDefinition[] = useMemo(
-    () => [
+  const filters: FilterDefinition[] = useMemo(() => {
+    const base: FilterDefinition[] = [
       {
         key: "status",
         label: "Status",
@@ -195,9 +242,28 @@ export function ConsultationTable({
         value: typeFilters as string[],
         onChange: (v: string[]) => onTypeFiltersChange(v as TypeFilterOption[]),
       },
-    ],
-    [onStatusFiltersChange, onTypeFiltersChange, statusFilters, typeFilters]
-  );
+    ];
+    if (doctorOptions.length > 0) {
+      const idToName = new Map(doctorOptions.map((d) => [d.id, d.name]));
+      base.push({
+        key: "doctor",
+        label: "Doctor",
+        options: doctorOptions.map((d) => d.id),
+        value: doctorFilters,
+        onChange: onDoctorFiltersChange,
+        formatOption: (id: string) => idToName.get(id) ?? id,
+      });
+    }
+    return base;
+  }, [
+    onStatusFiltersChange,
+    onTypeFiltersChange,
+    onDoctorFiltersChange,
+    statusFilters,
+    typeFilters,
+    doctorFilters,
+    doctorOptions,
+  ]);
 
   const columns: GridColDef<Consultation>[] = [
     {
@@ -304,6 +370,7 @@ export function ConsultationTable({
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
       filters={filters}
+      leading={<DateRangePill value={dateRange} onChange={onDateRangeChange} />}
       resultCount={
         hasActiveFilters ? visibleConsultations.length : (total ?? consultations.length)
       }
@@ -363,5 +430,85 @@ export function ConsultationTable({
         />
       </div>
     </div>
+  );
+}
+
+const DATE_PILL_FMT: Intl.DateTimeFormatOptions = {
+  day: "2-digit",
+  month: "short",
+};
+
+function formatRangeLabel(range: DateRangeFilter): string {
+  if (range.from && range.to) {
+    return `${range.from.toLocaleDateString("en-AU", DATE_PILL_FMT)} – ${range.to.toLocaleDateString("en-AU", DATE_PILL_FMT)}`;
+  }
+  if (range.from)
+    return `From ${range.from.toLocaleDateString("en-AU", DATE_PILL_FMT)}`;
+  if (range.to) return `Until ${range.to.toLocaleDateString("en-AU", DATE_PILL_FMT)}`;
+  return "Date range";
+}
+
+function DateRangePill({
+  value,
+  onChange,
+}: {
+  value: DateRangeFilter;
+  onChange: (next: DateRangeFilter) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const isActive = Boolean(value.from || value.to);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
+          isActive ? "border-primary/50 bg-primary/5" : "border-border"
+        )}
+      >
+        <CalendarRange className="size-4 text-muted-foreground" />
+        {formatRangeLabel(value)}
+        {isActive && (
+          <button
+            type="button"
+            aria-label="Clear date range"
+            className="ml-1 rounded-sm text-muted-foreground hover:text-foreground"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange({});
+            }}
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="range"
+          numberOfMonths={2}
+          selected={
+            value.from || value.to ? { from: value.from, to: value.to } : undefined
+          }
+          onSelect={(range) => onChange({ from: range?.from, to: range?.to })}
+          captionLayout="dropdown"
+          defaultMonth={value.from ?? new Date()}
+        />
+        <div className="flex justify-end gap-2 border-t p-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onChange({});
+              setOpen(false);
+            }}
+          >
+            Clear
+          </Button>
+          <Button type="button" size="sm" onClick={() => setOpen(false)}>
+            Done
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
