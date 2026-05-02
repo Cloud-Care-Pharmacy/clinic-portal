@@ -8,13 +8,19 @@ interface Breadcrumb {
 
 interface PageHeaderProps {
   title: string;
+  description?: string;
   breadcrumbs?: Breadcrumb[];
   actions?: React.ReactNode;
 }
 
-export function PageHeader({ title, breadcrumbs, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  breadcrumbs,
+  actions,
+}: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
       <div>
         {breadcrumbs && breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
@@ -36,6 +42,9 @@ export function PageHeader({ title, breadcrumbs, actions }: PageHeaderProps) {
           </nav>
         )}
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

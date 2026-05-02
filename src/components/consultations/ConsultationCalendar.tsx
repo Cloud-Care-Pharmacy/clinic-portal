@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Consultation, ConsultationType } from "@/types";
@@ -87,7 +87,7 @@ interface ConsultationCalendarProps {
   onEventClick: (consultation: Consultation) => void;
 }
 
-type CalendarView = "month" | "week";
+type CalendarView = "month" | "week" | "day";
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -301,8 +301,10 @@ export function ConsultationCalendar({
     const d = new Date(currentDate);
     if (view === "month") {
       d.setMonth(d.getMonth() + direction);
-    } else {
+    } else if (view === "week") {
       d.setDate(d.getDate() + 7 * direction);
+    } else {
+      d.setDate(d.getDate() + direction);
     }
     setCurrentDate(d);
   }
@@ -321,75 +323,99 @@ export function ConsultationCalendar({
           month: "long",
           year: "numeric",
         })
-      : `${weekStart.toLocaleDateString("en-AU", {
-          day: "numeric",
-          month: "short",
-        })} – ${weekEnd.toLocaleDateString("en-AU", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        })}`;
+      : view === "week"
+        ? `${weekStart.toLocaleDateString("en-AU", {
+            day: "numeric",
+            month: "short",
+          })} – ${weekEnd.toLocaleDateString("en-AU", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}`
+        : currentDate.toLocaleDateString("en-AU", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
 
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToToday}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="h-8" onClick={goToToday}>
             Today
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => navigate(-1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => navigate(1)}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-r-none"
+              onClick={() => navigate(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-l-none border-l-0"
+              onClick={() => navigate(1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
           <h3 className="text-lg font-semibold">{title}</h3>
-        </div>
 
-        <div className="flex items-center gap-4">
           {/* Legend */}
-          <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-3 pl-2 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-status-info-fg" />
               Initial
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-status-accent-fg" />
               Follow-up
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-status-success-fg" />
               Renewal
             </span>
           </div>
+        </div>
 
-          <div className="flex items-center rounded-lg border">
+        <div className="flex items-center gap-3">
+          <span className="hidden lg:inline text-sm text-muted-foreground">
+            Showing all doctors
+          </span>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 border-dashed">
+            <Users className="h-4 w-4" />
+            Doctors
+          </Button>
+          <div className="flex items-center rounded-lg border bg-card">
             <Button
-              variant={view === "month" ? "secondary" : "ghost"}
+              variant={view === "day" ? "secondary" : "ghost"}
               size="sm"
-              className="h-8"
-              onClick={() => setView("month")}
+              className="h-8 rounded-r-none"
+              onClick={() => setView("day")}
             >
-              Month
+              Day
             </Button>
             <Button
               variant={view === "week" ? "secondary" : "ghost"}
               size="sm"
-              className="h-8"
+              className="h-8 rounded-none"
               onClick={() => setView("week")}
             >
               Week
+            </Button>
+            <Button
+              variant={view === "month" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 rounded-l-none"
+              onClick={() => setView("month")}
+            >
+              Month
             </Button>
           </div>
         </div>
@@ -403,12 +429,51 @@ export function ConsultationCalendar({
           consultations={consultations}
           onEventClick={onEventClick}
         />
-      ) : (
+      ) : view === "week" ? (
         <WeekView
           startDate={weekStart}
           consultations={consultations}
           onEventClick={onEventClick}
         />
+      ) : (
+        <DayView
+          date={currentDate}
+          consultations={consultations}
+          onEventClick={onEventClick}
+        />
+      )}
+    </div>
+  );
+}
+
+function DayView({
+  date,
+  consultations,
+  onEventClick,
+}: {
+  date: Date;
+  consultations: Consultation[];
+  onEventClick: (c: Consultation) => void;
+}) {
+  const dateStr = localDateKey(date);
+  const dayConsultations = consultations
+    .filter((c) => localDateKey(new Date(c.scheduledAt)) === dateStr)
+    .sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+    );
+
+  return (
+    <div className="rounded-lg border p-3">
+      {dayConsultations.length === 0 ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">
+          No consultations scheduled.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {dayConsultations.map((c) => (
+            <EventChip key={c.id} consultation={c} onClick={() => onEventClick(c)} />
+          ))}
+        </div>
       )}
     </div>
   );

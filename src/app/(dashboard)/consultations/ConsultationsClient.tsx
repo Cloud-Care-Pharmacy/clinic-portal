@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { GridPaginationModel } from "@mui/x-data-grid";
-import { CalendarDays, Table2 } from "lucide-react";
+import { CalendarDays, Download, Table2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -92,28 +92,35 @@ export function ConsultationsClient({
     <div className="space-y-6">
       <PageHeader
         title="Consultations"
+        description="Schedule, review, and follow up on patient consultations."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border">
+            <div className="flex items-center rounded-lg border bg-card">
               <Button
                 variant={viewMode === "table" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-8 rounded-r-none"
+                className="h-8 gap-1.5 rounded-r-none"
                 onClick={() => toggleView("table")}
               >
                 <Table2 className="h-4 w-4" />
+                Table
               </Button>
               <Button
                 variant={viewMode === "calendar" ? "secondary" : "ghost"}
                 size="sm"
-                className="h-8 rounded-l-none"
+                className="h-8 gap-1.5 rounded-l-none"
                 onClick={() => toggleView("calendar")}
               >
                 <CalendarDays className="h-4 w-4" />
+                Calendar
               </Button>
             </div>
-            <Button size="sm" onClick={() => setSheetOpen(true)}>
-              Schedule Consultation
+            <Button variant="outline" size="sm" className="h-8 gap-1.5">
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+            <Button size="sm" className="h-8" onClick={() => setSheetOpen(true)}>
+              + Schedule Consultation
             </Button>
           </div>
         }
