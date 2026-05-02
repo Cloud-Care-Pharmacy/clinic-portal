@@ -10,11 +10,88 @@ import {
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
 import type { Consultation, ConsultationStatus, ConsultationType } from "@/types";
+
+const TYPE_DOT: Record<ConsultationType, string> = {
+  initial: "bg-status-info-fg",
+  "follow-up": "bg-status-accent-fg",
+  renewal: "bg-status-success-fg",
+};
+
+const AVATAR_PALETTE = [
+  "bg-status-warning-bg text-status-warning-fg",
+  "bg-status-info-bg text-status-info-fg",
+  "bg-status-success-bg text-status-success-fg",
+  "bg-status-accent-bg text-status-accent-fg",
+  "bg-status-danger-bg text-status-danger-fg",
+  "bg-status-neutral-bg text-status-neutral-fg",
+];
+
+function getInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return `${words[0][0] ?? ""}${words[1][0] ?? ""}`.toUpperCase();
+  }
+  return (name[0] ?? "?").toUpperCase();
+}
+
+function colorFromName(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
+}
+
+const SHORT_DATE_FMT: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+};
+const TIME_FMT: Intl.DateTimeFormatOptions = {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+  timeZoneName: "short",
+};
+
+function isSameLocalDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function relativeLabel(iso: string, status: ConsultationStatus): string | null {
+  if (status === "completed" || status === "cancelled" || status === "no-show") {
+    return null;
+  }
+  const target = new Date(iso);
+  const now = new Date();
+  const diffMs = target.getTime() - now.getTime();
+  const diffMin = Math.round(diffMs / 60_000);
+  if (Math.abs(diffMin) <= 60) return "starting now";
+  if (diffMin < 0) return null;
+
+  // Whole-day difference based on local midnights
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTarget = new Date(
+    target.getFullYear(),
+    target.getMonth(),
+    target.getDate()
+  );
+  const days = Math.round(
+    (startOfTarget.getTime() - startOfToday.getTime()) / 86_400_000
+  );
+  if (days <= 0) return null;
+  if (days === 1) return "tomorrow";
+  return `in ${days} days`;
+}
 
 interface ConsultationTableProps {
   consultations: Consultation[];
@@ -127,48 +204,97 @@ export function ConsultationTable({
       field: "patientName",
       headerName: "Patient",
       flex: 1,
-      minWidth: 160,
+      minWidth: 220,
+      renderCell: (params) => {
+        const name = params.row.patientName ?? "";
+        const initials = getInitials(name);
+        const color = colorFromName(name);
+        return (
+          <div className="flex items-center gap-3 py-1">
+            <Avatar size="default">
+              <AvatarFallback className={cn("text-xs font-semibold", color)}>
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate font-medium text-foreground">{name}</span>
+              <span className="truncate text-xs text-muted-foreground">
+                {params.row.patientId}
+              </span>
+            </div>
+          </div>
+        );
+      },
     },
     {
       field: "doctorName",
       headerName: "Doctor",
       flex: 1,
-      minWidth: 160,
+      minWidth: 180,
+      renderCell: (params) => (
+        <div className="flex min-w-0 flex-col leading-tight py-1">
+          <span className="truncate font-medium text-foreground">
+            {params.row.doctorName}
+          </span>
+          {params.row.doctorId && (
+            <span className="truncate text-xs text-muted-foreground">
+              {params.row.doctorId}
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       field: "type",
       headerName: "Type",
-      width: 120,
-      renderCell: (params) => (
-        <Badge
-          variant="outline"
-          className={cn(
-            "capitalize text-xs",
-            TYPE_COLORS[params.value as ConsultationType]
-          )}
-        >
-          {params.value}
-        </Badge>
-      ),
+      width: 130,
+      renderCell: (params) => {
+        const type = params.value as ConsultationType;
+        return (
+          <Badge
+            variant="outline"
+            className={cn("capitalize text-xs gap-1.5", TYPE_COLORS[type])}
+          >
+            <span
+              className={cn("h-1.5 w-1.5 rounded-full", TYPE_DOT[type])}
+              aria-hidden="true"
+            />
+            {type === "follow-up" ? "Follow-Up" : type}
+          </Badge>
+        );
+      },
     },
     {
       field: "status",
       headerName: "Status",
-      width: 120,
-      renderCell: (params) => <StatusBadge status={params.value} />,
+      width: 130,
+      renderCell: (params) => (
+        <StatusBadge status={params.value} dot className="capitalize" />
+      ),
     },
     {
       field: "scheduledAt",
       headerName: "Scheduled",
-      width: 160,
-      valueFormatter: (value: string) =>
-        new Date(value).toLocaleString("en-AU", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+      width: 200,
+      renderCell: (params) => {
+        const iso = params.value as string;
+        const d = new Date(iso);
+        const now = new Date();
+        const dateLabel = isSameLocalDay(d, now)
+          ? "Today"
+          : d.toLocaleDateString("en-AU", SHORT_DATE_FMT);
+        const timeLabel = d.toLocaleTimeString("en-AU", TIME_FMT);
+        const relative = relativeLabel(iso, params.row.status);
+        return (
+          <div className="flex flex-col leading-tight py-1">
+            <span className="font-medium text-foreground">{dateLabel}</span>
+            <span className="text-xs text-muted-foreground">{timeLabel}</span>
+            {relative && (
+              <span className="text-xs text-status-warning-fg">{relative}</span>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -226,7 +352,7 @@ export function ConsultationTable({
           paginationModel={paginationModel}
           onPaginationModelChange={onPaginationModelChange}
           pageSizeOptions={[10, 25, 50]}
-          rowHeight={56}
+          rowHeight={76}
           initialState={{
             sorting: {
               sortModel: [{ field: "scheduledAt", sort: "desc" }],
