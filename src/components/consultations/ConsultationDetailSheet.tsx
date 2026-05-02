@@ -11,14 +11,29 @@ import {
   Stethoscope,
   CalendarDays,
   FileText,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleEditor } from "@/components/shared/SimpleEditor";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { useUpdateConsultation } from "@/lib/hooks/use-consultations";
+import {
+  useUpdateConsultation,
+  useDeleteConsultation,
+} from "@/lib/hooks/use-consultations";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type { Consultation, ConsultationType } from "@/types";
 
@@ -31,6 +46,7 @@ const TYPE_COLORS: Record<ConsultationType, string> = {
 interface ConsultationDetailSheetProps {
   consultation: Consultation | null;
   onClose: () => void;
+  onEdit?: (consultation: Consultation) => void;
 }
 
 function DetailRow({
@@ -58,10 +74,13 @@ function DetailRow({
 export function ConsultationDetailSheet({
   consultation: input,
   onClose,
+  onEdit,
 }: ConsultationDetailSheetProps) {
   const updateConsultation = useUpdateConsultation();
+  const deleteConsultation = useDeleteConsultation();
   const [outcomeText, setOutcomeText] = useState("");
   const [showOutcomeInput, setShowOutcomeInput] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const consultation = useLastDefined(input);
 
   const isScheduled = consultation?.status === "scheduled";
@@ -106,104 +125,115 @@ export function ConsultationDetailSheet({
     );
   }
 
+  function handleDelete() {
+    if (!consultation) return;
+    deleteConsultation.mutate(consultation.id, {
+      onSuccess: () => {
+        toast.success("Consultation deleted");
+        setDeleteOpen(false);
+        onClose();
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  }
+
+  const footerActions = consultation ? (
+    <>
+      <Button
+        variant="outline"
+        onClick={() => setDeleteOpen(true)}
+        disabled={updateConsultation.isPending || deleteConsultation.isPending}
+        className="gap-1.5"
+      >
+        <Trash2 className="h-4 w-4" />
+        Delete
+      </Button>
+      {onEdit && (
+        <Button
+          variant="outline"
+          onClick={() => onEdit(consultation)}
+          disabled={updateConsultation.isPending || deleteConsultation.isPending}
+          className="gap-1.5"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Button>
+      )}
+      {isScheduled && (
+        <>
+          <Button
+            variant="outline"
+            onClick={() => handleStatusChange("cancelled")}
+            disabled={updateConsultation.isPending || deleteConsultation.isPending}
+            className="gap-1.5"
+          >
+            <XCircle className="h-4 w-4" />
+            Cancel consultation
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleStatusChange("no-show")}
+            disabled={updateConsultation.isPending || deleteConsultation.isPending}
+            className="gap-1.5"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            No-show
+          </Button>
+          <Button
+            onClick={handleComplete}
+            disabled={updateConsultation.isPending || deleteConsultation.isPending}
+            className="gap-1.5"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {showOutcomeInput
+              ? updateConsultation.isPending
+                ? "Saving…"
+                : "Confirm complete"
+              : "Mark completed"}
+          </Button>
+        </>
+      )}
+    </>
+  ) : undefined;
+
   return (
-    <AppSheet
-      open={!!input}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title="Consultation Details"
-      description={
-        consultation
-          ? `${consultation.patientName} — ${consultation.type} consultation`
-          : ""
-      }
-      footer={
-        isScheduled ? (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => handleStatusChange("cancelled")}
-              disabled={updateConsultation.isPending}
-              className="gap-1.5"
-            >
-              <XCircle className="h-4 w-4" />
-              Cancel
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleStatusChange("no-show")}
-              disabled={updateConsultation.isPending}
-              className="gap-1.5"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              No-show
-            </Button>
-            <Button
-              onClick={handleComplete}
-              disabled={updateConsultation.isPending}
-              className="gap-1.5"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              {showOutcomeInput
-                ? updateConsultation.isPending
-                  ? "Saving…"
-                  : "Confirm complete"
-                : "Complete"}
-            </Button>
-          </>
-        ) : undefined
-      }
-    >
-      {consultation ? (
-        <div className="space-y-5">
-          <div className="flex items-center gap-2">
-            <StatusBadge status={consultation.status} />
-            <Badge
-              variant="outline"
-              className={`capitalize text-xs ${TYPE_COLORS[consultation.type]}`}
-            >
-              {consultation.type}
-            </Badge>
-          </div>
+    <>
+      <AppSheet
+        open={!!input}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title="Consultation Details"
+        description={
+          consultation
+            ? `${consultation.patientName} — ${consultation.type} consultation`
+            : ""
+        }
+        footer={footerActions}
+      >
+        {consultation ? (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <StatusBadge status={consultation.status} />
+              <Badge
+                variant="outline"
+                className={`capitalize text-xs ${TYPE_COLORS[consultation.type]}`}
+              >
+                {consultation.type}
+              </Badge>
+            </div>
 
-          <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
-            {consultation.patientName}
-          </DetailRow>
-
-          <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">
-            {consultation.doctorName}
-          </DetailRow>
-
-          <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Scheduled">
-            {new Date(consultation.scheduledAt).toLocaleString("en-AU", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </DetailRow>
-
-          {consultation.duration && (
-            <DetailRow icon={<Clock className="h-4 w-4" />} label="Duration">
-              {consultation.duration} minutes
+            <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
+              {consultation.patientName}
             </DetailRow>
-          )}
 
-          {consultation.notes && (
-            <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
-              <div
-                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
-                dangerouslySetInnerHTML={{ __html: consultation.notes }}
-              />
+            <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">
+              {consultation.doctorName}
             </DetailRow>
-          )}
 
-          {consultation.completedAt && (
-            <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Completed At">
-              {new Date(consultation.completedAt).toLocaleString("en-AU", {
+            <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Scheduled">
+              {new Date(consultation.scheduledAt).toLocaleString("en-AU", {
+                weekday: "long",
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
@@ -211,36 +241,97 @@ export function ConsultationDetailSheet({
                 minute: "2-digit",
               })}
             </DetailRow>
-          )}
 
-          {consultation.outcome && (
-            <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
-              <div
-                className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
-                dangerouslySetInnerHTML={{ __html: consultation.outcome }}
-              />
-            </DetailRow>
-          )}
+            {consultation.duration && (
+              <DetailRow icon={<Clock className="h-4 w-4" />} label="Duration">
+                {consultation.duration} minutes
+              </DetailRow>
+            )}
 
-          {/* Actions for scheduled consultations */}
-          {isScheduled && (
-            <>
-              <Separator />
+            {consultation.notes && (
+              <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
+                <div
+                  className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                  dangerouslySetInnerHTML={{ __html: consultation.notes }}
+                />
+              </DetailRow>
+            )}
 
-              {showOutcomeInput && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Outcome / Summary</p>
-                  <SimpleEditor
-                    content={outcomeText}
-                    onChange={setOutcomeText}
-                    placeholder="Enter consultation outcome…"
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ) : null}
-    </AppSheet>
+            {consultation.completedAt && (
+              <DetailRow
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                label="Completed At"
+              >
+                {new Date(consultation.completedAt).toLocaleString("en-AU", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </DetailRow>
+            )}
+
+            {consultation.outcome && (
+              <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
+                <div
+                  className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                  dangerouslySetInnerHTML={{ __html: consultation.outcome }}
+                />
+              </DetailRow>
+            )}
+
+            {/* Actions for scheduled consultations */}
+            {isScheduled && (
+              <>
+                <Separator />
+
+                {showOutcomeInput && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Outcome / Summary</p>
+                    <SimpleEditor
+                      content={outcomeText}
+                      onChange={setOutcomeText}
+                      placeholder="Enter consultation outcome…"
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
+      </AppSheet>
+
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!deleteConsultation.isPending) setDeleteOpen(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete consultation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this consultation record. This action cannot
+              be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteConsultation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteConsultation.isPending || !consultation}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+            >
+              {deleteConsultation.isPending ? "Deleting…" : "Delete consultation"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

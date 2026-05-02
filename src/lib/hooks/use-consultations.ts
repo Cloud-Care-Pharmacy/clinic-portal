@@ -180,8 +180,7 @@ export function useCreateConsultation() {
     }) => createConsultationApi(body),
     onSuccess: (res) => {
       const patientId = res.data.consultation.patientId;
-      queryClient.invalidateQueries({ queryKey: ["consultations"], exact: true });
-      queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["consultations"] });
       queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
     },
@@ -211,8 +210,7 @@ export function useUpdateConsultation() {
         queryKey: ["consultation", res.data.consultation.id],
       });
       const patientId = res.data.consultation.patientId;
-      queryClient.invalidateQueries({ queryKey: ["consultations"], exact: true });
-      queryClient.invalidateQueries({ queryKey: ["consultations", patientId] });
+      queryClient.invalidateQueries({ queryKey: ["consultations"] });
       queryClient.invalidateQueries({ queryKey: ["patient-counts", patientId] });
       queryClient.invalidateQueries({ queryKey: ["patient-activity", patientId] });
     },

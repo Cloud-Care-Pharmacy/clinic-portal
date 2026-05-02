@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useId } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useUser } from "@clerk/nextjs";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +114,10 @@ export function NewConsultationSheet({
 }: NewConsultationSheetProps) {
   const createConsultation = useCreateConsultation();
   const updateConsultation = useUpdateConsultation();
+  const { user } = useUser();
+  const currentUserId = user?.id;
+  const currentDoctorName =
+    user?.fullName || user?.primaryEmailAddress?.emailAddress || "";
   const formId = useId();
   // Keep the previous consultation visible during the close transition so the
   // sheet can animate out without flashing to the empty "Schedule" form.
@@ -159,6 +164,13 @@ export function NewConsultationSheet({
     if (!open || isEditing) return;
     form.setValue("patientName", defaultPatientName ?? "");
   }, [defaultPatientName, form, isEditing, open]);
+
+  useEffect(() => {
+    if (!open || isEditing || !currentDoctorName) return;
+    if (!form.getValues("doctorName")) {
+      form.setValue("doctorName", currentDoctorName);
+    }
+  }, [open, isEditing, currentDoctorName, form]);
 
   // When a different consultation is selected, refresh the form & time state.
   // Done as derived state during render to avoid setState-in-effect cascades.
@@ -239,6 +251,7 @@ export function NewConsultationSheet({
       updateConsultation.mutate(
         {
           id: consultation.id,
+          doctorId: consultation.doctorId || currentUserId || undefined,
           doctorName: result.data.doctorName,
           type: result.data.type as ConsultationType,
           scheduledAt,
@@ -275,6 +288,7 @@ export function NewConsultationSheet({
       {
         patientId,
         patientName: result.data.patientName,
+        doctorId: currentUserId || undefined,
         doctorName: result.data.doctorName,
         type: result.data.type as ConsultationType,
         scheduledAt,

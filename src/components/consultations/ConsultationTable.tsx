@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+  type GridRowParams,
+} from "@mui/x-data-grid";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
@@ -23,6 +28,8 @@ interface ConsultationTableProps {
   onStatusFiltersChange: (value: ConsultationStatus[]) => void;
   typeFilters: ConsultationType[];
   onTypeFiltersChange: (value: ConsultationType[]) => void;
+  paginationModel: GridPaginationModel;
+  onPaginationModelChange: (model: GridPaginationModel) => void;
 }
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
@@ -54,6 +61,8 @@ export function ConsultationTable({
   onStatusFiltersChange,
   typeFilters,
   onTypeFiltersChange,
+  paginationModel,
+  onPaginationModelChange,
 }: ConsultationTableProps) {
   const hasActiveFilters =
     Boolean(searchQuery.trim()) || statusFilters.length > 0 || typeFilters.length > 0;
@@ -212,10 +221,13 @@ export function ConsultationTable({
           loading={loading}
           autoHeight
           disableRowSelectionOnClick
+          paginationMode="server"
+          rowCount={total ?? consultations.length}
+          paginationModel={paginationModel}
+          onPaginationModelChange={onPaginationModelChange}
           pageSizeOptions={[10, 25, 50]}
           rowHeight={56}
           initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
             sorting: {
               sortModel: [{ field: "scheduledAt", sort: "desc" }],
             },

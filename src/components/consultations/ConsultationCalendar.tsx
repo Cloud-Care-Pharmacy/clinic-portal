@@ -44,6 +44,13 @@ function formatTime(dateStr: string) {
   });
 }
 
+function localDateKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function MonthView({
   year,
   month,
@@ -174,9 +181,9 @@ function WeekView({
     <div className="border rounded-lg overflow-hidden">
       <div className="grid grid-cols-7">
         {weekDays.map((day) => {
-          const dateStr = day.toISOString().split("T")[0];
+          const dateStr = localDateKey(day);
           const dayConsultations = consultations.filter((c) => {
-            const cDate = new Date(c.scheduledAt).toISOString().split("T")[0];
+            const cDate = localDateKey(new Date(c.scheduledAt));
             return cDate === dateStr;
           });
 

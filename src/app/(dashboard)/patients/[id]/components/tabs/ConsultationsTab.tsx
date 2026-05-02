@@ -9,6 +9,8 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useConsultations } from "@/lib/hooks/use-consultations";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
+import { ConsultationDetailSheet } from "@/components/consultations/ConsultationDetailSheet";
+import { htmlToPlainText } from "@/lib/utils";
 import type {
   Consultation,
   ConsultationsListResponse,
@@ -70,7 +72,15 @@ const consultationColumns: GridColDef<Consultation>[] = [
     headerName: "Outcome",
     flex: 1,
     minWidth: 150,
-    valueFormatter: (value: string | undefined) => value ?? "—",
+    renderCell: (params) => {
+      const text = htmlToPlainText(params.value as string | null | undefined);
+      if (!text) return <span className="text-muted-foreground">—</span>;
+      return (
+        <span className="truncate" title={text}>
+          {text}
+        </span>
+      );
+    },
   },
 ];
 
@@ -91,6 +101,7 @@ export function ConsultationsTab({
   const { data, isLoading } = useConsultations(patientId, initialConsultations);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
   const [selectedFromRow, setSelectedFromRow] = useState<Consultation | null>(null);
+  const [editing, setEditing] = useState<Consultation | null>(null);
 
   const consultations = data?.data?.consultations ?? [];
   const selected = selectedConsultationId
@@ -169,13 +180,21 @@ export function ConsultationsTab({
       </div>
 
       <NewConsultationSheet
-        open={!!selected}
+        open={!!editing}
         onOpenChange={(open) => {
-          if (!open) clearSelectedConsultation();
+          if (!open) setEditing(null);
         }}
         defaultPatientId={patientId}
         defaultPatientName={patientName}
+        consultation={editing}
+      />
+      <ConsultationDetailSheet
         consultation={selected}
+        onClose={clearSelectedConsultation}
+        onEdit={(consultation) => {
+          setEditing(consultation);
+          clearSelectedConsultation();
+        }}
       />
     </div>
   );

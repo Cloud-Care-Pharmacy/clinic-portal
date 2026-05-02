@@ -26,6 +26,7 @@ import {
 } from "@/components/tasks/TaskCallWorkflow";
 import {
   useCreateConsultation,
+  useDeleteConsultation,
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
 import { useAllTasks, useClaimTasks, useUpdateTask } from "@/lib/hooks/use-tasks";
@@ -163,6 +164,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const updateTaskMutation = useUpdateTask();
   const createConsultationMutation = useCreateConsultation();
   const updateConsultationMutation = useUpdateConsultation();
+  const deleteConsultationMutation = useDeleteConsultation();
 
   const { data, isLoading, error } = useAllTasks(
     { sort: "dueAt", order: "asc" },
@@ -323,14 +325,23 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           notes: submission.notes || submission.followupNote,
         });
 
-        await updateConsultationMutation.mutateAsync({
-          id: consultation.data.consultation.id,
-          status: "completed",
-          completedAt: new Date().toISOString(),
-          outcome: submission.outcomeId,
-          notes: submission.notes || submission.followupNote || null,
-          duration: submission.durationSeconds ?? null,
-        });
+        try {
+          await updateConsultationMutation.mutateAsync({
+            id: consultation.data.consultation.id,
+            status: "completed",
+            completedAt: new Date().toISOString(),
+            outcome: submission.outcomeId,
+            notes: submission.notes || submission.followupNote || null,
+            duration: submission.durationSeconds ?? null,
+          });
+        } catch (updateErr) {
+          // Roll back the orphan consultation so the list does not show a phantom
+          // "scheduled" record left behind by the failed completion patch.
+          await deleteConsultationMutation
+            .mutateAsync(consultation.data.consultation.id)
+            .catch(() => undefined);
+          throw updateErr;
+        }
       }
 
       await updateTaskMutation.mutateAsync({
