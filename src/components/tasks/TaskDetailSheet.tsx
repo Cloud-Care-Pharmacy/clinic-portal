@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
+import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import { cn } from "@/lib/utils";
 import type { Task, TaskEvent, TaskResponse } from "@/types";
 import {
@@ -78,9 +79,21 @@ export function TaskDetailSheet({
   const events = data?.data.events ?? [];
   const isPending = updateTask.isPending || completeTask.isPending;
 
-  if (!detailTask) return null;
+  // Keep the previous task visible during the close transition so the sheet
+  // can animate out without flashing empty content. Also keeps the AppSheet
+  // mounted across opens so the slide-in animation plays the first time a
+  // task is selected (mirrors ConsultationDetailSheet).
+  const lastTask = useLastDefined(detailTask);
 
-  const activeTask = detailTask;
+  if (!lastTask) {
+    return (
+      <AppSheet open={open} onOpenChange={onOpenChange} title="Task details">
+        {null}
+      </AppSheet>
+    );
+  }
+
+  const activeTask = lastTask;
 
   const canAction =
     activeTask.status !== "completed" && activeTask.status !== "cancelled";
