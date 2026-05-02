@@ -44,7 +44,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
 
   return (
     <header className="z-50 h-14">
-      <div className="flex h-full items-center gap-3 px-4">
+      <div className="flex h-full items-center gap-3 px-4 pl-14 lg:pl-4">
         <Button
           variant="outline"
           size="icon"
@@ -57,7 +57,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
             <PanelLeftClose className="h-4 w-4" />
           )}
         </Button>
-        <div className="h-4 w-px shrink-0 bg-border" />
+        <div className="hidden lg:block h-4 w-px shrink-0 bg-border" />
         {breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             {breadcrumbs.map((crumb, i) => (
