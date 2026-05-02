@@ -6,6 +6,7 @@ import { CalendarDays, Download, Table2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { SegmentedControl } from "@/components/shared/SegmentedControl";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { ConsultationTable } from "@/components/consultations/ConsultationTable";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
@@ -95,26 +96,22 @@ export function ConsultationsClient({
         description="Schedule, review, and follow up on patient consultations."
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-lg border bg-card">
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-8 gap-1.5 rounded-r-none"
-                onClick={() => toggleView("table")}
-              >
-                <Table2 className="h-4 w-4" />
-                Table
-              </Button>
-              <Button
-                variant={viewMode === "calendar" ? "secondary" : "ghost"}
-                size="sm"
-                className="h-8 gap-1.5 rounded-l-none"
-                onClick={() => toggleView("calendar")}
-              >
-                <CalendarDays className="h-4 w-4" />
-                Calendar
-              </Button>
-            </div>
+            <SegmentedControl
+              value={viewMode}
+              onChange={toggleView}
+              options={[
+                {
+                  value: "table",
+                  label: "Table",
+                  icon: <Table2 className="h-3.5 w-3.5" />,
+                },
+                {
+                  value: "calendar",
+                  label: "Calendar",
+                  icon: <CalendarDays className="h-3.5 w-3.5" />,
+                },
+              ]}
+            />
             <Button variant="outline" size="sm" className="h-8 gap-1.5">
               <Download className="h-4 w-4" />
               Export

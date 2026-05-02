@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/shared/SegmentedControl";
 import { cn } from "@/lib/utils";
 import type { Consultation, ConsultationType } from "@/types";
 
@@ -392,32 +393,15 @@ export function ConsultationCalendar({
             <Users className="h-4 w-4" />
             Doctors
           </Button>
-          <div className="flex items-center rounded-lg border bg-card">
-            <Button
-              variant={view === "day" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 rounded-r-none"
-              onClick={() => setView("day")}
-            >
-              Day
-            </Button>
-            <Button
-              variant={view === "week" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 rounded-none"
-              onClick={() => setView("week")}
-            >
-              Week
-            </Button>
-            <Button
-              variant={view === "month" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 rounded-l-none"
-              onClick={() => setView("month")}
-            >
-              Month
-            </Button>
-          </div>
+          <SegmentedControl
+            value={view}
+            onChange={setView}
+            options={[
+              { value: "day", label: "Day" },
+              { value: "week", label: "Week" },
+              { value: "month", label: "Month" },
+            ]}
+          />
         </div>
       </div>
 
