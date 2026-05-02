@@ -112,7 +112,6 @@ export function ConsultationDetailSheet({
         id: consultation!.id,
         status: "completed",
         outcome: outcomeText || undefined,
-        completedAt: new Date().toISOString(),
       },
       {
         onSuccess: () => {

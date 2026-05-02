@@ -519,6 +519,64 @@ export interface ConsultationsListResponse {
   };
 }
 
+// ---- Conflicts ----
+export interface ConsultationConflict {
+  id: string;
+  patientId: string;
+  patientName: string;
+  scheduledAt: string;
+  duration: number;
+  status: ConsultationStatus;
+}
+
+export interface ConsultationConflictsResponse {
+  success: boolean;
+  data: { conflicts: ConsultationConflict[] };
+}
+
+// ---- Facets ----
+export interface ConsultationDoctorFacet {
+  id: string;
+  name: string;
+  consultationCount: number;
+}
+
+export interface ConsultationFacetsResponse {
+  success: boolean;
+  data: {
+    doctors: ConsultationDoctorFacet[];
+    statuses: Array<{ value: ConsultationStatus; count: number }>;
+    types: Array<{ value: ConsultationType; count: number }>;
+  };
+}
+
+// ---- Consultation type catalogue ----
+export interface ConsultationTypeOption {
+  value: ConsultationType;
+  label: string;
+  defaultDurationMinutes: number;
+}
+
+export interface ConsultationTypesResponse {
+  success: boolean;
+  data: { types: ConsultationTypeOption[] };
+}
+
+// ---- Structured error envelope (consultations only, for now) ----
+export type ConsultationErrorCode =
+  | "INVALID_STATUS_TRANSITION"
+  | "CONSULTATION_CONFLICT"
+  | "FORBIDDEN_DOCTOR_ASSIGNMENT";
+
+export interface ConsultationApiErrorBody {
+  success: false;
+  error: {
+    code: ConsultationErrorCode | string;
+    message: string;
+    details?: unknown;
+  };
+}
+
 // ============================================
 // Patient Task types (prescription-gateway: automated intake tasks)
 // ============================================

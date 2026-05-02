@@ -137,8 +137,6 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const currentUserId = user?.id;
-  const currentDoctorName =
-    user?.fullName || user?.primaryEmailAddress?.emailAddress || "Current doctor";
 
   const [activePreset, setActivePreset] = useState<TaskQueuePreset>("unassigned");
   const [searchQuery, setSearchQuery] = useState("");
@@ -316,9 +314,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       if (submission.status === "completed") {
         const consultation = await createConsultationMutation.mutateAsync({
           patientId: task.patientId,
-          patientName: task.patientName || "Patient",
           doctorId: currentUserId,
-          doctorName: currentDoctorName,
           scheduledAt: new Date().toISOString(),
           type: taskConsultationType(task),
           duration: submission.durationSeconds,
@@ -329,7 +325,6 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           await updateConsultationMutation.mutateAsync({
             id: consultation.data.consultation.id,
             status: "completed",
-            completedAt: new Date().toISOString(),
             outcome: submission.outcomeId,
             notes: submission.notes || submission.followupNote || null,
             duration: submission.durationSeconds ?? null,

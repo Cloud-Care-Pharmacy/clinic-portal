@@ -34,15 +34,18 @@ import { cn } from "@/lib/utils";
 import {
   useCreateConsultation,
   useUpdateConsultation,
+  useConsultationConflicts,
+  ConsultationApiError,
 } from "@/lib/hooks/use-consultations";
 import { usePatientSearch } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import type {
   Consultation,
+  ConsultationConflict,
   ConsultationStatus,
   ConsultationType,
-  ConsultationsListResponse,
   PatientSearchResult,
+  UserRole,
 } from "@/types";
 
 const MINUTE_OPTIONS = ["00", "15", "30", "45"];
@@ -189,6 +192,9 @@ export function NewConsultationSheet({
   const currentUserId = user?.id;
   const currentDoctorName =
     user?.fullName || user?.primaryEmailAddress?.emailAddress || "";
+  const currentUserRole =
+    (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
+  const isAdmin = currentUserRole === "admin";
   const formId = useId();
   // Keep the previous consultation visible during the close transition so the
   // sheet can animate out without flashing to the empty "Schedule" form.
@@ -207,9 +213,8 @@ export function NewConsultationSheet({
   const [period, setPeriod] = useState<"AM" | "PM">(initialTimeParts.period);
   const [conflictPending, setConflictPending] = useState<{
     data: FormData;
-    conflicts: Consultation[];
+    conflicts: ConsultationConflict[];
   } | null>(null);
-  const [checkingConflict, setCheckingConflict] = useState(false);
 
   const form = useForm<FormData>({
     defaultValues: getDefaultValues(defaultPatientName, consultation),
@@ -228,8 +233,7 @@ export function NewConsultationSheet({
   const minuteOptions = MINUTE_OPTIONS.includes(minute)
     ? MINUTE_OPTIONS
     : [minute, ...MINUTE_OPTIONS];
-  const isSubmitting =
-    createConsultation.isPending || updateConsultation.isPending || checkingConflict;
+  const isSubmitting = createConsultation.isPending || updateConsultation.isPending;
   const shouldShowPatientSearch =
     !isEditing &&
     !defaultPatientId &&
@@ -242,6 +246,24 @@ export function NewConsultationSheet({
     { q: patientNameValue?.trim() ?? "", limit: 8 }
   );
   const patientOptions = patientSearchData?.data?.patients ?? [];
+
+  // Live conflict warning — server is the authoritative check at submit time.
+  const scheduledAtValue = useWatch({
+    control: form.control,
+    name: "scheduledAt",
+  });
+  const liveDoctorId = consultation?.doctorId || currentUserId;
+  const liveDuration = durationValue ? parseInt(durationValue, 10) : undefined;
+  const liveConflictsQuery = useConsultationConflicts(
+    {
+      doctorId: liveDoctorId,
+      scheduledAt: scheduledAtValue || undefined,
+      duration: liveDuration,
+      excludeId: consultation?.id,
+    },
+    open && !conflictPending
+  );
+  const liveConflicts = liveConflictsQuery.data ?? [];
 
   useEffect(() => {
     if (!open || isEditing) return;
@@ -337,7 +359,7 @@ export function NewConsultationSheet({
     void runSubmit(result.data);
   }
 
-  async function runSubmit(data: FormData, skipConflictCheck = false) {
+  async function runSubmit(data: FormData, force = false) {
     const duration = data.duration ? parseInt(data.duration, 10) : undefined;
     const scheduledAt = new Date(data.scheduledAt).toISOString();
     const patientId = defaultPatientId ?? selectedPatient?.id;
@@ -350,45 +372,26 @@ export function NewConsultationSheet({
       return;
     }
 
-    if (!skipConflictCheck && doctorId) {
-      const conflicts = await findConflicts({
-        doctorId,
-        scheduledAt,
-        duration: duration ?? 30,
-        excludeId: consultation?.id,
-      });
-      if (conflicts.length > 0) {
-        setConflictPending({ data, conflicts });
-        return;
-      }
-    }
-
     if (consultation) {
       const status = (data.status ?? consultation.status) as ConsultationStatus;
       updateConsultation.mutate(
         {
           id: consultation.id,
           doctorId,
-          doctorName: data.doctorName,
           type: data.type as ConsultationType,
           scheduledAt,
           duration: duration ?? null,
           notes: data.notes || null,
           status,
           outcome: data.outcome || null,
-          completedAt:
-            status === "completed"
-              ? (consultation.completedAt ?? new Date().toISOString())
-              : null,
+          force: force && isAdmin ? true : undefined,
         },
         {
           onSuccess: () => {
             toast.success("Consultation updated");
             onOpenChange(false);
           },
-          onError: (err) => {
-            toast.error(err.message);
-          },
+          onError: (err) => handleMutationError(err, data),
         }
       );
       return;
@@ -397,13 +400,12 @@ export function NewConsultationSheet({
     createConsultation.mutate(
       {
         patientId: patientId!,
-        patientName: data.patientName,
         doctorId,
-        doctorName: data.doctorName,
         type: data.type as ConsultationType,
         scheduledAt,
         duration,
-        notes: data.notes || undefined,
+        notes: data.notes || null,
+        force: force && isAdmin ? true : undefined,
       },
       {
         onSuccess: () => {
@@ -411,55 +413,32 @@ export function NewConsultationSheet({
           resetNewConsultationState();
           onOpenChange(false);
         },
-        onError: (err) => {
-          toast.error(err.message);
-        },
+        onError: (err) => handleMutationError(err, data),
       }
     );
   }
 
-  async function findConflicts({
-    doctorId,
-    scheduledAt,
-    duration,
-    excludeId,
-  }: {
-    doctorId: string;
-    scheduledAt: string;
-    duration: number;
-    excludeId?: string;
-  }): Promise<Consultation[]> {
-    setCheckingConflict(true);
-    try {
-      const target = new Date(scheduledAt);
-      const dayStart = new Date(target);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(target);
-      dayEnd.setHours(23, 59, 59, 999);
-      const params = new URLSearchParams({
-        doctorId,
-        from: dayStart.toISOString(),
-        to: dayEnd.toISOString(),
-        limit: "100",
-        status: "scheduled",
-      });
-      const res = await fetch(`/api/proxy/consultations?${params.toString()}`);
-      if (!res.ok) return [];
-      const json = (await res.json()) as ConsultationsListResponse;
-      const start = target.getTime();
-      const end = start + duration * 60_000;
-      return (json.data?.consultations ?? []).filter((c) => {
-        if (excludeId && c.id === excludeId) return false;
-        if (c.status !== "scheduled") return false;
-        const cStart = new Date(c.scheduledAt).getTime();
-        const cEnd = cStart + (c.duration ?? 30) * 60_000;
-        return cStart < end && cEnd > start;
-      });
-    } catch {
-      return [];
-    } finally {
-      setCheckingConflict(false);
+  function handleMutationError(err: Error, data: FormData) {
+    if (err instanceof ConsultationApiError) {
+      if (err.code === "CONSULTATION_CONFLICT") {
+        const details = err.details as
+          | { conflicts?: ConsultationConflict[] }
+          | undefined;
+        const conflicts = details?.conflicts ?? [];
+        setConflictPending({ data, conflicts });
+        return;
+      }
+      if (err.code === "INVALID_STATUS_TRANSITION") {
+        form.setError("status", { message: err.message });
+        toast.error(err.message);
+        return;
+      }
+      if (err.code === "FORBIDDEN_DOCTOR_ASSIGNMENT") {
+        toast.error(err.message);
+        return;
+      }
     }
+    toast.error(err.message);
   }
 
   return (
@@ -806,6 +785,14 @@ export function NewConsultationSheet({
               </p>
             )}
 
+            {liveConflicts.length > 0 && (
+              <p className="text-xs text-status-warning-fg">
+                Heads up: this slot overlaps {liveConflicts.length}{" "}
+                {liveConflicts.length === 1 ? "consultation" : "consultations"} on this
+                doctor&rsquo;s calendar.
+              </p>
+            )}
+
             {form.formState.errors.scheduledAt && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.scheduledAt.message}
@@ -937,18 +924,20 @@ export function NewConsultationSheet({
           </ul>
           <AlertDialogFooter>
             <AlertDialogCancel>Pick another time</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                if (conflictPending) {
-                  const pending = conflictPending;
-                  setConflictPending(null);
-                  void runSubmit(pending.data, true);
-                }
-              }}
-            >
-              Schedule anyway
-            </AlertDialogAction>
+            {isAdmin && (
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (conflictPending) {
+                    const pending = conflictPending;
+                    setConflictPending(null);
+                    void runSubmit(pending.data, true);
+                  }
+                }}
+              >
+                Book anyway
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

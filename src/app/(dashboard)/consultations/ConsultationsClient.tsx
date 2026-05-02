@@ -12,7 +12,7 @@ import { ConsultationTable } from "@/components/consultations/ConsultationTable"
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { ConsultationCalendar } from "@/components/consultations/ConsultationCalendar";
 import { ConsultationDetailSheet } from "@/components/consultations/ConsultationDetailSheet";
-import { useConsultations } from "@/lib/hooks/use-consultations";
+import { useConsultations, useConsultationFacets } from "@/lib/hooks/use-consultations";
 import type {
   Consultation,
   ConsultationStatus,
@@ -112,7 +112,18 @@ export function ConsultationsClient({
   );
   const consultations = useMemo(() => data?.data?.consultations ?? [], [data]);
 
+  const facetsQuery = useConsultationFacets({
+    from: query.from,
+    to: query.to,
+  });
   const doctorOptions = useMemo(() => {
+    const facetDoctors = facetsQuery.data?.data?.doctors;
+    if (facetDoctors && facetDoctors.length > 0) {
+      return facetDoctors
+        .map((d) => ({ id: d.id, name: d.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // Fallback: derive from current page until facets load.
     const seen = new Map<string, string>();
     for (const c of consultations) {
       const id = c.doctorId || c.doctorName;
@@ -123,7 +134,7 @@ export function ConsultationsClient({
     return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
       a.name.localeCompare(b.name)
     );
-  }, [consultations]);
+  }, [consultations, facetsQuery.data]);
 
   function toggleView(mode: ViewMode) {
     setViewMode(mode);
