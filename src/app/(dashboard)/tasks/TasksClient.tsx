@@ -251,14 +251,25 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   }, [selectedIds, tasks]);
 
   const presetCounts = useMemo(() => {
+    const meModeActive = assignmentFilters.includes("mine");
     const counts: Record<string, number> = {};
     for (const preset of presets) {
-      counts[preset.id] = summaryTasks.filter((task) =>
-        matchesPresetFilter(task, preset.filter, currentInternalUserId)
-      ).length;
+      counts[preset.id] = summaryTasks.filter((task) => {
+        if (!matchesPresetFilter(task, preset.filter, currentInternalUserId)) {
+          return false;
+        }
+        if (
+          meModeActive &&
+          preset.id !== "mine_active" &&
+          task.assignedUserId !== currentInternalUserId
+        ) {
+          return false;
+        }
+        return true;
+      }).length;
     }
     return counts;
-  }, [currentInternalUserId, summaryTasks, presets]);
+  }, [assignmentFilters, currentInternalUserId, summaryTasks, presets]);
 
   function applyPreset(preset: TaskQueuePresetDef) {
     setActivePreset(preset.id);
