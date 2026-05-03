@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertDialog,
@@ -109,7 +110,7 @@ function formatLocalDate(date: Date): string {
 
 const schema = z.object({
   patientName: z.string().min(1, "Patient name is required"),
-  doctorId: z.string().min(1, "Doctor is required"),
+  doctorId: z.string().min(1, "Practitioner is required"),
   type: z.string().min(1, "Type is required"),
   scheduledAt: z.string().min(1, "Date & time is required"),
   duration: z.string().optional(),
@@ -308,9 +309,7 @@ export function NewConsultationSheet({
   const [trackedId, setTrackedId] = useState<string | null>(incomingId);
   if (consultationInput && incomingId !== trackedId) {
     setTrackedId(incomingId);
-    form.reset(
-      getDefaultValues(defaultPatientName, consultationInput, currentUserId)
-    );
+    form.reset(getDefaultValues(defaultPatientName, consultationInput, currentUserId));
     const parts = getTimeParts(consultationInput.scheduledAt);
     setSelectedDate(parts.selectedDate);
     setHour(parts.hour);
@@ -393,7 +392,8 @@ export function NewConsultationSheet({
     const duration = data.duration ? parseInt(data.duration, 10) : undefined;
     const scheduledAt = new Date(data.scheduledAt).toISOString();
     const patientId = defaultPatientId ?? selectedPatient?.id;
-    const doctorId = data.doctorId || consultation?.doctorId || currentUserId || undefined;
+    const doctorId =
+      data.doctorId || consultation?.doctorId || currentUserId || undefined;
 
     if (!consultation && !patientId) {
       form.setError("patientName", {
@@ -601,50 +601,49 @@ export function NewConsultationSheet({
 
           <div className="space-y-2">
             <Label htmlFor="doctorId">
-              Doctor <span className="text-destructive">*</span>
+              Practitioner <span className="text-destructive">*</span>
             </Label>
-            <UISelect
-              value={doctorIdValue || ""}
-              onValueChange={(v) => {
-                if (v) form.setValue("doctorId", v, { shouldDirty: true });
-              }}
-            >
-              <UISelectTrigger id="doctorId">
-                <UISelectValue
-                  placeholder={
-                    practitionersQuery.isLoading ? "Loading doctors…" : "Select doctor"
-                  }
-                >
-                  {(value) => {
-                    if (!value || typeof value !== "string") return null;
-                    const match = practitioners.find((p) => p.userId === value);
-                    if (match) return match.displayName;
-                    if (consultation?.doctorId === value) {
-                      return consultation.doctorName || "Unknown doctor";
-                    }
-                    // Fallback while the directory is loading — show a neutral
-                    // label rather than the raw UUID.
-                    return practitionersQuery.isLoading
-                      ? "Loading doctors…"
-                      : "Select doctor";
-                  }}
-                </UISelectValue>
-              </UISelectTrigger>
-              <UISelectContent>
-                {practitioners.map((p) => (
-                  <UISelectItem key={p.userId} value={p.userId}>
-                    {p.displayName}
-                  </UISelectItem>
-                ))}
-                {/* Editing an old consultation whose doctor isn’t in the active list. */}
-                {consultation?.doctorId &&
-                  !practitioners.some((p) => p.userId === consultation.doctorId) && (
-                    <UISelectItem value={consultation.doctorId}>
-                      {consultation.doctorName || "Unknown doctor"}
-                    </UISelectItem>
+            {practitionersQuery.isLoading ? (
+              <Skeleton className="h-10 w-full rounded-lg" />
+            ) : (
+              <UISelect
+                value={doctorIdValue || ""}
+                onValueChange={(v) => {
+                  if (v) form.setValue("doctorId", v, { shouldDirty: true });
+                }}
+              >
+                <UISelectTrigger id="doctorId" className="w-full">
+                  <span
+                    className={cn(
+                      "flex-1 truncate text-left",
+                      !selectedDoctorName && "text-muted-foreground"
+                    )}
+                  >
+                    {selectedDoctorName || "Select practitioner"}
+                  </span>
+                </UISelectTrigger>
+                <UISelectContent>
+                  {practitioners.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No practitioners available
+                    </div>
+                  ) : (
+                    practitioners.map((p) => (
+                      <UISelectItem key={p.userId} value={p.userId}>
+                        {p.displayName}
+                      </UISelectItem>
+                    ))
                   )}
-              </UISelectContent>
-            </UISelect>
+                  {/* Editing an old consultation whose practitioner isn’t in the active list. */}
+                  {consultation?.doctorId &&
+                    !practitioners.some((p) => p.userId === consultation.doctorId) && (
+                      <UISelectItem value={consultation.doctorId}>
+                        {consultation.doctorName || "Unknown practitioner"}
+                      </UISelectItem>
+                    )}
+                </UISelectContent>
+              </UISelect>
+            )}
             {form.formState.errors.doctorId && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.doctorId.message}
@@ -808,7 +807,7 @@ export function NewConsultationSheet({
             <div className="flex flex-wrap gap-2">
               {!liveDoctorId || !selectedDate ? (
                 <p className="text-xs text-muted-foreground">
-                  Pick a doctor and date to see open slots.
+                  Pick a practitioner and date to see open slots.
                 </p>
               ) : freeSlotsLoading ? (
                 <p className="text-xs text-muted-foreground">Loading open slots…</p>
@@ -954,7 +953,7 @@ export function NewConsultationSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Possible double-booking</AlertDialogTitle>
             <AlertDialogDescription>
-              {selectedDoctorName || "This doctor"} already has{" "}
+              {selectedDoctorName || "This practitioner"} already has{" "}
               {conflictPending?.conflicts.length === 1
                 ? "a consultation"
                 : `${conflictPending?.conflicts.length} consultations`}{" "}
