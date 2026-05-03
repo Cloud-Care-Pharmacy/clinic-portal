@@ -1,6 +1,8 @@
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { BarChart3 } from "lucide-react";
+import { EmptyState } from "@/components/shared/EmptyState";
 import type { DashboardIntakeSeriesPoint } from "@/types";
 
 interface OverviewProps {
@@ -9,12 +11,16 @@ interface OverviewProps {
 
 export function Overview({ series }: OverviewProps) {
   const data = series.map((point) => ({ name: point.label, total: point.total }));
+  const hasValues = data.some((d) => d.total > 0);
 
-  if (data.length === 0) {
+  if (data.length === 0 || !hasValues) {
     return (
-      <div className="flex h-87.5 items-center justify-center text-sm text-muted-foreground">
-        No intake data available.
-      </div>
+      <EmptyState
+        icon={BarChart3}
+        title="No intake data yet"
+        description="Patient intake numbers will appear here once new patients are registered."
+        className="h-87.5"
+      />
     );
   }
 
