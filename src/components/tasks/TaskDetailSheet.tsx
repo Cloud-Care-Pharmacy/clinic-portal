@@ -5,14 +5,22 @@ import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
+  CalendarDays,
   CalendarPlus,
   CheckCircle2,
   ClipboardCheck,
+  ClipboardList,
+  Clock,
+  ExternalLink,
+  FileText,
+  Inbox,
+  MoreHorizontal,
   Play,
+  User,
   UserCheck,
   XCircle,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,12 +31,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import { cn } from "@/lib/utils";
 import type { Task, TaskEvent, TaskResponse } from "@/types";
 import {
   formatTaskDateTime,
@@ -46,11 +60,24 @@ interface TaskDetailSheetProps {
   onScheduleConsultation?: (task: Task) => void;
 }
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[132px_1fr] gap-3 py-2 text-sm">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-foreground">{value || "—"}</dd>
+    <div className="flex items-start gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <div className="text-sm">{children}</div>
+      </div>
     </div>
   );
 }
@@ -178,134 +205,147 @@ export function TaskDetailSheet({
         onOpenChange={onOpenChange}
         title={activeTask.title}
         description={
-          <span className="flex flex-wrap items-center gap-2">
+          activeTask.patientName
+            ? `${activeTask.patientName} — ${TASK_TYPE_LABELS[activeTask.taskType] ?? activeTask.taskType}`
+            : (TASK_TYPE_LABELS[activeTask.taskType] ?? activeTask.taskType)
+        }
+        footer={
+          <div className="flex w-full items-center justify-between gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                disabled={isPending}
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-56">
+                {canAction && (
+                  <>
+                    <DropdownMenuItem disabled={!user?.id} onClick={handleClaim}>
+                      <UserCheck className="h-4 w-4" />
+                      Claim
+                    </DropdownMenuItem>
+                    {activeTask.status === "open" && (
+                      <DropdownMenuItem onClick={handleStart}>
+                        <Play className="h-4 w-4" />
+                        Start
+                      </DropdownMenuItem>
+                    )}
+                    {onScheduleConsultation && (
+                      <DropdownMenuItem
+                        onClick={() => onScheduleConsultation(activeTask)}
+                      >
+                        <CalendarPlus className="h-4 w-4" />
+                        Schedule consultation
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setCancelOpen(true)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Cancel task
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {canAction ? (
+              <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
+                <CheckCircle2 className="h-4 w-4" />
+                {completeTask.isPending ? "Saving…" : "Mark completed"}
+              </Button>
+            ) : null}
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusBadge variant={TASK_STATUS_VARIANTS[activeTask.status]}>
               {TASK_STATUS_LABELS[activeTask.status]}
             </StatusBadge>
             <StatusBadge variant={TASK_PRIORITY_VARIANTS[activeTask.priority]}>
               {TASK_PRIORITY_LABELS[activeTask.priority]}
             </StatusBadge>
-          </span>
-        }
-        footer={
-          canAction ? (
-            <>
-              <Button
-                variant="outline"
-                disabled={isPending || !user?.id}
-                onClick={handleClaim}
-              >
-                <UserCheck className="size-4" />
-                Claim
-              </Button>
-              {activeTask.status === "open" && (
-                <Button variant="outline" disabled={isPending} onClick={handleStart}>
-                  <Play className="size-4" />
-                  Start
-                </Button>
-              )}
-              {onScheduleConsultation && (
-                <Button
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => onScheduleConsultation(activeTask)}
-                >
-                  <CalendarPlus className="size-4" />
-                  Schedule
-                </Button>
-              )}
-              <Button disabled={isPending} onClick={handleComplete}>
-                <CheckCircle2 className="size-4" />
-                Complete
-              </Button>
-              <Button
-                variant="outline-destructive"
-                disabled={isPending}
-                onClick={() => setCancelOpen(true)}
-              >
-                <XCircle className="size-4" />
-                Cancel task
-              </Button>
-            </>
-          ) : null
-        }
-      >
-        <div className="space-y-5">
-          <section>
-            <h3 className="mb-3 text-sm font-semibold">Task details</h3>
-            <dl className="divide-y divide-border rounded-xl border border-border bg-card px-4">
-              <DetailRow
-                label="Type"
-                value={TASK_TYPE_LABELS[activeTask.taskType] ?? activeTask.taskType}
-              />
-              <DetailRow label="Due" value={formatTaskDateTime(activeTask.dueAt)} />
-              <DetailRow
-                label="Created"
-                value={formatTaskDateTime(activeTask.createdAt)}
-              />
-              <DetailRow label="Assigned to" value={assignedToLabel} />
-              <DetailRow label="Source" value={activeTask.source} />
-            </dl>
-          </section>
+          </div>
 
-          {activeTask.description && (
-            <section>
-              <h3 className="mb-2 text-sm font-semibold">Description</h3>
-              <p className="rounded-xl border border-border bg-card p-4 text-sm leading-6 text-muted-foreground">
-                {activeTask.description}
-              </p>
-            </section>
-          )}
-
-          <section>
-            <h3 className="mb-3 text-sm font-semibold">Patient</h3>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="font-medium">
-                {activeTask.patientName || "Patient record"}
-              </p>
+          <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
+            {activeTask.patientId ? (
               <Link
                 href={`/patients/${encodeURIComponent(activeTask.patientId)}`}
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" }),
-                  "mt-3"
-                )}
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
                 scroll={false}
               >
-                Open patient profile
+                {activeTask.patientName || "Patient record"}
+                <ExternalLink className="h-3 w-3" />
               </Link>
-            </div>
-          </section>
+            ) : (
+              activeTask.patientName || "—"
+            )}
+          </DetailRow>
+
+          <DetailRow icon={<ClipboardList className="h-4 w-4" />} label="Type">
+            {TASK_TYPE_LABELS[activeTask.taskType] ?? activeTask.taskType}
+          </DetailRow>
+
+          <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Due">
+            {formatTaskDateTime(activeTask.dueAt) || "—"}
+          </DetailRow>
+
+          <DetailRow icon={<UserCheck className="h-4 w-4" />} label="Assigned to">
+            {assignedToLabel}
+          </DetailRow>
+
+          <DetailRow icon={<Inbox className="h-4 w-4" />} label="Source">
+            {activeTask.source || "—"}
+          </DetailRow>
+
+          <DetailRow icon={<Clock className="h-4 w-4" />} label="Created">
+            {formatTaskDateTime(activeTask.createdAt) || "—"}
+          </DetailRow>
+
+          {activeTask.description && (
+            <DetailRow icon={<FileText className="h-4 w-4" />} label="Description">
+              <p className="whitespace-pre-wrap leading-6 text-muted-foreground">
+                {activeTask.description}
+              </p>
+            </DetailRow>
+          )}
 
           {events.length > 0 && (
-            <section>
-              <h3 className="mb-3 text-sm font-semibold">Task history</h3>
-              <div className="rounded-xl border border-border bg-card">
-                {events.map((event, index) => (
-                  <div key={event.eventId}>
-                    {index > 0 && <Separator />}
-                    <div className="flex gap-3 px-4 py-3">
-                      <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-status-info-border bg-status-info-bg text-status-info-fg">
-                        <ClipboardCheck className="size-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="capitalize text-sm font-medium">
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Task history</p>
+                </div>
+                <ul className="space-y-1 rounded-md border bg-muted/30 p-2 text-sm">
+                  {events.map((event) => (
+                    <li
+                      key={event.eventId}
+                      className="flex items-start justify-between gap-2"
+                    >
+                      <span className="min-w-0">
+                        <span className="font-medium capitalize">
                           {eventLabel(event)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatTaskDateTime(event.createdAt)}
-                          {event.actorName ? ` · ${event.actorName}` : ""}
-                        </p>
+                        </span>
                         {event.note && (
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {event.note}
-                          </p>
+                          <span className="text-muted-foreground"> · {event.note}</span>
                         )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {formatTaskDateTime(event.createdAt)}
+                        {event.actorName ? ` · ${event.actorName}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </section>
+            </>
           )}
         </div>
       </AppSheet>
