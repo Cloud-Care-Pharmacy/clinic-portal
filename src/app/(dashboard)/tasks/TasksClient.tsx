@@ -255,16 +255,31 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     const counts: Record<string, number> = {};
     for (const preset of presets) {
       counts[preset.id] = summaryTasks.filter((task) => {
-        if (!matchesPresetFilter(task, preset.filter, currentInternalUserId)) {
-          return false;
+        // Status portion of the preset always applies.
+        const statuses = asArray(preset.filter.status);
+        if (statuses && !statuses.includes(task.status)) return false;
+
+        const hasAssignedKey = "assignedUserId" in preset.filter;
+        if (hasAssignedKey) {
+          const raw = preset.filter.assignedUserId;
+          if (raw === null) {
+            // "Unassigned" preset — always restrict to truly unassigned tasks.
+            if (!isUnassigned(task)) return false;
+          } else {
+            // For self-scoped presets (e.g. Claimed/Completed), apply the
+            // self restriction only while Me mode is active. When off, count
+            // any claimed/completed task regardless of assignee, but still
+            // require the task to be assigned to *someone*.
+            if (meModeActive) {
+              const resolved = resolveAssignedUserId(raw, currentInternalUserId);
+              if (!resolved) return false;
+              if (task.assignedUserId !== resolved) return false;
+            } else if (isUnassigned(task)) {
+              return false;
+            }
+          }
         }
-        if (
-          meModeActive &&
-          preset.id !== "mine_active" &&
-          task.assignedUserId !== currentInternalUserId
-        ) {
-          return false;
-        }
+
         return true;
       }).length;
     }
