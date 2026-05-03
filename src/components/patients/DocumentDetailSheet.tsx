@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Download,
+  Eye,
   FileText,
   HardDrive,
   Mail,
@@ -82,6 +83,7 @@ interface DocumentDetailSheetProps {
   patientId: string;
   document: PatientDocument | null;
   onClose: () => void;
+  onPreview?: (document: PatientDocument) => void;
 }
 
 function documentToFormDefaults(document: PatientDocument): DocumentMetadataFormData {
@@ -120,6 +122,7 @@ export function DocumentDetailSheet({
   patientId,
   document: documentInput,
   onClose,
+  onPreview,
 }: DocumentDetailSheetProps) {
   const document = useLastDefined(documentInput);
   const formId = useId();
@@ -240,10 +243,22 @@ export function DocumentDetailSheet({
         footerClassName="sm:justify-between"
         footer={
           <>
-            <Button type="button" variant="outline" onClick={handleDownload}>
-              <Download className="size-4" />
-              Download
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {onPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document && onPreview(document)}
+                >
+                  <Eye className="size-4" />
+                  View
+                </Button>
+              )}
+              <Button type="button" variant="outline" onClick={handleDownload}>
+                <Download className="size-4" />
+                Download
+              </Button>
+            </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 type="button"

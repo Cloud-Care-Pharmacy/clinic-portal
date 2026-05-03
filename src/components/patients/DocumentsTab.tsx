@@ -17,6 +17,7 @@ import {
   useVerifyDocument,
 } from "@/lib/hooks/use-documents";
 import { DocumentDetailSheet } from "@/components/patients/DocumentDetailSheet";
+import { DocumentPreviewDialog } from "@/components/patients/DocumentPreviewDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -58,6 +59,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Download,
+  Eye,
   MoreHorizontal,
   CheckCircle,
   XCircle,
@@ -102,6 +104,7 @@ export function DocumentsTab({
   const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(null);
   const [selectedFromRow, setSelectedFromRow] = useState<PatientDocument | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<PatientDocument | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const { data, isLoading, error } = usePatientDocuments(
@@ -163,6 +166,10 @@ export function DocumentsTab({
   const handleDownload = (doc: PatientDocument) => {
     const url = getDocumentDownloadHref(patientId, doc.id);
     window.open(url, "_blank");
+  };
+
+  const handlePreview = (doc: PatientDocument) => {
+    setPreviewTarget(doc);
   };
 
   function selectedDocumentHref(documentId: string) {
@@ -253,6 +260,10 @@ export function DocumentsTab({
             }
           />
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handlePreview(params.row)}>
+              <Eye className="mr-2 size-4" />
+              View
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDownload(params.row)}>
               <Download className="mr-2 size-4" />
               Download
@@ -343,6 +354,16 @@ export function DocumentsTab({
         patientId={patientId}
         document={selectedDocument}
         onClose={clearSelectedDocument}
+        onPreview={handlePreview}
+      />
+
+      <DocumentPreviewDialog
+        patientId={patientId}
+        document={previewTarget}
+        open={!!previewTarget}
+        onOpenChange={(open) => {
+          if (!open) setPreviewTarget(null);
+        }}
       />
 
       {/* Upload Dialog */}
