@@ -2,9 +2,9 @@ name: CI/CD
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -68,7 +68,35 @@ jobs:
           echo "### 🔗 Preview deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "$DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
 
-  # ── 3. Deploy production (main branch) ─────────────────────────────
+  # ── 3. Deploy dev (dev branch) ─────────────────────────────────────
+  deploy-dev:
+    name: Deploy Dev
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=dev --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build with Vercel
+        run: vercel build --target=dev --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt to Vercel (dev)
+        run: |
+          DEPLOYMENT_URL=$(vercel deploy --prebuilt --target=dev --token=${{ secrets.VERCEL_TOKEN }})
+          echo "### 🧪 Dev deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Alias: https://clinic.dev.quity.com.au" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── 4. Deploy production (main branch) ─────────────────────────────
   deploy-production:
     name: Deploy Production
     needs: validate
