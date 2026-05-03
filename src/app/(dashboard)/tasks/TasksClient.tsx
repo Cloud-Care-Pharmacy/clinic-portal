@@ -37,6 +37,7 @@ import {
   useUpdateTask,
 } from "@/lib/hooks/use-tasks";
 import { patientQueryOptions } from "@/lib/hooks/use-patients";
+import { useProfile } from "@/lib/hooks/use-profile";
 import type {
   BulkTaskResult,
   ConsultationType,
@@ -195,6 +196,9 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
   const currentUserId = user?.id;
+  // Internal `users.id` (NOT Clerk's authId) — required for consultations.doctorId.
+  const profileQuery = useProfile();
+  const currentInternalUserId = profileQuery.data?.data?.profile?.id;
 
   const presetsQuery = useTaskPresets();
   const presets = useMemo(() => {
@@ -371,9 +375,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
 
     try {
       if (submission.status === "completed") {
+        // Attribute the consultation to the user assigned to the task. Falls back
+        // to the current user (e.g. admin completing on someone's behalf, or an
+        // unassigned task being completed inline).
+        const doctorId = task.assignedUserId ?? currentInternalUserId;
         const consultation = await createConsultationMutation.mutateAsync({
           patientId: task.patientId,
-          doctorId: currentUserId,
+          doctorId,
           scheduledAt: new Date().toISOString(),
           type: taskConsultationType(task),
           duration: submission.durationSeconds,
