@@ -121,7 +121,6 @@ export function TasksTab({
 
       <TaskTable
         tasks={tasks}
-        total={data?.data.pagination?.total}
         loading={isLoading}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
