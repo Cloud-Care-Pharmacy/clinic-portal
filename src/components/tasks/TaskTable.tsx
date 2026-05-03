@@ -63,7 +63,7 @@ const ASSIGNMENT_OPTIONS = ["mine", "unassigned"] as const;
 export type TaskAssignmentFilter = (typeof ASSIGNMENT_OPTIONS)[number];
 
 const TASK_ASSIGNMENT_LABELS: Record<TaskAssignmentFilter, string> = {
-  mine: "My tasks",
+  mine: "Claimed",
   unassigned: "Unassigned",
 };
 
