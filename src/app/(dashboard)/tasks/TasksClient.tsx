@@ -254,17 +254,17 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     const counts: Record<string, number> = {};
     for (const preset of presets) {
       counts[preset.id] = summaryTasks.filter((task) =>
-        matchesPresetFilter(task, preset.filter, currentUserId)
+        matchesPresetFilter(task, preset.filter, currentInternalUserId)
       ).length;
     }
     return counts;
-  }, [currentUserId, summaryTasks, presets]);
+  }, [currentInternalUserId, summaryTasks, presets]);
 
   function applyPreset(preset: TaskQueuePresetDef) {
     setActivePreset(preset.id);
     setSelectedIds([]);
     const { statusFilters: nextStatuses, assignmentFilters: nextAssign } =
-      presetToLocalFilters(preset, currentUserId);
+      presetToLocalFilters(preset, currentInternalUserId);
     setStatusFilters(nextStatuses);
     setAssignmentFilters(nextAssign);
   }
@@ -352,7 +352,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         });
       }
       setOutcomeState({
-        task: { ...task, assignedUserId: currentUserId },
+        task: { ...task, assignedUserId: currentInternalUserId },
         mode: "manual",
       });
     } catch (err) {
@@ -460,7 +460,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             onStatusFiltersChange={setStatusFilters}
             assignmentFilters={assignmentFilters}
             onAssignmentFiltersChange={setAssignmentFilters}
-            currentUserId={currentUserId}
+            currentUserId={currentInternalUserId}
             priorityFilters={[]}
             onPriorityFiltersChange={() => undefined}
             typeFilters={[]}
