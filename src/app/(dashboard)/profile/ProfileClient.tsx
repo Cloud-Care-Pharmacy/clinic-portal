@@ -101,11 +101,17 @@ export function ProfileClient({
   const isDoctor = role === "doctor";
   const canEditPractitioner = isDoctor || role === "admin";
 
-  const firstName = clerkUser?.firstName ?? initialUser?.firstName ?? "";
-  const lastName = clerkUser?.lastName ?? initialUser?.lastName ?? "";
+  const firstName =
+    profile?.firstName ?? clerkUser?.firstName ?? initialUser?.firstName ?? "";
+  const lastName =
+    profile?.lastName ?? clerkUser?.lastName ?? initialUser?.lastName ?? "";
   const fullName =
     [firstName, lastName].filter(Boolean).join(" ") || initialUser?.fullName || "";
-  const email = clerkUser?.emailAddresses[0]?.emailAddress ?? initialUser?.email ?? "";
+  const email =
+    profile?.email ??
+    clerkUser?.emailAddresses[0]?.emailAddress ??
+    initialUser?.email ??
+    "";
   const imageUrl = clerkUser?.imageUrl ?? initialUser?.imageUrl;
   const phone = profile?.phone ?? "";
   const initials = fullName
@@ -249,12 +255,7 @@ export function ProfileClient({
         </TabsList>
 
         <TabsContent value="contact">
-          <ProfileContactTab
-            profile={profile}
-            role={role}
-            clerkFirstName={firstName}
-            clerkLastName={lastName}
-          />
+          <ProfileContactTab profile={profile} role={role} />
         </TabsContent>
 
         {canEditPractitioner && (

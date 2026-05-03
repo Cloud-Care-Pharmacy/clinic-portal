@@ -1,141 +1,175 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StickyFormBar } from "@/components/shared/StickyFormBar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UpdateUserProfilePayload, UserProfile, UserRole } from "@/types";
 
-/**
- * Backend `users` resource only persists account fields. PUT /api/users/me
- * currently only accepts `phone` and `role` — first/last name are cached on
- * `users` from Clerk and are not writable through this endpoint, so name edits
- * here are not persisted yet.
- */
-
 const contactSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  phone: z.string().max(20, "Phone number too long").optional().or(z.literal("")),
+  firstName: z
+    .string()
+    .trim()
+    .max(100, "First name must be 100 characters or fewer")
+    .optional()
+    .default(""),
+  lastName: z
+    .string()
+    .trim()
+    .max(100, "Last name must be 100 characters or fewer")
+    .optional()
+    .default(""),
+  email: z
+    .string()
+    .trim()
+    .max(255, "Email must be 255 characters or fewer")
+    .refine((v) => v === "" || v.includes("@"), "Email must contain '@'")
+    .optional()
+    .default(""),
+  phone: z
+    .string()
+    .trim()
+    .max(20, "Phone must be 20 characters or fewer")
+    .optional()
+    .default(""),
 });
 
-type ContactFormData = z.infer<typeof contactSchema>;
+type ContactFormValues = z.infer<typeof contactSchema>;
 
 interface ProfileContactTabProps {
   profile: UserProfile | null;
   role: UserRole;
-  clerkFirstName: string;
-  clerkLastName: string;
 }
 
-export function ProfileContactTab({
-  profile,
-  role,
-  clerkFirstName,
-  clerkLastName,
-}: ProfileContactTabProps) {
+export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
   const updateProfile = useUpdateProfile();
+  const [errors, setErrors] = useState<Partial<Record<keyof ContactFormValues, string>>>(
+    {}
+  );
 
-  const form = useForm<ContactFormData>({
-    defaultValues: {
-      firstName: clerkFirstName,
-      lastName: clerkLastName,
-      phone: "",
-    },
-  });
+  const defaults: ContactFormValues = {
+    firstName: profile?.firstName ?? "",
+    lastName: profile?.lastName ?? "",
+    email: profile?.email ?? "",
+    phone: profile?.phone ?? "",
+  };
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isDirty },
+  } = useForm<ContactFormValues>({ defaultValues: defaults });
 
   useEffect(() => {
-    form.reset({
-      firstName: clerkFirstName,
-      lastName: clerkLastName,
-      phone: profile?.phone ?? "",
-    });
-  }, [profile, clerkFirstName, clerkLastName, form]);
+    reset(defaults);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.firstName, profile?.lastName, profile?.email, profile?.phone]);
 
-  function onSubmit(data: ContactFormData) {
-    const result = contactSchema.safeParse(data);
-    if (!result.success) {
-      for (const issue of result.error.issues) {
-        const field = issue.path[0] as keyof ContactFormData;
-        form.setError(field, { message: issue.message });
+  const onSubmit = (raw: ContactFormValues) => {
+    const parsed = contactSchema.safeParse(raw);
+    if (!parsed.success) {
+      const fieldErrors: typeof errors = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0] as keyof ContactFormValues;
+        if (!fieldErrors[key]) fieldErrors[key] = issue.message;
       }
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
 
+    const data = parsed.data;
     const payload: UpdateUserProfilePayload = {
-      phone: result.data.phone || undefined,
+      firstName: data.firstName ? data.firstName : null,
+      lastName: data.lastName ? data.lastName : null,
+      email: data.email ? data.email : null,
+      phone: data.phone ? data.phone : null,
     };
-
-    if (!profile) {
-      payload.role = role;
-    }
+    if (!profile) payload.role = role;
 
     updateProfile.mutate(payload, {
-      onSuccess: () => toast.success("Contact details updated"),
-      onError: (err) => toast.error(err.message),
+      onSuccess: () => {
+        toast.success("Profile updated");
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to update profile");
+      },
     });
-  }
+  };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Contact Details</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Contact Details</CardTitle>
+        <CardDescription>
+          Update the name, email, and phone shown on your profile.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="ct-firstName">First name</Label>
-              <Input
-                id="ct-firstName"
-                aria-invalid={!!form.formState.errors.firstName}
-                {...form.register("firstName")}
-              />
-              {form.formState.errors.firstName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.firstName.message}
-                </p>
+              <Label htmlFor="firstName">First name</Label>
+              <Input id="firstName" {...register("firstName")} />
+              {errors.firstName && (
+                <p className="text-sm text-destructive">{errors.firstName}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ct-lastName">Last name</Label>
-              <Input
-                id="ct-lastName"
-                aria-invalid={!!form.formState.errors.lastName}
-                {...form.register("lastName")}
-              />
-              {form.formState.errors.lastName && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.lastName.message}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ct-phone">Phone number</Label>
-              <Input
-                id="ct-phone"
-                type="tel"
-                placeholder="+61 4XX XXX XXX"
-                {...form.register("phone")}
-              />
-              {form.formState.errors.phone && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.phone.message}
-                </p>
+              <Label htmlFor="lastName">Last name</Label>
+              <Input id="lastName" {...register("lastName")} />
+              {errors.lastName && (
+                <p className="text-sm text-destructive">{errors.lastName}</p>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      <StickyFormBar
-        isDirty={form.formState.isDirty}
-        isPending={updateProfile.isPending}
-        onDiscard={() => form.reset()}
-      />
-    </form>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...register("email")} />
+            {errors.email && (
+              <p className="text-sm text-destructive">{errors.email}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" type="tel" {...register("phone")} />
+            {errors.phone && (
+              <p className="text-sm text-destructive">{errors.phone}</p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                reset(defaults);
+                setErrors({});
+              }}
+              disabled={!isDirty || updateProfile.isPending}
+            >
+              Reset
+            </Button>
+            <Button type="submit" disabled={updateProfile.isPending}>
+              {updateProfile.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

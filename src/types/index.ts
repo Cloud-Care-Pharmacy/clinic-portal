@@ -1075,10 +1075,13 @@ export interface UserProfileResponse {
   data: { profile: UserProfile | null };
 }
 
-/** Payload for PUT /api/users/me — backend only persists `phone` and `role`. */
+/** Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear. */
 export interface UpdateUserProfilePayload {
   role?: UserRole;
-  phone?: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
 }
 
 // ============================================
