@@ -35,9 +35,7 @@ export function isTaskCompleted(task: Task) {
 }
 
 export function isTaskAssignedToCurrentUser(task: Task, currentUserId?: string) {
-  return Boolean(
-    currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
-  );
+  return Boolean(currentUserId && task.assignedUserId === currentUserId);
 }
 
 export function isTaskUnassigned(task: Task) {
