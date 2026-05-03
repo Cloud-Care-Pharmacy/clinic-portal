@@ -166,7 +166,7 @@ export function TaskTable({
         }
         if (assignmentFilters.length > 0) {
           const matchesMine = Boolean(
-            currentUserId && task.assignedUserId === currentUserId && !task.assignedRole
+            currentUserId && task.assignedUserId === currentUserId
           );
           const matchesUnassigned = !task.assignedUserId && !task.assignedRole;
 
