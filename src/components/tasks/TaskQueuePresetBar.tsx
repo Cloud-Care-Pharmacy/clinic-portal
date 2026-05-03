@@ -33,13 +33,6 @@ interface TaskQueuePresetBarProps {
  */
 export const FALLBACK_TASK_PRESETS: TaskQueuePresetDef[] = [
   {
-    id: "all",
-    label: "All",
-    tone: "primary",
-    icon: "inbox",
-    filter: {},
-  },
-  {
     id: "unassigned",
     label: "Unassigned",
     tone: "warning",
