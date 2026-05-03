@@ -449,7 +449,6 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         ) : (
           <TaskTable
             tasks={tasks}
-            total={data?.data.pagination?.total}
             loading={isLoading}
             searchQuery={searchQuery}
             onSearchChange={(value) => {
