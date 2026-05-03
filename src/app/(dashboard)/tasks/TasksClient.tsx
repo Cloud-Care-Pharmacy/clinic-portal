@@ -199,18 +199,20 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const presetsQuery = useTaskPresets();
   const presets = useMemo(() => {
     const raw = presetsQuery.data?.data.presets ?? FALLBACK_TASK_PRESETS;
-    // Override backend-supplied labels for portal-specific terminology.
-    return raw.map((preset) =>
-      preset.id === "mine_active" ? { ...preset, label: "Claimed" } : preset
-    );
+    // Drop any "all" preset and override backend-supplied labels for portal terminology.
+    return raw
+      .filter((preset) => preset.id !== "all")
+      .map((preset) =>
+        preset.id === "mine_active" ? { ...preset, label: "Claimed" } : preset
+      );
   }, [presetsQuery.data]);
 
-  const [activePreset, setActivePreset] = useState<string>("all");
+  const [activePreset, setActivePreset] = useState<string>("unassigned");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
-  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>(
-    []
-  );
+  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
+  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
+    "unassigned",
+  ]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
