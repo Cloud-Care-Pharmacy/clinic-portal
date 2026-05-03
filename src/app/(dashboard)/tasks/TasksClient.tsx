@@ -211,11 +211,11 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       );
   }, [presetsQuery.data]);
 
-  const [activePreset, setActivePreset] = useState<string>("unassigned");
+  const [activePreset, setActivePreset] = useState<string>("mine_active");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
   const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
-    "unassigned",
+    "mine",
   ]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
@@ -292,7 +292,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     const { statusFilters: nextStatuses, assignmentFilters: nextAssign } =
       presetToLocalFilters(preset, currentInternalUserId);
     setStatusFilters(nextStatuses);
-    setAssignmentFilters(nextAssign);
+    // Preserve the user's Me mode toggle across preset changes.
+    setAssignmentFilters((prev) => {
+      const meModeOn = prev.includes("mine");
+      if (meModeOn && !nextAssign.includes("mine")) return [...nextAssign, "mine"];
+      return nextAssign;
+    });
   }
 
   function switchPresetById(id: string) {
