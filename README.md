@@ -56,30 +56,30 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|---|---|---|
-| `NEXTAUTH_URL` | App URL (e.g., `http://localhost:3000`) | Yes |
-| `NEXTAUTH_SECRET` | Random secret for NextAuth session encryption | Yes |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | Yes |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | Yes |
-| `NEXT_PUBLIC_API_URL` | Backend API URL (prescription-gateway) | Yes |
-| `API_SECRET` | API key matching `API_SECRET` in prescription-gateway | Yes |
-| `NEXT_PUBLIC_DEFAULT_ENTITY_ID` | Default entity/shop ID from D1 | Yes |
-| `ADMIN_EMAILS` | Comma-separated admin emails | No |
-| `DOCTOR_EMAILS` | Comma-separated doctor emails | No |
+| Variable                        | Description                                                                                 | Required |
+| ------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
+| `NEXTAUTH_URL`                  | App URL (e.g., `http://localhost:3000`)                                                     | Yes      |
+| `NEXTAUTH_SECRET`               | Random secret for NextAuth session encryption                                               | Yes      |
+| `GOOGLE_CLIENT_ID`              | Google OAuth Client ID                                                                      | Yes      |
+| `GOOGLE_CLIENT_SECRET`          | Google OAuth Client Secret                                                                  | Yes      |
+| `NEXT_PUBLIC_API_URL`           | Backend API URL (prescription-gateway)                                                      | Yes      |
+| `API_SECRET`                    | API key matching `API_SECRET` in prescription-gateway                                       | Yes      |
+| `NEXT_PUBLIC_DEFAULT_ENTITY_ID` | Fallback entity/shop ID from D1 (used when the Clerk user has no `publicMetadata.entityId`) | No       |
+| `ADMIN_EMAILS`                  | Comma-separated admin emails                                                                | No       |
+| `DOCTOR_EMAILS`                 | Comma-separated doctor emails                                                               | No       |
 
 ## Pages
 
-| Route | Description | API Status |
-|---|---|---|
-| `/login` | Google OAuth sign-in | ✅ |
-| `/dashboard` | Summary cards, recent activity, quick actions | Partial (mock stats) |
-| `/patients` | Patient list with MUI DataGrid | ✅ Real API |
-| `/patients/new` | 8-step intake form wizard | ✅ Real API |
-| `/patients/[id]` | Patient detail with tabs (Prescriptions, Documents) | ✅ Real API |
-| `/prescriptions` | Prescription viewer (per-patient) | ✅ Real API |
-| `/consultations` | Consultation list (mock data) | ❌ Needs backend |
-| `/admin` | Staff management (mock data) | ❌ Needs backend |
+| Route            | Description                                         | API Status           |
+| ---------------- | --------------------------------------------------- | -------------------- |
+| `/login`         | Google OAuth sign-in                                | ✅                   |
+| `/dashboard`     | Summary cards, recent activity, quick actions       | Partial (mock stats) |
+| `/patients`      | Patient list with MUI DataGrid                      | ✅ Real API          |
+| `/patients/new`  | 8-step intake form wizard                           | ✅ Real API          |
+| `/patients/[id]` | Patient detail with tabs (Prescriptions, Documents) | ✅ Real API          |
+| `/prescriptions` | Prescription viewer (per-patient)                   | ✅ Real API          |
+| `/consultations` | Consultation list (mock data)                       | ❌ Needs backend     |
+| `/admin`         | Staff management (mock data)                        | ❌ Needs backend     |
 
 ## Deployment
 

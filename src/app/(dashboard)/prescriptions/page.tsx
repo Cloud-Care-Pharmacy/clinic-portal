@@ -1,8 +1,7 @@
 import { api, ApiError } from "@/lib/api";
+import { getEntityId } from "@/lib/auth";
 import { emptyListPrescriptionsResponse } from "@/lib/prescriptions";
 import { PrescriptionsClient } from "./PrescriptionsClient";
-
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
 
 export default async function PrescriptionsPage({
   searchParams,
@@ -10,9 +9,10 @@ export default async function PrescriptionsPage({
   searchParams: Promise<{ patientId?: string }>;
 }) {
   const { patientId } = await searchParams;
+  const entityId = await getEntityId();
   const [initialPatients, initialPrescriptions] = await Promise.all([
-    ENTITY_ID
-      ? api.getPatients(ENTITY_ID, { limit: 50, offset: 0 }).catch(() => undefined)
+    entityId
+      ? api.getPatients(entityId, { limit: 50, offset: 0 }).catch(() => undefined)
       : Promise.resolve(undefined),
     patientId
       ? api.getPatientPrescriptions(patientId).catch((error) => {
@@ -26,7 +26,7 @@ export default async function PrescriptionsPage({
 
   return (
     <PrescriptionsClient
-      entityId={ENTITY_ID}
+      entityId={entityId}
       selectedPatientId={patientId ?? ""}
       initialPatients={initialPatients}
       initialPrescriptions={initialPrescriptions}

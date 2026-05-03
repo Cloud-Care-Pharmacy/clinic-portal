@@ -8,11 +8,13 @@ declare global {
 
   interface UserPublicMetadata {
     role?: UserRole;
+    entityId?: string;
   }
 
   interface CustomJwtSessionClaims {
     metadata?: {
       role?: UserRole;
+      entityId?: string;
     };
   }
 }

@@ -1,16 +1,18 @@
 import { api } from "@/lib/api";
+import { getEntityId } from "@/lib/auth";
 import { ConsultationsClient } from "./ConsultationsClient";
 
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
-
 export default async function ConsultationsPage() {
-  const initialConsultations = await api
-    .getConsultations({ limit: 25, offset: 0, sort: "scheduledAt", order: "desc" })
-    .catch(() => undefined);
+  const [entityId, initialConsultations] = await Promise.all([
+    getEntityId(),
+    api
+      .getConsultations({ limit: 25, offset: 0, sort: "scheduledAt", order: "desc" })
+      .catch(() => undefined),
+  ]);
 
   return (
     <ConsultationsClient
-      entityId={ENTITY_ID}
+      entityId={entityId}
       initialConsultations={initialConsultations}
     />
   );
