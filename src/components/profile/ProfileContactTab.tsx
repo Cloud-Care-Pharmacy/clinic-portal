@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
 import type { UpdateUserProfilePayload, UserProfile, UserRole } from "@/types";
 
@@ -110,15 +110,15 @@ export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Contact Details</CardTitle>
-        <CardDescription>
-          Update the name, email, and phone shown on your profile.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Contact Details</CardTitle>
+          <CardDescription>
+            Update the name, email, and phone shown on your profile.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="firstName">First name</Label>
@@ -149,25 +149,17 @@ export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
               )}
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                reset(defaults);
-                setErrors({});
-              }}
-              disabled={!isDirty || updateProfile.isPending}
-            >
-              Reset
-            </Button>
-            <Button type="submit" disabled={updateProfile.isPending}>
-              {updateProfile.isPending ? "Saving..." : "Save changes"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <StickyFormBar
+        isDirty={isDirty}
+        isPending={updateProfile.isPending}
+        onDiscard={() => {
+          reset(defaults);
+          setErrors({});
+        }}
+      />
+    </form>
   );
 }
