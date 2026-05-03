@@ -1097,11 +1097,34 @@ export type AvailabilityDayKey =
   | "saturday"
   | "sunday";
 
+/**
+ * A single time range within a weekday. Times are 'HH:mm' on a 15-minute
+ * grid (00, 15, 30, 45) and must satisfy `startTime < endTime` on the
+ * same calendar day. Cross-midnight ranges are not supported — model them
+ * as two slots on consecutive days.
+ */
+export interface AvailabilitySlot {
+  startTime: string;
+  endTime: string;
+}
+
 export interface AvailabilityDayEntry {
   enabled: boolean;
-  /** 'HH:mm' — required when enabled is true. */
+  /**
+   * Ordered list of time ranges for this weekday. Empty array means the
+   * day is off. Slots within a day must not overlap (touching at the
+   * boundary, e.g. 09:00–10:00 and 10:00–11:00, is allowed).
+   */
+  slots?: AvailabilitySlot[];
+  /**
+   * @deprecated Use `slots` instead. Retained for read back-compat with
+   * the legacy single-slot schedule shape; mirrors `slots[0].startTime`.
+   */
   startTime?: string;
-  /** 'HH:mm' — required when enabled is true. */
+  /**
+   * @deprecated Use `slots` instead. Retained for read back-compat with
+   * the legacy single-slot schedule shape; mirrors `slots[0].endTime`.
+   */
   endTime?: string;
 }
 
