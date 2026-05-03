@@ -756,7 +756,7 @@ export function TaskOutcomeDialog({
           <p className="max-w-xs text-xs leading-5 text-muted-foreground">
             {outcome.status === "completed"
               ? "This will create a finalised consultation linked to the task."
-              : "Notes are kept with the task so you can resume from My tasks."}
+              : "Notes are kept with the task so you can resume from Claimed."}
           </p>
           <div className="flex shrink-0 items-center gap-2">
             <Button

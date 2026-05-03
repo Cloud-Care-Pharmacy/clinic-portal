@@ -33,6 +33,13 @@ interface TaskQueuePresetBarProps {
  */
 export const FALLBACK_TASK_PRESETS: TaskQueuePresetDef[] = [
   {
+    id: "all",
+    label: "All",
+    tone: "primary",
+    icon: "inbox",
+    filter: {},
+  },
+  {
     id: "unassigned",
     label: "Unassigned",
     tone: "warning",
@@ -41,7 +48,7 @@ export const FALLBACK_TASK_PRESETS: TaskQueuePresetDef[] = [
   },
   {
     id: "mine_active",
-    label: "My tasks",
+    label: "Claimed",
     tone: "primary",
     icon: "user-round",
     filter: { status: ["open", "in_progress"], assignedUserId: "<self>" },

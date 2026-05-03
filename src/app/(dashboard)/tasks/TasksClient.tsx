@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MeModeToggle } from "@/components/tasks/MeModeToggle";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { TaskTable, type TaskAssignmentFilter } from "@/components/tasks/TaskTable";
 import { TaskQueueBulkActions } from "@/components/tasks/TaskQueueBulkActions";
@@ -196,14 +197,20 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const currentUserId = user?.id;
 
   const presetsQuery = useTaskPresets();
-  const presets = presetsQuery.data?.data.presets ?? FALLBACK_TASK_PRESETS;
+  const presets = useMemo(() => {
+    const raw = presetsQuery.data?.data.presets ?? FALLBACK_TASK_PRESETS;
+    // Override backend-supplied labels for portal-specific terminology.
+    return raw.map((preset) =>
+      preset.id === "mine_active" ? { ...preset, label: "Claimed" } : preset
+    );
+  }, [presetsQuery.data]);
 
-  const [activePreset, setActivePreset] = useState<string>("unassigned");
+  const [activePreset, setActivePreset] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
-  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
-    "unassigned",
-  ]);
+  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([]);
+  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>(
+    []
+  );
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -495,10 +502,24 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             }
             trailing={
               effectiveSelectedIds.length === 0 ? (
-                <Button onClick={() => setNewTaskOpen(true)}>
-                  <Plus className="size-4" />
-                  New task
-                </Button>
+                <>
+                  <MeModeToggle
+                    active={assignmentFilters.includes("mine")}
+                    onToggle={(next) => {
+                      setSelectedIds([]);
+                      setAssignmentFilters((prev) => {
+                        const without = prev.filter((f) => f !== "mine");
+                        return next ? [...without, "mine"] : without;
+                      });
+                    }}
+                    imageUrl={user?.imageUrl}
+                    disabled={!currentUserId}
+                  />
+                  <Button onClick={() => setNewTaskOpen(true)}>
+                    <Plus className="size-4" />
+                    New task
+                  </Button>
+                </>
               ) : undefined
             }
           />
