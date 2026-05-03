@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -107,9 +107,10 @@ export function BusinessDetailsSection({ practitioner }: BusinessDetailsSectionP
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Business details</h3>
-
+        <CardHeader>
+          <CardTitle>Business details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Business contact */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">

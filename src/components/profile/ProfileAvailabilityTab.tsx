@@ -4,7 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -438,15 +445,13 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {/* Working hours */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h3 className="text-base font-semibold">Working hours</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pick a day on the left to edit its time ranges on the right. Toggles
-                disable a day without losing its slots.
-              </p>
-            </div>
+        <CardHeader>
+          <CardTitle>Working hours</CardTitle>
+          <CardDescription>
+            Pick a day on the left to edit its time ranges on the right. Toggles disable
+            a day without losing its slots.
+          </CardDescription>
+          <CardAction>
             <div className="w-full space-y-2 sm:w-56">
               <label
                 className="text-xs font-medium text-muted-foreground"
@@ -456,8 +461,9 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
               </label>
               <Input id="timezone" className="h-9" {...form.register("timezone")} />
             </div>
-          </div>
-
+          </CardAction>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[240px_1fr]">
             {/* Day list */}
             <div className="bg-card md:border-r">
@@ -542,8 +548,10 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
 
       {/* Consultation types */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Consultation types</h3>
+        <CardHeader>
+          <CardTitle>Consultation types</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {CONSULT_TYPES.map((t) => {
               const isOn = (watchedConsultTypes ?? []).includes(t.id);
@@ -574,13 +582,13 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
 
       {/* Leave & unavailability */}
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div>
-            <h3 className="text-base font-semibold">Leave &amp; unavailability</h3>
-            <p className="text-sm text-muted-foreground mt-1">
-              Block out dates when you&apos;re unavailable for consultations.
-            </p>
-          </div>
+        <CardHeader>
+          <CardTitle>Leave &amp; unavailability</CardTitle>
+          <CardDescription>
+            Block out dates when you&apos;re unavailable for consultations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
             <Button type="button" variant="outline" className="border-dashed">
               <Plus className="mr-2 h-4 w-4" />

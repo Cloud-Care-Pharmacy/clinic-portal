@@ -54,9 +54,9 @@ interface ProfileContactTabProps {
 
 export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
   const updateProfile = useUpdateProfile();
-  const [errors, setErrors] = useState<Partial<Record<keyof ContactFormValues, string>>>(
-    {}
-  );
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ContactFormValues, string>>
+  >({});
 
   const defaults: ContactFormValues = {
     firstName: profile?.firstName ?? "",
@@ -134,22 +134,20 @@ export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
                 <p className="text-sm text-destructive">{errors.lastName}</p>
               )}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register("email")} />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" {...register("phone")} />
-            {errors.phone && (
-              <p className="text-sm text-destructive">{errors.phone}</p>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register("email")} />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input id="phone" type="tel" {...register("phone")} />
+              {errors.phone && (
+                <p className="text-sm text-destructive">{errors.phone}</p>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

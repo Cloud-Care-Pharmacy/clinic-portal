@@ -1,15 +1,16 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export function ProfileSecurityTab() {
   return (
     <Card>
-      <CardContent className="pt-6 space-y-0">
-        <h3 className="text-base font-semibold">Account &amp; security</h3>
-
+      <CardHeader>
+        <CardTitle>Account &amp; security</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-0">
         {/* Change password */}
         <div className="flex items-center justify-between gap-4 py-4 border-b">
           <div>

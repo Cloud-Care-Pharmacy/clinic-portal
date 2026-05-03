@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -123,9 +123,10 @@ export function PrescriberDetailsSection({
       )}
 
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <h3 className="text-base font-semibold">Prescriber details</h3>
-
+        <CardHeader>
+          <CardTitle>Prescriber details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Row 1: Title, Qualifications, Specialty, Prescriber # */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
