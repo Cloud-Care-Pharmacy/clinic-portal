@@ -1235,6 +1235,52 @@ export interface UpdatePractitionerAvailabilityPayload {
 }
 
 // ============================================
+// Practitioner directory + scheduling (GET /api/practitioners*)
+// ============================================
+
+/** Entry from `GET /api/practitioners`. `userId` matches `consultations.doctorId`. */
+export interface PractitionerDirectoryEntry {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string;
+  role: UserRole;
+  email: string | null;
+  isActive: boolean;
+}
+
+export interface PractitionersListResponse {
+  success: boolean;
+  data: { practitioners: PractitionerDirectoryEntry[] };
+}
+
+export interface PractitionersListQuery {
+  role?: UserRole;
+  active?: boolean;
+  search?: string;
+}
+
+/** Single open booking window from `GET /api/practitioners/:userId/free-slots`. */
+export interface PractitionerFreeSlot {
+  /** Wall-clock 'HH:mm' in the response timezone. */
+  startTime: string;
+  /** Wall-clock 'HH:mm' in the response timezone. */
+  endTime: string;
+  /** Absolute UTC instant — pass straight to `consultations.scheduledAt`. */
+  startsAt: string;
+}
+
+export interface PractitionerFreeSlotsResponse {
+  success: boolean;
+  data: {
+    date: string;
+    timezone: string;
+    duration: number;
+    slots: PractitionerFreeSlot[];
+  };
+}
+
+// ============================================
 // Session types
 // ============================================
 

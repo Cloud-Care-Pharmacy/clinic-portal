@@ -39,6 +39,11 @@ import {
 } from "@/lib/hooks/use-consultations";
 import { usePatientSearch } from "@/lib/hooks/use-patients";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
+import {
+  usePractitioners,
+  usePractitionerFreeSlots,
+} from "@/lib/hooks/use-practitioner";
+import { useProfile } from "@/lib/hooks/use-profile";
 import type {
   Consultation,
   ConsultationConflict,
@@ -95,24 +100,16 @@ const DELIVERY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "in-person", label: "In-person" },
 ];
 
-// Suggested time slots — placeholder until a doctor-availability endpoint exists.
-const SUGGESTED_SLOTS: Array<{
-  hour: string;
-  minute: string;
-  period: "AM" | "PM";
-  label: string;
-}> = [
-  { hour: "08", minute: "30", period: "AM", label: "8:30" },
-  { hour: "09", minute: "00", period: "AM", label: "9:00" },
-  { hour: "10", minute: "15", period: "AM", label: "10:15" },
-  { hour: "11", minute: "00", period: "AM", label: "11:00" },
-  { hour: "02", minute: "30", period: "PM", label: "2:30" },
-  { hour: "04", minute: "00", period: "PM", label: "4:00" },
-];
+function formatLocalDate(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 const schema = z.object({
   patientName: z.string().min(1, "Patient name is required"),
-  doctorName: z.string().min(1, "Doctor name is required"),
+  doctorId: z.string().min(1, "Doctor is required"),
   type: z.string().min(1, "Type is required"),
   scheduledAt: z.string().min(1, "Date & time is required"),
   duration: z.string().optional(),
@@ -149,11 +146,12 @@ function getTimeParts(value?: string | null) {
 
 function getDefaultValues(
   defaultPatientName?: string,
-  consultation?: Consultation | null
+  consultation?: Consultation | null,
+  defaultDoctorId?: string
 ): FormData {
   return {
     patientName: consultation?.patientName ?? defaultPatientName ?? "",
-    doctorName: consultation?.doctorName ?? "",
+    doctorId: consultation?.doctorId ?? defaultDoctorId ?? "",
     type: consultation?.type ?? "initial",
     scheduledAt: consultation?.scheduledAt ?? "",
     duration: consultation?.duration
@@ -189,12 +187,17 @@ export function NewConsultationSheet({
   const createConsultation = useCreateConsultation();
   const updateConsultation = useUpdateConsultation();
   const { user } = useUser();
-  const currentUserId = user?.id;
-  const currentDoctorName =
-    user?.fullName || user?.primaryEmailAddress?.emailAddress || "";
-  const currentUserRole =
-    (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
+  const profileQuery = useProfile();
+  const currentProfile = profileQuery.data?.data?.profile ?? null;
+  // `users.id` (NOT Clerk's authId) — this is what consultations.doctorId stores.
+  const currentUserId = currentProfile?.id;
+  const currentUserRole: UserRole =
+    currentProfile?.role ??
+    (user?.publicMetadata?.role as UserRole | undefined) ??
+    "staff";
   const isAdmin = currentUserRole === "admin";
+  const practitionersQuery = usePractitioners({ role: "doctor" }, open);
+  const practitioners = practitionersQuery.data?.data?.practitioners ?? [];
   const formId = useId();
   // Keep the previous consultation visible during the close transition so the
   // sheet can animate out without flashing to the empty "Schedule" form.
@@ -217,10 +220,17 @@ export function NewConsultationSheet({
   } | null>(null);
 
   const form = useForm<FormData>({
-    defaultValues: getDefaultValues(defaultPatientName, consultation),
+    defaultValues: getDefaultValues(defaultPatientName, consultation, currentUserId),
   });
   const patientNameValue = useWatch({ control: form.control, name: "patientName" });
-  const doctorNameValue = useWatch({ control: form.control, name: "doctorName" });
+  const doctorIdValue = useWatch({ control: form.control, name: "doctorId" });
+  const selectedDoctor = practitioners.find((p) => p.userId === doctorIdValue);
+  const currentUserDoctor = practitioners.find((p) => p.userId === currentUserId);
+  const selectedDoctorName =
+    selectedDoctor?.displayName ??
+    consultation?.doctorName ??
+    currentUserDoctor?.displayName ??
+    "";
   const typeValue = useWatch({ control: form.control, name: "type" });
   const durationValue = useWatch({ control: form.control, name: "duration" });
   const deliveryValue = useWatch({ control: form.control, name: "delivery" });
@@ -252,7 +262,7 @@ export function NewConsultationSheet({
     control: form.control,
     name: "scheduledAt",
   });
-  const liveDoctorId = consultation?.doctorId || currentUserId;
+  const liveDoctorId = doctorIdValue || consultation?.doctorId || currentUserId;
   const liveDuration = durationValue ? parseInt(durationValue, 10) : undefined;
   const liveConflictsQuery = useConsultationConflicts(
     {
@@ -265,17 +275,29 @@ export function NewConsultationSheet({
   );
   const liveConflicts = liveConflictsQuery.data ?? [];
 
+  // Open booking windows for the selected doctor on the selected date.
+  const dateForSlots = selectedDate ? formatLocalDate(selectedDate) : undefined;
+  const freeSlotsQuery = usePractitionerFreeSlots(
+    liveDoctorId,
+    dateForSlots,
+    liveDuration,
+    undefined,
+    open
+  );
+  const freeSlots = freeSlotsQuery.data?.data?.slots ?? [];
+  const freeSlotsLoading = freeSlotsQuery.isFetching;
+
   useEffect(() => {
     if (!open || isEditing) return;
     form.setValue("patientName", defaultPatientName ?? "");
   }, [defaultPatientName, form, isEditing, open]);
 
   useEffect(() => {
-    if (!open || isEditing || !currentDoctorName) return;
-    if (!form.getValues("doctorName")) {
-      form.setValue("doctorName", currentDoctorName);
+    if (!open || isEditing || !currentUserId) return;
+    if (!form.getValues("doctorId")) {
+      form.setValue("doctorId", currentUserId);
     }
-  }, [open, isEditing, currentDoctorName, form]);
+  }, [open, isEditing, currentUserId, form]);
 
   // When a different consultation is selected, refresh the form & time state.
   // Done as derived state during render to avoid setState-in-effect cascades.
@@ -283,7 +305,9 @@ export function NewConsultationSheet({
   const [trackedId, setTrackedId] = useState<string | null>(incomingId);
   if (consultationInput && incomingId !== trackedId) {
     setTrackedId(incomingId);
-    form.reset(getDefaultValues(defaultPatientName, consultationInput));
+    form.reset(
+      getDefaultValues(defaultPatientName, consultationInput, currentUserId)
+    );
     const parts = getTimeParts(consultationInput.scheduledAt);
     setSelectedDate(parts.selectedDate);
     setHour(parts.hour);
@@ -292,13 +316,13 @@ export function NewConsultationSheet({
   }
 
   const resetNewConsultationState = useCallback(() => {
-    form.reset(getDefaultValues(defaultPatientName));
+    form.reset(getDefaultValues(defaultPatientName, null, currentUserId));
     setSelectedPatient(null);
     setSelectedDate(undefined);
     setHour("09");
     setMinute("00");
     setPeriod("AM");
-  }, [defaultPatientName, form]);
+  }, [defaultPatientName, currentUserId, form]);
 
   const updateScheduledAt = useCallback(
     (date: Date | undefined, h: string, m: string, p: "AM" | "PM") => {
@@ -326,16 +350,19 @@ export function NewConsultationSheet({
     [hour, minute, period, updateScheduledAt]
   );
 
-  const handleSlotSelect = useCallback(
-    (h: string, m: string, p: "AM" | "PM") => {
-      setHour(h);
-      setMinute(m);
-      setPeriod(p);
-      const date = selectedDate ?? new Date();
-      if (!selectedDate) setSelectedDate(date);
-      updateScheduledAt(date, h, m, p);
+  // Selecting a server-computed free slot is authoritative — use the UTC
+  // `startsAt` directly and sync the AM/PM display state from it.
+  const handleFreeSlotSelect = useCallback(
+    (startsAt: string) => {
+      const parts = getTimeParts(startsAt);
+      if (parts.selectedDate) setSelectedDate(parts.selectedDate);
+      setHour(parts.hour);
+      setMinute(parts.minute);
+      setPeriod(parts.period);
+      form.setValue("scheduledAt", startsAt, { shouldDirty: true });
+      form.clearErrors("scheduledAt");
     },
-    [selectedDate, updateScheduledAt]
+    [form]
   );
 
   const displayValue = selectedDate
@@ -363,7 +390,7 @@ export function NewConsultationSheet({
     const duration = data.duration ? parseInt(data.duration, 10) : undefined;
     const scheduledAt = new Date(data.scheduledAt).toISOString();
     const patientId = defaultPatientId ?? selectedPatient?.id;
-    const doctorId = consultation?.doctorId || currentUserId || undefined;
+    const doctorId = data.doctorId || consultation?.doctorId || currentUserId || undefined;
 
     if (!consultation && !patientId) {
       form.setError("patientName", {
@@ -570,32 +597,40 @@ export function NewConsultationSheet({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="doctorName">
+            <Label htmlFor="doctorId">
               Doctor <span className="text-destructive">*</span>
             </Label>
             <UISelect
-              value={doctorNameValue || currentDoctorName}
+              value={doctorIdValue || ""}
               onValueChange={(v) => {
-                if (v) form.setValue("doctorName", v, { shouldDirty: true });
+                if (v) form.setValue("doctorId", v, { shouldDirty: true });
               }}
             >
-              <UISelectTrigger id="doctorName">
-                <UISelectValue placeholder="Select doctor" />
+              <UISelectTrigger id="doctorId">
+                <UISelectValue
+                  placeholder={
+                    practitionersQuery.isLoading ? "Loading doctors…" : "Select doctor"
+                  }
+                />
               </UISelectTrigger>
               <UISelectContent>
-                {currentDoctorName && (
-                  <UISelectItem value={currentDoctorName}>
-                    {currentDoctorName}
+                {practitioners.map((p) => (
+                  <UISelectItem key={p.userId} value={p.userId}>
+                    {p.displayName}
                   </UISelectItem>
-                )}
-                {doctorNameValue && doctorNameValue !== currentDoctorName && (
-                  <UISelectItem value={doctorNameValue}>{doctorNameValue}</UISelectItem>
-                )}
+                ))}
+                {/* Editing an old consultation whose doctor isn’t in the active list. */}
+                {consultation?.doctorId &&
+                  !practitioners.some((p) => p.userId === consultation.doctorId) && (
+                    <UISelectItem value={consultation.doctorId}>
+                      {consultation.doctorName || "Unknown doctor"}
+                    </UISelectItem>
+                  )}
               </UISelectContent>
             </UISelect>
-            {form.formState.errors.doctorName && (
+            {form.formState.errors.doctorId && (
               <p className="text-sm text-destructive">
-                {form.formState.errors.doctorName.message}
+                {form.formState.errors.doctorId.message}
               </p>
             )}
           </div>
@@ -754,33 +789,40 @@ export function NewConsultationSheet({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {SUGGESTED_SLOTS.map((slot) => {
-                const isActive =
-                  hour === slot.hour &&
-                  minute === slot.minute &&
-                  period === slot.period;
-                return (
-                  <button
-                    key={slot.label}
-                    type="button"
-                    onClick={() =>
-                      handleSlotSelect(slot.hour, slot.minute, slot.period)
-                    }
-                    className={cn(
-                      "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-input text-foreground hover:border-foreground/30"
-                    )}
-                  >
-                    {slot.label}
-                  </button>
-                );
-              })}
+              {!liveDoctorId || !selectedDate ? (
+                <p className="text-xs text-muted-foreground">
+                  Pick a doctor and date to see open slots.
+                </p>
+              ) : freeSlotsLoading ? (
+                <p className="text-xs text-muted-foreground">Loading open slots…</p>
+              ) : freeSlots.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No open slots on this day.
+                </p>
+              ) : (
+                freeSlots.map((slot) => {
+                  const isActive = scheduledAtValue === slot.startsAt;
+                  return (
+                    <button
+                      key={slot.startsAt}
+                      type="button"
+                      onClick={() => handleFreeSlotSelect(slot.startsAt)}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        isActive
+                          ? "border-primary text-primary"
+                          : "border-input text-foreground hover:border-foreground/30"
+                      )}
+                    >
+                      {slot.startTime}
+                    </button>
+                  );
+                })
+              )}
             </div>
-            {currentDoctorName && (
+            {selectedDoctorName && selectedDate && freeSlots.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                Slots shown are {currentDoctorName.replace(/^Dr\.?\s*/i, "")}&rsquo;s
+                Slots shown are {selectedDoctorName.replace(/^Dr\.?\s*/i, "")}&rsquo;s
                 open windows on this day.
               </p>
             )}
@@ -895,7 +937,7 @@ export function NewConsultationSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Possible double-booking</AlertDialogTitle>
             <AlertDialogDescription>
-              {doctorNameValue || "This doctor"} already has{" "}
+              {selectedDoctorName || "This doctor"} already has{" "}
               {conflictPending?.conflicts.length === 1
                 ? "a consultation"
                 : `${conflictPending?.conflicts.length} consultations`}{" "}
