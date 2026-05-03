@@ -14,7 +14,7 @@ interface MeModeToggleProps {
 
 /**
  * Right-aligned toggle that filters the task list to "tasks assigned to me".
- * When inactive (default), the table shows all tasks regardless of assignee.
+ * When inactive, the table shows the selected queue regardless of assignee.
  */
 export function MeModeToggle({
   active,
