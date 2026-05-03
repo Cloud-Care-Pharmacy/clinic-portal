@@ -1,32 +1,30 @@
 import { api } from "@/lib/api";
+import { getEntityId } from "@/lib/auth";
 import { DashboardClient } from "./DashboardClient";
 
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
-
 export default async function DashboardPage() {
+  const entityId = await getEntityId();
   const [initialConsultations, initialSummary, initialIntakeOverview, initialActivity] =
     await Promise.all([
       api.getConsultations({ limit: 50, offset: 0 }).catch(() => undefined),
-      ENTITY_ID
-        ? api.getDashboardSummary(ENTITY_ID, "30d").catch(() => undefined)
+      entityId
+        ? api.getDashboardSummary(entityId, "30d").catch(() => undefined)
         : Promise.resolve(undefined),
       api
         .getDashboardIntakeOverview({
-          entityId: ENTITY_ID || undefined,
+          entityId: entityId || undefined,
           range: "12m",
           bucket: "month",
         })
         .catch(() => undefined),
-      ENTITY_ID
-        ? api
-            .getDashboardRecentActivity({ entityId: ENTITY_ID, limit: 5 })
-            .catch(() => undefined)
+      entityId
+        ? api.getDashboardRecentActivity({ entityId, limit: 5 }).catch(() => undefined)
         : Promise.resolve(undefined),
     ]);
 
   return (
     <DashboardClient
-      entityId={ENTITY_ID}
+      entityId={entityId}
       initialConsultations={initialConsultations}
       initialSummary={initialSummary}
       initialIntakeOverview={initialIntakeOverview}

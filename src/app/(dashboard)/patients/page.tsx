@@ -1,12 +1,12 @@
 import { api } from "@/lib/api";
+import { getEntityId } from "@/lib/auth";
 import { PatientsClient } from "./PatientsClient";
 
-const ENTITY_ID = process.env.NEXT_PUBLIC_DEFAULT_ENTITY_ID ?? "";
-
 export default async function PatientsPage() {
-  const initialPatients = ENTITY_ID
-    ? await api.getPatients(ENTITY_ID, { limit: 50, offset: 0 }).catch(() => undefined)
+  const entityId = await getEntityId();
+  const initialPatients = entityId
+    ? await api.getPatients(entityId, { limit: 50, offset: 0 }).catch(() => undefined)
     : undefined;
 
-  return <PatientsClient entityId={ENTITY_ID} initialPatients={initialPatients} />;
+  return <PatientsClient entityId={entityId} initialPatients={initialPatients} />;
 }
