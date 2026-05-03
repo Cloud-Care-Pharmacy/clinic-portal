@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useId } from "react";
+import { useState, useCallback, useEffect, useId, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -198,7 +198,10 @@ export function NewConsultationSheet({
     "staff";
   const isAdmin = currentUserRole === "admin";
   const practitionersQuery = usePractitioners({ role: "doctor" }, open);
-  const practitioners = practitionersQuery.data?.data?.practitioners ?? [];
+  const practitioners = useMemo(
+    () => practitionersQuery.data?.data?.practitioners ?? [],
+    [practitionersQuery.data]
+  );
   const formId = useId();
   // Keep the previous consultation visible during the close transition so the
   // sheet can animate out without flashing to the empty "Schedule" form.
