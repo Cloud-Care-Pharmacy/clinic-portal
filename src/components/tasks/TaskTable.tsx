@@ -210,7 +210,6 @@ export function TaskTable({
           task.priority,
           task.taskType,
           task.dueAt,
-          task.createdAt,
           task.metadata,
         ]);
       }),
@@ -424,12 +423,6 @@ export function TaskTable({
           </span>
         );
       },
-    },
-    {
-      field: "createdAt",
-      headerName: "Created",
-      width: 136,
-      valueFormatter: (value: string) => formatTaskDate(value),
     },
     {
       field: "actions",
