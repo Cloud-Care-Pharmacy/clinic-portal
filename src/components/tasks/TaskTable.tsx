@@ -78,7 +78,6 @@ const TASK_TYPE_ICONS: Record<TaskType, ComponentType<{ className?: string }>> =
 
 interface TaskTableProps {
   tasks: Task[];
-  total?: number;
   loading?: boolean;
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -114,7 +113,6 @@ interface TaskTableProps {
 
 export function TaskTable({
   tasks,
-  total,
   loading,
   searchQuery,
   onSearchChange,
@@ -154,7 +152,6 @@ export function TaskTable({
     priorityFilters.length > 0 ||
     typeFilters.length > 0 ||
     roleFilters.length > 0;
-  const hasActiveFilters = hasSearchQuery || hasFilterSelections;
   const hasUserVisibleFilters =
     hasSearchQuery || (showFilterControls && hasFilterSelections);
 
@@ -456,14 +453,6 @@ export function TaskTable({
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
       filters={showFilterControls ? filters : []}
-      resultCount={
-        bulkActions
-          ? undefined
-          : hasActiveFilters
-            ? visibleTasks.length
-            : (total ?? tasks.length)
-      }
-      resultLabel="tasks"
       trailing={
         bulkActions || trailing ? (
           <div className="flex items-center gap-2">
