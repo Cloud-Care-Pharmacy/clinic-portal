@@ -9,20 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Plus,
-  Trash2,
-  Copy,
-  Video,
-  Building2,
-  House,
-  AlertCircle,
-} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Trash2, Copy, Video, Building2, House, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdatePractitionerAvailability } from "@/lib/hooks/use-practitioner";
@@ -455,8 +443,8 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
             <div>
               <h3 className="text-base font-semibold">Working hours</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Pick a day on the left to edit its time ranges on the right.
-                Toggles disable a day without losing its slots.
+                Pick a day on the left to edit its time ranges on the right. Toggles
+                disable a day without losing its slots.
               </p>
             </div>
             <div className="w-full space-y-2 sm:w-56">
@@ -477,12 +465,8 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
                 const value = watchedDays?.[idx];
                 const isActive = idx === activeDay;
                 const enabled = value?.enabled ?? false;
-                const dur = enabled
-                  ? dayDurationMinutes(value?.slots ?? [])
-                  : 0;
-                const dayHasError = hasAnyIssue(
-                  dayIssues[idx] ?? { slots: {} }
-                );
+                const dur = enabled ? dayDurationMinutes(value?.slots ?? []) : 0;
+                const dayHasError = hasAnyIssue(dayIssues[idx] ?? { slots: {} });
                 return (
                   <button
                     key={field.id}
@@ -548,8 +532,8 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
 
           {form.formState.isDirty ? (
             <p className="text-xs text-muted-foreground tabular-nums text-right">
-              {totals.days} day{totals.days === 1 ? "" : "s"} · {totals.slots}{" "}
-              slot{totals.slots === 1 ? "" : "s"}
+              {totals.days} day{totals.days === 1 ? "" : "s"} · {totals.slots} slot
+              {totals.slots === 1 ? "" : "s"}
               {hasErrors ? " · fix highlighted rows to save" : ""}
             </p>
           ) : null}
@@ -702,9 +686,7 @@ function DayEditor({
                     step={900}
                     value={slot.startTime}
                     aria-invalid={!!issue?.start || !!issue?.row}
-                    onChange={(e) =>
-                      onUpdateSlot(slotIdx, "startTime", e.target.value)
-                    }
+                    onChange={(e) => onUpdateSlot(slotIdx, "startTime", e.target.value)}
                     className="h-9 w-33 text-[13px] tabular-nums"
                   />
                   <span className="text-muted-foreground" aria-hidden>
@@ -715,9 +697,7 @@ function DayEditor({
                     step={900}
                     value={slot.endTime}
                     aria-invalid={!!issue?.end || !!issue?.row}
-                    onChange={(e) =>
-                      onUpdateSlot(slotIdx, "endTime", e.target.value)
-                    }
+                    onChange={(e) => onUpdateSlot(slotIdx, "endTime", e.target.value)}
                     className="h-9 w-33 text-[13px] tabular-nums"
                   />
                   <span className="ml-2 min-w-15 text-right text-xs tabular-nums text-muted-foreground">
@@ -768,12 +748,7 @@ function DayEditor({
           <Popover open={copyOpen} onOpenChange={setCopyOpen}>
             <PopoverTrigger
               render={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={onOpenCopy}
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={onOpenCopy}>
                   <Copy className="mr-1.5 h-3.5 w-3.5" />
                   Copy to…
                 </Button>
