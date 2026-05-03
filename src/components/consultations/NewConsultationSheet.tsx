@@ -294,10 +294,13 @@ export function NewConsultationSheet({
 
   useEffect(() => {
     if (!open || isEditing || !currentUserId) return;
-    if (!form.getValues("doctorId")) {
+    if (form.getValues("doctorId")) return;
+    // Only auto-default to the current user when they are actually a doctor
+    // in the directory — otherwise leave it blank so admins/staff pick someone.
+    if (practitioners.some((p) => p.userId === currentUserId)) {
       form.setValue("doctorId", currentUserId);
     }
-  }, [open, isEditing, currentUserId, form]);
+  }, [open, isEditing, currentUserId, practitioners, form]);
 
   // When a different consultation is selected, refresh the form & time state.
   // Done as derived state during render to avoid setState-in-effect cascades.
@@ -611,7 +614,21 @@ export function NewConsultationSheet({
                   placeholder={
                     practitionersQuery.isLoading ? "Loading doctors…" : "Select doctor"
                   }
-                />
+                >
+                  {(value) => {
+                    if (!value || typeof value !== "string") return null;
+                    const match = practitioners.find((p) => p.userId === value);
+                    if (match) return match.displayName;
+                    if (consultation?.doctorId === value) {
+                      return consultation.doctorName || "Unknown doctor";
+                    }
+                    // Fallback while the directory is loading — show a neutral
+                    // label rather than the raw UUID.
+                    return practitionersQuery.isLoading
+                      ? "Loading doctors…"
+                      : "Select doctor";
+                  }}
+                </UISelectValue>
               </UISelectTrigger>
               <UISelectContent>
                 {practitioners.map((p) => (
