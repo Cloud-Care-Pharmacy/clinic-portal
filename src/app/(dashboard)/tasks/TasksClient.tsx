@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeModeToggle } from "@/components/tasks/MeModeToggle";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
-import { TaskTable, type TaskAssignmentFilter } from "@/components/tasks/TaskTable";
+import { TaskTable } from "@/components/tasks/TaskTable";
 import { TaskQueueBulkActions } from "@/components/tasks/TaskQueueBulkActions";
 import {
   TaskQueuePresetBar,
@@ -43,7 +43,6 @@ import type {
   ConsultationType,
   Task,
   TaskQueuePresetDef,
-  TaskStatus,
   TasksListResponse,
 } from "@/types";
 
@@ -54,7 +53,6 @@ interface TasksClientProps {
 
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
-const ACTIVE_STATUSES: TaskStatus[] = ["open", "in_progress"];
 
 function pluralizeTask(count: number) {
   return `task${count === 1 ? "" : "s"}`;
@@ -120,10 +118,15 @@ function resolveAssignedUserId(value: unknown, currentUserId?: string) {
   return undefined;
 }
 
-function matchesPresetFilter(
+function isSelfAssignedFilter(value: unknown, currentUserId?: string) {
+  return value === "<self>" || (Boolean(currentUserId) && value === currentUserId);
+}
+
+function matchesTaskQueuePreset(
   task: Task,
   filter: Record<string, unknown>,
-  currentUserId?: string
+  currentUserId: string | undefined,
+  meModeActive: boolean
 ) {
   const statuses = asArray(filter.status);
   if (statuses && !statuses.includes(task.status)) return false;
@@ -132,6 +135,10 @@ function matchesPresetFilter(
     const raw = filter.assignedUserId;
     if (raw === null) {
       if (!isUnassigned(task)) return false;
+    } else if (isSelfAssignedFilter(raw, currentUserId)) {
+      // Self-scoped presets (Claimed/Completed) become "assigned to anyone"
+      // when Me mode is off, then Me mode narrows them to the current user below.
+      if (isUnassigned(task)) return false;
     } else {
       const resolved = resolveAssignedUserId(raw, currentUserId);
       if (!resolved) return false;
@@ -139,33 +146,11 @@ function matchesPresetFilter(
     }
   }
 
-  return true;
-}
-
-/**
- * Translate a backend preset filter into the local FilterBar state machine.
- * The local UI uses two slots: status and an assignment bucket.
- */
-function presetToLocalFilters(
-  preset: { filter: Record<string, unknown> },
-  currentUserId?: string
-): { statusFilters: TaskStatus[]; assignmentFilters: TaskAssignmentFilter[] } {
-  const statuses = (asArray(preset.filter.status) as TaskStatus[] | undefined) ?? [];
-  const statusFilters: TaskStatus[] =
-    statuses.length > 0
-      ? statuses.filter((s): s is TaskStatus =>
-          ["open", "in_progress", "completed", "cancelled"].includes(s)
-        )
-      : ACTIVE_STATUSES;
-
-  const assignmentFilters: TaskAssignmentFilter[] = [];
-  if ("assignedUserId" in preset.filter) {
-    const raw = preset.filter.assignedUserId;
-    if (raw === null) assignmentFilters.push("unassigned");
-    else if (raw === "<self>" || raw === currentUserId) assignmentFilters.push("mine");
+  if (meModeActive && (!currentUserId || task.assignedUserId !== currentUserId)) {
+    return false;
   }
 
-  return { statusFilters, assignmentFilters };
+  return true;
 }
 
 function taskConsultationType(task: Task): ConsultationType {
@@ -212,11 +197,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   }, [presetsQuery.data]);
 
   const [activePreset, setActivePreset] = useState<string>("mine_active");
+  const [meModeActive, setMeModeActive] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilters, setStatusFilters] = useState<TaskStatus[]>(ACTIVE_STATUSES);
-  const [assignmentFilters, setAssignmentFilters] = useState<TaskAssignmentFilter[]>([
-    "mine",
-  ]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -243,61 +225,49 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   );
   const tasks = data?.data.tasks ?? EMPTY_TASKS;
   const summaryTasks = data?.data.tasks ?? initialTasks?.data.tasks ?? EMPTY_TASKS;
+  const activePresetDef = useMemo(
+    () =>
+      presets.find((preset) => preset.id === activePreset) ??
+      presets.find((preset) => preset.id === "mine_active") ??
+      presets[0],
+    [activePreset, presets]
+  );
+  const queueTasks = useMemo(() => {
+    if (!activePresetDef) return EMPTY_TASKS;
+    return tasks.filter((task) =>
+      matchesTaskQueuePreset(
+        task,
+        activePresetDef.filter,
+        currentInternalUserId,
+        meModeActive
+      )
+    );
+  }, [activePresetDef, currentInternalUserId, meModeActive, tasks]);
 
   const effectiveSelectedIds = useMemo(() => {
     if (selectedIds.length === 0) return EMPTY_STRING_ARRAY;
-    const visibleIds = new Set(tasks.map((task) => task.taskId));
+    const visibleIds = new Set(queueTasks.map((task) => task.taskId));
     return selectedIds.filter((id) => visibleIds.has(id));
-  }, [selectedIds, tasks]);
+  }, [selectedIds, queueTasks]);
 
   const presetCounts = useMemo(() => {
-    const meModeActive = assignmentFilters.includes("mine");
     const counts: Record<string, number> = {};
     for (const preset of presets) {
-      counts[preset.id] = summaryTasks.filter((task) => {
-        // Status portion of the preset always applies.
-        const statuses = asArray(preset.filter.status);
-        if (statuses && !statuses.includes(task.status)) return false;
-
-        const hasAssignedKey = "assignedUserId" in preset.filter;
-        if (hasAssignedKey) {
-          const raw = preset.filter.assignedUserId;
-          if (raw === null) {
-            // "Unassigned" preset — always restrict to truly unassigned tasks.
-            if (!isUnassigned(task)) return false;
-          } else {
-            // For self-scoped presets (e.g. Claimed/Completed), apply the
-            // self restriction only while Me mode is active. When off, count
-            // any claimed/completed task regardless of assignee, but still
-            // require the task to be assigned to *someone*.
-            if (meModeActive) {
-              const resolved = resolveAssignedUserId(raw, currentInternalUserId);
-              if (!resolved) return false;
-              if (task.assignedUserId !== resolved) return false;
-            } else if (isUnassigned(task)) {
-              return false;
-            }
-          }
-        }
-
-        return true;
-      }).length;
+      counts[preset.id] = summaryTasks.filter((task) =>
+        matchesTaskQueuePreset(
+          task,
+          preset.filter,
+          currentInternalUserId,
+          meModeActive
+        )
+      ).length;
     }
     return counts;
-  }, [assignmentFilters, currentInternalUserId, summaryTasks, presets]);
+  }, [currentInternalUserId, meModeActive, summaryTasks, presets]);
 
   function applyPreset(preset: TaskQueuePresetDef) {
     setActivePreset(preset.id);
     setSelectedIds([]);
-    const { statusFilters: nextStatuses, assignmentFilters: nextAssign } =
-      presetToLocalFilters(preset, currentInternalUserId);
-    setStatusFilters(nextStatuses);
-    // Preserve the user's Me mode toggle across preset changes.
-    setAssignmentFilters((prev) => {
-      const meModeOn = prev.includes("mine");
-      if (meModeOn && !nextAssign.includes("mine")) return [...nextAssign, "mine"];
-      return nextAssign;
-    });
   }
 
   function switchPresetById(id: string) {
@@ -479,17 +449,15 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           </div>
         ) : (
           <TaskTable
-            tasks={tasks}
+            tasks={queueTasks}
             loading={isLoading}
             searchQuery={searchQuery}
             onSearchChange={(value) => {
               setSelectedIds([]);
               setSearchQuery(value);
             }}
-            statusFilters={statusFilters}
-            onStatusFiltersChange={setStatusFilters}
-            assignmentFilters={assignmentFilters}
-            onAssignmentFiltersChange={setAssignmentFilters}
+            statusFilters={[]}
+            onStatusFiltersChange={() => undefined}
             currentUserId={currentInternalUserId}
             priorityFilters={[]}
             onPriorityFiltersChange={() => undefined}
@@ -544,16 +512,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
               effectiveSelectedIds.length === 0 ? (
                 <>
                   <MeModeToggle
-                    active={assignmentFilters.includes("mine")}
+                    active={meModeActive}
                     onToggle={(next) => {
                       setSelectedIds([]);
-                      setAssignmentFilters((prev) => {
-                        const without = prev.filter((f) => f !== "mine");
-                        return next ? [...without, "mine"] : without;
-                      });
+                      setMeModeActive(next);
                     }}
                     imageUrl={user?.imageUrl}
-                    disabled={!currentUserId}
+                    disabled={!currentInternalUserId}
                   />
                   <Button onClick={() => setNewTaskOpen(true)}>
                     <Plus className="size-4" />
