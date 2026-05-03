@@ -1,6 +1,8 @@
 "use client";
 
+import { Activity } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { EmptyState } from "@/components/shared/EmptyState";
 import type { DashboardActivityItem } from "@/types";
 
 interface RecentActivityProps {
@@ -23,9 +25,12 @@ function formatRelativeTime(value: string) {
 export function RecentActivity({ items }: RecentActivityProps) {
   if (items.length === 0) {
     return (
-      <div className="py-10 text-center text-sm text-muted-foreground">
-        No recent activity yet.
-      </div>
+      <EmptyState
+        icon={Activity}
+        title="No recent activity"
+        description="Patient intakes, prescriptions, and consultations will appear here as your team works through the portal."
+        className="py-10"
+      />
     );
   }
 
