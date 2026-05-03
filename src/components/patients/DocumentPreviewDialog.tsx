@@ -36,7 +36,6 @@ export function DocumentPreviewDialog({
   onOpenChange,
 }: DocumentPreviewDialogProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,9 +46,6 @@ export function DocumentPreviewDialog({
 
     const controller = new AbortController();
     let createdUrl: string | null = null;
-
-    setLoading(true);
-    setError(null);
 
     fetch(getDocumentDownloadHref(patientId, document.id), {
       signal: controller.signal,
@@ -67,15 +63,13 @@ export function DocumentPreviewDialog({
         if (err instanceof DOMException && err.name === "AbortError") return;
         const message = err instanceof Error ? err.message : "Failed to load document";
         setError(message);
-      })
-      .finally(() => {
-        setLoading(false);
       });
 
     return () => {
       controller.abort();
       if (createdUrl) URL.revokeObjectURL(createdUrl);
       setObjectUrl(null);
+      setError(null);
     };
   }, [open, document, patientId]);
 
@@ -85,6 +79,8 @@ export function DocumentPreviewDialog({
   }
 
   const previewKind = document ? getPreviewKind(document.contentType) : "unsupported";
+  const loading =
+    !!open && !!document && previewKind !== "unsupported" && !objectUrl && !error;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
