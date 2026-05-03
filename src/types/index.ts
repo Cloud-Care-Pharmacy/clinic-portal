@@ -779,13 +779,28 @@ export interface BulkClaimTasksResponse {
   data: BulkTaskResult;
 }
 
+/**
+ * Staff list item — matches GET /api/staff entries.
+ *
+ * `id` is the internal users.id UUID (use this for PATCH /api/staff/:userId/role
+ * and DELETE /api/staff/:userId). `authId` is the Clerk session id.
+ * Practitioner data, when present, lives on the embedded `practitioner` object
+ * (was previously flat fields on this object).
+ */
 export interface Staff {
   id: string;
+  authId: string;
   name: string;
   email: string;
-  role: "admin" | "doctor" | "staff";
+  role: UserRole;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
   avatarUrl?: string;
+  active: boolean;
+  practitioner: PractitionerProfile | null;
   createdAt: string;
+  deactivatedAt?: string | null;
 }
 
 export interface DashboardStats {
@@ -1029,34 +1044,26 @@ export interface PatientCountsResponse {
 }
 
 // ============================================
-// User Profile types (from prescription-gateway users table)
+// User account types (from prescription-gateway users table)
 // ============================================
 
-/** User profile record — matches GET /api/users/me response */
+/**
+ * User account record — matches GET /api/users/me response.
+ *
+ * As of the users/practitioners split, this only carries account-level fields.
+ * Clinical-identity fields (hpii, prescriberNumber, qualifications, name) and
+ * working-hours availability live on `PractitionerProfile` instead.
+ */
 export interface UserProfile {
+  /** Internal UUID (users.id) — canonical user id for backend calls. */
   id: string;
-  hpii: string | null;
-  prescriberNumber: string | null;
-  qualifications: string | null;
-  phone: string | null;
+  /** Clerk session id (users.auth_id). Use only for Clerk SDK calls. */
+  authId: string;
   role: UserRole;
-  availabilityDays: string[] | null;
-  // Prescriber details (doctor-only)
-  title: string | null;
-  specialty: string | null;
-  ahpraNumber: string | null;
-  hospitalProviderNumber: string | null;
-  businessPhone: string | null;
-  businessEmail: string | null;
-  providerNumber: string | null;
-  dateOfBirth: string | null;
-  gender: string | null;
-  // Business address
-  businessStreetNumber: string | null;
-  businessStreetName: string | null;
-  businessSuburb: string | null;
-  businessState: string | null;
-  businessPostcode: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
   createdAt: string;
   updatedAt: string;
   deactivatedAt?: string | null;
@@ -1068,31 +1075,15 @@ export interface UserProfileResponse {
   data: { profile: UserProfile | null };
 }
 
-/** Payload for PUT /api/users/me (camelCase for request body) */
+/** Payload for PUT /api/users/me — backend only persists `phone` and `role`. */
 export interface UpdateUserProfilePayload {
   role?: UserRole;
   phone?: string;
-  hpii?: string;
-  prescriberNumber?: string;
-  qualifications?: string;
-  availabilityDays?: string[];
-  // Prescriber details (doctor-only)
-  title?: string;
-  specialty?: string;
-  ahpraNumber?: string;
-  hospitalProviderNumber?: string;
-  businessPhone?: string;
-  businessEmail?: string;
-  providerNumber?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  // Business address
-  businessStreetNumber?: string;
-  businessStreetName?: string;
-  businessSuburb?: string;
-  businessState?: string;
-  businessPostcode?: string;
 }
+
+// ============================================
+// Practitioner profile types (from /api/practitioners*)
+// ============================================
 
 export type AvailabilityDayKey =
   | "monday"
@@ -1103,29 +1094,118 @@ export type AvailabilityDayKey =
   | "saturday"
   | "sunday";
 
-export interface AvailabilityWindow {
-  start: string;
-  end: string;
+export interface AvailabilityDayEntry {
+  enabled: boolean;
+  /** 'HH:mm' — required when enabled is true. */
+  startTime?: string;
+  /** 'HH:mm' — required when enabled is true. */
+  endTime?: string;
 }
 
-export type StructuredAvailability = Record<AvailabilityDayKey, AvailabilityWindow[]>;
+export type AvailabilitySchedule = Record<AvailabilityDayKey, AvailabilityDayEntry>;
 
-export interface UpdateUserAvailabilityPayload {
+export type ConsultationModality = "telehealth" | "in_person" | "home_visit";
+
+export interface PractitionerAvailability {
   timezone: string;
-  availability: StructuredAvailability;
+  schedule: Partial<AvailabilitySchedule>;
+  consultationTypes: ConsultationModality[] | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
 }
 
-export interface UserAvailabilityResponse {
+export interface PractitionerBusinessAddress {
+  streetNumber: string | null;
+  streetName: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+}
+
+export interface PractitionerBusinessDetails {
+  practitionerId: string;
+  businessPhone: string | null;
+  businessEmail: string | null;
+  address: PractitionerBusinessAddress;
+  /** Australian Business Number — free text. */
+  abn: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+}
+
+/**
+ * Practitioner profile — names live on `UserProfile.firstName` / `UserProfile.lastName`,
+ * NOT here. `business` and `availability` are independently `null` until first save.
+ */
+export interface PractitionerProfile {
+  id: string;
+  userId: string;
+
+  // Professional identity
+  title: string | null;
+  specialty: string | null;
+  /** Free-text qualifications, e.g. "MBBS, FRACGP". */
+  qualifications: string | null;
+
+  // Regulatory identifiers
+  hpii: string | null;
+  prescriberNumber: string | null;
+  ahpraNumber: string | null;
+  hospitalProviderNumber: string | null;
+  providerNumber: string | null;
+
+  active: boolean;
+
+  business: PractitionerBusinessDetails | null;
+  availability: PractitionerAvailability | null;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PractitionerProfileResponse {
   success: boolean;
-  data: {
-    availability: {
-      userId: string;
-      timezone: string;
-      availability: Partial<StructuredAvailability>;
-      createdAt: string;
-      updatedAt: string;
-    };
-  };
+  data: { practitioner: PractitionerProfile | null };
+}
+
+export interface PractitionerAvailabilityResponse {
+  success: boolean;
+  data: { availability: PractitionerAvailability | null };
+}
+
+/**
+ * Payload for PUT /api/practitioners/me. All fields optional — omit to leave
+ * unchanged, send `null` to clear. Send a `business` object (or any subset of
+ * its fields) to create/update the business-details row.
+ */
+export interface UpdatePractitionerBusinessPayload {
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  abn?: string | null;
+  address?: Partial<PractitionerBusinessAddress>;
+}
+
+export interface UpdatePractitionerPayload {
+  title?: string | null;
+  specialty?: string | null;
+  qualifications?: string | null;
+  hpii?: string | null;
+  prescriberNumber?: string | null;
+  ahpraNumber?: string | null;
+  hospitalProviderNumber?: string | null;
+  providerNumber?: string | null;
+  active?: boolean;
+  business?: UpdatePractitionerBusinessPayload;
+}
+
+export interface UpdatePractitionerAvailabilityPayload {
+  timezone?: string;
+  availability: AvailabilitySchedule;
+  consultationTypes?: ConsultationModality[] | null;
 }
 
 // ============================================

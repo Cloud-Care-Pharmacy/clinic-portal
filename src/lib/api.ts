@@ -38,8 +38,10 @@ import type {
   DashboardRecentActivityResponse,
   ActivityEventCategory,
   EntityPrescriptionSummaryResponse,
-  UpdateUserAvailabilityPayload,
-  UserAvailabilityResponse,
+  PractitionerProfileResponse,
+  PractitionerAvailabilityResponse,
+  UpdatePractitionerPayload,
+  UpdatePractitionerAvailabilityPayload,
   CreateTaskPayload,
   TaskResponse,
   TasksListResponse,
@@ -408,7 +410,7 @@ class ApiClient {
     );
   }
 
-  // ---- User Profile ----
+  // ---- User Profile (account) ----
 
   async getMyProfile(userId: string): Promise<UserProfileResponse> {
     return this.request("/api/users/me", {
@@ -416,11 +418,38 @@ class ApiClient {
     });
   }
 
-  async updateMyAvailability(
+  // ---- Practitioner Profile ----
+
+  async getMyPractitioner(userId: string): Promise<PractitionerProfileResponse> {
+    return this.request("/api/practitioners/me", {
+      headers: { "X-Clerk-User-Id": userId },
+    });
+  }
+
+  async updateMyPractitioner(
     userId: string,
-    data: UpdateUserAvailabilityPayload
-  ): Promise<UserAvailabilityResponse> {
-    return this.request("/api/users/me/availability", {
+    data: UpdatePractitionerPayload
+  ): Promise<PractitionerProfileResponse> {
+    return this.request("/api/practitioners/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+      headers: { "X-Clerk-User-Id": userId },
+    });
+  }
+
+  async getMyPractitionerAvailability(
+    userId: string
+  ): Promise<PractitionerAvailabilityResponse> {
+    return this.request("/api/practitioners/me/availability", {
+      headers: { "X-Clerk-User-Id": userId },
+    });
+  }
+
+  async updateMyPractitionerAvailability(
+    userId: string,
+    data: UpdatePractitionerAvailabilityPayload
+  ): Promise<PractitionerAvailabilityResponse> {
+    return this.request("/api/practitioners/me/availability", {
       method: "PUT",
       body: JSON.stringify(data),
       headers: { "X-Clerk-User-Id": userId },

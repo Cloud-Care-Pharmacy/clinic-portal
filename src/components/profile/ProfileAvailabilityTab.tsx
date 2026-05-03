@@ -11,8 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Plus, Video, Building2, House } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
-import { useUpdateAvailability } from "@/lib/hooks/use-profile";
-import type { AvailabilityDayKey, UserProfile } from "@/types";
+import { useUpdatePractitionerAvailability } from "@/lib/hooks/use-practitioner";
+import type {
+  AvailabilityDayKey,
+  AvailabilitySchedule,
+  ConsultationModality,
+  PractitionerProfile,
+} from "@/types";
 
 const DAYS_OF_WEEK = [
   { label: "Monday", key: "monday" },
@@ -22,18 +27,35 @@ const DAYS_OF_WEEK = [
   { label: "Friday", key: "friday" },
   { label: "Saturday", key: "saturday" },
   { label: "Sunday", key: "sunday" },
-] as const;
+] as const satisfies ReadonlyArray<{ label: string; key: AvailabilityDayKey }>;
 
 const CONSULT_TYPES = [
-  { id: "telehealth", name: "Telehealth", desc: "Video & phone consults", icon: Video },
-  { id: "in-person", name: "In-person", desc: "Clinic appointments", icon: Building2 },
   {
-    id: "home-visit",
+    id: "telehealth",
+    name: "Telehealth",
+    desc: "Video & phone consults",
+    icon: Video,
+  },
+  {
+    id: "in_person",
+    name: "In-person",
+    desc: "Clinic appointments",
+    icon: Building2,
+  },
+  {
+    id: "home_visit",
     name: "Home visits",
     desc: "Off-site consultations",
     icon: House,
   },
-] as const;
+] as const satisfies ReadonlyArray<{
+  id: ConsultationModality;
+  name: string;
+  desc: string;
+  icon: typeof Video;
+}>;
+
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const daySchema = z.object({
   day: z.string(),
@@ -43,67 +65,116 @@ const daySchema = z.object({
   end: z.string(),
 });
 
-const availabilitySchema = z.object({
-  timezone: z.string().min(1, "Timezone is required"),
-  days: z.array(daySchema),
-});
+const availabilitySchema = z
+  .object({
+    timezone: z.string().min(1, "Timezone is required"),
+    days: z.array(daySchema),
+    consultationTypes: z.array(z.string()),
+  })
+  .superRefine((value, ctx) => {
+    value.days.forEach((d, idx) => {
+      if (!d.enabled) return;
+      if (!TIME_REGEX.test(d.start)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["days", idx, "start"],
+          message: "Start time must be HH:mm",
+        });
+      }
+      if (!TIME_REGEX.test(d.end)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["days", idx, "end"],
+          message: "End time must be HH:mm",
+        });
+      }
+    });
+  });
 
 type AvailabilityFormData = z.infer<typeof availabilitySchema>;
 
 interface ProfileAvailabilityTabProps {
-  profile: UserProfile | null;
+  practitioner: PractitionerProfile | null;
 }
 
-export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps) {
-  const updateAvailability = useUpdateAvailability();
+function buildDefaultDays(practitioner: PractitionerProfile | null) {
+  const schedule = practitioner?.availability?.schedule ?? {};
+  return DAYS_OF_WEEK.map((d) => {
+    const entry = schedule[d.key];
+    return {
+      day: d.label,
+      key: d.key,
+      enabled: entry?.enabled ?? false,
+      start: entry?.startTime ?? "09:00",
+      end: entry?.endTime ?? "17:00",
+    };
+  });
+}
+
+export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabProps) {
+  const updateAvailability = useUpdatePractitionerAvailability();
 
   const form = useForm<AvailabilityFormData>({
     defaultValues: {
-      timezone: "Australia/Sydney",
-      days: DAYS_OF_WEEK.map((d) => ({
-        day: d.label,
-        key: d.key,
-        enabled: false,
-        start: "09:00",
-        end: "17:00",
-      })),
+      timezone: practitioner?.availability?.timezone ?? "Australia/Sydney",
+      days: buildDefaultDays(practitioner),
+      consultationTypes: practitioner?.availability?.consultationTypes ?? [],
     },
   });
 
   const { fields } = useFieldArray({ control: form.control, name: "days" });
   const watchedDays = useWatch({ control: form.control, name: "days" });
+  const watchedConsultTypes = useWatch({
+    control: form.control,
+    name: "consultationTypes",
+  });
 
   useEffect(() => {
-    if (profile) {
-      const activeDays = profile.availabilityDays ?? [];
-      form.reset({
-        timezone: "Australia/Sydney",
-        days: DAYS_OF_WEEK.map((d) => ({
-          day: d.label,
-          key: d.key,
-          enabled: activeDays.includes(d.label),
-          start: "09:00",
-          end: "17:00",
-        })),
-      });
-    }
-  }, [profile, form]);
+    form.reset({
+      timezone: practitioner?.availability?.timezone ?? "Australia/Sydney",
+      days: buildDefaultDays(practitioner),
+      consultationTypes: practitioner?.availability?.consultationTypes ?? [],
+    });
+  }, [practitioner, form]);
+
+  function toggleConsultType(id: ConsultationModality) {
+    const current = form.getValues("consultationTypes") ?? [];
+    const next = current.includes(id)
+      ? current.filter((t) => t !== id)
+      : [...current, id];
+    form.setValue("consultationTypes", next, { shouldDirty: true });
+  }
 
   function onSubmit(data: AvailabilityFormData) {
     const result = availabilitySchema.safeParse(data);
-    if (!result.success) return;
+    if (!result.success) {
+      for (const issue of result.error.issues) {
+        if (issue.path.length >= 3 && issue.path[0] === "days") {
+          const idx = issue.path[1] as number;
+          const field = issue.path[2] as "start" | "end";
+          form.setError(`days.${idx}.${field}` as const, { message: issue.message });
+        }
+      }
+      return;
+    }
 
-    const availability = DAYS_OF_WEEK.reduce(
-      (acc, day) => {
-        const row = result.data.days.find((d) => d.key === day.key);
-        acc[day.key] = row?.enabled ? [{ start: row.start, end: row.end }] : [];
-        return acc;
-      },
-      {} as Record<AvailabilityDayKey, { start: string; end: string }[]>
-    );
+    const schedule = DAYS_OF_WEEK.reduce((acc, day) => {
+      const row = result.data.days.find((d) => d.key === day.key);
+      acc[day.key] = row?.enabled
+        ? { enabled: true, startTime: row.start, endTime: row.end }
+        : { enabled: false };
+      return acc;
+    }, {} as AvailabilitySchedule);
 
     updateAvailability.mutate(
-      { timezone: result.data.timezone, availability },
+      {
+        timezone: result.data.timezone,
+        availability: schedule,
+        consultationTypes:
+          result.data.consultationTypes.length > 0
+            ? (result.data.consultationTypes as ConsultationModality[])
+            : null,
+      },
       {
         onSuccess: () => toast.success("Availability updated"),
         onError: (err) => toast.error(err.message),
@@ -131,6 +202,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
           <div className="space-y-0">
             {fields.map((field, idx) => {
               const enabled = watchedDays?.[idx]?.enabled ?? false;
+              const dayErrors = form.formState.errors.days?.[idx];
               return (
                 <div
                   key={field.id}
@@ -151,6 +223,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
                   />
                   <Input
                     type="time"
+                    aria-invalid={!!dayErrors?.start}
                     className={cn(
                       "h-9 text-[13px]",
                       !enabled && "opacity-35 pointer-events-none"
@@ -167,6 +240,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
                   </span>
                   <Input
                     type="time"
+                    aria-invalid={!!dayErrors?.end}
                     className={cn(
                       "h-9 text-[13px]",
                       !enabled && "opacity-35 pointer-events-none"
@@ -185,14 +259,16 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
         <CardContent className="pt-6 space-y-4">
           <h3 className="text-base font-semibold">Consultation types</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {CONSULT_TYPES.map((t, idx) => {
-              const isOn = idx < 2; // default: first two enabled (static for now)
+            {CONSULT_TYPES.map((t) => {
+              const isOn = (watchedConsultTypes ?? []).includes(t.id);
               const Icon = t.icon;
               return (
-                <div
+                <button
                   key={t.id}
+                  type="button"
+                  onClick={() => toggleConsultType(t.id)}
                   className={cn(
-                    "flex items-start gap-3 rounded-xl border p-3.5 cursor-pointer transition-colors",
+                    "flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors",
                     isOn
                       ? "border-primary bg-primary/5"
                       : "border-border bg-background hover:bg-muted"
@@ -203,7 +279,7 @@ export function ProfileAvailabilityTab({ profile }: ProfileAvailabilityTabProps)
                     <div className="text-sm font-medium">{t.name}</div>
                     <div className="text-xs text-muted-foreground">{t.desc}</div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

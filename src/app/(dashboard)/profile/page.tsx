@@ -5,9 +5,12 @@ import { ProfileClient } from "./ProfileClient";
 
 export default async function ProfilePage() {
   const user = await currentUser();
-  const initialProfile = user
-    ? await api.getMyProfile(user.id).catch(() => undefined)
-    : undefined;
+  const [initialProfile, initialPractitioner] = user
+    ? await Promise.all([
+        api.getMyProfile(user.id).catch(() => undefined),
+        api.getMyPractitioner(user.id).catch(() => undefined),
+      ])
+    : [undefined, undefined];
   const role = (user?.publicMetadata?.role as UserRole | undefined) ?? "staff";
   const initialUser = user
     ? {
@@ -20,5 +23,11 @@ export default async function ProfilePage() {
       }
     : undefined;
 
-  return <ProfileClient initialProfile={initialProfile} initialUser={initialUser} />;
+  return (
+    <ProfileClient
+      initialProfile={initialProfile}
+      initialPractitioner={initialPractitioner}
+      initialUser={initialUser}
+    />
+  );
 }

@@ -15,8 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
-import { useUpdateProfile } from "@/lib/hooks/use-profile";
-import type { UserProfile, UpdateUserProfilePayload } from "@/types";
+import { useUpdatePractitioner } from "@/lib/hooks/use-practitioner";
+import type { PractitionerProfile, UpdatePractitionerPayload } from "@/types";
 
 const SPECIALTIES = [
   "General Practice",
@@ -30,32 +30,33 @@ const SPECIALTIES = [
 ] as const;
 
 const prescriberSchema = z.object({
+  title: z.string().max(50).optional().or(z.literal("")),
+  qualifications: z.string().max(500).optional().or(z.literal("")),
+  specialty: z.string().max(100).optional().or(z.literal("")),
+  prescriberNumber: z.string().max(20).optional().or(z.literal("")),
+  ahpraNumber: z.string().max(50).optional().or(z.literal("")),
+  hospitalProviderNumber: z.string().max(50).optional().or(z.literal("")),
+  providerNumber: z.string().max(50).optional().or(z.literal("")),
   hpii: z
     .string()
-    .refine((v) => v === "" || /^\d{16}$/.test(v), "HPII must be exactly 16 digits")
+    .refine((v) => v === "" || v.length === 16, "HPII must be exactly 16 characters")
     .optional()
     .or(z.literal("")),
-  title: z.string().max(50).optional().or(z.literal("")),
-  qualifications: z.string().min(1, "Qualifications are required").max(500),
-  specialty: z.string().min(1, "Specialty is required"),
-  prescriberNumber: z.string().min(1, "Prescriber number is required").max(10),
-  ahpraNumber: z.string().max(20).optional().or(z.literal("")),
-  hospitalProviderNumber: z.string().max(20).optional().or(z.literal("")),
-  providerNumber: z.string().max(20).optional().or(z.literal("")),
 });
 
 type PrescriberFormData = z.infer<typeof prescriberSchema>;
 
 interface PrescriberDetailsSectionProps {
-  profile: UserProfile | null;
+  practitioner: PractitionerProfile | null;
 }
 
-export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionProps) {
-  const updateProfile = useUpdateProfile();
+export function PrescriberDetailsSection({
+  practitioner,
+}: PrescriberDetailsSectionProps) {
+  const updatePractitioner = useUpdatePractitioner();
 
   const form = useForm<PrescriberFormData>({
     defaultValues: {
-      hpii: "",
       title: "",
       qualifications: "",
       specialty: "",
@@ -63,24 +64,23 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
       ahpraNumber: "",
       hospitalProviderNumber: "",
       providerNumber: "",
+      hpii: "",
     },
   });
   const specialtyValue = useWatch({ control: form.control, name: "specialty" });
 
   useEffect(() => {
-    if (profile) {
-      form.reset({
-        hpii: profile.hpii ?? "",
-        title: profile.title ?? "",
-        qualifications: profile.qualifications ?? "",
-        specialty: profile.specialty ?? "",
-        prescriberNumber: profile.prescriberNumber ?? "",
-        ahpraNumber: profile.ahpraNumber ?? "",
-        hospitalProviderNumber: profile.hospitalProviderNumber ?? "",
-        providerNumber: profile.providerNumber ?? "",
-      });
-    }
-  }, [profile, form]);
+    form.reset({
+      title: practitioner?.title ?? "",
+      qualifications: practitioner?.qualifications ?? "",
+      specialty: practitioner?.specialty ?? "",
+      prescriberNumber: practitioner?.prescriberNumber ?? "",
+      ahpraNumber: practitioner?.ahpraNumber ?? "",
+      hospitalProviderNumber: practitioner?.hospitalProviderNumber ?? "",
+      providerNumber: practitioner?.providerNumber ?? "",
+      hpii: practitioner?.hpii ?? "",
+    });
+  }, [practitioner, form]);
 
   function onSubmit(data: PrescriberFormData) {
     const result = prescriberSchema.safeParse(data);
@@ -92,18 +92,18 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
       return;
     }
 
-    const payload: UpdateUserProfilePayload = {
-      hpii: result.data.hpii || undefined,
-      title: result.data.title || undefined,
-      qualifications: result.data.qualifications,
-      specialty: result.data.specialty,
-      prescriberNumber: result.data.prescriberNumber,
-      ahpraNumber: result.data.ahpraNumber || undefined,
-      hospitalProviderNumber: result.data.hospitalProviderNumber || undefined,
-      providerNumber: result.data.providerNumber || undefined,
+    const payload: UpdatePractitionerPayload = {
+      title: result.data.title || null,
+      qualifications: result.data.qualifications || null,
+      specialty: result.data.specialty || null,
+      prescriberNumber: result.data.prescriberNumber || null,
+      ahpraNumber: result.data.ahpraNumber || null,
+      hospitalProviderNumber: result.data.hospitalProviderNumber || null,
+      providerNumber: result.data.providerNumber || null,
+      hpii: result.data.hpii || null,
     };
 
-    updateProfile.mutate(payload, {
+    updatePractitioner.mutate(payload, {
       onSuccess: () => toast.success("Prescriber details updated"),
       onError: (err) => toast.error(err.message),
     });
@@ -111,24 +111,32 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      {!practitioner && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">
+              No practitioner profile yet — fill in the fields below and save to create
+              one.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="pt-6 space-y-4">
           <h3 className="text-base font-semibold">Prescriber details</h3>
 
-          {/* Row 1: Title, Qualifications*, Specialty*, Prescriber #* */}
+          {/* Row 1: Title, Qualifications, Specialty, Prescriber # */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="pd-title">Title</Label>
               <Input id="pd-title" placeholder="e.g. Dr." {...form.register("title")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pd-qualifications">
-                Qualifications <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="pd-qualifications">Qualifications</Label>
               <Input
                 id="pd-qualifications"
                 placeholder="e.g. MBBS, FRACGP"
-                aria-invalid={!!form.formState.errors.qualifications}
                 {...form.register("qualifications")}
               />
               {form.formState.errors.qualifications && (
@@ -138,19 +146,14 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pd-specialty">
-                Specialty <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="pd-specialty">Specialty</Label>
               <Select
                 value={specialtyValue || undefined}
                 onValueChange={(v) => {
                   if (v) form.setValue("specialty", v, { shouldDirty: true });
                 }}
               >
-                <SelectTrigger
-                  className="w-full"
-                  aria-invalid={!!form.formState.errors.specialty}
-                >
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select an option" />
                 </SelectTrigger>
                 <SelectContent>
@@ -161,28 +164,15 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
                   ))}
                 </SelectContent>
               </Select>
-              {form.formState.errors.specialty && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.specialty.message}
-                </p>
-              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pd-prescriberNumber">
-                Prescriber # <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="pd-prescriberNumber">Prescriber #</Label>
               <Input
                 id="pd-prescriberNumber"
                 placeholder="e.g. 1234567"
-                maxLength={10}
-                aria-invalid={!!form.formState.errors.prescriberNumber}
+                maxLength={20}
                 {...form.register("prescriberNumber")}
               />
-              {form.formState.errors.prescriberNumber && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.prescriberNumber.message}
-                </p>
-              )}
             </div>
           </div>
 
@@ -190,7 +180,11 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="pd-ahpra">AHPRA #</Label>
-              <Input id="pd-ahpra" {...form.register("ahpraNumber")} />
+              <Input
+                id="pd-ahpra"
+                placeholder="e.g. MED0001234567"
+                {...form.register("ahpraNumber")}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="pd-hospitalProvider">Hospital provider #</Label>
@@ -207,7 +201,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
               <Label htmlFor="pd-hpii">HPI-I number</Label>
               <Input
                 id="pd-hpii"
-                placeholder="16-digit identifier"
+                placeholder="16-character identifier"
                 maxLength={16}
                 aria-invalid={!!form.formState.errors.hpii}
                 {...form.register("hpii")}
@@ -227,7 +221,7 @@ export function PrescriberDetailsSection({ profile }: PrescriberDetailsSectionPr
 
       <StickyFormBar
         isDirty={form.formState.isDirty}
-        isPending={updateProfile.isPending}
+        isPending={updatePractitioner.isPending}
         onDiscard={() => form.reset()}
       />
     </form>

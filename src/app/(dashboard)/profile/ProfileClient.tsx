@@ -8,13 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { useProfile } from "@/lib/hooks/use-profile";
+import { usePractitioner } from "@/lib/hooks/use-practitioner";
 import { Mail, Phone, User } from "lucide-react";
 import { ProfileContactTab } from "@/components/profile/ProfileContactTab";
 import { ProfileAvailabilityTab } from "@/components/profile/ProfileAvailabilityTab";
 import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
-import { BusinessAddressSection } from "@/components/profile/BusinessAddressSection";
+import { BusinessDetailsSection } from "@/components/profile/BusinessDetailsSection";
 import { ProfileSecurityTab } from "@/components/profile/ProfileSecurityTab";
-import type { UserProfile, UserProfileResponse, UserRole } from "@/types";
+import type {
+  PractitionerProfile,
+  PractitionerProfileResponse,
+  UserProfile,
+  UserProfileResponse,
+  UserRole,
+} from "@/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
@@ -28,25 +35,30 @@ const ROLE_COLORS: Record<UserRole, string> = {
   staff: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
 };
 
-function computeCompleteness(profile: UserProfile | null, isDoctor: boolean) {
+function computeCompleteness(
+  profile: UserProfile | null,
+  practitioner: PractitionerProfile | null,
+  isDoctor: boolean
+) {
   if (!profile) return { pct: 0, missing: 0 };
-  const base = [profile.phone, profile.dateOfBirth, profile.gender];
+  const base = [profile.phone];
   const doctorFields = isDoctor
     ? [
-        profile.qualifications,
-        profile.specialty,
-        profile.prescriberNumber,
-        profile.businessPhone,
-        profile.ahpraNumber,
-        profile.hospitalProviderNumber,
-        profile.providerNumber,
-        profile.hpii,
-        profile.businessStreetNumber,
-        profile.businessStreetName,
-        profile.businessSuburb,
-        profile.businessState,
-        profile.businessPostcode,
-        profile.businessEmail,
+        practitioner?.title,
+        practitioner?.specialty,
+        practitioner?.qualifications,
+        practitioner?.prescriberNumber,
+        practitioner?.ahpraNumber,
+        practitioner?.providerNumber,
+        practitioner?.hpii,
+        practitioner?.business?.businessPhone,
+        practitioner?.business?.businessEmail,
+        practitioner?.business?.abn,
+        practitioner?.business?.address?.streetName,
+        practitioner?.business?.address?.suburb,
+        practitioner?.business?.address?.state,
+        practitioner?.business?.address?.postcode,
+        practitioner?.availability ? "set" : null,
       ]
     : [];
   const all = [...base, ...doctorFields];
@@ -66,19 +78,28 @@ interface ProfileInitialUser {
 
 interface ProfileClientProps {
   initialProfile?: UserProfileResponse;
+  initialPractitioner?: PractitionerProfileResponse;
   initialUser?: ProfileInitialUser;
 }
 
-export function ProfileClient({ initialProfile, initialUser }: ProfileClientProps) {
+export function ProfileClient({
+  initialProfile,
+  initialPractitioner,
+  initialUser,
+}: ProfileClientProps) {
   const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const { data: profileData, isLoading: profileLoading } = useProfile(initialProfile);
+  const { data: practitionerData, isLoading: practitionerLoading } =
+    usePractitioner(initialPractitioner);
 
   const profile = profileData?.data?.profile ?? null;
+  const practitioner = practitionerData?.data?.practitioner ?? null;
   const role =
     (clerkUser?.publicMetadata?.role as UserRole | undefined) ??
     initialUser?.role ??
     "staff";
   const isDoctor = role === "doctor";
+  const canEditPractitioner = isDoctor || role === "admin";
 
   const firstName = clerkUser?.firstName ?? initialUser?.firstName ?? "";
   const lastName = clerkUser?.lastName ?? initialUser?.lastName ?? "";
@@ -95,11 +116,12 @@ export function ProfileClient({ initialProfile, initialUser }: ProfileClientProp
     .toUpperCase();
 
   const { pct, missing } = useMemo(
-    () => computeCompleteness(profile, isDoctor),
-    [profile, isDoctor]
+    () => computeCompleteness(profile, practitioner, isDoctor),
+    [profile, practitioner, isDoctor]
   );
 
-  const isLoading = (!initialUser && !clerkLoaded) || profileLoading;
+  const isLoading =
+    (!initialUser && !clerkLoaded) || profileLoading || practitionerLoading;
 
   if (isLoading) {
     return (
@@ -166,10 +188,12 @@ export function ProfileClient({ initialProfile, initialUser }: ProfileClientProp
 
             {/* Row 2: specialty, prescriber #, joined */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              {isDoctor && profile?.specialty && <span>{profile.specialty}</span>}
-              {isDoctor && profile?.prescriberNumber && (
+              {isDoctor && practitioner?.specialty && (
+                <span>{practitioner.specialty}</span>
+              )}
+              {isDoctor && practitioner?.prescriberNumber && (
                 <span className="font-mono text-xs">
-                  Prescriber #{profile.prescriberNumber}
+                  Prescriber #{practitioner.prescriberNumber}
                 </span>
               )}
               {profile?.createdAt && (
@@ -212,9 +236,15 @@ export function ProfileClient({ initialProfile, initialUser }: ProfileClientProp
       <Tabs defaultValue="contact" className="space-y-4">
         <TabsList>
           <TabsTrigger value="contact">Contact</TabsTrigger>
-          <TabsTrigger value="availability">Availability</TabsTrigger>
-          {isDoctor && <TabsTrigger value="prescriber">Prescriber Details</TabsTrigger>}
-          {isDoctor && <TabsTrigger value="address">Business Details</TabsTrigger>}
+          {canEditPractitioner && (
+            <TabsTrigger value="availability">Availability</TabsTrigger>
+          )}
+          {canEditPractitioner && (
+            <TabsTrigger value="prescriber">Prescriber Details</TabsTrigger>
+          )}
+          {canEditPractitioner && (
+            <TabsTrigger value="business">Business Details</TabsTrigger>
+          )}
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
@@ -227,19 +257,21 @@ export function ProfileClient({ initialProfile, initialUser }: ProfileClientProp
           />
         </TabsContent>
 
-        <TabsContent value="availability">
-          <ProfileAvailabilityTab profile={profile} />
-        </TabsContent>
-
-        {isDoctor && (
-          <TabsContent value="prescriber">
-            <PrescriberDetailsSection profile={profile} />
+        {canEditPractitioner && (
+          <TabsContent value="availability">
+            <ProfileAvailabilityTab practitioner={practitioner} />
           </TabsContent>
         )}
 
-        {isDoctor && (
-          <TabsContent value="address">
-            <BusinessAddressSection profile={profile} />
+        {canEditPractitioner && (
+          <TabsContent value="prescriber">
+            <PrescriberDetailsSection practitioner={practitioner} />
+          </TabsContent>
+        )}
+
+        {canEditPractitioner && (
+          <TabsContent value="business">
+            <BusinessDetailsSection practitioner={practitioner} />
           </TabsContent>
         )}
 
