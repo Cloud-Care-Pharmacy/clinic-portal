@@ -48,6 +48,13 @@ import type {
   TasksQuery,
   TaskSummaryResponse,
   UpdateTaskPayload,
+  CreateWorkspaceInvitationPayload,
+  UpdateWorkspaceEntitySettingsPayload,
+  WorkspaceEntitySettingsResponse,
+  WorkspaceInvitationsResponse,
+  WorkspaceInvitationStatus,
+  WorkspaceUsersResponse,
+  UserRole,
 } from "@/types";
 import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 
@@ -415,6 +422,101 @@ class ApiClient {
   async getMyProfile(userId: string): Promise<UserProfileResponse> {
     return this.request("/api/users/me", {
       headers: { "X-Clerk-User-Id": userId },
+    });
+  }
+
+  // ---- Workspace Management ----
+
+  async getWorkspaceUsers(opts?: {
+    entityId?: string;
+    limit?: number;
+    offset?: number;
+    search?: string;
+  }): Promise<WorkspaceUsersResponse> {
+    const params = new URLSearchParams();
+    if (opts?.entityId) params.set("entityId", opts.entityId);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    if (opts?.search) params.set("search", opts.search);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/staff${qs}`);
+  }
+
+  async updateWorkspaceUserRole(
+    userId: string,
+    role: UserRole
+  ): Promise<WorkspaceUsersResponse> {
+    return this.request(`/api/staff/${encodeURIComponent(userId)}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  async updateWorkspaceUser(
+    userId: string,
+    data: Partial<{ role: UserRole; active: boolean }>
+  ): Promise<WorkspaceUsersResponse> {
+    return this.request(`/api/staff/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createWorkspaceInvitation(
+    data: CreateWorkspaceInvitationPayload
+  ): Promise<WorkspaceInvitationsResponse> {
+    return this.request("/api/staff/invitations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getWorkspaceInvitations(opts?: {
+    entityId?: string;
+    status?: WorkspaceInvitationStatus;
+    limit?: number;
+    offset?: number;
+  }): Promise<WorkspaceInvitationsResponse> {
+    const params = new URLSearchParams();
+    if (opts?.entityId) params.set("entityId", opts.entityId);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    if (opts?.offset) params.set("offset", String(opts.offset));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/staff/invitations${qs}`);
+  }
+
+  async resendWorkspaceInvitation(
+    invitationId: string
+  ): Promise<WorkspaceInvitationsResponse> {
+    return this.request(
+      `/api/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+      { method: "POST" }
+    );
+  }
+
+  async revokeWorkspaceInvitation(
+    invitationId: string
+  ): Promise<WorkspaceInvitationsResponse> {
+    return this.request(
+      `/api/staff/invitations/${encodeURIComponent(invitationId)}`,
+      { method: "DELETE" }
+    );
+  }
+
+  async getWorkspaceEntitySettings(
+    entityId: string
+  ): Promise<WorkspaceEntitySettingsResponse> {
+    return this.request(`/api/entities/${encodeURIComponent(entityId)}/settings`);
+  }
+
+  async updateWorkspaceEntitySettings(
+    entityId: string,
+    data: UpdateWorkspaceEntitySettingsPayload
+  ): Promise<WorkspaceEntitySettingsResponse> {
+    return this.request(`/api/entities/${encodeURIComponent(entityId)}/settings`, {
+      method: "PUT",
+      body: JSON.stringify(data),
     });
   }
 

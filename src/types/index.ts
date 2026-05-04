@@ -832,6 +832,92 @@ export interface Staff {
   deactivatedAt?: string | null;
 }
 
+export type WorkspaceUserStatus = "active" | "inactive";
+
+/** Staff row enriched for workspace management screens. */
+export interface WorkspaceUser extends Staff {
+  status?: WorkspaceUserStatus;
+  lastActiveAt?: string | null;
+  updatedAt?: string | null;
+  entity?: Entity | null;
+}
+
+export interface WorkspaceUsersResponse {
+  success: boolean;
+  data: {
+    entityId?: string;
+    users: WorkspaceUser[];
+    pagination?: { limit: number; offset: number; total: number };
+  };
+}
+
+export type WorkspaceInvitationStatus =
+  | "pending"
+  | "accepted"
+  | "expired"
+  | "revoked";
+
+export interface WorkspaceInvitation {
+  id: string;
+  entityId?: string | null;
+  email: string;
+  role: UserRole;
+  status: WorkspaceInvitationStatus;
+  invitedById?: string | null;
+  invitedByName?: string | null;
+  invitedByEmail?: string | null;
+  invitedAt: string;
+  expiresAt?: string | null;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+}
+
+export interface WorkspaceInvitationsResponse {
+  success: boolean;
+  data: {
+    entityId?: string;
+    invitations: WorkspaceInvitation[];
+    pagination?: { limit: number; offset: number; total: number };
+  };
+}
+
+export interface WorkspaceBusinessAddress {
+  streetNumber: string | null;
+  streetName: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+  country?: string | null;
+}
+
+/** Entity settings MVP for workspace management. */
+export interface WorkspaceEntitySettings extends Entity {
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  abn?: string | null;
+  address?: WorkspaceBusinessAddress | null;
+}
+
+export interface WorkspaceEntitySettingsResponse {
+  success: boolean;
+  data: { settings: WorkspaceEntitySettings };
+}
+
+export interface UpdateWorkspaceEntitySettingsPayload {
+  name?: string | null;
+  emailPrefix?: string;
+  isActive?: boolean;
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  abn?: string | null;
+  address?: Partial<WorkspaceBusinessAddress> | null;
+}
+
+export interface CreateWorkspaceInvitationPayload {
+  email: string;
+  role: UserRole;
+}
+
 export interface DashboardStats {
   totalPatients: number;
   pendingConsultations: number;
