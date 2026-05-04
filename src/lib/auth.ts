@@ -2,9 +2,10 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { api } from "@/lib/api";
 import {
-  coerceUserRole,
   getEntityIdFromClaims,
+  getEntityIdFromUserMetadata,
   getRoleFromClaims,
+  getRoleFromUserMetadata,
   getUserRole,
 } from "@/lib/auth-claims";
 import type { UserSession } from "@/types";
@@ -19,7 +20,11 @@ export { getUserRole };
 export async function requireAuth() {
   const { userId, sessionClaims } = await auth();
   if (!userId) redirect("/sign-in");
-  return { userId, role: getUserRole(sessionClaims) };
+  const roleFromClaims = getRoleFromClaims(sessionClaims);
+  if (roleFromClaims) return { userId, role: roleFromClaims };
+
+  const user = await currentUser();
+  return { userId, role: getRoleFromUserMetadata(user) ?? "staff" };
 }
 
 /**
@@ -37,8 +42,7 @@ export async function getEntityId(): Promise<string> {
   if (fromClaims) return fromClaims;
 
   const user = await currentUser();
-  const fromUser = user?.publicMetadata?.entityId;
-  return typeof fromUser === "string" ? fromUser : "";
+  return getEntityIdFromUserMetadata(user);
 }
 
 /**
@@ -60,9 +64,7 @@ export async function getCurrentUser(): Promise<UserSession | null> {
   const clerkName = [user.firstName, user.lastName].filter(Boolean).join(" ");
   const email = profile?.email ?? user.emailAddresses[0]?.emailAddress ?? "";
   const role =
-    getRoleFromClaims(sessionClaims) ??
-    coerceUserRole(user.publicMetadata?.role) ??
-    "staff";
+    getRoleFromClaims(sessionClaims) ?? getRoleFromUserMetadata(user) ?? "staff";
   return {
     name: internalName || clerkName || email || "User",
     email,
