@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getUserRole } from "@/lib/auth-claims";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 const isAdminRoute = createRouteMatcher(["/admin(.*)", "/workspace(.*)"]);
@@ -23,7 +24,7 @@ export const proxy = clerkMiddleware(async (auth, req) => {
   // Admin-only route guard
   if (isAdminRoute(req)) {
     const { sessionClaims } = await auth();
-    const role = sessionClaims?.metadata?.role;
+    const role = getUserRole(sessionClaims);
     if (role !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }

@@ -1,19 +1,16 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { api } from "@/lib/api";
-import type { UserRole, UserSession } from "@/types";
+import {
+  coerceUserRole,
+  getEntityIdFromClaims,
+  getRoleFromClaims,
+  getUserRole,
+} from "@/lib/auth-claims";
+import type { UserSession } from "@/types";
 
 export { auth };
-
-/**
- * Extract role from Clerk session claims (customized in Clerk dashboard).
- * Falls back to "staff" when no role metadata is set.
- */
-export function getUserRole(sessionClaims: CustomJwtSessionClaims | null): UserRole {
-  const role = sessionClaims?.metadata?.role;
-  if (role === "admin" || role === "doctor" || role === "staff") return role;
-  return "staff";
-}
+export { getUserRole };
 
 /**
  * Require an authenticated user in a Server Component or Route Handler.
@@ -36,7 +33,7 @@ export async function requireAuth() {
  */
 export async function getEntityId(): Promise<string> {
   const { sessionClaims } = await auth();
-  const fromClaims = sessionClaims?.metadata?.entityId;
+  const fromClaims = getEntityIdFromClaims(sessionClaims);
   if (fromClaims) return fromClaims;
 
   const user = await currentUser();
@@ -49,6 +46,7 @@ export async function getEntityId(): Promise<string> {
  * Returns null if not authenticated.
  */
 export async function getCurrentUser(): Promise<UserSession | null> {
+  const { sessionClaims } = await auth();
   const user = await currentUser();
   if (!user) return null;
 
@@ -61,7 +59,10 @@ export async function getCurrentUser(): Promise<UserSession | null> {
     .join(" ");
   const clerkName = [user.firstName, user.lastName].filter(Boolean).join(" ");
   const email = profile?.email ?? user.emailAddresses[0]?.emailAddress ?? "";
-  const role = (user.publicMetadata?.role as UserRole) ?? "staff";
+  const role =
+    getRoleFromClaims(sessionClaims) ??
+    coerceUserRole(user.publicMetadata?.role) ??
+    "staff";
   return {
     name: internalName || clerkName || email || "User",
     email,
