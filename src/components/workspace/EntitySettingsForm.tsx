@@ -24,7 +24,10 @@ import { Separator } from "@/components/ui/separator";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import { useUpdateWorkspaceEntitySettings } from "@/lib/hooks/use-workspace";
-import type { UpdateWorkspaceEntitySettingsPayload, WorkspaceEntitySettings } from "@/types";
+import type {
+  UpdateWorkspaceEntitySettingsPayload,
+  WorkspaceEntitySettings,
+} from "@/types";
 
 const AU_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const;
 const ACTIVE_STATUS = ["active", "inactive"] as const;

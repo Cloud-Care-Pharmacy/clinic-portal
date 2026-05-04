@@ -851,11 +851,7 @@ export interface WorkspaceUsersResponse {
   };
 }
 
-export type WorkspaceInvitationStatus =
-  | "pending"
-  | "accepted"
-  | "expired"
-  | "revoked";
+export type WorkspaceInvitationStatus = "pending" | "accepted" | "expired" | "revoked";
 
 export interface WorkspaceInvitation {
   id: string;
