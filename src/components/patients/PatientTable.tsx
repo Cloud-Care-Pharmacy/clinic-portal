@@ -422,6 +422,10 @@ export function PatientTable({
             router.push(`/patients/${params.row.id}`, { scroll: false })
           }
           slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
             row: {
               onMouseEnter: (event) => {
                 const id = (event.currentTarget as HTMLElement).getAttribute("data-id");
