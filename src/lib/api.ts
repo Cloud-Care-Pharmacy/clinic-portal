@@ -266,11 +266,11 @@ class ApiClient {
 
   async completeTask(
     taskId: string,
-    data?: { note?: string; outcome?: string }
+    data?: { note?: string }
   ): Promise<TaskResponse> {
-    return this.request(`/api/tasks/${encodeURIComponent(taskId)}/complete`, {
-      method: "POST",
-      body: JSON.stringify(data ?? {}),
+    return this.request(`/api/tasks/${encodeURIComponent(taskId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "completed", note: data?.note }),
     });
   }
 

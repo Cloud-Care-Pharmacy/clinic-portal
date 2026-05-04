@@ -180,7 +180,6 @@ function taskNoteForOutcome(
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
-  const currentUserId = user?.id;
   // Internal `users.id` (NOT Clerk's authId) — required for consultations.doctorId.
   const profileQuery = useProfile();
   const currentInternalUserId = profileQuery.data?.data?.profile?.id;
@@ -278,6 +277,15 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
 
   async function claimTaskIds(ids: string[], action: "claim" | "claim_and_start") {
     if (ids.length === 0) return;
+    if (!currentInternalUserId) {
+      toast.error(
+        profileQuery.isLoading
+          ? "Your staff profile is still loading. Try again in a moment."
+          : "Unable to claim tasks because your staff profile was not found."
+      );
+      return;
+    }
+
     const pending: Record<string, { assignee: boolean; status: boolean }> = {};
     for (const id of ids) {
       pending[id] = {
@@ -289,7 +297,11 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     setPendingActionIds((prev) => Array.from(new Set([...prev, ...ids])));
 
     try {
-      const result = await claimTasksMutation.mutateAsync({ taskIds: ids, action });
+      const result = await claimTasksMutation.mutateAsync({
+        taskIds: ids,
+        action,
+        assignedUserId: currentInternalUserId,
+      });
       showBulkClaimResult(result);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to claim tasks.");
@@ -344,12 +356,22 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   }
 
   async function handleManualLog(task: Task) {
+    if (!currentInternalUserId) {
+      toast.error(
+        profileQuery.isLoading
+          ? "Your staff profile is still loading. Try again in a moment."
+          : "Unable to log an outcome because your staff profile was not found."
+      );
+      return;
+    }
+
     setPendingActionIds((prev) => Array.from(new Set([...prev, task.taskId])));
     try {
       if (isUnassigned(task)) {
         await claimTasksMutation.mutateAsync({
           taskIds: [task.taskId],
           action: "claim",
+          assignedUserId: currentInternalUserId,
         });
       }
       setOutcomeState({
@@ -502,7 +524,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                 <TaskQueueBulkActions
                   selectedCount={effectiveSelectedIds.length}
                   pending={claimTasksMutation.isPending}
-                  canClaim={Boolean(currentUserId)}
+                  canClaim={Boolean(currentInternalUserId)}
                   onClear={() => setSelectedIds([])}
                   onClaim={handleClaimSelected}
                 />

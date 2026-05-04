@@ -6,9 +6,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type {
-  BulkClaimTasksRequest,
-  BulkClaimTasksResponse,
   BulkTaskResult,
+  BulkUpdateTasksResponse,
+  ClaimTasksRequest,
   CreateTaskPayload,
   Task,
   TaskQueuePresetsResponse,
@@ -194,10 +194,10 @@ async function completeTask({
   taskId: string;
   note?: string;
 }): Promise<TaskResponse> {
-  const res = await fetch(`/api/proxy/tasks/${encodeURIComponent(taskId)}/complete`, {
-    method: "POST",
+  const res = await fetch(`/api/proxy/tasks/${encodeURIComponent(taskId)}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ note }),
+    body: JSON.stringify({ status: "completed", note }),
   });
   await assertTaskResponse(res, "Failed to complete task");
   return res.json();
@@ -388,11 +388,23 @@ export function useCompleteTask() {
   });
 }
 
-async function claimTasks(body: BulkClaimTasksRequest): Promise<BulkTaskResult> {
-  const res = await fetch("/api/proxy/tasks/bulk-claim", {
-    method: "POST",
+async function claimTasks({
+  taskIds,
+  action,
+  assignedUserId,
+}: ClaimTasksRequest): Promise<BulkTaskResult> {
+  const res = await fetch("/api/proxy/tasks", {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      taskIds,
+      changes: {
+        assignedUserId,
+        assignedRole: null,
+        ...(action === "claim_and_start" ? { status: "in_progress" } : {}),
+      },
+      note: action === "claim_and_start" ? "Tasks claimed and started" : "Tasks claimed",
+    }),
   });
 
   if (!res.ok) {
@@ -400,11 +412,23 @@ async function claimTasks(body: BulkClaimTasksRequest): Promise<BulkTaskResult> 
   }
 
   const payload = (await res.json()) as
-    | BulkClaimTasksResponse
-    | { success: false; error?: string };
+    | BulkUpdateTasksResponse
+    | { success: false; error?: string; details?: string };
   if (!payload.success)
-    throw new TaskApiError(payload.error ?? "Failed to claim tasks", res.status);
-  return payload.data;
+    throw new TaskApiError(
+      payload.details ?? payload.error ?? "Failed to claim tasks",
+      res.status
+    );
+
+  return {
+    action,
+    requested: payload.data.requested,
+    claimed: payload.data.updated,
+    started: action === "claim_and_start" ? payload.data.updated : [],
+    skipped: [],
+    failed: payload.data.failed,
+    tasks: payload.data.tasks,
+  };
 }
 
 export function useClaimTasks() {
