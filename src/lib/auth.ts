@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { api } from "@/lib/api";
 import type { UserRole, UserSession } from "@/types";
 
 export { auth };
@@ -51,10 +52,19 @@ export async function getCurrentUser(): Promise<UserSession | null> {
   const user = await currentUser();
   if (!user) return null;
 
+  const profile = await api
+    .getMyProfile(user.id)
+    .then((response) => response.data.profile)
+    .catch(() => null);
+  const internalName = [profile?.firstName, profile?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  const clerkName = [user.firstName, user.lastName].filter(Boolean).join(" ");
+  const email = profile?.email ?? user.emailAddresses[0]?.emailAddress ?? "";
   const role = (user.publicMetadata?.role as UserRole) ?? "staff";
   return {
-    name: [user.firstName, user.lastName].filter(Boolean).join(" ") || "User",
-    email: user.emailAddresses[0]?.emailAddress ?? "",
+    name: internalName || clerkName || email || "User",
+    email,
     image: user.imageUrl,
     role,
   };
