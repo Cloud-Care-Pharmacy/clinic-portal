@@ -16,6 +16,16 @@ declare global {
       role?: UserRole;
       entityId?: string;
     };
+    publicMetadata?: {
+      role?: UserRole;
+      entityId?: string;
+    };
+    public_metadata?: {
+      role?: UserRole;
+      entityId?: string;
+    };
+    role?: UserRole;
+    entityId?: string;
   }
 }
 
