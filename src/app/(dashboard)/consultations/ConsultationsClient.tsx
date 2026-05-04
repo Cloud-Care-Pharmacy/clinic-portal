@@ -183,6 +183,7 @@ export function ConsultationsClient({
             <ConsultationTable
               consultations={consultations}
               loading={isLoading || isFetching}
+              resultCountLoading={isLoading || isFetching}
               onRowClick={setSelected}
               onSchedule={() => setSheetOpen(true)}
               searchQuery={searchQuery}

@@ -63,6 +63,7 @@ export function PatientsClient({ entityId, initialPatients }: PatientsClientProp
             patients={data?.data?.patients ?? []}
             total={data?.data?.pagination.total}
             loading={isLoading || isFetching}
+            resultCountLoading={isLoading || isFetching}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             statusFilters={statusFilters}
