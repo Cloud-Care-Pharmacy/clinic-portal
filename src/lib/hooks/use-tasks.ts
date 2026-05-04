@@ -256,12 +256,13 @@ export function usePatientTasks(
   });
 }
 
-export function useTask(taskId: string | undefined, initialData?: TaskResponse) {
+export function useTask(taskId: string | undefined, previewData?: TaskResponse) {
   return useQuery({
     queryKey: ["task", taskId ?? ""],
     queryFn: () => fetchTask(taskId!),
     enabled: Boolean(taskId),
-    initialData,
+    placeholderData: previewData,
+    refetchOnMount: "always",
   });
 }
 
@@ -403,7 +404,8 @@ async function claimTasks({
         assignedRole: null,
         ...(action === "claim_and_start" ? { status: "in_progress" } : {}),
       },
-      note: action === "claim_and_start" ? "Tasks claimed and started" : "Tasks claimed",
+      note:
+        action === "claim_and_start" ? "Tasks claimed and started" : "Tasks claimed",
     }),
   });
 

@@ -637,12 +637,24 @@ export interface TaskEvent {
   taskId: string;
   patientId: string;
   eventType:
+    | "created"
+    | "assigned"
+    | "started"
+    | "completed"
+    | "cancelled"
+    | "updated"
+    | "deleted"
+    | "priority_escalated"
+    | "reassigned"
+    | "snoozed"
+    | "status_changed"
     | "task-created"
     | "task-assigned"
     | "task-started"
     | "task-completed"
     | "task-cancelled"
-    | "task-updated";
+    | "task-updated"
+    | "task-deleted";
   actorUserId?: string | null;
   actorName?: string | null;
   actorRole?: UserRole | "system" | null;
