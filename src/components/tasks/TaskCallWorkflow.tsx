@@ -6,7 +6,9 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  ExternalLink,
   FileText,
+  Pill,
   UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import {
@@ -256,6 +259,7 @@ export function TaskCallDialog({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [discardNotesOpen, setDiscardNotesOpen] = useState(false);
+  const [prescriptionOpen, setPrescriptionOpen] = useState(false);
   const patientQuery = usePatient(task?.patientId);
   const hasUnsavedNotes = notes.trim().length > 0;
 
@@ -465,11 +469,22 @@ export function TaskCallDialog({
                 </div>
               </DialogFooter>
             </div>
-
-            {detailsOpen && <TaskPatientDetails task={task} />}
+            {detailsOpen && (
+              <TaskPatientDetails
+                task={task}
+                openPrescriptionAction={() => setPrescriptionOpen(true)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
+
+      <ParchmentRedirectDialog
+        open={prescriptionOpen}
+        onOpenChange={setPrescriptionOpen}
+        patientId={task.patientId}
+        patientName={patientName}
+      />
 
       <AlertDialog open={discardNotesOpen} onOpenChange={setDiscardNotesOpen}>
         <AlertDialogContent>
@@ -492,10 +507,14 @@ export function TaskCallDialog({
   );
 }
 
-function TaskPatientDetails({ task }: { task: Task }) {
+function TaskPatientDetails({
+  task,
+  openPrescriptionAction,
+}: {
+  task: Task;
+  openPrescriptionAction: () => void;
+}) {
   const conditions = taskMetadataList(task, ["conditions", "medicalConditions"]);
-  const medications = taskMetadataList(task, ["medications", "activeMedications"]);
-  const allergies = taskMetadataList(task, ["allergies"]);
 
   return (
     <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-card">
@@ -513,12 +532,7 @@ function TaskPatientDetails({ task }: { task: Task }) {
         items={conditions}
         empty="None recorded"
       />
-      <DetailSection
-        title="Active medications"
-        items={medications}
-        empty="None recorded"
-      />
-      <DetailSection title="Allergies" items={allergies} empty="None recorded" />
+      <PrescriptionActionSection onNewPrescription={openPrescriptionAction} />
       <section className="border-b border-border p-4">
         <p className={OVERLINE_CLASS}>Due</p>
         <p className="mt-2 text-sm font-medium">{formatTaskDate(task.dueAt)}</p>
@@ -533,6 +547,31 @@ function TaskPatientDetails({ task }: { task: Task }) {
         </p>
       </section>
     </aside>
+  );
+}
+
+function PrescriptionActionSection({
+  onNewPrescription,
+}: {
+  onNewPrescription: () => void;
+}) {
+  return (
+    <section className="border-b border-border p-4">
+      <p className={OVERLINE_CLASS}>Prescriptions</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Start a new Parchment prescribing session for this patient.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        className="mt-3 h-9 w-full justify-start rounded-xl px-3 text-sm"
+        onClick={onNewPrescription}
+      >
+        <Pill className="size-4" />
+        New prescription
+        <ExternalLink className="ml-auto size-3.5 text-muted-foreground" />
+      </Button>
+    </section>
   );
 }
 
