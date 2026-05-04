@@ -423,6 +423,12 @@ export function ConsultationTable({
           rows={visibleConsultations}
           columns={columns}
           loading={loading}
+          slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
+          }}
           autoHeight
           disableRowSelectionOnClick
           paginationMode="server"

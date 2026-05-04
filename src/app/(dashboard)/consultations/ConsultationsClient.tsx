@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { GridPaginationModel } from "@mui/x-data-grid";
 import { CalendarDays, Table2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SegmentedControl } from "@/components/shared/SegmentedControl";
@@ -174,13 +173,7 @@ export function ConsultationsClient({
         }
       />
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
           Failed to load consultations: {error.message}
         </div>
