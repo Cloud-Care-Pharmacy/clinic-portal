@@ -96,8 +96,7 @@ export function WorkspaceInvitationsTable({
         label: "Status",
         options: STATUS_OPTIONS,
         value: statusFilters,
-        onChange: (value) =>
-          setStatusFilters(value as WorkspaceInvitationStatus[]),
+        onChange: (value) => setStatusFilters(value as WorkspaceInvitationStatus[]),
         formatOption: (option) =>
           WORKSPACE_INVITATION_STATUS_LABELS[option as WorkspaceInvitationStatus],
       },
@@ -111,10 +110,7 @@ export function WorkspaceInvitationsTable({
         if (roleFilters.length > 0 && !roleFilters.includes(invitation.role)) {
           return false;
         }
-        if (
-          statusFilters.length > 0 &&
-          !statusFilters.includes(invitation.status)
-        ) {
+        if (statusFilters.length > 0 && !statusFilters.includes(invitation.status)) {
           return false;
         }
 
@@ -163,9 +159,7 @@ export function WorkspaceInvitationsTable({
       headerName: "Status",
       width: 132,
       renderCell: (params) => (
-        <StatusBadge
-          variant={WORKSPACE_INVITATION_STATUS_VARIANTS[params.row.status]}
-        >
+        <StatusBadge variant={WORKSPACE_INVITATION_STATUS_VARIANTS[params.row.status]}>
           {WORKSPACE_INVITATION_STATUS_LABELS[params.row.status]}
         </StatusBadge>
       ),
@@ -192,8 +186,7 @@ export function WorkspaceInvitationsTable({
       field: "expiresAt",
       headerName: "Expires at",
       width: 140,
-      valueFormatter: (value: string | null | undefined) =>
-        formatWorkspaceDate(value),
+      valueFormatter: (value: string | null | undefined) => formatWorkspaceDate(value),
     },
     {
       field: "actions",
@@ -231,7 +224,12 @@ export function WorkspaceInvitationsTable({
     );
   }
 
-  if (!loading && invitations.length === 0 && !searchQuery && roleFilters.length === 0) {
+  if (
+    !loading &&
+    invitations.length === 0 &&
+    !searchQuery &&
+    roleFilters.length === 0
+  ) {
     return (
       <EmptyState
         icon={MailPlus}

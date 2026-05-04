@@ -271,10 +271,7 @@ class ApiClient {
     });
   }
 
-  async completeTask(
-    taskId: string,
-    data?: { note?: string }
-  ): Promise<TaskResponse> {
+  async completeTask(taskId: string, data?: { note?: string }): Promise<TaskResponse> {
     return this.request(`/api/tasks/${encodeURIComponent(taskId)}`, {
       method: "PATCH",
       body: JSON.stringify({ status: "completed", note: data?.note }),
@@ -498,10 +495,9 @@ class ApiClient {
   async revokeWorkspaceInvitation(
     invitationId: string
   ): Promise<WorkspaceInvitationsResponse> {
-    return this.request(
-      `/api/staff/invitations/${encodeURIComponent(invitationId)}`,
-      { method: "DELETE" }
-    );
+    return this.request(`/api/staff/invitations/${encodeURIComponent(invitationId)}`, {
+      method: "DELETE",
+    });
   }
 
   async getWorkspaceEntitySettings(
