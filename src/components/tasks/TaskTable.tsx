@@ -517,6 +517,12 @@ export function TaskTable({
           columns={columns}
           getRowId={(row) => row.taskId}
           loading={loading}
+          slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
+          }}
           autoHeight
           pagination
           checkboxSelection={selectionEnabled}

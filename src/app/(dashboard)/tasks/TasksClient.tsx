@@ -9,7 +9,6 @@ import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { MeModeToggle } from "@/components/tasks/MeModeToggle";
 import { TaskDetailSheet } from "@/components/tasks/TaskDetailSheet";
 import { TaskTable } from "@/components/tasks/TaskTable";
@@ -263,6 +262,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     }
     return counts;
   }, [currentInternalUserId, meModeActive, summaryTasks, presets]);
+  const presetCountsLoading = isLoading || presetsQuery.isLoading || profileQuery.isLoading;
 
   function applyPreset(preset: TaskQueuePresetDef) {
     setActivePreset(preset.id);
@@ -459,13 +459,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       </p>
 
       <ErrorBoundary>
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Skeleton key={index} className="h-14 w-full" />
-            ))}
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
             Failed to load tasks: {error.message}
           </div>
@@ -499,6 +493,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
                 presets={presets}
                 activePreset={activePreset}
                 counts={presetCounts}
+                countsLoading={presetCountsLoading}
                 onPresetChange={applyPreset}
               />
             }

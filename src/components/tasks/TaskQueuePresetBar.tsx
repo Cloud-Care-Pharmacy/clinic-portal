@@ -10,6 +10,7 @@ import {
   Clock,
   type LucideIcon,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { TaskQueuePresetDef, TaskQueuePresetTone } from "@/types";
 
@@ -24,6 +25,7 @@ interface TaskQueuePresetBarProps {
   presets: TaskQueuePresetDef[];
   activePreset: string;
   counts: Record<string, number>;
+  countsLoading?: boolean;
   onPresetChange: (preset: TaskQueuePresetDef) => void;
 }
 
@@ -74,6 +76,7 @@ export function TaskQueuePresetBar({
   presets,
   activePreset,
   counts,
+  countsLoading = false,
   onPresetChange,
 }: TaskQueuePresetBarProps) {
   return (
@@ -85,6 +88,7 @@ export function TaskQueuePresetBar({
           tone={preset.tone}
           icon={iconFor(preset.icon)}
           count={counts[preset.id] ?? 0}
+          countLoading={countsLoading}
           onClick={() => onPresetChange(preset)}
         >
           {preset.label}
@@ -99,6 +103,7 @@ function PresetButton({
   tone,
   icon: Icon,
   count,
+  countLoading,
   onClick,
   children,
 }: {
@@ -106,6 +111,7 @@ function PresetButton({
   tone: TaskQueuePresetTone;
   icon: LucideIcon;
   count: number;
+  countLoading: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -139,8 +145,11 @@ function PresetButton({
       <Icon className="size-3.5" />
       <span>{children}</span>
       <span
+        aria-label={
+          countLoading ? "Loading task count" : `${count} task${count === 1 ? "" : "s"}`
+        }
         className={cn(
-          "rounded-full px-1.5 font-mono text-xs font-semibold tabular-nums",
+          "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-xs font-semibold tabular-nums",
           !active && "bg-muted text-muted-foreground",
           active && tone === "warning" && "bg-status-warning-fg text-status-warning-bg",
           active && tone === "success" && "bg-status-success-fg text-status-success-bg",
@@ -152,7 +161,18 @@ function PresetButton({
             "bg-primary-foreground/20 text-primary-foreground"
         )}
       >
-        {count}
+        {countLoading ? (
+          <Skeleton
+            className={cn(
+              "h-2.5 w-3.5 rounded-full",
+              !active && "bg-muted-foreground/20",
+              active && tone === "primary" && "bg-primary-foreground/50",
+              active && tone !== "primary" && "bg-background/45"
+            )}
+          />
+        ) : (
+          count
+        )}
       </span>
     </button>
   );
