@@ -21,9 +21,13 @@ export interface ParchmentPrescriptionLinkResponse {
   };
 }
 
-const PARCHMENT_PATIENT_URL_BASE = "https://portal.parchment.health/dashboard/patients";
+const PARCHMENT_PATIENT_URL_BASE = process.env.NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE;
 
 export function buildParchmentPatientUrl(parchmentPatientId: string): string {
+  if (!PARCHMENT_PATIENT_URL_BASE) {
+    throw new Error("Missing NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE");
+  }
+
   return `${PARCHMENT_PATIENT_URL_BASE}/${encodeURIComponent(parchmentPatientId)}`;
 }
 

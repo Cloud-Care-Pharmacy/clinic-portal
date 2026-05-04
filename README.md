@@ -64,6 +64,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `GOOGLE_CLIENT_SECRET`          | Google OAuth Client Secret                                                                  | Yes      |
 | `NEXT_PUBLIC_API_URL`           | Backend API URL (prescription-gateway)                                                      | Yes      |
 | `API_SECRET`                    | API key matching `API_SECRET` in prescription-gateway                                       | Yes      |
+| `NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE` | Parchment patient portal base URL from Vercel env; use sandbox for local/dev environments | Yes      |
 | `ADMIN_EMAILS`                  | Comma-separated admin emails                                                                | No       |
 | `DOCTOR_EMAILS`                 | Comma-separated doctor emails                                                               | No       |
 
