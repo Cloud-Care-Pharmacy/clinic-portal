@@ -764,6 +764,23 @@ export interface BulkClaimTasksRequest {
   action: BulkTaskAction;
 }
 
+export interface ClaimTasksRequest extends BulkClaimTasksRequest {
+  /** Internal users.id UUID. Do not send Clerk authId here. */
+  assignedUserId: string;
+}
+
+export interface BulkUpdateTasksResult {
+  requested: number;
+  updated: string[];
+  failed: Array<{ taskId: string; error: string }>;
+  tasks: Task[];
+}
+
+export interface BulkUpdateTasksResponse {
+  success: true;
+  data: BulkUpdateTasksResult;
+}
+
 export interface BulkTaskResult {
   action: BulkTaskAction;
   requested: number;

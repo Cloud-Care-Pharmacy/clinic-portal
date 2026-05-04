@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -43,6 +42,7 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
+import { useProfile } from "@/lib/hooks/use-profile";
 import type { Task, TaskEvent, TaskResponse } from "@/types";
 import {
   formatTaskDateTime,
@@ -98,7 +98,8 @@ export function TaskDetailSheet({
   onScheduleConsultation,
 }: TaskDetailSheetProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
-  const { user } = useUser();
+  const profileQuery = useProfile();
+  const currentInternalUserId = profileQuery.data?.data?.profile?.id;
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
   const { data } = useTask(task?.taskId, buildInitialResponse(task));
@@ -143,15 +144,19 @@ export function TaskDetailSheet({
   }
 
   function handleClaim() {
-    if (!user?.id) {
-      toast.error("Unable to claim task without a signed-in user");
+    if (!currentInternalUserId) {
+      toast.error(
+        profileQuery.isLoading
+          ? "Your staff profile is still loading. Try again in a moment."
+          : "Unable to claim task because your staff profile was not found."
+      );
       return;
     }
 
     handleUpdate(
       {
         taskId: activeTask.taskId,
-        assignedUserId: user.id,
+        assignedUserId: currentInternalUserId,
         assignedRole: null,
         note: "Task claimed",
       },
@@ -222,7 +227,10 @@ export function TaskDetailSheet({
               <DropdownMenuContent align="start" side="top" className="w-56">
                 {canAction && (
                   <>
-                    <DropdownMenuItem disabled={!user?.id} onClick={handleClaim}>
+                    <DropdownMenuItem
+                      disabled={!currentInternalUserId}
+                      onClick={handleClaim}
+                    >
                       <UserCheck className="h-4 w-4" />
                       Claim
                     </DropdownMenuItem>
