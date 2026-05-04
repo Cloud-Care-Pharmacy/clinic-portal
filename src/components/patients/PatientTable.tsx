@@ -49,6 +49,7 @@ interface PatientTableProps {
   patients: PatientMapping[];
   total?: number;
   loading?: boolean;
+  resultCountLoading?: boolean;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   statusFilters: PatientPmsStatusFilter[];
@@ -141,6 +142,7 @@ export function PatientTable({
   patients,
   total,
   loading,
+  resultCountLoading = false,
   searchQuery,
   onSearchChange,
   statusFilters,
@@ -337,6 +339,7 @@ export function PatientTable({
       resultCount={
         hasActiveFilters ? visiblePatients.length : (total ?? patients.length)
       }
+      resultCountLoading={resultCountLoading}
       resultLabel="patients"
       trailing={
         <>
