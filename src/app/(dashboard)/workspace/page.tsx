@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import { getEntityId, requireAuth } from "@/lib/auth";
 
 export default async function WorkspacePage() {
-  const { role } = await requireAuth();
+  const { role, userId } = await requireAuth();
   if (role !== "admin") redirect("/dashboard");
 
   const entityId = await getEntityId();
@@ -12,10 +12,17 @@ export default async function WorkspacePage() {
     await Promise.all([
       entityId ? api.getEntity(entityId).catch(() => undefined) : undefined,
       api
-        .getWorkspaceUsers({ entityId: entityId || undefined, limit: 100, offset: 0 })
+        .getWorkspaceUsers({
+          clerkUserId: userId,
+          entityId: entityId || undefined,
+          includeDeactivated: true,
+          limit: 100,
+          offset: 0,
+        })
         .catch(() => undefined),
       api
         .getWorkspaceInvitations({
+          clerkUserId: userId,
           entityId: entityId || undefined,
           status: "pending",
           limit: 100,
@@ -23,7 +30,7 @@ export default async function WorkspacePage() {
         })
         .catch(() => undefined),
       entityId
-        ? api.getWorkspaceEntitySettings(entityId).catch(() => undefined)
+        ? api.getWorkspaceEntitySettings(entityId, userId).catch(() => undefined)
         : undefined,
     ]);
 

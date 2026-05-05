@@ -32,6 +32,7 @@ type FormData = z.infer<typeof schema>;
 interface InviteUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  entityId?: string;
   backendUnavailable?: boolean;
 }
 
@@ -43,6 +44,7 @@ const DEFAULT_VALUES: FormData = {
 export function InviteUserSheet({
   open,
   onOpenChange,
+  entityId,
   backendUnavailable,
 }: InviteUserSheetProps) {
   const formId = useId();
@@ -90,6 +92,7 @@ export function InviteUserSheet({
       {
         email: result.data.email,
         role: result.data.role as UserRole,
+        ...(entityId ? { entityId } : {}),
       },
       {
         onSuccess: () => {
@@ -109,7 +112,7 @@ export function InviteUserSheet({
       open={open}
       onOpenChange={requestOpenChange}
       title="Invite user"
-      description="Send a workspace invitation once the backend invitation endpoint is available."
+      description="Send a workspace invitation for this entity. Clerk will email the invite when notifications are enabled on the backend."
       footer={
         <>
           <Button
@@ -133,8 +136,8 @@ export function InviteUserSheet({
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {backendUnavailable ? (
           <div className="rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
-            Invitation submission is disabled until POST /api/staff/invitations is
-            available.
+            Invitation submission is disabled because the invitation endpoint is not
+            currently reachable.
           </div>
         ) : null}
 

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { MailPlus, MoreHorizontal, RotateCcw, UserRoundMinus } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +15,15 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import {
+  useResendWorkspaceInvitation,
+  useRevokeWorkspaceInvitation,
+} from "@/lib/hooks/use-workspace";
 import { matchesSearchQuery } from "@/lib/table-search";
 import type { UserRole, WorkspaceInvitation, WorkspaceInvitationStatus } from "@/types";
 import {
   formatWorkspaceDate,
+  getWorkspaceInvitationId,
   WORKSPACE_INVITATION_STATUS_LABELS,
   WORKSPACE_INVITATION_STATUS_VARIANTS,
   WORKSPACE_ROLE_LABELS,
@@ -26,9 +32,7 @@ import {
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
 const STATUS_OPTIONS: WorkspaceInvitationStatus[] = [
-  "pending",
-  "accepted",
-  "expired",
+  "invited",
   "revoked",
 ];
 
@@ -36,6 +40,7 @@ interface WorkspaceInvitationsTableProps {
   invitations: WorkspaceInvitation[];
   loading?: boolean;
   unavailableMessage?: string;
+  onInvite?: () => void;
 }
 
 function invitationInviter(invitation: WorkspaceInvitation) {
@@ -43,11 +48,39 @@ function invitationInviter(invitation: WorkspaceInvitation) {
     invitation.invitedByName ||
     invitation.invitedByEmail ||
     invitation.invitedById ||
+    invitation.invitedBy ||
     "—"
   );
 }
 
-function InvitationActionsCell() {
+function InvitationActionsCell({ invitation }: { invitation: WorkspaceInvitation }) {
+  const resendInvitation = useResendWorkspaceInvitation();
+  const revokeInvitation = useRevokeWorkspaceInvitation();
+  const invitationId = getWorkspaceInvitationId(invitation);
+  const canManage =
+    Boolean(invitationId) &&
+    (invitation.status === "pending" || invitation.status === "invited");
+  const isPending = resendInvitation.isPending || revokeInvitation.isPending;
+
+  function resendInvite() {
+    resendInvitation.mutate(invitationId, {
+      onSuccess: () => toast.success("Invitation resent"),
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : "Failed to resend invite");
+      },
+    });
+  }
+
+  function revokeInvite() {
+    if (!window.confirm("Revoke this workspace invitation?")) return;
+    revokeInvitation.mutate(invitationId, {
+      onSuccess: () => toast.success("Invite revoked"),
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : "Failed to revoke invite");
+      },
+    });
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -58,14 +91,27 @@ function InvitationActionsCell() {
         <MoreHorizontal className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="w-64">
-        <DropdownMenuItem disabled>
+        <DropdownMenuItem
+          disabled={!canManage || isPending}
+          onClick={(event) => {
+            event.stopPropagation();
+            resendInvite();
+          }}
+        >
           <RotateCcw />
-          Resend invite when backend is ready
+          Resend invite
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled variant="destructive">
+        <DropdownMenuItem
+          disabled={!canManage || isPending}
+          variant="destructive"
+          onClick={(event) => {
+            event.stopPropagation();
+            revokeInvite();
+          }}
+        >
           <UserRoundMinus />
-          Revoke invite when backend is ready
+          Revoke invite
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -76,6 +122,7 @@ export function WorkspaceInvitationsTable({
   invitations,
   loading,
   unavailableMessage,
+  onInvite,
 }: WorkspaceInvitationsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
@@ -120,7 +167,7 @@ export function WorkspaceInvitationsTable({
           invitation.status,
           invitationInviter(invitation),
           invitation.invitedAt,
-          invitation.expiresAt,
+          invitation.clerkInvitationId,
         ]);
       }),
     [invitations, roleFilters, searchQuery, statusFilters]
@@ -183,18 +230,12 @@ export function WorkspaceInvitationsTable({
       valueFormatter: (value: string | undefined) => formatWorkspaceDate(value),
     },
     {
-      field: "expiresAt",
-      headerName: "Expires at",
-      width: 140,
-      valueFormatter: (value: string | null | undefined) => formatWorkspaceDate(value),
-    },
-    {
       field: "actions",
       headerName: "",
       width: 72,
       sortable: false,
       filterable: false,
-      renderCell: () => <InvitationActionsCell />,
+      renderCell: (params) => <InvitationActionsCell invitation={params.row} />,
     },
   ];
 
@@ -234,7 +275,9 @@ export function WorkspaceInvitationsTable({
       <EmptyState
         icon={MailPlus}
         title="No pending invitations"
-        description="Invitations sent to new workspace users will appear here once the backend endpoint is available."
+        description="Invite a workspace user to grant access to this portal."
+        actionLabel={onInvite ? "Invite user" : undefined}
+        onAction={onInvite}
         dashed
       />
     );
@@ -269,6 +312,7 @@ export function WorkspaceInvitationsTable({
           disableColumnMenu
           columnHeaderHeight={44}
           rowHeight={64}
+          getRowId={(row) => getWorkspaceInvitationId(row)}
           pageSizeOptions={[10, 25, 50]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           sx={dataGridSx}

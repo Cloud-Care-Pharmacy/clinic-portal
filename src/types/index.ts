@@ -68,6 +68,7 @@ export interface IntakeFormData {
 export interface Entity {
   id: string;
   shopifyDomain: string;
+  tenantDomain?: string | null;
   name: string | null;
   emailPrefix: string;
   isActive: boolean;
@@ -832,13 +833,32 @@ export interface Staff {
   deactivatedAt?: string | null;
 }
 
-export type WorkspaceUserStatus = "active" | "inactive";
+export type WorkspaceUserStatus = "active" | "inactive" | "invited" | "revoked";
 
-/** Staff row enriched for workspace management screens. */
-export interface WorkspaceUser extends Staff {
-  status?: WorkspaceUserStatus;
+/** Workspace staff row from GET /api/users or GET /api/staff. */
+export interface WorkspaceUser {
+  id: string;
+  authId: string | null;
+  role: UserRole | null;
+  status: WorkspaceUserStatus;
+  entityId?: string | null;
+  name?: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  invitedEmail?: string | null;
+  invitedAt?: string | null;
+  invitedBy?: string | null;
+  phone: string | null;
+  avatarUrl?: string | null;
+  lastSignInAt?: string | null;
   lastActiveAt?: string | null;
+  active?: boolean;
+  practitioner?: PractitionerProfile | null;
+  createdAt: string;
   updatedAt?: string | null;
+  deactivatedAt?: string | null;
+  deactivatedBy?: string | null;
   entity?: Entity | null;
 }
 
@@ -851,14 +871,23 @@ export interface WorkspaceUsersResponse {
   };
 }
 
-export type WorkspaceInvitationStatus = "pending" | "accepted" | "expired" | "revoked";
+export type WorkspaceInvitationStatus =
+  | "pending"
+  | "invited"
+  | "accepted"
+  | "expired"
+  | "revoked";
+
+export type WorkspaceInvitationQueryStatus = "pending" | "invited" | "revoked";
 
 export interface WorkspaceInvitation {
-  id: string;
+  invitationId: string;
+  id?: string;
   entityId?: string | null;
   email: string;
   role: UserRole;
   status: WorkspaceInvitationStatus;
+  invitedBy?: string | null;
   invitedById?: string | null;
   invitedByName?: string | null;
   invitedByEmail?: string | null;
@@ -866,6 +895,7 @@ export interface WorkspaceInvitation {
   expiresAt?: string | null;
   acceptedAt?: string | null;
   revokedAt?: string | null;
+  clerkInvitationId?: string | null;
 }
 
 export interface WorkspaceInvitationsResponse {
@@ -887,7 +917,15 @@ export interface WorkspaceBusinessAddress {
 }
 
 /** Entity settings MVP for workspace management. */
-export interface WorkspaceEntitySettings extends Entity {
+export interface WorkspaceEntitySettings {
+  id: string;
+  name: string | null;
+  tenantDomain?: string | null;
+  shopifyDomain?: string | null;
+  emailPrefix: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
   businessPhone?: string | null;
   businessEmail?: string | null;
   abn?: string | null;
@@ -900,8 +938,7 @@ export interface WorkspaceEntitySettingsResponse {
 }
 
 export interface UpdateWorkspaceEntitySettingsPayload {
-  name?: string | null;
-  emailPrefix?: string;
+  name?: string;
   isActive?: boolean;
   businessPhone?: string | null;
   businessEmail?: string | null;
@@ -912,6 +949,19 @@ export interface UpdateWorkspaceEntitySettingsPayload {
 export interface CreateWorkspaceInvitationPayload {
   email: string;
   role: UserRole;
+  entityId?: string;
+  redirectUrl?: string;
+  notify?: boolean;
+}
+
+export interface WorkspaceInvitationResponse {
+  success: boolean;
+  data: {
+    invitation: WorkspaceInvitation;
+    clerkInvitationUrl?: string | null;
+    clerkRevoked?: boolean;
+    clerkRevokeError?: string | null;
+  };
 }
 
 export interface DashboardStats {
