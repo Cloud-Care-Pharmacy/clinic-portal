@@ -97,15 +97,16 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        onClick={(event) => event.stopPropagation()}
-        aria-label="Open user actions"
-      >
-        <MoreHorizontal className="size-4 text-muted-foreground" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={4} className="w-64">
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          onClick={(event) => event.stopPropagation()}
+          aria-label="Open user actions"
+        >
+          <MoreHorizontal className="size-4 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={4} className="w-64">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
           <DropdownMenuItem
@@ -149,8 +150,9 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
           {restore ? "Restore user" : "Remove user"}
         </DropdownMenuItem>
       </DropdownMenuContent>
+      </DropdownMenu>
       <EditUserSheet open={editOpen} onOpenChange={setEditOpen} user={user} />
-    </DropdownMenu>
+    </>
   );
 }
 
