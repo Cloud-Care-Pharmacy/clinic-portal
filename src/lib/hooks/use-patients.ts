@@ -52,7 +52,7 @@ async function fetchPatient(patientId: string) {
 
 async function updatePatient(patientId: string, data: UpdatePatientPayload) {
   const res = await fetch(`/api/proxy/patients/${encodeURIComponent(patientId)}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });

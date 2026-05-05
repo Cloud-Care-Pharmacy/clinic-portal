@@ -203,6 +203,7 @@ export function PatientTable({
           patient.postcode,
           patient.country,
           patient.medicareNumber,
+          patient.medicareExpiry,
           pmsStatus === "linked" ? "linked" : "pending",
         ]);
       }),

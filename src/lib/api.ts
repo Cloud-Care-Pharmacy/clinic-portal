@@ -142,7 +142,7 @@ class ApiClient {
     data: UpdatePatientPayload
   ): Promise<{ success: boolean; data: { patient: PatientMapping } }> {
     return this.request(`/api/patients/${encodeURIComponent(patientId)}`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }

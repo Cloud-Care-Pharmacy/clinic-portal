@@ -35,6 +35,15 @@ import type { PatientMapping, UpdatePatientPayload } from "@/types";
 
 // ---- Zod schema for demographics update ----
 
+const medicareExpirySchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => !value || /^\d{4}-\d{2}(-\d{2})?$/.test(value),
+    "Use YYYY-MM or YYYY-MM-DD"
+  )
+  .optional();
+
 const updatePatientSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -52,6 +61,7 @@ const updatePatientSchema = z.object({
   country: z.string().optional(),
   medicareNumber: z.string().optional(),
   medicareIRN: z.string().optional(),
+  medicareExpiry: medicareExpirySchema,
   forwardEmail: z.string().optional(),
 });
 
@@ -76,6 +86,37 @@ function formatDob(dob: string | null): string {
     month: "long",
     year: "numeric",
   });
+}
+
+function formatMedicareExpiry(expiry: string | null | undefined): string | null {
+  if (!expiry) return null;
+  const [year, month, day] = expiry.split("-");
+  const yearNumber = Number(year);
+  const monthNumber = Number(month);
+  const dayNumber = day ? Number(day) : 1;
+
+  if (!year || !month || Number.isNaN(yearNumber) || Number.isNaN(monthNumber)) {
+    return expiry;
+  }
+
+  const date = new Date(yearNumber, monthNumber - 1, dayNumber);
+  if (Number.isNaN(date.getTime())) return expiry;
+
+  return date.toLocaleDateString("en-AU", {
+    ...(day ? { day: "numeric" as const } : {}),
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formMedicareExpiry(expiry: string | null): string {
+  if (!expiry) return "";
+  return /^\d{4}-\d{2}/.test(expiry) ? expiry.slice(0, 7) : expiry;
+}
+
+function nullableOptional(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function formatAddress(patient: PatientMapping): string {
@@ -108,6 +149,7 @@ function patientToFormDefaults(patient: PatientMapping): ProfileFormData {
     country: patient.country ?? "Australia",
     medicareNumber: patient.medicareNumber ?? "",
     medicareIRN: patient.medicareIrn ?? "",
+    medicareExpiry: formMedicareExpiry(patient.medicareExpiry),
     forwardEmail: patient.forwardEmail ?? "",
   };
 }
@@ -259,7 +301,10 @@ export function PatientEditSheet({
       return;
     }
 
-    const payload: UpdatePatientPayload = result.data;
+    const payload: UpdatePatientPayload = {
+      ...result.data,
+      medicareExpiry: nullableOptional(result.data.medicareExpiry),
+    };
 
     updateMutation.mutate(payload, {
       onSuccess: () => {
@@ -384,7 +429,7 @@ export function PatientEditSheet({
         </div>
 
         {/* Medicare */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="medicareNumber">Medicare Number</Label>
             <Input id="medicareNumber" {...form.register("medicareNumber")} />
@@ -392,6 +437,15 @@ export function PatientEditSheet({
           <div className="space-y-2">
             <Label htmlFor="medicareIRN">Medicare IRN</Label>
             <Input id="medicareIRN" {...form.register("medicareIRN")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="medicareExpiry">Medicare Expiry</Label>
+            <Input id="medicareExpiry" type="month" {...form.register("medicareExpiry")} />
+            {form.formState.errors.medicareExpiry && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.medicareExpiry.message}
+              </p>
+            )}
           </div>
         </div>
 
@@ -424,7 +478,7 @@ export function ProfileTab({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 9 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
@@ -487,6 +541,11 @@ export function ProfileTab({
                   ? `${patient.medicareNumber}${patient.medicareIrn ? ` / IRN ${patient.medicareIrn}` : ""}`
                   : null
               }
+            />
+            <DetailField
+              icon={<CalendarIcon className="h-4 w-4" />}
+              label="Medicare Expiry"
+              value={formatMedicareExpiry(patient?.medicareExpiry)}
             />
             <DetailField
               icon={<Hash className="h-4 w-4" />}
