@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import {
+  MailPlus,
   MoreHorizontal,
   Pencil,
   ShieldCheck,
@@ -11,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,6 +58,7 @@ interface WorkspaceUsersTableProps {
   users: WorkspaceUser[];
   loading?: boolean;
   unavailableMessage?: string;
+  onInvite?: () => void;
 }
 
 function UserActionsCell({ user }: { user: WorkspaceUser }) {
@@ -81,7 +84,10 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
 
   function toggleActiveState() {
     const label = restore ? "Restore user" : "Remove user";
-    if (!restore && !window.confirm("Remove this workspace user? They will lose access immediately.")) {
+    if (
+      !restore &&
+      !window.confirm("Remove this workspace user? They will lose access immediately.")
+    ) {
       return;
     }
 
@@ -107,49 +113,49 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
           <MoreHorizontal className="size-4 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={4} className="w-64">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
-          <DropdownMenuItem
-            disabled={isPending}
-            onClick={(event) => {
-              event.stopPropagation();
-              setEditOpen(true);
-            }}
-          >
-            <Pencil />
-            Edit user
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Change role</DropdownMenuLabel>
-          {ROLE_OPTIONS.map((role) => (
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
             <DropdownMenuItem
-              key={role}
-              disabled={isPending || user.role === role || !canManageStaff}
+              disabled={isPending}
               onClick={(event) => {
                 event.stopPropagation();
-                updateUserRole(role);
+                setEditOpen(true);
               }}
             >
-              <ShieldCheck />
-              Make {WORKSPACE_ROLE_LABELS[role]}
+              <Pencil />
+              Edit user
             </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={isPending || !canManageStaff}
-          variant={restore ? "default" : "destructive"}
-          onClick={(event) => {
-            event.stopPropagation();
-            toggleActiveState();
-          }}
-        >
-          {restore ? <UserRoundCheck /> : <Trash2 />}
-          {restore ? "Restore user" : "Remove user"}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Change role</DropdownMenuLabel>
+            {ROLE_OPTIONS.map((role) => (
+              <DropdownMenuItem
+                key={role}
+                disabled={isPending || user.role === role || !canManageStaff}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  updateUserRole(role);
+                }}
+              >
+                <ShieldCheck />
+                Make {WORKSPACE_ROLE_LABELS[role]}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={isPending || !canManageStaff}
+            variant={restore ? "default" : "destructive"}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleActiveState();
+            }}
+          >
+            {restore ? <UserRoundCheck /> : <Trash2 />}
+            {restore ? "Restore user" : "Remove user"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
       </DropdownMenu>
       <EditUserSheet open={editOpen} onOpenChange={setEditOpen} user={user} />
     </>
@@ -160,6 +166,7 @@ export function WorkspaceUsersTable({
   users,
   loading,
   unavailableMessage,
+  onInvite,
 }: WorkspaceUsersTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
@@ -192,7 +199,10 @@ export function WorkspaceUsersTable({
     () =>
       users.filter((user) => {
         const status = getWorkspaceUserStatus(user);
-        if (roleFilters.length > 0 && (!user.role || !roleFilters.includes(user.role))) {
+        if (
+          roleFilters.length > 0 &&
+          (!user.role || !roleFilters.includes(user.role))
+        ) {
           return false;
         }
         if (statusFilters.length > 0 && !statusFilters.includes(status)) return false;
@@ -305,6 +315,14 @@ export function WorkspaceUsersTable({
       resultCount={visibleUsers.length}
       resultCountLoading={loading}
       resultLabel="users"
+      trailing={
+        onInvite ? (
+          <Button size="sm" className="h-9" onClick={onInvite}>
+            <MailPlus className="mr-2 size-4" />
+            Invite user
+          </Button>
+        ) : undefined
+      }
     />
   );
 

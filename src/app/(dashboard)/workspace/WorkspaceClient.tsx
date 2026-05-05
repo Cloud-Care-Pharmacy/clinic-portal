@@ -2,13 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Building2, MailPlus, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { InviteUserSheet } from "@/components/workspace/InviteUserSheet";
@@ -98,12 +92,6 @@ export function WorkspaceClient({
       <PageHeader
         title="Workspace management"
         description="Manage workspace users, pending invitations, and entity settings for this portal."
-        actions={
-          <Button onClick={() => setInviteOpen(true)}>
-            <MailPlus className="mr-2 size-4" />
-            Invite user
-          </Button>
-        }
       />
 
       <Tabs defaultValue="users" className="space-y-4">
@@ -129,6 +117,7 @@ export function WorkspaceClient({
             users={users}
             loading={usersQuery.isLoading || usersQuery.isFetching}
             unavailableMessage={usersUnavailable}
+            onInvite={() => setInviteOpen(true)}
           />
         </TabsContent>
 
