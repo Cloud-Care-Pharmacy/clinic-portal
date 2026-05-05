@@ -10,9 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -98,26 +95,19 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="w-64">
         <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
+        {ROLE_OPTIONS.map((role) => (
+          <DropdownMenuItem
+            key={role}
+            disabled={isPending || user.role === role || !canManageStaff}
+            onClick={(event) => {
+              event.stopPropagation();
+              updateUserRole(role);
+            }}
+          >
             <ShieldCheck />
-            Change role
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            {ROLE_OPTIONS.map((role) => (
-              <DropdownMenuItem
-                key={role}
-                disabled={isPending || user.role === role || !canManageStaff}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  updateUserRole(role);
-                }}
-              >
-                {WORKSPACE_ROLE_LABELS[role]}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+            Make {WORKSPACE_ROLE_LABELS[role]}
+          </DropdownMenuItem>
+        ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isPending || !canManageStaff}
