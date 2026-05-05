@@ -23,6 +23,15 @@ import { PageHeader } from "@/components/shared/PageHeader";
 
 // ---- Zod Schemas per step ----
 
+const medicareExpirySchema = z
+  .string()
+  .trim()
+  .refine(
+    (value) => !value || /^\d{4}-\d{2}(-\d{2})?$/.test(value),
+    "Use YYYY-MM or YYYY-MM-DD"
+  )
+  .optional();
+
 const step1Schema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -39,6 +48,7 @@ const step1Schema = z.object({
   country: z.string().min(1, "Country is required"),
   medicareNumber: z.string().optional(),
   medicareIRN: z.string().optional(),
+  medicareExpiry: medicareExpirySchema,
 });
 
 const step2Schema = z.object({
@@ -244,6 +254,15 @@ function Step1PersonalInfo() {
         <div className="space-y-2">
           <Label htmlFor="medicareIRN">Medicare IRN</Label>
           <Input id="medicareIRN" {...register("medicareIRN")} />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="medicareExpiry">Medicare Expiry</Label>
+          <Input id="medicareExpiry" type="month" {...register("medicareExpiry")} />
+          {errors.medicareExpiry && (
+            <p className="text-sm text-destructive">
+              {errors.medicareExpiry.message}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -799,11 +818,14 @@ export function NewPatientClient() {
 
     setSubmitting(true);
     try {
-      const values = methods.getValues();
+      const payload = {
+        ...result.data,
+        medicareExpiry: result.data.medicareExpiry?.trim() || null,
+      };
       const res = await fetch("/api/proxy/intake/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {

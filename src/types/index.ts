@@ -23,6 +23,7 @@ export interface IntakeFormData {
   mobile: string;
   medicareNumber?: string;
   medicareIRN?: string;
+  medicareExpiry?: string | null;
 
   // Step 2 — Smoking Status
   smokingStatus: string;
@@ -96,6 +97,7 @@ export interface PatientMapping {
   country: string | null;
   medicareNumber: string | null;
   medicareIrn: string | null;
+  medicareExpiry: string | null;
   forwardEmail: string | null;
   proofOfAgeFileName: string | null;
   proofOfAgeFileType: string | null;
@@ -327,7 +329,7 @@ export interface ClinicalDataApprovalResponse {
   };
 }
 
-/** Payload for PUT /api/patients/:id */
+/** Payload for PATCH /api/patients/:id */
 export interface UpdatePatientPayload {
   firstName: string;
   lastName: string;
@@ -345,6 +347,7 @@ export interface UpdatePatientPayload {
   country?: string;
   medicareNumber?: string;
   medicareIRN?: string;
+  medicareExpiry?: string | null;
   forwardEmail?: string;
 }
 
