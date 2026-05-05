@@ -2,16 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
-import { MoreHorizontal, ShieldCheck, UserRoundX, Users } from "lucide-react";
+import {
+  MoreHorizontal,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  UserRoundCheck,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EditUserSheet } from "@/components/workspace/EditUserSheet";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -52,6 +61,7 @@ interface WorkspaceUsersTableProps {
 function UserActionsCell({ user }: { user: WorkspaceUser }) {
   const updateRole = useUpdateWorkspaceUserRole();
   const deactivateUser = useDeactivateWorkspaceUser();
+  const [editOpen, setEditOpen] = useState(false);
   const status = getWorkspaceUserStatus(user);
   const isPending = updateRole.isPending || deactivateUser.isPending;
   const canManageStaff = status === "active" || status === "inactive";
@@ -70,13 +80,15 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
   }
 
   function toggleActiveState() {
-    const label = restore ? "Restore user" : "Deactivate user";
-    if (!restore && !window.confirm("Deactivate this workspace user?")) return;
+    const label = restore ? "Restore user" : "Remove user";
+    if (!restore && !window.confirm("Remove this workspace user? They will lose access immediately.")) {
+      return;
+    }
 
     deactivateUser.mutate(
       { userId: user.id, restore },
       {
-        onSuccess: () => toast.success(restore ? "User restored" : "User deactivated"),
+        onSuccess: () => toast.success(restore ? "User restored" : "User removed"),
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : `${label} failed`);
         },
@@ -94,20 +106,36 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
         <MoreHorizontal className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="w-64">
-        <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
-        {ROLE_OPTIONS.map((role) => (
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
           <DropdownMenuItem
-            key={role}
-            disabled={isPending || user.role === role || !canManageStaff}
+            disabled={isPending}
             onClick={(event) => {
               event.stopPropagation();
-              updateUserRole(role);
+              setEditOpen(true);
             }}
           >
-            <ShieldCheck />
-            Make {WORKSPACE_ROLE_LABELS[role]}
+            <Pencil />
+            Edit user
           </DropdownMenuItem>
-        ))}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Change role</DropdownMenuLabel>
+          {ROLE_OPTIONS.map((role) => (
+            <DropdownMenuItem
+              key={role}
+              disabled={isPending || user.role === role || !canManageStaff}
+              onClick={(event) => {
+                event.stopPropagation();
+                updateUserRole(role);
+              }}
+            >
+              <ShieldCheck />
+              Make {WORKSPACE_ROLE_LABELS[role]}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={isPending || !canManageStaff}
@@ -117,10 +145,11 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
             toggleActiveState();
           }}
         >
-          <UserRoundX />
-          {restore ? "Restore user" : "Deactivate user"}
+          {restore ? <UserRoundCheck /> : <Trash2 />}
+          {restore ? "Restore user" : "Remove user"}
         </DropdownMenuItem>
       </DropdownMenuContent>
+      <EditUserSheet open={editOpen} onOpenChange={setEditOpen} user={user} />
     </DropdownMenu>
   );
 }
