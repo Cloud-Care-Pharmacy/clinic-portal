@@ -162,6 +162,29 @@ async function updateWorkspaceUserRole({
   return res.json();
 }
 
+export interface UpdateWorkspaceUserPayload {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
+async function updateWorkspaceUser({
+  userId,
+  data,
+}: {
+  userId: string;
+  data: UpdateWorkspaceUserPayload;
+}): Promise<unknown> {
+  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  await assertWorkspaceResponse(res, "Failed to update user");
+  return res.json();
+}
+
 async function deactivateWorkspaceUser({
   userId,
   restore,
@@ -303,6 +326,16 @@ export function useDeactivateWorkspaceUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deactivateWorkspaceUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-users"] });
+    },
+  });
+}
+
+export function useUpdateWorkspaceUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateWorkspaceUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspace-users"] });
     },
