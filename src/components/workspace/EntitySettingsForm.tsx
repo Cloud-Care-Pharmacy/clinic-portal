@@ -33,13 +33,13 @@ const AU_STATES = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"] as const
 const ACTIVE_STATUS = ["active", "inactive"] as const;
 
 const schema = z.object({
-  name: z.string().trim().max(120, "Entity name must be 120 characters or fewer"),
-  shopifyDomain: z.string().trim(),
-  emailPrefix: z
+  name: z
     .string()
     .trim()
-    .min(1, "Email prefix is required")
-    .max(64, "Email prefix must be 64 characters or fewer"),
+    .min(1, "Entity name is required")
+    .max(200, "Entity name must be 200 characters or fewer"),
+  tenantDomain: z.string().trim(),
+  emailPrefix: z.string().trim().max(64, "Email prefix must be 64 characters or fewer"),
   isActive: z.enum(ACTIVE_STATUS),
   businessPhone: z.string().trim().max(20, "Business phone is too long"),
   businessEmail: z
@@ -49,13 +49,18 @@ const schema = z.object({
       (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
       "Enter a valid business email"
     ),
-  abn: z.string().trim().max(20, "ABN must be 20 characters or fewer"),
-  streetNumber: z.string().trim().max(20, "Street number is too long"),
-  streetName: z.string().trim().max(100, "Street name is too long"),
-  suburb: z.string().trim().max(100, "Suburb is too long"),
+  abn: z
+    .string()
+    .trim()
+    .refine((value) => {
+      const compact = value.replace(/\s/g, "");
+      return compact === "" || /^\d{11}$/.test(compact);
+    }, "ABN must be 11 digits"),
+  streetNumber: z.string().trim().max(200, "Street number is too long"),
+  streetName: z.string().trim().max(200, "Street name is too long"),
+  suburb: z.string().trim().max(200, "Suburb is too long"),
   state: z.string().trim().max(3, "State is too long"),
-  postcode: z.string().trim().max(10, "Postcode is too long"),
-  country: z.string().trim().max(60, "Country is too long"),
+  postcode: z.string().trim().max(200, "Postcode is too long"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -69,7 +74,7 @@ interface EntitySettingsFormProps {
 function buildDefaults(settings: WorkspaceEntitySettings | null): FormData {
   return {
     name: settings?.name ?? "",
-    shopifyDomain: settings?.shopifyDomain ?? "",
+    tenantDomain: settings?.tenantDomain ?? settings?.shopifyDomain ?? "",
     emailPrefix: settings?.emailPrefix ?? "",
     isActive: settings?.isActive === false ? "inactive" : "active",
     businessPhone: settings?.businessPhone ?? "",
@@ -80,7 +85,6 @@ function buildDefaults(settings: WorkspaceEntitySettings | null): FormData {
     suburb: settings?.address?.suburb ?? "",
     state: settings?.address?.state ?? "",
     postcode: settings?.address?.postcode ?? "",
-    country: settings?.address?.country ?? "Australia",
   };
 }
 
@@ -122,8 +126,7 @@ export function EntitySettingsForm({
     }
 
     const payload: UpdateWorkspaceEntitySettingsPayload = {
-      name: result.data.name || null,
-      emailPrefix: result.data.emailPrefix,
+      name: result.data.name,
       isActive: result.data.isActive === "active",
       businessPhone: result.data.businessPhone || null,
       businessEmail: result.data.businessEmail || null,
@@ -134,7 +137,6 @@ export function EntitySettingsForm({
         suburb: result.data.suburb || null,
         state: result.data.state || null,
         postcode: result.data.postcode || null,
-        country: result.data.country || null,
       },
     };
 
@@ -155,8 +157,8 @@ export function EntitySettingsForm({
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {backendUnavailable ? (
         <div className="rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
-          Entity settings are shown read-only until GET and PUT
-          /api/entities/:entityId/settings are available.
+          Entity settings are shown read-only because the settings endpoint is not
+          currently reachable.
         </div>
       ) : null}
 
@@ -184,15 +186,15 @@ export function EntitySettingsForm({
               ) : null}
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="shopifyDomain">Shopify domain</Label>
+              <Label htmlFor="tenantDomain">Tenant domain</Label>
               <Input
-                id="shopifyDomain"
+                id="tenantDomain"
                 readOnly
                 disabled={!settings}
-                {...form.register("shopifyDomain")}
+                {...form.register("tenantDomain")}
               />
               <p className="text-xs text-muted-foreground">
-                Shopify domain is managed by the backend integration.
+                Tenant domain is managed by the backend integration.
               </p>
             </div>
           </div>
@@ -202,7 +204,8 @@ export function EntitySettingsForm({
               <Label htmlFor="emailPrefix">Email prefix</Label>
               <Input
                 id="emailPrefix"
-                disabled={disabled}
+                readOnly
+                disabled={!settings}
                 aria-invalid={!!form.formState.errors.emailPrefix}
                 {...form.register("emailPrefix")}
               />
@@ -341,10 +344,6 @@ export function EntitySettingsForm({
                 disabled={disabled}
                 {...form.register("postcode")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country">Country</Label>
-              <Input id="country" disabled={disabled} {...form.register("country")} />
             </div>
           </div>
         </CardContent>

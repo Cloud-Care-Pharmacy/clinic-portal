@@ -3,32 +3,48 @@
 import { useMemo, useState } from "react";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import { MoreHorizontal, ShieldCheck, UserRoundX, Users } from "lucide-react";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import {
+  useDeactivateWorkspaceUser,
+  useUpdateWorkspaceUserRole,
+} from "@/lib/hooks/use-workspace";
 import { matchesSearchQuery } from "@/lib/table-search";
 import type { UserRole, WorkspaceUser, WorkspaceUserStatus } from "@/types";
 import {
+  formatWorkspaceRole,
   formatWorkspaceDate,
   formatWorkspaceTimestamp,
+  getWorkspaceRoleVariant,
+  getWorkspaceUserEmail,
   getWorkspaceUserName,
   getWorkspaceUserStatus,
   WORKSPACE_ROLE_LABELS,
-  WORKSPACE_ROLE_VARIANTS,
   WORKSPACE_USER_STATUS_LABELS,
   WORKSPACE_USER_STATUS_VARIANTS,
 } from "@/components/workspace/workspace-format";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
-const STATUS_OPTIONS: WorkspaceUserStatus[] = ["active", "inactive"];
+const STATUS_OPTIONS: WorkspaceUserStatus[] = [
+  "active",
+  "invited",
+  "inactive",
+  "revoked",
+];
 
 interface WorkspaceUsersTableProps {
   users: WorkspaceUser[];
@@ -36,7 +52,41 @@ interface WorkspaceUsersTableProps {
   unavailableMessage?: string;
 }
 
-function UserActionsCell() {
+function UserActionsCell({ user }: { user: WorkspaceUser }) {
+  const updateRole = useUpdateWorkspaceUserRole();
+  const deactivateUser = useDeactivateWorkspaceUser();
+  const status = getWorkspaceUserStatus(user);
+  const isPending = updateRole.isPending || deactivateUser.isPending;
+  const canManageStaff = status === "active" || status === "inactive";
+  const restore = status === "inactive";
+
+  function updateUserRole(role: UserRole) {
+    updateRole.mutate(
+      { userId: user.id, role },
+      {
+        onSuccess: () => toast.success("Role updated"),
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to update role");
+        },
+      }
+    );
+  }
+
+  function toggleActiveState() {
+    const label = restore ? "Restore user" : "Deactivate user";
+    if (!restore && !window.confirm("Deactivate this workspace user?")) return;
+
+    deactivateUser.mutate(
+      { userId: user.id, restore },
+      {
+        onSuccess: () => toast.success(restore ? "User restored" : "User deactivated"),
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : `${label} failed`);
+        },
+      }
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -47,14 +97,38 @@ function UserActionsCell() {
         <MoreHorizontal className="size-4 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={4} className="w-64">
-        <DropdownMenuItem disabled>
-          <ShieldCheck />
-          Change role when backend is ready
-        </DropdownMenuItem>
+        <DropdownMenuLabel>Workspace user</DropdownMenuLabel>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <ShieldCheck />
+            Change role
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {ROLE_OPTIONS.map((role) => (
+              <DropdownMenuItem
+                key={role}
+                disabled={isPending || user.role === role || !canManageStaff}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  updateUserRole(role);
+                }}
+              >
+                {WORKSPACE_ROLE_LABELS[role]}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled variant="destructive">
+        <DropdownMenuItem
+          disabled={isPending || !canManageStaff}
+          variant={restore ? "default" : "destructive"}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleActiveState();
+          }}
+        >
           <UserRoundX />
-          Deactivate user when backend is ready
+          {restore ? "Restore user" : "Deactivate user"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -97,12 +171,14 @@ export function WorkspaceUsersTable({
     () =>
       users.filter((user) => {
         const status = getWorkspaceUserStatus(user);
-        if (roleFilters.length > 0 && !roleFilters.includes(user.role)) return false;
+        if (roleFilters.length > 0 && (!user.role || !roleFilters.includes(user.role))) {
+          return false;
+        }
         if (statusFilters.length > 0 && !statusFilters.includes(status)) return false;
 
         return matchesSearchQuery(searchQuery, [
           getWorkspaceUserName(user),
-          user.email,
+          getWorkspaceUserEmail(user),
           user.authId,
           user.phone,
           user.role,
@@ -146,8 +222,8 @@ export function WorkspaceUsersTable({
       minWidth: 220,
       valueFormatter: (value: string | null | undefined) => value || "—",
       renderCell: (params) => (
-        <span className="truncate" title={params.row.email || undefined}>
-          {params.row.email || "—"}
+        <span className="truncate" title={getWorkspaceUserEmail(params.row)}>
+          {getWorkspaceUserEmail(params.row)}
         </span>
       ),
     },
@@ -156,8 +232,8 @@ export function WorkspaceUsersTable({
       headerName: "Role",
       width: 140,
       renderCell: (params) => (
-        <StatusBadge variant={WORKSPACE_ROLE_VARIANTS[params.row.role]}>
-          {WORKSPACE_ROLE_LABELS[params.row.role]}
+        <StatusBadge variant={getWorkspaceRoleVariant(params.row.role)}>
+          {formatWorkspaceRole(params.row.role)}
         </StatusBadge>
       ),
     },
@@ -185,6 +261,7 @@ export function WorkspaceUsersTable({
       field: "lastActiveAt",
       headerName: "Last active",
       width: 180,
+      valueGetter: (_value, row) => row.lastSignInAt ?? row.lastActiveAt ?? null,
       valueFormatter: (value: string | null | undefined) =>
         formatWorkspaceTimestamp(value),
     },
@@ -194,7 +271,7 @@ export function WorkspaceUsersTable({
       width: 72,
       sortable: false,
       filterable: false,
-      renderCell: () => <UserActionsCell />,
+      renderCell: (params) => <UserActionsCell user={params.row} />,
     },
   ];
 

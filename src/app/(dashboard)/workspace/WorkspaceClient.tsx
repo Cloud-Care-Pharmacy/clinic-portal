@@ -5,7 +5,6 @@ import { Building2, MailPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -37,18 +36,6 @@ interface WorkspaceClientProps {
   initialInvitations?: WorkspaceInvitationsResponse;
   initialSettings?: WorkspaceEntitySettingsResponse;
 }
-
-const REQUIRED_ENDPOINTS = [
-  "GET /api/staff or GET /api/users?entityId=...",
-  "PATCH /api/staff/:userId/role",
-  "PATCH /api/staff/:userId",
-  "POST /api/staff/invitations",
-  "GET /api/staff/invitations?status=pending",
-  "POST /api/staff/invitations/:invitationId/resend",
-  "DELETE or PATCH revoke for /api/staff/invitations/:invitationId",
-  "GET /api/entities/:entityId/settings",
-  "PUT /api/entities/:entityId/settings",
-];
 
 function entityToSettings(entity?: Entity): WorkspaceEntitySettings | null {
   if (!entity) return null;
@@ -95,7 +82,7 @@ export function WorkspaceClient({
   const settings = settingsQuery.data?.data.settings ?? fallbackSettings;
   const users = usersQuery.data?.data.users ?? [];
   const invitations = invitationsQuery.data?.data.invitations ?? [];
-  const usersUnavailable = unavailableMessage(usersQuery.error, "GET /api/staff");
+  const usersUnavailable = unavailableMessage(usersQuery.error, "GET /api/users");
   const invitationsUnavailable = unavailableMessage(
     invitationsQuery.error,
     "GET /api/staff/invitations?status=pending"
@@ -110,7 +97,7 @@ export function WorkspaceClient({
     <div className="space-y-6">
       <PageHeader
         title="Workspace management"
-        description="Manage workspace users, pending invitations, and entity settings. Backend-only workflows are marked separately until endpoints are available."
+        description="Manage workspace users, pending invitations, and entity settings for this portal."
         actions={
           <Button onClick={() => setInviteOpen(true)}>
             <MailPlus className="mr-2 size-4" />
@@ -118,29 +105,6 @@ export function WorkspaceClient({
           </Button>
         }
       />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Backend handoff</CardTitle>
-          <CardDescription>
-            These items are intentionally not mocked in the browser. The workspace UI
-            only enables persistence after the prescription-gateway exposes these
-            endpoints.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {REQUIRED_ENDPOINTS.map((endpoint) => (
-              <div
-                key={endpoint}
-                className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs text-muted-foreground"
-              >
-                {endpoint}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
       <Tabs defaultValue="users" className="space-y-4">
         <div className="w-full overflow-x-auto pb-2">
@@ -173,6 +137,7 @@ export function WorkspaceClient({
             invitations={invitations}
             loading={invitationsQuery.isLoading || invitationsQuery.isFetching}
             unavailableMessage={invitationsUnavailable}
+            onInvite={() => setInviteOpen(true)}
           />
         </TabsContent>
 
@@ -196,6 +161,7 @@ export function WorkspaceClient({
       <InviteUserSheet
         open={inviteOpen}
         onOpenChange={setInviteOpen}
+        entityId={entityId || undefined}
         backendUnavailable={inviteBackendUnavailable}
       />
     </div>

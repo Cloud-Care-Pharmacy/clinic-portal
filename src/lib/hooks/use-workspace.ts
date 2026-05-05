@@ -10,9 +10,11 @@ import type {
   CreateWorkspaceInvitationPayload,
   UpdateWorkspaceEntitySettingsPayload,
   WorkspaceEntitySettingsResponse,
+  WorkspaceInvitationResponse,
   WorkspaceInvitationsResponse,
-  WorkspaceInvitationStatus,
+  WorkspaceInvitationQueryStatus,
   WorkspaceUsersResponse,
+  UserRole,
 } from "@/types";
 
 const WORKSPACE_API_UNAVAILABLE =
@@ -68,29 +70,36 @@ async function assertWorkspaceResponse(res: Response, fallback: string) {
 
 function appendWorkspaceParams(
   params: URLSearchParams,
-  opts?: { entityId?: string; limit?: number; offset?: number }
+  opts?: {
+    entityId?: string;
+    includeDeactivated?: boolean;
+    limit?: number;
+    offset?: number;
+  }
 ) {
   if (opts?.entityId) params.set("entityId", opts.entityId);
+  if (opts?.includeDeactivated) params.set("includeDeactivated", "true");
   if (opts?.limit) params.set("limit", String(opts.limit));
   if (opts?.offset) params.set("offset", String(opts.offset));
 }
 
 async function fetchWorkspaceUsers(opts?: {
   entityId?: string;
+  includeDeactivated?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<WorkspaceUsersResponse> {
   const params = new URLSearchParams();
   appendWorkspaceParams(params, opts);
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await fetch(`/api/proxy/staff${qs}`);
+  const res = await fetch(`/api/proxy/users${qs}`);
   await assertWorkspaceResponse(res, "Failed to fetch workspace users");
   return res.json();
 }
 
 async function fetchWorkspaceInvitations(opts?: {
   entityId?: string;
-  status?: WorkspaceInvitationStatus;
+  status?: WorkspaceInvitationQueryStatus;
   limit?: number;
   offset?: number;
 }): Promise<WorkspaceInvitationsResponse> {
@@ -105,7 +114,7 @@ async function fetchWorkspaceInvitations(opts?: {
 
 async function createWorkspaceInvitation(
   data: CreateWorkspaceInvitationPayload
-): Promise<WorkspaceInvitationsResponse> {
+): Promise<WorkspaceInvitationResponse> {
   const res = await fetch("/api/proxy/staff/invitations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -117,7 +126,7 @@ async function createWorkspaceInvitation(
 
 async function resendWorkspaceInvitation(
   invitationId: string
-): Promise<WorkspaceInvitationsResponse> {
+): Promise<WorkspaceInvitationResponse> {
   const res = await fetch(
     `/api/proxy/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
     { method: "POST" }
@@ -128,12 +137,48 @@ async function resendWorkspaceInvitation(
 
 async function revokeWorkspaceInvitation(
   invitationId: string
-): Promise<WorkspaceInvitationsResponse> {
+): Promise<WorkspaceInvitationResponse> {
   const res = await fetch(
     `/api/proxy/staff/invitations/${encodeURIComponent(invitationId)}`,
     { method: "DELETE" }
   );
   await assertWorkspaceResponse(res, "Failed to revoke invitation");
+  return res.json();
+}
+
+async function updateWorkspaceUserRole({
+  userId,
+  role,
+}: {
+  userId: string;
+  role: UserRole;
+}): Promise<unknown> {
+  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+  await assertWorkspaceResponse(res, "Failed to update role");
+  return res.json();
+}
+
+async function deactivateWorkspaceUser({
+  userId,
+  restore,
+}: {
+  userId: string;
+  restore?: boolean;
+}): Promise<unknown> {
+  const params = new URLSearchParams();
+  if (restore) params.set("restore", "true");
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}${qs}`, {
+    method: "DELETE",
+  });
+  await assertWorkspaceResponse(
+    res,
+    restore ? "Failed to restore user" : "Failed to deactivate user"
+  );
   return res.json();
 }
 
@@ -172,7 +217,13 @@ export function useWorkspaceUsers(
 ) {
   return useQuery({
     queryKey: ["workspace-users", entityId ?? ""],
-    queryFn: () => fetchWorkspaceUsers({ entityId, limit: 100, offset: 0 }),
+    queryFn: () =>
+      fetchWorkspaceUsers({
+        entityId,
+        includeDeactivated: true,
+        limit: 100,
+        offset: 0,
+      }),
     initialData,
     placeholderData: keepPreviousData,
     retry: false,
@@ -234,6 +285,26 @@ export function useRevokeWorkspaceInvitation() {
     mutationFn: revokeWorkspaceInvitation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workspace-invitations"] });
+    },
+  });
+}
+
+export function useUpdateWorkspaceUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateWorkspaceUserRole,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-users"] });
+    },
+  });
+}
+
+export function useDeactivateWorkspaceUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deactivateWorkspaceUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-users"] });
     },
   });
 }

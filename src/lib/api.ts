@@ -51,8 +51,9 @@ import type {
   CreateWorkspaceInvitationPayload,
   UpdateWorkspaceEntitySettingsPayload,
   WorkspaceEntitySettingsResponse,
+  WorkspaceInvitationQueryStatus,
+  WorkspaceInvitationResponse,
   WorkspaceInvitationsResponse,
-  WorkspaceInvitationStatus,
   WorkspaceUsersResponse,
   UserRole,
 } from "@/types";
@@ -80,6 +81,10 @@ function appendTaskQueryParams(params: URLSearchParams, opts?: TasksQuery) {
   if (opts?.order) params.set("order", opts.order);
   if (opts?.limit) params.set("limit", String(opts.limit));
   if (opts?.offset) params.set("offset", String(opts.offset));
+}
+
+function clerkUserHeader(clerkUserId?: string) {
+  return clerkUserId ? { "X-Clerk-User-Id": clerkUserId } : undefined;
 }
 
 class ApiClient {
@@ -425,52 +430,73 @@ class ApiClient {
   // ---- Workspace Management ----
 
   async getWorkspaceUsers(opts?: {
+    clerkUserId?: string;
     entityId?: string;
+    role?: UserRole;
+    status?: "pending" | "active" | "invited" | "revoked";
+    includeDeactivated?: boolean;
     limit?: number;
     offset?: number;
     search?: string;
   }): Promise<WorkspaceUsersResponse> {
     const params = new URLSearchParams();
     if (opts?.entityId) params.set("entityId", opts.entityId);
+    if (opts?.role) params.set("role", opts.role);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.includeDeactivated) params.set("includeDeactivated", "true");
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     if (opts?.search) params.set("search", opts.search);
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(`/api/staff${qs}`);
+    return this.request(`/api/users${qs}`, {
+      headers: clerkUserHeader(opts?.clerkUserId),
+    });
   }
 
   async updateWorkspaceUserRole(
     userId: string,
-    role: UserRole
-  ): Promise<WorkspaceUsersResponse> {
+    role: UserRole,
+    clerkUserId?: string
+  ): Promise<unknown> {
     return this.request(`/api/staff/${encodeURIComponent(userId)}/role`, {
       method: "PATCH",
       body: JSON.stringify({ role }),
+      headers: clerkUserHeader(clerkUserId),
     });
   }
 
   async updateWorkspaceUser(
     userId: string,
-    data: Partial<{ role: UserRole; active: boolean }>
-  ): Promise<WorkspaceUsersResponse> {
+    data: Partial<{
+      firstName: string | null;
+      lastName: string | null;
+      phone: string | null;
+      email: string | null;
+    }>,
+    clerkUserId?: string
+  ): Promise<unknown> {
     return this.request(`/api/staff/${encodeURIComponent(userId)}`, {
       method: "PATCH",
       body: JSON.stringify(data),
+      headers: clerkUserHeader(clerkUserId),
     });
   }
 
   async createWorkspaceInvitation(
-    data: CreateWorkspaceInvitationPayload
-  ): Promise<WorkspaceInvitationsResponse> {
+    data: CreateWorkspaceInvitationPayload,
+    clerkUserId?: string
+  ): Promise<WorkspaceInvitationResponse> {
     return this.request("/api/staff/invitations", {
       method: "POST",
       body: JSON.stringify(data),
+      headers: clerkUserHeader(clerkUserId),
     });
   }
 
   async getWorkspaceInvitations(opts?: {
+    clerkUserId?: string;
     entityId?: string;
-    status?: WorkspaceInvitationStatus;
+    status?: WorkspaceInvitationQueryStatus;
     limit?: number;
     offset?: number;
   }): Promise<WorkspaceInvitationsResponse> {
@@ -480,39 +506,62 @@ class ApiClient {
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(`/api/staff/invitations${qs}`);
+    return this.request(`/api/staff/invitations${qs}`, {
+      headers: clerkUserHeader(opts?.clerkUserId),
+    });
   }
 
   async resendWorkspaceInvitation(
-    invitationId: string
-  ): Promise<WorkspaceInvitationsResponse> {
+    invitationId: string,
+    clerkUserId?: string
+  ): Promise<WorkspaceInvitationResponse> {
     return this.request(
       `/api/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
-      { method: "POST" }
+      { method: "POST", headers: clerkUserHeader(clerkUserId) }
     );
   }
 
   async revokeWorkspaceInvitation(
-    invitationId: string
-  ): Promise<WorkspaceInvitationsResponse> {
+    invitationId: string,
+    clerkUserId?: string
+  ): Promise<WorkspaceInvitationResponse> {
     return this.request(`/api/staff/invitations/${encodeURIComponent(invitationId)}`, {
       method: "DELETE",
+      headers: clerkUserHeader(clerkUserId),
+    });
+  }
+
+  async deactivateWorkspaceUser(
+    userId: string,
+    opts?: { restore?: boolean; clerkUserId?: string }
+  ): Promise<unknown> {
+    const params = new URLSearchParams();
+    if (opts?.restore) params.set("restore", "true");
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/api/staff/${encodeURIComponent(userId)}${qs}`, {
+      method: "DELETE",
+      headers: clerkUserHeader(opts?.clerkUserId),
     });
   }
 
   async getWorkspaceEntitySettings(
-    entityId: string
+    entityId: string,
+    clerkUserId?: string
   ): Promise<WorkspaceEntitySettingsResponse> {
-    return this.request(`/api/entities/${encodeURIComponent(entityId)}/settings`);
+    return this.request(`/api/entities/${encodeURIComponent(entityId)}/settings`, {
+      headers: clerkUserHeader(clerkUserId),
+    });
   }
 
   async updateWorkspaceEntitySettings(
     entityId: string,
-    data: UpdateWorkspaceEntitySettingsPayload
+    data: UpdateWorkspaceEntitySettingsPayload,
+    clerkUserId?: string
   ): Promise<WorkspaceEntitySettingsResponse> {
     return this.request(`/api/entities/${encodeURIComponent(entityId)}/settings`, {
       method: "PUT",
       body: JSON.stringify(data),
+      headers: clerkUserHeader(clerkUserId),
     });
   }
 
