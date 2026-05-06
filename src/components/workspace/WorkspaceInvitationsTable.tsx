@@ -20,7 +20,12 @@ import {
   useRevokeWorkspaceInvitation,
 } from "@/lib/hooks/use-workspace";
 import { matchesSearchQuery } from "@/lib/table-search";
-import type { UserRole, WorkspaceInvitation, WorkspaceInvitationStatus } from "@/types";
+import type {
+  UserRole,
+  WorkspaceInvitation,
+  WorkspaceInvitationStatus,
+  WorkspaceUser,
+} from "@/types";
 import {
   formatWorkspaceDate,
   getWorkspaceInvitationId,
@@ -31,26 +36,36 @@ import {
 } from "@/components/workspace/workspace-format";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
-const STATUS_OPTIONS: WorkspaceInvitationStatus[] = [
-  "invited",
-  "revoked",
-];
+const STATUS_OPTIONS: WorkspaceInvitationStatus[] = ["invited", "revoked"];
 
 interface WorkspaceInvitationsTableProps {
   invitations: WorkspaceInvitation[];
+  users?: WorkspaceUser[];
   loading?: boolean;
   unavailableMessage?: string;
   onInvite?: () => void;
 }
 
-function invitationInviter(invitation: WorkspaceInvitation) {
-  return (
-    invitation.invitedByName ||
-    invitation.invitedByEmail ||
-    invitation.invitedById ||
-    invitation.invitedBy ||
-    "—"
-  );
+function userDisplayName(user: WorkspaceUser): string | null {
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
+  return user.name || fullName || user.email || null;
+}
+
+function invitationInviter(
+  invitation: WorkspaceInvitation,
+  userLookup: Map<string, WorkspaceUser>
+) {
+  if (invitation.invitedByName) return invitation.invitedByName;
+  if (invitation.invitedByEmail) return invitation.invitedByEmail;
+
+  const inviterId = invitation.invitedById || invitation.invitedBy;
+  if (inviterId) {
+    const match = userLookup.get(inviterId);
+    if (match) return userDisplayName(match) ?? inviterId;
+    return inviterId;
+  }
+
+  return "—";
 }
 
 function InvitationActionsCell({ invitation }: { invitation: WorkspaceInvitation }) {
@@ -120,6 +135,7 @@ function InvitationActionsCell({ invitation }: { invitation: WorkspaceInvitation
 
 export function WorkspaceInvitationsTable({
   invitations,
+  users,
   loading,
   unavailableMessage,
   onInvite,
@@ -127,6 +143,15 @@ export function WorkspaceInvitationsTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilters, setRoleFilters] = useState<UserRole[]>([]);
   const [statusFilters, setStatusFilters] = useState<WorkspaceInvitationStatus[]>([]);
+
+  const userLookup = useMemo(() => {
+    const map = new Map<string, WorkspaceUser>();
+    for (const user of users ?? []) {
+      if (user.id) map.set(user.id, user);
+      if (user.authId) map.set(user.authId, user);
+    }
+    return map;
+  }, [users]);
 
   const filters: FilterDefinition[] = useMemo(
     () => [
@@ -165,12 +190,12 @@ export function WorkspaceInvitationsTable({
           invitation.email,
           invitation.role,
           invitation.status,
-          invitationInviter(invitation),
+          invitationInviter(invitation, userLookup),
           invitation.invitedAt,
           invitation.clerkInvitationId,
         ]);
       }),
-    [invitations, roleFilters, searchQuery, statusFilters]
+    [invitations, roleFilters, searchQuery, statusFilters, userLookup]
   );
 
   const clearFilters = () => {
@@ -216,7 +241,7 @@ export function WorkspaceInvitationsTable({
       headerName: "Invited by",
       flex: 0.8,
       minWidth: 180,
-      valueGetter: (_value, row) => invitationInviter(row),
+      valueGetter: (_value, row) => invitationInviter(row, userLookup),
       renderCell: (params) => (
         <span className="truncate" title={params.value as string}>
           {params.value as string}
