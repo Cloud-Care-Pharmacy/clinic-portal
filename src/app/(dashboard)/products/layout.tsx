@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Administration — Cloud Care Pharmacy",
+  title: "Products — Cloud Care Pharmacy",
 };
 
-export default function AdminLayout({
+export default function ProductsLayout({
   children,
 }: {
   children: React.ReactNode;
