@@ -130,6 +130,10 @@ function matchesTaskQueuePreset(
   const statuses = asArray(filter.status);
   if (statuses && !statuses.includes(task.status)) return false;
 
+  // Unassigned presets always show every unassigned task — Me mode does not apply.
+  const isUnassignedPreset =
+    "assignedUserId" in filter && filter.assignedUserId === null;
+
   if ("assignedUserId" in filter) {
     const raw = filter.assignedUserId;
     if (raw === null) {
@@ -145,7 +149,11 @@ function matchesTaskQueuePreset(
     }
   }
 
-  if (meModeActive && (!currentUserId || task.assignedUserId !== currentUserId)) {
+  if (
+    meModeActive &&
+    !isUnassignedPreset &&
+    (!currentUserId || task.assignedUserId !== currentUserId)
+  ) {
     return false;
   }
 
