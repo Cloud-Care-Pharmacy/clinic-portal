@@ -103,6 +103,7 @@ interface ConsultationTableProps {
   consultations: Consultation[];
   total?: number;
   loading?: boolean;
+  resultCountLoading?: boolean;
   onRowClick: (consultation: Consultation) => void;
   onSchedule: () => void;
   searchQuery: string;
@@ -141,6 +142,7 @@ export function ConsultationTable({
   consultations,
   total,
   loading,
+  resultCountLoading = false,
   onRowClick,
   onSchedule,
   searchQuery,
@@ -244,7 +246,7 @@ export function ConsultationTable({
         onChange: (v: string[]) => onTypeFiltersChange(v as TypeFilterOption[]),
       },
     ];
-    if (doctorOptions.length > 0) {
+    if (doctorOptions.length > 0 || loading) {
       const idToName = new Map(doctorOptions.map((d) => [d.id, d.name]));
       base.push({
         key: "doctor",
@@ -264,6 +266,7 @@ export function ConsultationTable({
     typeFilters,
     doctorFilters,
     doctorOptions,
+    loading,
   ]);
 
   const columns: GridColDef<Consultation>[] = [
@@ -385,6 +388,7 @@ export function ConsultationTable({
       resultCount={
         hasActiveFilters ? visibleConsultations.length : (total ?? consultations.length)
       }
+      resultCountLoading={resultCountLoading}
       resultLabel="consultations"
     />
   );
@@ -423,6 +427,12 @@ export function ConsultationTable({
           rows={visibleConsultations}
           columns={columns}
           loading={loading}
+          slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
+          }}
           autoHeight
           disableRowSelectionOnClick
           paginationMode="server"

@@ -49,6 +49,7 @@ interface PatientTableProps {
   patients: PatientMapping[];
   total?: number;
   loading?: boolean;
+  resultCountLoading?: boolean;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   statusFilters: PatientPmsStatusFilter[];
@@ -141,6 +142,7 @@ export function PatientTable({
   patients,
   total,
   loading,
+  resultCountLoading = false,
   searchQuery,
   onSearchChange,
   statusFilters,
@@ -201,6 +203,7 @@ export function PatientTable({
           patient.postcode,
           patient.country,
           patient.medicareNumber,
+          patient.medicareExpiry,
           pmsStatus === "linked" ? "linked" : "pending",
         ]);
       }),
@@ -337,6 +340,7 @@ export function PatientTable({
       resultCount={
         hasActiveFilters ? visiblePatients.length : (total ?? patients.length)
       }
+      resultCountLoading={resultCountLoading}
       resultLabel="patients"
       trailing={
         <>
@@ -422,6 +426,10 @@ export function PatientTable({
             router.push(`/patients/${params.row.id}`, { scroll: false })
           }
           slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
             row: {
               onMouseEnter: (event) => {
                 const id = (event.currentTarget as HTMLElement).getAttribute("data-id");

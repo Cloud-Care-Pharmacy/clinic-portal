@@ -23,6 +23,7 @@ export interface IntakeFormData {
   mobile: string;
   medicareNumber?: string;
   medicareIRN?: string;
+  medicareExpiry?: string | null;
 
   // Step 2 — Smoking Status
   smokingStatus: string;
@@ -68,6 +69,7 @@ export interface IntakeFormData {
 export interface Entity {
   id: string;
   shopifyDomain: string;
+  tenantDomain?: string | null;
   name: string | null;
   emailPrefix: string;
   isActive: boolean;
@@ -95,6 +97,7 @@ export interface PatientMapping {
   country: string | null;
   medicareNumber: string | null;
   medicareIrn: string | null;
+  medicareExpiry: string | null;
   forwardEmail: string | null;
   proofOfAgeFileName: string | null;
   proofOfAgeFileType: string | null;
@@ -326,7 +329,7 @@ export interface ClinicalDataApprovalResponse {
   };
 }
 
-/** Payload for PUT /api/patients/:id */
+/** Payload for PATCH /api/patients/:id */
 export interface UpdatePatientPayload {
   firstName: string;
   lastName: string;
@@ -344,6 +347,7 @@ export interface UpdatePatientPayload {
   country?: string;
   medicareNumber?: string;
   medicareIRN?: string;
+  medicareExpiry?: string | null;
   forwardEmail?: string;
 }
 
@@ -637,12 +641,24 @@ export interface TaskEvent {
   taskId: string;
   patientId: string;
   eventType:
+    | "created"
+    | "assigned"
+    | "started"
+    | "completed"
+    | "cancelled"
+    | "updated"
+    | "deleted"
+    | "priority_escalated"
+    | "reassigned"
+    | "snoozed"
+    | "status_changed"
     | "task-created"
     | "task-assigned"
     | "task-started"
     | "task-completed"
     | "task-cancelled"
-    | "task-updated";
+    | "task-updated"
+    | "task-deleted";
   actorUserId?: string | null;
   actorName?: string | null;
   actorRole?: UserRole | "system" | null;
@@ -818,6 +834,137 @@ export interface Staff {
   practitioner: PractitionerProfile | null;
   createdAt: string;
   deactivatedAt?: string | null;
+}
+
+export type WorkspaceUserStatus = "active" | "inactive" | "invited" | "revoked";
+
+/** Workspace staff row from GET /api/users or GET /api/staff. */
+export interface WorkspaceUser {
+  id: string;
+  authId: string | null;
+  role: UserRole | null;
+  status: WorkspaceUserStatus;
+  entityId?: string | null;
+  name?: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  invitedEmail?: string | null;
+  invitedAt?: string | null;
+  invitedBy?: string | null;
+  phone: string | null;
+  avatarUrl?: string | null;
+  lastSignInAt?: string | null;
+  lastActiveAt?: string | null;
+  active?: boolean;
+  practitioner?: PractitionerProfile | null;
+  createdAt: string;
+  updatedAt?: string | null;
+  deactivatedAt?: string | null;
+  deactivatedBy?: string | null;
+  entity?: Entity | null;
+}
+
+export interface WorkspaceUsersResponse {
+  success: boolean;
+  data: {
+    entityId?: string;
+    users: WorkspaceUser[];
+    pagination?: { limit: number; offset: number; total: number };
+  };
+}
+
+export type WorkspaceInvitationStatus =
+  | "pending"
+  | "invited"
+  | "accepted"
+  | "expired"
+  | "revoked";
+
+export type WorkspaceInvitationQueryStatus = "pending" | "invited" | "revoked";
+
+export interface WorkspaceInvitation {
+  invitationId: string;
+  id?: string;
+  entityId?: string | null;
+  email: string;
+  role: UserRole;
+  status: WorkspaceInvitationStatus;
+  invitedBy?: string | null;
+  invitedById?: string | null;
+  invitedByName?: string | null;
+  invitedByEmail?: string | null;
+  invitedAt: string;
+  expiresAt?: string | null;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  clerkInvitationId?: string | null;
+}
+
+export interface WorkspaceInvitationsResponse {
+  success: boolean;
+  data: {
+    entityId?: string;
+    invitations: WorkspaceInvitation[];
+    pagination?: { limit: number; offset: number; total: number };
+  };
+}
+
+export interface WorkspaceBusinessAddress {
+  streetNumber: string | null;
+  streetName: string | null;
+  suburb: string | null;
+  state: string | null;
+  postcode: string | null;
+  country?: string | null;
+}
+
+/** Entity settings MVP for workspace management. */
+export interface WorkspaceEntitySettings {
+  id: string;
+  name: string | null;
+  tenantDomain?: string | null;
+  shopifyDomain?: string | null;
+  emailPrefix: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  abn?: string | null;
+  address?: WorkspaceBusinessAddress | null;
+}
+
+export interface WorkspaceEntitySettingsResponse {
+  success: boolean;
+  data: { settings: WorkspaceEntitySettings };
+}
+
+export interface UpdateWorkspaceEntitySettingsPayload {
+  name?: string;
+  isActive?: boolean;
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  abn?: string | null;
+  address?: Partial<WorkspaceBusinessAddress> | null;
+}
+
+export interface CreateWorkspaceInvitationPayload {
+  email: string;
+  role: UserRole;
+  entityId?: string;
+  redirectUrl?: string;
+  notify?: boolean;
+}
+
+export interface WorkspaceInvitationResponse {
+  success: boolean;
+  data: {
+    invitation: WorkspaceInvitation;
+    clerkInvitationUrl?: string | null;
+    clerkRevoked?: boolean;
+    clerkRevokeError?: string | null;
+  };
 }
 
 export interface DashboardStats {
@@ -1071,6 +1218,16 @@ export interface PatientCountsResponse {
  * Clinical-identity fields (hpii, prescriberNumber, qualifications, name) and
  * working-hours availability live on `PractitionerProfile` instead.
  */
+/**
+ * Account lifecycle status from the backend `users` table.
+ *
+ * NOTE: An authenticated caller of `GET /api/users/me` will only ever observe
+ * `"active"` on the 200 path — `invited` rows have no `auth_id` (unreachable),
+ * and `revoked` (or any soft-deactivated) row returns 403. The full enum is
+ * still useful in admin contexts (`WorkspaceUser.status`).
+ */
+export type UserAccountStatus = "active" | "invited" | "revoked";
+
 export interface UserProfile {
   /** Internal UUID (users.id) — canonical user id for backend calls. */
   id: string;
@@ -1081,6 +1238,10 @@ export interface UserProfile {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  /** Active entity (workspace) the user belongs to. Nullable for unattached users. */
+  entityId: string | null;
+  /** Account lifecycle status. Source of truth lives on the backend `users` row. */
+  status: UserAccountStatus;
   createdAt: string;
   updatedAt: string;
   deactivatedAt?: string | null;
@@ -1092,9 +1253,12 @@ export interface UserProfileResponse {
   data: { profile: UserProfile | null };
 }
 
-/** Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear. */
+/**
+ * Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear.
+ * `role` and `entityId` are intentionally NOT included — those are admin-only mutations
+ * (see PATCH /api/staff/:userId/role and the workspace management endpoints).
+ */
 export interface UpdateUserProfilePayload {
-  role?: UserRole;
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;

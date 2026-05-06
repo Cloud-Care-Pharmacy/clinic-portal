@@ -2,7 +2,6 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
@@ -20,15 +19,11 @@ export const proxy = clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Admin-only route guard
-  if (isAdminRoute(req)) {
-    const { sessionClaims } = await auth();
-    const role = sessionClaims?.metadata?.role;
-    if (role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  }
-
+  // Role-based authorization is enforced by:
+  //   1. Server Components (e.g. workspace/page.tsx redirects non-admins)
+  //   2. The gateway (returns 403 on admin endpoints for non-admin callers)
+  // We intentionally do not call the backend from the proxy to avoid a
+  // network hop on every request.
   return NextResponse.next();
 });
 

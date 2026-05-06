@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   Pill,
   User,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -284,6 +285,12 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
               <User className="mr-2 h-4 w-4" />
               My Profile
             </DropdownMenuItem>
+            {user.role === "admin" && (
+              <DropdownMenuItem onClick={() => router.push("/workspace")}>
+                <Building2 className="mr-2 h-4 w-4" />
+                Workspace management
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
