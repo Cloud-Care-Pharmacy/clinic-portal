@@ -9,13 +9,14 @@ import {
   Users,
   Calendar,
   ClipboardCheck,
-  Shield,
   LogOut,
   Menu,
   ChevronsUpDown,
   Pill,
   User,
   Building2,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -62,17 +63,16 @@ const generalNav: NavItem[] = [
   },
 ];
 
-const adminNav: NavItem[] = [
+const catalogNav: NavItem[] = [
   {
-    label: "Admin",
-    href: "/admin",
-    icon: <Shield className="h-5 w-5" />,
-    roles: ["admin"],
+    label: "Products",
+    href: "/products",
+    icon: <Package className="h-5 w-5" />,
   },
   {
-    label: "Profile",
-    href: "/profile",
-    icon: <User className="h-5 w-5" />,
+    label: "Orders",
+    href: "/orders",
+    icon: <ShoppingCart className="h-5 w-5" />,
   },
 ];
 
@@ -170,7 +170,7 @@ function NavGroup({
 function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean }) {
   const { signOut } = useClerk();
   const router = useRouter();
-  const filteredAdmin = adminNav.filter(
+  const filteredCatalog = catalogNav.filter(
     (item) => !item.roles || item.roles.includes(user.role)
   );
 
@@ -212,8 +212,8 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       {/* Navigation */}
       <nav className="flex-1 space-y-6 py-4">
         <NavGroup title="General" items={generalNav} collapsed={collapsed} />
-        {filteredAdmin.length > 0 && (
-          <NavGroup title="Management" items={filteredAdmin} collapsed={collapsed} />
+        {filteredCatalog.length > 0 && (
+          <NavGroup title="Catalog" items={filteredCatalog} collapsed={collapsed} />
         )}
       </nav>
 
