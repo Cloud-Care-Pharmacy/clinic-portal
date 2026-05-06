@@ -1,10 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getRoleFromClaims, getUserRole } from "@/lib/auth-claims";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const isWorkspaceRoute = createRouteMatcher(["/workspace(.*)"]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
@@ -22,25 +19,11 @@ export const proxy = clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // Admin-only route guard for routes that do not have their own server fallback.
-  if (isAdminRoute(req)) {
-    const { sessionClaims } = await auth();
-    const role = getUserRole(sessionClaims);
-    if (role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  }
-
-  // Workspace remains admin-only, but can fall back to Clerk user metadata in page.tsx
-  // when the session token template does not expose role metadata.
-  if (isWorkspaceRoute(req)) {
-    const { sessionClaims } = await auth();
-    const role = getRoleFromClaims(sessionClaims);
-    if (role && role !== "admin") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-  }
-
+  // Role-based authorization is enforced by:
+  //   1. Server Components (e.g. workspace/page.tsx redirects non-admins)
+  //   2. The gateway (returns 403 on admin endpoints for non-admin callers)
+  // We intentionally do not call the backend from the proxy to avoid a
+  // network hop on every request.
   return NextResponse.next();
 });
 
