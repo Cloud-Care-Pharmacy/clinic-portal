@@ -1218,6 +1218,16 @@ export interface PatientCountsResponse {
  * Clinical-identity fields (hpii, prescriberNumber, qualifications, name) and
  * working-hours availability live on `PractitionerProfile` instead.
  */
+/**
+ * Account lifecycle status from the backend `users` table.
+ *
+ * NOTE: An authenticated caller of `GET /api/users/me` will only ever observe
+ * `"active"` on the 200 path — `invited` rows have no `auth_id` (unreachable),
+ * and `revoked` (or any soft-deactivated) row returns 403. The full enum is
+ * still useful in admin contexts (`WorkspaceUser.status`).
+ */
+export type UserAccountStatus = "active" | "invited" | "revoked";
+
 export interface UserProfile {
   /** Internal UUID (users.id) — canonical user id for backend calls. */
   id: string;
@@ -1228,6 +1238,10 @@ export interface UserProfile {
   lastName: string | null;
   email: string | null;
   phone: string | null;
+  /** Active entity (workspace) the user belongs to. Nullable for unattached users. */
+  entityId: string | null;
+  /** Account lifecycle status. Source of truth lives on the backend `users` row. */
+  status: UserAccountStatus;
   createdAt: string;
   updatedAt: string;
   deactivatedAt?: string | null;
@@ -1239,9 +1253,12 @@ export interface UserProfileResponse {
   data: { profile: UserProfile | null };
 }
 
-/** Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear. */
+/**
+ * Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear.
+ * `role` and `entityId` are intentionally NOT included — those are admin-only mutations
+ * (see PATCH /api/staff/:userId/role and the workspace management endpoints).
+ */
 export interface UpdateUserProfilePayload {
-  role?: UserRole;
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;

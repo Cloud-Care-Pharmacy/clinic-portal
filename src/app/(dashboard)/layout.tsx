@@ -1,4 +1,4 @@
-import { getCurrentUser, getEntityId } from "@/lib/auth";
+import { getCurrentUser, getEntityId, getMeState } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { DashboardCommandSearch } from "@/components/layout/DashboardCommandSearch";
@@ -12,6 +12,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const meState = await getMeState();
+  if (meState.kind === "unauthenticated") redirect("/sign-in");
+  if (meState.kind === "deactivated") redirect("/sign-in?reason=deactivated");
+
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const entityId = await getEntityId();

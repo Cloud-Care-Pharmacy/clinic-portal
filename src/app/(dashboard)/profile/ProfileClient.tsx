@@ -95,6 +95,7 @@ export function ProfileClient({
   const profile = profileData?.data?.profile ?? null;
   const practitioner = practitionerData?.data?.practitioner ?? null;
   const role =
+    profile?.role ??
     (clerkUser?.publicMetadata?.role as UserRole | undefined) ??
     initialUser?.role ??
     "staff";
@@ -255,7 +256,7 @@ export function ProfileClient({
         </TabsList>
 
         <TabsContent value="contact">
-          <ProfileContactTab profile={profile} role={role} />
+          <ProfileContactTab profile={profile} />
         </TabsContent>
 
         {canEditPractitioner && (

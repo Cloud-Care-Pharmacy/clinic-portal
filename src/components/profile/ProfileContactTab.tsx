@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
 import { useUpdateProfile } from "@/lib/hooks/use-profile";
-import type { UpdateUserProfilePayload, UserProfile, UserRole } from "@/types";
+import type { UpdateUserProfilePayload, UserProfile } from "@/types";
 
 const contactSchema = z.object({
   firstName: z
@@ -49,10 +49,9 @@ type ContactFormValues = z.infer<typeof contactSchema>;
 
 interface ProfileContactTabProps {
   profile: UserProfile | null;
-  role: UserRole;
 }
 
-export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
+export function ProfileContactTab({ profile }: ProfileContactTabProps) {
   const updateProfile = useUpdateProfile();
   const [errors, setErrors] = useState<
     Partial<Record<keyof ContactFormValues, string>>
@@ -97,7 +96,6 @@ export function ProfileContactTab({ profile, role }: ProfileContactTabProps) {
       email: data.email ? data.email : null,
       phone: data.phone ? data.phone : null,
     };
-    if (!profile) payload.role = role;
 
     updateProfile.mutate(payload, {
       onSuccess: () => {

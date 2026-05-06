@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import { WorkspaceClient } from "./WorkspaceClient";
 import { api } from "@/lib/api";
-import { getEntityId, requireAuth } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 
 export default async function WorkspacePage() {
-  const { role, userId } = await requireAuth();
+  const { role, userId, entityId } = await requireAuth();
   if (role !== "admin") redirect("/dashboard");
 
-  const entityId = await getEntityId();
   const [initialEntity, initialUsers, initialInvitations, initialSettings] =
     await Promise.all([
       entityId ? api.getEntity(entityId).catch(() => undefined) : undefined,
