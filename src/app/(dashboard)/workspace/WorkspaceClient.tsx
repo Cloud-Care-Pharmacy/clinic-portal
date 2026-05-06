@@ -124,6 +124,7 @@ export function WorkspaceClient({
         <TabsContent value="invites" className="space-y-4">
           <WorkspaceInvitationsTable
             invitations={invitations}
+            users={users}
             loading={invitationsQuery.isLoading || invitationsQuery.isFetching}
             unavailableMessage={invitationsUnavailable}
             onInvite={() => setInviteOpen(true)}
