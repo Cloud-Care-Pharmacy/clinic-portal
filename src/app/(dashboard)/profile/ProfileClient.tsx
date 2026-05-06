@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertBody, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import { useProfile } from "@/lib/hooks/use-profile";
 import { usePractitioner } from "@/lib/hooks/use-practitioner";
-import { Mail, Phone, User } from "lucide-react";
+import { Lock, Mail, Phone, User } from "lucide-react";
 import { ProfileContactTab } from "@/components/profile/ProfileContactTab";
 import { ProfileAvailabilityTab } from "@/components/profile/ProfileAvailabilityTab";
 import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetailsSection";
@@ -127,6 +129,16 @@ export function ProfileClient({
     [profile, practitioner, isDoctor]
   );
 
+  // Prescriber profile is "complete enough" to unlock availability when the
+  // core identifying credentials needed to actually prescribe are present.
+  const isPrescriberComplete = Boolean(
+    practitioner?.specialty?.trim() &&
+      practitioner?.prescriberNumber?.trim() &&
+      practitioner?.ahpraNumber?.trim()
+  );
+
+  const [activeTab, setActiveTab] = useState("contact");
+
   const isLoading =
     (!initialUser && !clerkLoaded) || profileLoading || practitionerLoading;
 
@@ -240,17 +252,27 @@ export function ProfileClient({
       </Card>
 
       {/* Tabs */}
-      <Tabs defaultValue="contact" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="contact">Contact</TabsTrigger>
-          {canEditPractitioner && (
-            <TabsTrigger value="availability">Availability</TabsTrigger>
-          )}
           {canEditPractitioner && (
             <TabsTrigger value="prescriber">Prescriber Details</TabsTrigger>
           )}
           {canEditPractitioner && (
             <TabsTrigger value="business">Business Details</TabsTrigger>
+          )}
+          {canEditPractitioner && (
+            <TabsTrigger
+              value="availability"
+              title={
+                isPrescriberComplete
+                  ? undefined
+                  : "Complete your prescriber profile to unlock Availability"
+              }
+            >
+              {!isPrescriberComplete && <Lock className="size-3.5" aria-hidden />}
+              Availability
+            </TabsTrigger>
           )}
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
@@ -260,13 +282,16 @@ export function ProfileClient({
         </TabsContent>
 
         {canEditPractitioner && (
-          <TabsContent value="availability">
-            <ProfileAvailabilityTab practitioner={practitioner} />
-          </TabsContent>
-        )}
-
-        {canEditPractitioner && (
           <TabsContent value="prescriber">
+            {!isPrescriberComplete && (
+              <Alert variant="info" className="mb-4">
+                <AlertTitle>Complete your prescriber profile</AlertTitle>
+                <AlertBody>
+                  Add your specialty, prescriber number, and AHPRA number below to
+                  unlock the Availability section.
+                </AlertBody>
+              </Alert>
+            )}
             <PrescriberDetailsSection practitioner={practitioner} />
           </TabsContent>
         )}
@@ -274,6 +299,32 @@ export function ProfileClient({
         {canEditPractitioner && (
           <TabsContent value="business">
             <BusinessDetailsSection practitioner={practitioner} />
+          </TabsContent>
+        )}
+
+        {canEditPractitioner && (
+          <TabsContent value="availability">
+            {isPrescriberComplete ? (
+              <ProfileAvailabilityTab practitioner={practitioner} />
+            ) : (
+              <Alert variant="warning">
+                <AlertTitle>Prescriber profile required</AlertTitle>
+                <AlertBody>
+                  You need to complete your prescriber profile before setting your
+                  availability. Add your specialty, prescriber number, and AHPRA
+                  number first.
+                </AlertBody>
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setActiveTab("prescriber")}
+                  >
+                    Go to Prescriber Details
+                  </Button>
+                </div>
+              </Alert>
+            )}
           </TabsContent>
         )}
 
