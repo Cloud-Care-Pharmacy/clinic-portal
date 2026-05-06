@@ -3,6 +3,7 @@
 import { Search, X, CirclePlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -43,6 +44,8 @@ interface FilterBarProps {
   trailing?: React.ReactNode;
   /** Result count to display */
   resultCount?: number;
+  /** Show a skeleton placeholder where the result count appears */
+  resultCountLoading?: boolean;
   /** Result count label (default: "results") */
   resultLabel?: string;
 }
@@ -55,6 +58,7 @@ export function FilterBar({
   filters = [],
   trailing,
   resultCount,
+  resultCountLoading = false,
   resultLabel = "results",
 }: FilterBarProps) {
   const activeCount = filters.reduce((sum, f) => sum + f.value.length, 0);
@@ -102,11 +106,13 @@ export function FilterBar({
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        {resultCount !== undefined && (
+        {resultCountLoading ? (
+          <Skeleton className="h-4 w-24" />
+        ) : resultCount !== undefined ? (
           <span className="whitespace-nowrap text-sm text-muted-foreground tabular-nums">
             {resultCount} {resultLabel}
           </span>
-        )}
+        ) : null}
         {trailing}
       </div>
     </div>

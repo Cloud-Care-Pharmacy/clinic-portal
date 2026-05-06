@@ -227,6 +227,27 @@ export function OverviewTab({
     return irn ? `${formatted} ${irn}` : formatted;
   }
 
+  function formatMedicareExpiry(expiry: string | null | undefined): string {
+    if (!expiry) return "—";
+    const [year, month, day] = expiry.split("-");
+    const yearNumber = Number(year);
+    const monthNumber = Number(month);
+    const dayNumber = day ? Number(day) : 1;
+
+    if (!year || !month || Number.isNaN(yearNumber) || Number.isNaN(monthNumber)) {
+      return expiry;
+    }
+
+    const date = new Date(yearNumber, monthNumber - 1, dayNumber);
+    if (Number.isNaN(date.getTime())) return expiry;
+
+    return date.toLocaleDateString("en-AU", {
+      ...(day ? { day: "numeric" as const } : {}),
+      month: "short",
+      year: "numeric",
+    });
+  }
+
   return (
     <>
       <div className="grid grid-flow-row-dense grid-cols-12 gap-x-5 gap-y-6 max-[1100px]:grid-cols-1">
@@ -419,6 +440,10 @@ export function OverviewTab({
                   patient?.medicareNumber ?? null,
                   patient?.medicareIrn ?? null
                 )}
+              </dd>
+              <dt className="text-muted-foreground">Medicare expiry</dt>
+              <dd className="font-medium">
+                {formatMedicareExpiry(patient?.medicareExpiry)}
               </dd>
             </dl>
           </OverviewCard>

@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
@@ -83,7 +84,65 @@ function DetailRow({
 }
 
 function eventLabel(event: TaskEvent) {
-  return event.eventType.replace(/^task-/, "").replace(/-/g, " ");
+  return event.eventType.replace(/^task-/, "").replace(/[-_]/g, " ");
+}
+
+function TaskHistory({
+  events,
+  loading,
+  errorMessage,
+}: {
+  events: TaskEvent[];
+  loading: boolean;
+  errorMessage?: string;
+}) {
+  return (
+    <>
+      <Separator />
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-medium">Task history</p>
+        </div>
+        <div className="rounded-md border bg-muted/30 p-2 text-sm">
+          {loading ? (
+            <div className="space-y-2" aria-label="Loading task history">
+              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          ) : errorMessage ? (
+            <p className="text-muted-foreground">
+              Task history could not be loaded. Try refreshing this task.
+            </p>
+          ) : events.length === 0 ? (
+            <p className="text-muted-foreground">
+              No task history has been recorded yet.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {events.map((event) => (
+                <li
+                  key={event.eventId}
+                  className="flex items-start justify-between gap-2"
+                >
+                  <span className="min-w-0">
+                    <span className="font-medium capitalize">{eventLabel(event)}</span>
+                    {event.note && (
+                      <span className="text-muted-foreground"> · {event.note}</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatTaskDateTime(event.createdAt)}
+                    {event.actorName ? ` · ${event.actorName}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </>
+  );
 }
 
 function buildInitialResponse(task: Task | null): TaskResponse | undefined {
@@ -102,7 +161,8 @@ export function TaskDetailSheet({
   const currentInternalUserId = profileQuery.data?.data?.profile?.id;
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
-  const { data } = useTask(task?.taskId, buildInitialResponse(task));
+  const taskQuery = useTask(task?.taskId, buildInitialResponse(task));
+  const { data } = taskQuery;
   const detailTask = data?.data.task ?? task;
   const events = data?.data.events ?? [];
   const isPending = updateTask.isPending || completeTask.isPending;
@@ -323,38 +383,15 @@ export function TaskDetailSheet({
             </DetailRow>
           )}
 
-          {events.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Task history</p>
-                </div>
-                <ul className="space-y-1 rounded-md border bg-muted/30 p-2 text-sm">
-                  {events.map((event) => (
-                    <li
-                      key={event.eventId}
-                      className="flex items-start justify-between gap-2"
-                    >
-                      <span className="min-w-0">
-                        <span className="font-medium capitalize">
-                          {eventLabel(event)}
-                        </span>
-                        {event.note && (
-                          <span className="text-muted-foreground"> · {event.note}</span>
-                        )}
-                      </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {formatTaskDateTime(event.createdAt)}
-                        {event.actorName ? ` · ${event.actorName}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </>
-          )}
+          <TaskHistory
+            events={events}
+            loading={taskQuery.isFetching && events.length === 0}
+            errorMessage={
+              taskQuery.isError && events.length === 0
+                ? taskQuery.error.message
+                : undefined
+            }
+          />
         </div>
       </AppSheet>
 

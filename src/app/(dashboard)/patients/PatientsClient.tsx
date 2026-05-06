@@ -6,7 +6,6 @@ import { usePatients } from "@/lib/hooks/use-patients";
 import { PatientTable } from "@/components/patients/PatientTable";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
-import { Skeleton } from "@/components/ui/skeleton";
 import type {
   PatientPmsStatusFilter,
   PatientsListResponse,
@@ -42,7 +41,7 @@ export function PatientsClient({ entityId, initialPatients }: PatientsClientProp
     }),
     [searchQuery, sort?.field, sort?.sort, statusFilters]
   );
-  const { data, isLoading, error } = usePatients(
+  const { data, isLoading, isFetching, error } = usePatients(
     entityId || undefined,
     query,
     initialPatients
@@ -55,13 +54,7 @@ export function PatientsClient({ entityId, initialPatients }: PatientsClientProp
         Manage your patients and their intake records here.
       </p>
       <ErrorBoundary>
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : error ? (
+        {error ? (
           <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
             Failed to load patients: {error.message}
           </div>
@@ -69,6 +62,8 @@ export function PatientsClient({ entityId, initialPatients }: PatientsClientProp
           <PatientTable
             patients={data?.data?.patients ?? []}
             total={data?.data?.pagination.total}
+            loading={isLoading || isFetching}
+            resultCountLoading={isLoading || isFetching}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             statusFilters={statusFilters}
