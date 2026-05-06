@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
 import { useSidebarState } from "@/components/providers/SidebarProvider";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
+import { NotificationsBell } from "@/components/layout/NotificationsBell";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -92,6 +93,7 @@ export function Header({ onSearchOpen }: HeaderProps) {
             <span className="flex-1 truncate">Search patients, prescriptions…</span>
             <Kbd>⌘ K</Kbd>
           </button>
+          <NotificationsBell />
         </div>
       </div>
     </header>
