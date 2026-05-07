@@ -9,7 +9,6 @@ import { DoctorAvatar } from "./DoctorAvatar";
 interface WeekGridProps {
   doctors: RosterDoctor[];
   weekStartISO: string;
-  density: "compact" | "cozy" | "comfy";
   selectedDoctorId: string | null;
   todayIndex: number | null; // 0..6 (Mon..Sun) or null if not in this week
   onSelectDoctor: (doctorId: string) => void;
@@ -28,22 +27,13 @@ function addDays(d: Date, n: number): Date {
   return x;
 }
 
-function densityRowVar(density: WeekGridProps["density"]): string {
-  switch (density) {
-    case "compact":
-      return "56px";
-    case "cozy":
-      return "72px";
-    case "comfy":
-    default:
-      return "84px";
-  }
+function densityRowVar(): string {
+  return "84px";
 }
 
 export function WeekGrid({
   doctors,
   weekStartISO,
-  density,
   selectedDoctorId,
   todayIndex,
   onSelectDoctor,
@@ -60,12 +50,12 @@ export function WeekGrid({
   return (
     <div className="overflow-x-auto">
       <div
-        className={cn("rosters-week-grid", `density-${density}`)}
+        className={cn("rosters-week-grid")}
         style={
           {
             "--col-doc": "220px",
-            "--col-day": density === "compact" ? "96px" : "110px",
-            "--row-h": densityRowVar(density),
+            "--col-day": "110px",
+            "--row-h": densityRowVar(),
             display: "grid",
             gridTemplateColumns:
               "var(--col-doc) repeat(7, minmax(var(--col-day), 1fr))",
@@ -127,7 +117,6 @@ export function WeekGrid({
           <DoctorRow
             key={doctor.id}
             doctor={doctor}
-            density={density}
             todayIndex={todayIndex}
             isSelected={selectedDoctorId === doctor.id}
             onSelect={() => onSelectDoctor(doctor.id)}
@@ -140,13 +129,12 @@ export function WeekGrid({
 
 interface DoctorRowProps {
   doctor: RosterDoctor;
-  density: WeekGridProps["density"];
   todayIndex: number | null;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-function DoctorRow({ doctor, density, todayIndex, isSelected, onSelect }: DoctorRowProps) {
+function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps) {
   const isMe = !!doctor.isMe;
   const cellBg = isSelected
     ? "color-mix(in srgb, var(--primary) 10%, var(--card))"
@@ -181,7 +169,7 @@ function DoctorRow({ doctor, density, todayIndex, isSelected, onSelect }: Doctor
         <DoctorAvatar
           doctorId={doctor.id}
           name={doctor.name}
-          size={density === "compact" ? "sm" : "md"}
+          size="md"
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -200,11 +188,9 @@ function DoctorRow({ doctor, density, todayIndex, isSelected, onSelect }: Doctor
               </span>
             )}
           </div>
-          {density !== "compact" && (
-            <div className="truncate text-xs text-muted-foreground">
-              {doctor.specialty} · {doctor.clinic}
-            </div>
-          )}
+          <div className="truncate text-xs text-muted-foreground">
+            {doctor.specialty} · {doctor.clinic}
+          </div>
         </div>
       </div>
 
@@ -215,7 +201,6 @@ function DoctorRow({ doctor, density, todayIndex, isSelected, onSelect }: Doctor
           isToday={todayIndex === dayIdx}
           isWeekend={dayIdx >= 5}
           isLastCol={dayIdx === 6}
-          density={density}
           rowSelected={isSelected}
           rowIsMe={isMe}
         />
@@ -229,7 +214,6 @@ interface DayCellProps {
   isToday: boolean;
   isWeekend: boolean;
   isLastCol: boolean;
-  density: WeekGridProps["density"];
   rowSelected: boolean;
   rowIsMe: boolean;
 }
@@ -239,7 +223,6 @@ function DayCell({
   isToday,
   isWeekend,
   isLastCol,
-  density,
   rowSelected,
   rowIsMe,
 }: DayCellProps) {
@@ -264,12 +247,12 @@ function DayCell({
           : null),
       }}
     >
-      <ShiftBlock shift={shift} density={density} />
+      <ShiftBlock shift={shift} />
     </div>
   );
 }
 
-function ShiftBlock({ shift, density }: { shift: Shift; density: WeekGridProps["density"] }) {
+function ShiftBlock({ shift }: { shift: Shift }) {
   if (shift.kind === "off") {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -295,7 +278,7 @@ function ShiftBlock({ shift, density }: { shift: Shift; density: WeekGridProps["
         <div className="text-[12.5px] font-semibold leading-tight tabular-nums">
           On leave
         </div>
-        {density !== "compact" && shift.note && (
+        {shift.note && (
           <div className="truncate text-[11px] italic">{shift.note}</div>
         )}
       </div>
@@ -328,23 +311,21 @@ function ShiftBlock({ shift, density }: { shift: Shift; density: WeekGridProps["
       <div className="text-[12.5px] font-semibold leading-tight tabular-nums">
         {shift.start}&ndash;{shift.end}
       </div>
-      {density !== "compact" && (
-        <div className="flex items-center gap-1.5 text-[11px] leading-tight">
-          <Users className="h-3 w-3" aria-hidden="true" />
-          <span className="tabular-nums">
-            {shift.booked ?? 0}/{shift.capacity ?? 0}
-          </span>
-          {currentSlot && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="truncate tabular-nums">
-                {currentSlot.start}&ndash;{currentSlot.end}{" "}
-                <span className="font-medium">{currentSlot.patientShortName}</span>
-              </span>
-            </>
-          )}
-        </div>
-      )}
+      <div className="flex items-center gap-1.5 text-[11px] leading-tight">
+        <Users className="h-3 w-3" aria-hidden="true" />
+        <span className="tabular-nums">
+          {shift.booked ?? 0}/{shift.capacity ?? 0}
+        </span>
+        {currentSlot && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="truncate tabular-nums">
+              {currentSlot.start}&ndash;{currentSlot.end}{" "}
+              <span className="font-medium">{currentSlot.patientShortName}</span>
+            </span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,14 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarPlus } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRosterMonth, useRosterWeek } from "@/lib/hooks/use-rosters";
 import { startOfWeekMonday } from "@/lib/rosters-mock";
 import type { RosterMonthResponse, RosterWeekResponse } from "@/types";
-import { RosterCard, type Density, type ViewMode } from "@/components/rosters/RosterCard";
+import { RosterCard, type ViewMode } from "@/components/rosters/RosterCard";
 import { RosterLegend } from "@/components/rosters/RosterLegend";
 import { WeekGrid } from "@/components/rosters/WeekGrid";
 import { MonthGrid } from "@/components/rosters/MonthGrid";
@@ -60,7 +58,6 @@ export function RostersClient({
   initialMonth,
 }: RostersClientProps) {
   const [view, setView] = useState<ViewMode>("week");
-  const [density, setDensity] = useState<Density>("comfy");
   const [tab, setTab] = useState<FilterTab>("all");
   const [weekStartISO, setWeekStartISO] = useState(initialWeekStartISO);
   const [monthISO, setMonthISO] = useState(initialMonthISO);
@@ -188,15 +185,8 @@ export function RostersClient({
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Rosters" }]}
         title="Doctor Rosters"
         description="Weekly availability across the practice. Click a doctor to view their full week."
-        actions={
-          <Button type="button" variant="default" disabled title="Coming soon">
-            <CalendarPlus className="h-4 w-4" />
-            New Shift
-          </Button>
-        }
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -221,9 +211,7 @@ export function RostersClient({
         rangeLabel={rangeLabel}
         stepLabel={stepLabel}
         view={view}
-        density={density}
         onView={setView}
-        onDensity={setDensity}
         onPrev={() => step(-1)}
         onNext={() => step(1)}
         onToday={goToday}
@@ -232,7 +220,6 @@ export function RostersClient({
           <WeekGrid
             doctors={filteredDoctors}
             weekStartISO={weekStartISO}
-            density={density}
             selectedDoctorId={selectedDoctorId}
             todayIndex={todayIndex}
             onSelectDoctor={(id) => setSelectedDoctorId(id)}
