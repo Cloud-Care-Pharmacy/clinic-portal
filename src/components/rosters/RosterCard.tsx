@@ -7,16 +7,13 @@ import { SegmentedControl } from "@/components/shared/SegmentedControl";
 import type { ReactNode } from "react";
 
 export type ViewMode = "week" | "month";
-export type Density = "compact" | "cozy" | "comfy";
 
 interface RosterCardProps {
   title: string;
   rangeLabel: string;
   stepLabel: string;
   view: ViewMode;
-  density: Density;
   onView: (v: ViewMode) => void;
-  onDensity: (d: Density) => void;
   onPrev: () => void;
   onNext: () => void;
   onToday: () => void;
@@ -28,9 +25,7 @@ export function RosterCard({
   rangeLabel,
   stepLabel,
   view,
-  density,
   onView,
-  onDensity,
   onPrev,
   onNext,
   onToday,
@@ -94,18 +89,6 @@ export function RosterCard({
               { value: "month", label: "Month" },
             ]}
           />
-          {view === "week" && (
-            <SegmentedControl<Density>
-              value={density}
-              onChange={onDensity}
-              size="sm"
-              options={[
-                { value: "compact", label: "Compact" },
-                { value: "cozy", label: "Cozy" },
-                { value: "comfy", label: "Comfy" },
-              ]}
-            />
-          )}
         </div>
       </div>
       <div className={cn(view === "week" ? "" : "p-2")}>{children}</div>
