@@ -10,10 +10,10 @@ Spec source of truth: [`ROSTERS_SPEC.md`](../../ROSTERS_SPEC.md) (especially §1
 
 We need **two new gateway endpoints** that join existing practitioner / availability / consultation data into a single roster payload. We also need **one new resource** for leave/time-off because the existing availability schema only carries recurring office hours.
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/rosters/week?start=YYYY-MM-DD` | Weekly grid for all active doctors in the entity |
-| `GET /api/rosters/month?month=YYYY-MM` | Month calendar — one row per calendar day with per-doctor shift summary |
+| Endpoint                                 | Purpose                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------- |
+| `GET /api/rosters/week?start=YYYY-MM-DD` | Weekly grid for all active doctors in the entity                        |
+| `GET /api/rosters/month?month=YYYY-MM`   | Month calendar — one row per calendar day with per-doctor shift summary |
 
 Both should return wall-clock times in `Australia/Sydney` and use the standard `{ success, data }` envelope.
 
@@ -54,11 +54,11 @@ These exist today and the new roster endpoints should join over them rather than
 
 ### Request
 
-| Param | Required | Notes |
-|---|---|---|
-| `start` | yes | ISO date `YYYY-MM-DD`. **Must be a Monday** (en-AU week start). Gateway should 400 otherwise rather than silently snapping. |
-| `entityId` | no | Defaults to the caller's entity. Reject if caller has no membership. |
-| `includeInactive` | no | Boolean, default `false`. |
+| Param             | Required | Notes                                                                                                                       |
+| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `start`           | yes      | ISO date `YYYY-MM-DD`. **Must be a Monday** (en-AU week start). Gateway should 400 otherwise rather than silently snapping. |
+| `entityId`        | no       | Defaults to the caller's entity. Reject if caller has no membership.                                                        |
+| `includeInactive` | no       | Boolean, default `false`.                                                                                                   |
 
 ### Response
 
@@ -67,8 +67,8 @@ These exist today and the new roster endpoints should join over them rather than
   "success": true,
   "data": {
     "weekStart": "2026-05-04",
-    "weekEnd":   "2026-05-10",
-    "timezone":  "Australia/Sydney",
+    "weekEnd": "2026-05-10",
+    "timezone": "Australia/Sydney",
     "doctors": [
       {
         "id": "usr_…",
@@ -79,15 +79,31 @@ These exist today and the new roster endpoints should join over them rather than
         "joined": "Mar 2023",
         "isMe": true,
         "week": [
-          { "kind": "available", "start": "08:00", "end": "16:00", "booked": 8,  "capacity": 12 },
-          { "kind": "available", "start": "09:00", "end": "17:00", "booked": 6,  "capacity": 12 },
+          {
+            "kind": "available",
+            "start": "08:00",
+            "end": "16:00",
+            "booked": 8,
+            "capacity": 12
+          },
+          {
+            "kind": "available",
+            "start": "09:00",
+            "end": "17:00",
+            "booked": 6,
+            "capacity": 12
+          },
           {
             "kind": "busy",
-            "start": "09:00", "end": "17:00", "booked": 9, "capacity": 12,
+            "start": "09:00",
+            "end": "17:00",
+            "booked": 9,
+            "capacity": 12,
             "consultations": [
               {
                 "id": "cons_…",
-                "start": "14:00", "end": "14:30",
+                "start": "14:00",
+                "end": "14:30",
                 "patientName": "Anika Patel",
                 "patientShortName": "A. Patel",
                 "type": "Follow-up",
@@ -95,8 +111,20 @@ These exist today and the new roster endpoints should join over them rather than
               }
             ]
           },
-          { "kind": "available", "start": "09:00", "end": "17:00", "booked": 4, "capacity": 12 },
-          { "kind": "available", "start": "08:00", "end": "13:00", "booked": 5, "capacity": 7  },
+          {
+            "kind": "available",
+            "start": "09:00",
+            "end": "17:00",
+            "booked": 4,
+            "capacity": 12
+          },
+          {
+            "kind": "available",
+            "start": "08:00",
+            "end": "13:00",
+            "booked": 5,
+            "capacity": 7
+          },
           { "kind": "off" },
           { "kind": "off" }
         ]
@@ -132,10 +160,10 @@ These exist today and the new roster endpoints should join over them rather than
 
 ### Request
 
-| Param | Required | Notes |
-|---|---|---|
-| `month` | yes | `YYYY-MM`. Gateway should 400 on malformed input. |
-| `entityId` | no | Same scoping rule as above. |
+| Param      | Required | Notes                                             |
+| ---------- | -------- | ------------------------------------------------- |
+| `month`    | yes      | `YYYY-MM`. Gateway should 400 on malformed input. |
+| `entityId` | no       | Same scoping rule as above.                       |
 
 ### Response
 
@@ -145,8 +173,8 @@ These exist today and the new roster endpoints should join over them rather than
   "data": {
     "month": "2026-05",
     "monthStart": "2026-05-01",
-    "monthEnd":   "2026-05-31",
-    "timezone":   "Australia/Sydney",
+    "monthEnd": "2026-05-31",
+    "timezone": "Australia/Sydney",
     "days": [
       {
         "date": "2026-04-27",
@@ -155,7 +183,13 @@ These exist today and the new roster endpoints should join over them rather than
           {
             "doctorId": "usr_…",
             "initials": "AC",
-            "shift": { "kind": "available", "start": "08:00", "end": "16:00", "booked": 8, "capacity": 12 }
+            "shift": {
+              "kind": "available",
+              "start": "08:00",
+              "end": "16:00",
+              "booked": 8,
+              "capacity": 12
+            }
           }
         ]
       },
@@ -163,8 +197,22 @@ These exist today and the new roster endpoints should join over them rather than
         "date": "2026-05-06",
         "inMonth": true,
         "shifts": [
-          { "doctorId": "usr_…", "initials": "AC", "shift": { "kind": "busy",  "start": "09:00", "end": "17:00", "booked": 9,  "capacity": 12 } },
-          { "doctorId": "usr_…", "initials": "JO", "shift": { "kind": "leave", "note":  "Annual leave" } }
+          {
+            "doctorId": "usr_…",
+            "initials": "AC",
+            "shift": {
+              "kind": "busy",
+              "start": "09:00",
+              "end": "17:00",
+              "booked": 9,
+              "capacity": 12
+            }
+          },
+          {
+            "doctorId": "usr_…",
+            "initials": "JO",
+            "shift": { "kind": "leave", "note": "Annual leave" }
+          }
         ]
       }
     ]

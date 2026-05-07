@@ -88,8 +88,8 @@ export function WeekGrid({
                 background: isToday
                   ? "color-mix(in srgb, var(--primary) 6%, var(--table-header))"
                   : isWeekend
-                  ? "color-mix(in srgb, var(--muted) 60%, var(--table-header))"
-                  : "var(--table-header)",
+                    ? "color-mix(in srgb, var(--muted) 60%, var(--table-header))"
+                    : "var(--table-header)",
                 borderColor: "var(--table-separator)",
               }}
             >
@@ -139,8 +139,8 @@ function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps)
   const cellBg = isSelected
     ? "color-mix(in srgb, var(--primary) 10%, var(--card))"
     : isMe
-    ? "color-mix(in srgb, var(--primary) 5%, var(--card))"
-    : "var(--card)";
+      ? "color-mix(in srgb, var(--primary) 5%, var(--card))"
+      : "var(--card)";
 
   return (
     <>
@@ -166,11 +166,7 @@ function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps)
           height: "var(--row-h)",
         }}
       >
-        <DoctorAvatar
-          doctorId={doctor.id}
-          name={doctor.name}
-          size="md"
-        />
+        <DoctorAvatar doctorId={doctor.id} name={doctor.name} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-semibold text-foreground">
@@ -229,8 +225,8 @@ function DayCell({
   const baseBg = isToday
     ? "color-mix(in srgb, var(--primary) 3%, var(--background))"
     : isWeekend
-    ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
-    : "var(--background)";
+      ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
+      : "var(--background)";
 
   return (
     <div
@@ -241,10 +237,16 @@ function DayCell({
         height: "var(--row-h)",
         // subtle row-tint for selected/me carries through here too
         ...(rowSelected
-          ? { boxShadow: "inset 0 0 0 9999px color-mix(in srgb, var(--primary) 5%, transparent)" }
+          ? {
+              boxShadow:
+                "inset 0 0 0 9999px color-mix(in srgb, var(--primary) 5%, transparent)",
+            }
           : rowIsMe
-          ? { boxShadow: "inset 0 0 0 9999px color-mix(in srgb, var(--primary) 2%, transparent)" }
-          : null),
+            ? {
+                boxShadow:
+                  "inset 0 0 0 9999px color-mix(in srgb, var(--primary) 2%, transparent)",
+              }
+            : null),
       }}
     >
       <ShiftBlock shift={shift} />
@@ -278,9 +280,7 @@ function ShiftBlock({ shift }: { shift: Shift }) {
         <div className="text-[12.5px] font-semibold leading-tight tabular-nums">
           On leave
         </div>
-        {shift.note && (
-          <div className="truncate text-[11px] italic">{shift.note}</div>
-        )}
+        {shift.note && <div className="truncate text-[11px] italic">{shift.note}</div>}
       </div>
     );
   }

@@ -4,10 +4,6 @@ export const metadata: Metadata = {
   title: "Rosters — Cloud Care Pharmacy",
 };
 
-export default function RostersLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RostersLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

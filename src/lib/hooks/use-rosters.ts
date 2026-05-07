@@ -7,10 +7,7 @@
  */
 
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import {
-  getMockRosterMonth,
-  getMockRosterWeek,
-} from "@/lib/rosters-mock";
+import { getMockRosterMonth, getMockRosterWeek } from "@/lib/rosters-mock";
 import type { RosterMonthResponse, RosterWeekResponse } from "@/types";
 
 async function fetchRosterWeek(weekStartISO: string): Promise<RosterWeekResponse> {
@@ -38,20 +35,14 @@ export function rosterMonthQueryOptions(monthISO: string) {
   });
 }
 
-export function useRosterWeek(
-  weekStartISO: string,
-  initialData?: RosterWeekResponse
-) {
+export function useRosterWeek(weekStartISO: string, initialData?: RosterWeekResponse) {
   return useQuery({
     ...rosterWeekQueryOptions(weekStartISO),
     initialData,
   });
 }
 
-export function useRosterMonth(
-  monthISO: string,
-  initialData?: RosterMonthResponse
-) {
+export function useRosterMonth(monthISO: string, initialData?: RosterMonthResponse) {
   return useQuery({
     ...rosterMonthQueryOptions(monthISO),
     initialData,
