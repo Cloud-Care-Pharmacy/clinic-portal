@@ -42,9 +42,7 @@ export function RosterCard({
       >
         <div className="min-w-0">
           <div className="text-base font-semibold text-foreground">{title}</div>
-          <div className="mt-0.5 text-[13px] text-muted-foreground">
-            {rangeLabel}
-          </div>
+          <div className="mt-0.5 text-[13px] text-muted-foreground">{rangeLabel}</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button

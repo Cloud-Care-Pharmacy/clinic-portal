@@ -70,14 +70,15 @@ export function DoctorDrawer({
     <AppSheet
       open={open}
       onOpenChange={onOpenChange}
-      className="bg-background sm:w-[520px]! sm:max-w-[520px]!"
-      bodyClassName="px-5 py-5"
-      title={
+      title={doctor.name}
+      description={`${doctor.specialty} · ${doctor.clinic} clinic`}
+    >
+      <div className="space-y-6">
         <div className="flex items-center gap-3">
           <DoctorAvatar doctorId={doctor.id} name={doctor.name} size="lg" />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-[17px] font-bold text-foreground">
+              <span className="text-[15px] font-semibold text-foreground">
                 {doctor.name}
               </span>
               {doctor.isMe && (
@@ -97,18 +98,13 @@ export function DoctorDrawer({
             </div>
           </div>
         </div>
-      }
-    >
-      <div className="space-y-6">
+
         <Section title="This week">
           <div
             className="overflow-hidden rounded-xl border"
             style={{ borderColor: "var(--border)" }}
           >
-            <div
-              className="grid"
-              style={{ gridTemplateColumns: "80px 1fr 110px" }}
-            >
+            <div className="grid" style={{ gridTemplateColumns: "80px 1fr 110px" }}>
               {doctor.week.map((shift, i) => {
                 const date = addDays(monday, i);
                 const isToday = todayIndex === i;
@@ -133,9 +129,7 @@ export function DoctorDrawer({
             style={{ gridTemplateColumns: "130px 1fr" }}
           >
             <dt className="text-muted-foreground">Scheduled hours</dt>
-            <dd className="font-medium text-foreground">
-              {totals.hours.toFixed(1)} h
-            </dd>
+            <dd className="font-medium text-foreground">{totals.hours.toFixed(1)} h</dd>
             <dt className="text-muted-foreground">Booked / capacity</dt>
             <dd className="font-medium text-foreground tabular-nums">
               {totals.booked} / {totals.capacity}{" "}
@@ -152,7 +146,8 @@ export function DoctorDrawer({
           </dl>
         </Section>
 
-        {todayShift && (todayShift.kind === "available" || todayShift.kind === "busy") &&
+        {todayShift &&
+          (todayShift.kind === "available" || todayShift.kind === "busy") &&
           (todayShift.consultations?.length ?? 0) > 0 && (
             <Section title="Today's consultations">
               <ul className="flex flex-col gap-2">
@@ -162,9 +157,7 @@ export function DoctorDrawer({
                     className="flex items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
                     style={{
                       borderColor:
-                        c.status === "in_progress"
-                          ? "var(--primary)"
-                          : "var(--border)",
+                        c.status === "in_progress" ? "var(--primary)" : "var(--border)",
                       boxShadow:
                         c.status === "in_progress"
                           ? "0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent)"
@@ -192,15 +185,15 @@ export function DoctorDrawer({
                         c.status === "done"
                           ? "success"
                           : c.status === "in_progress"
-                          ? "warning"
-                          : "info"
+                            ? "warning"
+                            : "info"
                       }
                     >
                       {c.status === "done"
                         ? "Done"
                         : c.status === "in_progress"
-                        ? "In progress"
-                        : "Upcoming"}
+                          ? "In progress"
+                          : "Upcoming"}
                     </StatusBadge>
                   </li>
                 ))}
@@ -311,7 +304,10 @@ function DayRow({
         <div className="font-semibold leading-tight">{dow}</div>
         <div className="text-[11px] text-muted-foreground">{dateLabel}</div>
       </div>
-      <div className="flex items-center gap-2 px-3 py-2.5 text-[13px]" style={cellStyle}>
+      <div
+        className="flex items-center gap-2 px-3 py-2.5 text-[13px]"
+        style={cellStyle}
+      >
         {shift.kind === "off" ? (
           <span className="text-muted-foreground">Off duty</span>
         ) : shift.kind === "leave" ? (
@@ -321,9 +317,7 @@ function DayRow({
             <span className="font-semibold tabular-nums">
               {shift.start}–{shift.end}
             </span>
-            <StatusBadge
-              variant={shift.kind === "busy" ? "warning" : "success"}
-            >
+            <StatusBadge variant={shift.kind === "busy" ? "warning" : "success"}>
               {shift.kind === "busy" ? "In consult" : "Available"}
             </StatusBadge>
           </>

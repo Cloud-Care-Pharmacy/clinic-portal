@@ -77,10 +77,10 @@ function MonthDayCell({
   const bg = !day.inMonth
     ? "color-mix(in srgb, var(--muted) 50%, var(--background))"
     : isToday
-    ? "color-mix(in srgb, var(--primary) 3%, var(--background))"
-    : isWeekendIdx
-    ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
-    : "var(--background)";
+      ? "color-mix(in srgb, var(--primary) 3%, var(--background))"
+      : isWeekendIdx
+        ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
+        : "var(--background)";
 
   return (
     <button
@@ -157,23 +157,23 @@ function DoctorChip({ entry }: { entry: RosterMonthDayDoctor }) {
           border: "var(--status-danger-border)",
         }
       : shift.kind === "busy"
-      ? {
-          bg: "var(--status-warning-bg)",
-          fg: "var(--status-warning-fg)",
-          border: "var(--status-warning-border)",
-        }
-      : {
-          bg: "var(--status-success-bg)",
-          fg: "var(--status-success-fg)",
-          border: "var(--status-success-border)",
-        };
+        ? {
+            bg: "var(--status-warning-bg)",
+            fg: "var(--status-warning-fg)",
+            border: "var(--status-warning-border)",
+          }
+        : {
+            bg: "var(--status-success-bg)",
+            fg: "var(--status-success-fg)",
+            border: "var(--status-success-border)",
+          };
 
   const label =
     shift.kind === "leave"
       ? "leave"
       : shift.start && shift.end
-      ? `${shift.start}–${shift.end}`
-      : "";
+        ? `${shift.start}–${shift.end}`
+        : "";
 
   return (
     <span

@@ -163,7 +163,12 @@ const DOCTOR_SEEDS: DoctorSeed[] = [
         end: "17:00",
         capacity: 12,
         booked: 9,
-        currentSlot: { start: "14:00", end: "14:30", patient: "A. Patel", type: "Follow-up" },
+        currentSlot: {
+          start: "14:00",
+          end: "14:30",
+          patient: "A. Patel",
+          type: "Follow-up",
+        },
       },
       { kind: "available", start: "09:00", end: "17:00", capacity: 12, booked: 4 },
       { kind: "available", start: "08:00", end: "13:00", capacity: 7, booked: 5 },
@@ -186,7 +191,12 @@ const DOCTOR_SEEDS: DoctorSeed[] = [
         end: "18:00",
         capacity: 12,
         booked: 10,
-        currentSlot: { start: "13:30", end: "14:00", patient: "M. Singh", type: "Initial" },
+        currentSlot: {
+          start: "13:30",
+          end: "14:00",
+          patient: "M. Singh",
+          type: "Initial",
+        },
       },
       { kind: "available", start: "10:00", end: "18:00", capacity: 12, booked: 7 },
       { kind: "leave", note: "Annual leave" },
@@ -229,7 +239,12 @@ const DOCTOR_SEEDS: DoctorSeed[] = [
         end: "14:00",
         capacity: 10,
         booked: 10,
-        currentSlot: { start: "11:00", end: "11:30", patient: "K. Wong", type: "Review" },
+        currentSlot: {
+          start: "11:00",
+          end: "11:30",
+          patient: "K. Wong",
+          type: "Review",
+        },
       },
       { kind: "available", start: "08:00", end: "14:00", capacity: 10, booked: 6 },
       { kind: "off" },
@@ -337,7 +352,12 @@ const DOCTOR_SEEDS: DoctorSeed[] = [
         end: "19:00",
         capacity: 10,
         booked: 9,
-        currentSlot: { start: "15:00", end: "16:00", patient: "T. Brooks", type: "Follow-up" },
+        currentSlot: {
+          start: "15:00",
+          end: "16:00",
+          patient: "T. Brooks",
+          type: "Follow-up",
+        },
       },
       { kind: "available", start: "11:00", end: "19:00", capacity: 10, booked: 5 },
       { kind: "off" },
@@ -362,7 +382,10 @@ function patternToShift(entry: PatternEntry, dayIndex: number): Shift {
         booked: entry.booked,
         // Only attach detailed consultations for the "today" cell
         // (used by the drawer). Mock today = Wednesday (index 2).
-        consultations: dayIndex === 2 ? buildSampleConsultations(entry.start, entry.end, entry.booked) : undefined,
+        consultations:
+          dayIndex === 2
+            ? buildSampleConsultations(entry.start, entry.end, entry.booked)
+            : undefined,
       };
     case "busy":
       return {
