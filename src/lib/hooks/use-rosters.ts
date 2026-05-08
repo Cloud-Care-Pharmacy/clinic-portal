@@ -1,22 +1,39 @@
 /**
  * Roster data hooks.
  *
- * TODO: replace mock fetchers with `/api/proxy/rosters/week|month` calls
- * once the backend exposes them. Query keys and response shape are stable
- * so the swap should be a drop-in.
+ * Talks to `/api/proxy/rosters/{week,month}` which proxies to the
+ * gateway's `GET /api/rosters/week?start=YYYY-MM-DD` and
+ * `GET /api/rosters/month?month=YYYY-MM` endpoints.
+ *
+ * Query keys are stable: `["roster-week", weekStartISO]` and
+ * `["roster-month", monthISO]`.
  */
 
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getMockRosterMonth, getMockRosterWeek } from "@/lib/rosters-mock";
 import type { RosterMonthResponse, RosterWeekResponse } from "@/types";
 
+interface Envelope<T> {
+  success: boolean;
+  data: T;
+  error?: string;
+}
+
 async function fetchRosterWeek(weekStartISO: string): Promise<RosterWeekResponse> {
-  // Mock: resolves synchronously through a microtask so React Query sees a Promise.
-  return Promise.resolve(getMockRosterWeek(weekStartISO));
+  const res = await fetch(
+    `/api/proxy/rosters/week?start=${encodeURIComponent(weekStartISO)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch roster week");
+  const payload = (await res.json()) as Envelope<RosterWeekResponse>;
+  return payload.data;
 }
 
 async function fetchRosterMonth(monthISO: string): Promise<RosterMonthResponse> {
-  return Promise.resolve(getMockRosterMonth(monthISO));
+  const res = await fetch(
+    `/api/proxy/rosters/month?month=${encodeURIComponent(monthISO)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch roster month");
+  const payload = (await res.json()) as Envelope<RosterMonthResponse>;
+  return payload.data;
 }
 
 export function rosterWeekQueryOptions(weekStartISO: string) {

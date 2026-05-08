@@ -56,6 +56,8 @@ import type {
   WorkspaceInvitationsResponse,
   WorkspaceUsersResponse,
   UserRole,
+  RosterWeekResponse,
+  RosterMonthResponse,
 } from "@/types";
 import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 
@@ -195,6 +197,24 @@ class ApiClient {
     const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/consultations${qs}`
+    );
+  }
+
+  // ---- Rosters ----
+
+  async getRosterWeek(
+    weekStartISO: string
+  ): Promise<{ success: boolean; data: RosterWeekResponse }> {
+    return this.request(
+      `/api/rosters/week?start=${encodeURIComponent(weekStartISO)}`
+    );
+  }
+
+  async getRosterMonth(
+    monthISO: string
+  ): Promise<{ success: boolean; data: RosterMonthResponse }> {
+    return this.request(
+      `/api/rosters/month?month=${encodeURIComponent(monthISO)}`
     );
   }
 

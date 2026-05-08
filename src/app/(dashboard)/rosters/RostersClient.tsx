@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRosterMonth, useRosterWeek } from "@/lib/hooks/use-rosters";
-import { startOfWeekMonday } from "@/lib/rosters-mock";
+import { startOfWeekMonday } from "@/lib/rosters-utils";
 import type { RosterMonthResponse, RosterWeekResponse } from "@/types";
 import { RosterCard, type ViewMode } from "@/components/rosters/RosterCard";
 import { RosterLegend } from "@/components/rosters/RosterLegend";
@@ -15,8 +15,8 @@ import { DoctorDrawer } from "@/components/rosters/DoctorDrawer";
 interface RostersClientProps {
   initialWeekStartISO: string;
   initialMonthISO: string;
-  initialWeek: RosterWeekResponse;
-  initialMonth: RosterMonthResponse;
+  initialWeek?: RosterWeekResponse;
+  initialMonth?: RosterMonthResponse;
 }
 
 type FilterTab = "all" | "available-now" | "on-leave";
@@ -72,8 +72,17 @@ export function RostersClient({
     monthISO === initialMonthISO ? initialMonth : undefined
   );
 
-  const week = weekQuery.data ?? initialWeek;
-  const month = monthQuery.data ?? initialMonth;
+  const week: RosterWeekResponse =
+    weekQuery.data ??
+    initialWeek ?? { doctors: [], weekStart: weekStartISO, weekEnd: weekStartISO };
+  const month: RosterMonthResponse =
+    monthQuery.data ??
+    initialMonth ?? {
+      month: monthISO,
+      monthStart: `${monthISO}-01`,
+      monthEnd: `${monthISO}-01`,
+      days: [],
+    };
 
   // Today index relative to displayed week (0=Mon..6=Sun) or null if not in this week.
   const todayIndex = useMemo(() => {
