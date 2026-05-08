@@ -174,7 +174,7 @@ export function BusinessDetailsSection({ practitioner }: BusinessDetailsSectionP
             <div className="space-y-2">
               <Label htmlFor="ba-state">State</Label>
               <Select
-                value={stateValue || undefined}
+                value={stateValue ?? ""}
                 onValueChange={(v) => {
                   if (v) form.setValue("state", v, { shouldDirty: true });
                 }}
