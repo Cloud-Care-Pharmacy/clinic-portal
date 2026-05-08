@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  CalendarClock,
   ClipboardCheck,
   LogOut,
   Menu,
@@ -60,6 +61,11 @@ const generalNav: NavItem[] = [
     label: "Consultations",
     href: "/consultations",
     icon: <Calendar className="h-5 w-5" />,
+  },
+  {
+    label: "Rosters",
+    href: "/rosters",
+    icon: <CalendarClock className="h-5 w-5" />,
   },
 ];
 
