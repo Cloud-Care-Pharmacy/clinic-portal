@@ -79,7 +79,7 @@ export function WorkspaceClient({
   const usersUnavailable = unavailableMessage(usersQuery.error, "GET /api/users");
   const invitationsUnavailable = unavailableMessage(
     invitationsQuery.error,
-    "GET /api/staff/invitations?status=pending"
+    "GET /api/users/invitations?status=pending"
   );
   const settingsUnavailable = unavailableMessage(
     settingsQuery.error,

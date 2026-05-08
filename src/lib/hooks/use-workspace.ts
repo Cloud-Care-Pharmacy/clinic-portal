@@ -107,7 +107,7 @@ async function fetchWorkspaceInvitations(opts?: {
   appendWorkspaceParams(params, opts);
   if (opts?.status) params.set("status", opts.status);
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await fetch(`/api/proxy/staff/invitations${qs}`);
+  const res = await fetch(`/api/proxy/users/invitations${qs}`);
   await assertWorkspaceResponse(res, "Failed to fetch workspace invitations");
   return res.json();
 }
@@ -115,7 +115,7 @@ async function fetchWorkspaceInvitations(opts?: {
 async function createWorkspaceInvitation(
   data: CreateWorkspaceInvitationPayload
 ): Promise<WorkspaceInvitationResponse> {
-  const res = await fetch("/api/proxy/staff/invitations", {
+  const res = await fetch("/api/proxy/users/invitations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -128,7 +128,7 @@ async function resendWorkspaceInvitation(
   invitationId: string
 ): Promise<WorkspaceInvitationResponse> {
   const res = await fetch(
-    `/api/proxy/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+    `/api/proxy/users/invitations/${encodeURIComponent(invitationId)}/resend`,
     { method: "POST" }
   );
   await assertWorkspaceResponse(res, "Failed to resend invitation");
@@ -139,7 +139,7 @@ async function revokeWorkspaceInvitation(
   invitationId: string
 ): Promise<WorkspaceInvitationResponse> {
   const res = await fetch(
-    `/api/proxy/staff/invitations/${encodeURIComponent(invitationId)}`,
+    `/api/proxy/users/invitations/${encodeURIComponent(invitationId)}`,
     { method: "DELETE" }
   );
   await assertWorkspaceResponse(res, "Failed to revoke invitation");
@@ -153,7 +153,7 @@ async function updateWorkspaceUserRole({
   userId: string;
   role: UserRole;
 }): Promise<unknown> {
-  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}/role`, {
+  const res = await fetch(`/api/proxy/users/${encodeURIComponent(userId)}/role`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ role }),
@@ -176,7 +176,7 @@ async function updateWorkspaceUser({
   userId: string;
   data: UpdateWorkspaceUserPayload;
 }): Promise<unknown> {
-  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}`, {
+  const res = await fetch(`/api/proxy/users/${encodeURIComponent(userId)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -195,7 +195,7 @@ async function deactivateWorkspaceUser({
   const params = new URLSearchParams();
   if (restore) params.set("restore", "true");
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await fetch(`/api/proxy/staff/${encodeURIComponent(userId)}${qs}`, {
+  const res = await fetch(`/api/proxy/users/${encodeURIComponent(userId)}${qs}`, {
     method: "DELETE",
   });
   await assertWorkspaceResponse(
