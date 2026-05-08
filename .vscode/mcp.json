@@ -5,9 +5,12 @@
       "url": "https://mcp.vercel.com"
     },
     "FastMeds": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "apidog-mcp-server@latest", "--site-id=768952"]
+      "type": "http",
+      "url": "https://docs.quity.com.au/mcp"
+    },
+    "FastMeds-dev": {
+      "type": "http",
+      "url": "https://docs.dev.quity.com.au/mcp"
     }
   }
 }
