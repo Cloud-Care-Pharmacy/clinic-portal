@@ -1473,3 +1473,82 @@ export interface UserSession {
   image?: string;
   role: UserRole;
 }
+
+// ============================================
+// Roster types (see ROSTERS_SPEC.md §10)
+// ============================================
+
+export type ShiftKind = "available" | "busy" | "leave" | "off";
+
+export type RosterClinic = "Surry Hills" | "Newtown" | "Telehealth";
+
+export type RosterSpecialty =
+  | "GP"
+  | "Psychiatry"
+  | "Dermatology"
+  | "Cardiology"
+  | "Paediatrics"
+  | "Endocrinology";
+
+export interface RosterConsultation {
+  id: string;
+  start: string; // "14:00" 24h
+  end: string; // "14:30" 24h
+  patientName: string;
+  patientShortName: string;
+  type: string;
+  status: "done" | "in_progress" | "upcoming";
+}
+
+export interface Shift {
+  kind: ShiftKind;
+  start?: string;
+  end?: string;
+  booked?: number;
+  capacity?: number;
+  note?: string;
+  consultations?: RosterConsultation[];
+  /**
+   * Backend may return raw availability segments in addition to the
+   * collapsed `start`/`end`. Safe to ignore for v1 — UI uses the
+   * collapsed window.
+   */
+  segments?: { start: string; end: string }[];
+}
+
+export interface RosterDoctor {
+  id: string;
+  name: string;
+  specialty: RosterSpecialty;
+  clinic: RosterClinic;
+  phone?: string;
+  joined?: string;
+  isMe?: boolean;
+  /** length 7, Mon..Sun for the displayed week */
+  week: Shift[];
+}
+
+export interface RosterWeekResponse {
+  doctors: RosterDoctor[];
+  weekStart: string; // ISO date (Mon)
+  weekEnd: string; // ISO date (Sun)
+}
+
+export interface RosterMonthDayDoctor {
+  doctorId: string;
+  initials: string;
+  shift: Shift;
+}
+
+export interface RosterMonthDay {
+  date: string; // ISO date
+  inMonth: boolean;
+  shifts: RosterMonthDayDoctor[];
+}
+
+export interface RosterMonthResponse {
+  month: string; // "YYYY-MM"
+  monthStart: string;
+  monthEnd: string;
+  days: RosterMonthDay[];
+}
