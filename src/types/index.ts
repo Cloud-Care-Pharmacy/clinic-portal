@@ -825,10 +825,10 @@ export interface BulkClaimTasksResponse {
 }
 
 /**
- * Staff list item — matches GET /api/staff entries.
+ * Staff list item — matches GET /api/users entries.
  *
- * `id` is the internal users.id UUID (use this for PATCH /api/staff/:userId/role
- * and DELETE /api/staff/:userId). `authId` is the Clerk session id.
+ * `id` is the internal users.id UUID (use this for PATCH /api/users/:userId/role
+ * and DELETE /api/users/:userId). `authId` is the Clerk session id.
  * Practitioner data, when present, lives on the embedded `practitioner` object
  * (was previously flat fields on this object).
  */
@@ -850,7 +850,7 @@ export interface Staff {
 
 export type WorkspaceUserStatus = "active" | "inactive" | "invited" | "revoked";
 
-/** Workspace staff row from GET /api/users or GET /api/staff. */
+/** Workspace staff row from GET /api/users. */
 export interface WorkspaceUser {
   id: string;
   authId: string | null;
@@ -1268,7 +1268,7 @@ export interface UserProfileResponse {
 /**
  * Payload for PUT /api/users/me. All fields optional — omit to leave unchanged, send `null` to clear.
  * `role` and `entityId` are intentionally NOT included — those are admin-only mutations
- * (see PATCH /api/staff/:userId/role and the workspace management endpoints).
+ * (see PATCH /api/users/:userId/role and the workspace management endpoints).
  */
 export interface UpdateUserProfilePayload {
   firstName?: string | null;
