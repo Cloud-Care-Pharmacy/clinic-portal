@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CalendarX, Filter, AlertTriangle, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRosterMonth, useRosterWeek } from "@/lib/hooks/use-rosters";
 import { startOfWeekMonday } from "@/lib/rosters-utils";
@@ -226,15 +228,24 @@ export function RostersClient({
         onToday={goToday}
       >
         {view === "week" ? (
-          <WeekGrid
-            doctors={filteredDoctors}
+          <WeekViewBody
+            isLoading={weekQuery.isPending && !weekQuery.data}
+            isError={weekQuery.isError}
+            onRetry={() => weekQuery.refetch()}
+            totalDoctors={week.doctors.length}
+            filteredDoctors={filteredDoctors}
+            tab={tab}
             weekStartISO={weekStartISO}
             selectedDoctorId={selectedDoctorId}
             todayIndex={todayIndex}
             onSelectDoctor={(id) => setSelectedDoctorId(id)}
+            onClearFilter={() => setTab("all")}
           />
         ) : (
-          <MonthGrid
+          <MonthViewBody
+            isLoading={monthQuery.isPending && !monthQuery.data}
+            isError={monthQuery.isError}
+            onRetry={() => monthQuery.refetch()}
             days={month.days}
             monthISO={monthISO}
             todayISO={todayISO}
@@ -253,5 +264,144 @@ export function RostersClient({
         }}
       />
     </div>
+  );
+}
+
+interface WeekViewBodyProps {
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  totalDoctors: number;
+  filteredDoctors: import("@/types").RosterDoctor[];
+  tab: FilterTab;
+  weekStartISO: string;
+  selectedDoctorId: string | null;
+  todayIndex: number | null;
+  onSelectDoctor: (id: string) => void;
+  onClearFilter: () => void;
+}
+
+function WeekViewBody({
+  isLoading,
+  isError,
+  onRetry,
+  totalDoctors,
+  filteredDoctors,
+  tab,
+  weekStartISO,
+  selectedDoctorId,
+  todayIndex,
+  onSelectDoctor,
+  onClearFilter,
+}: WeekViewBodyProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center px-4 py-16 text-sm text-muted-foreground">
+        <Loader2 className="mr-2 size-4 animate-spin" /> Loading roster…
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load the roster"
+        description="Something went wrong fetching this week's roster. Please try again."
+        actionLabel="Retry"
+        onAction={onRetry}
+      />
+    );
+  }
+  if (totalDoctors === 0) {
+    return (
+      <EmptyState
+        icon={CalendarX}
+        title="No doctors rostered"
+        description="No practitioners have shifts scheduled for this week. Try a different week, or add availability from the Profile page."
+      />
+    );
+  }
+  if (filteredDoctors.length === 0) {
+    return (
+      <EmptyState
+        icon={Filter}
+        title="No doctors match this filter"
+        description={
+          tab === "available-now"
+            ? "No doctors are available right now."
+            : tab === "on-leave"
+              ? "No doctors are on leave today."
+              : "No doctors match the current filter."
+        }
+        actionLabel="Show all doctors"
+        onAction={onClearFilter}
+      />
+    );
+  }
+  return (
+    <WeekGrid
+      doctors={filteredDoctors}
+      weekStartISO={weekStartISO}
+      selectedDoctorId={selectedDoctorId}
+      todayIndex={todayIndex}
+      onSelectDoctor={onSelectDoctor}
+    />
+  );
+}
+
+interface MonthViewBodyProps {
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  days: import("@/types").RosterMonthDay[];
+  monthISO: string;
+  todayISO: string | null;
+  onSelectDay: (date: string) => void;
+}
+
+function MonthViewBody({
+  isLoading,
+  isError,
+  onRetry,
+  days,
+  monthISO,
+  todayISO,
+  onSelectDay,
+}: MonthViewBodyProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center px-4 py-16 text-sm text-muted-foreground">
+        <Loader2 className="mr-2 size-4 animate-spin" /> Loading roster…
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load the roster"
+        description="Something went wrong fetching this month's roster. Please try again."
+        actionLabel="Retry"
+        onAction={onRetry}
+      />
+    );
+  }
+  const hasAnyShift = days.some((d) => d.shifts.length > 0);
+  if (days.length === 0 || !hasAnyShift) {
+    return (
+      <EmptyState
+        icon={CalendarX}
+        title="No rostered shifts this month"
+        description="No practitioners have shifts scheduled for this month. Try a different month, or add availability from the Profile page."
+      />
+    );
+  }
+  return (
+    <MonthGrid
+      days={days}
+      monthISO={monthISO}
+      todayISO={todayISO}
+      onSelectDay={onSelectDay}
+    />
   );
 }
