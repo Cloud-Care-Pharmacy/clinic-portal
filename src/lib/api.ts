@@ -478,7 +478,7 @@ class ApiClient {
     role: UserRole,
     clerkUserId?: string
   ): Promise<unknown> {
-    return this.request(`/api/staff/${encodeURIComponent(userId)}/role`, {
+    return this.request(`/api/users/${encodeURIComponent(userId)}/role`, {
       method: "PATCH",
       body: JSON.stringify({ role }),
       headers: clerkUserHeader(clerkUserId),
@@ -495,7 +495,7 @@ class ApiClient {
     }>,
     clerkUserId?: string
   ): Promise<unknown> {
-    return this.request(`/api/staff/${encodeURIComponent(userId)}`, {
+    return this.request(`/api/users/${encodeURIComponent(userId)}`, {
       method: "PATCH",
       body: JSON.stringify(data),
       headers: clerkUserHeader(clerkUserId),
@@ -506,7 +506,7 @@ class ApiClient {
     data: CreateWorkspaceInvitationPayload,
     clerkUserId?: string
   ): Promise<WorkspaceInvitationResponse> {
-    return this.request("/api/staff/invitations", {
+    return this.request("/api/users/invitations", {
       method: "POST",
       body: JSON.stringify(data),
       headers: clerkUserHeader(clerkUserId),
@@ -526,7 +526,7 @@ class ApiClient {
     if (opts?.limit) params.set("limit", String(opts.limit));
     if (opts?.offset) params.set("offset", String(opts.offset));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(`/api/staff/invitations${qs}`, {
+    return this.request(`/api/users/invitations${qs}`, {
       headers: clerkUserHeader(opts?.clerkUserId),
     });
   }
@@ -536,7 +536,7 @@ class ApiClient {
     clerkUserId?: string
   ): Promise<WorkspaceInvitationResponse> {
     return this.request(
-      `/api/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+      `/api/users/invitations/${encodeURIComponent(invitationId)}/resend`,
       { method: "POST", headers: clerkUserHeader(clerkUserId) }
     );
   }
@@ -545,7 +545,7 @@ class ApiClient {
     invitationId: string,
     clerkUserId?: string
   ): Promise<WorkspaceInvitationResponse> {
-    return this.request(`/api/staff/invitations/${encodeURIComponent(invitationId)}`, {
+    return this.request(`/api/users/invitations/${encodeURIComponent(invitationId)}`, {
       method: "DELETE",
       headers: clerkUserHeader(clerkUserId),
     });
@@ -558,7 +558,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (opts?.restore) params.set("restore", "true");
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(`/api/staff/${encodeURIComponent(userId)}${qs}`, {
+    return this.request(`/api/users/${encodeURIComponent(userId)}${qs}`, {
       method: "DELETE",
       headers: clerkUserHeader(opts?.clerkUserId),
     });
