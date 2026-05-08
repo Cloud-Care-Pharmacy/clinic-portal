@@ -1508,6 +1508,12 @@ export interface Shift {
   capacity?: number;
   note?: string;
   consultations?: RosterConsultation[];
+  /**
+   * Backend may return raw availability segments in addition to the
+   * collapsed `start`/`end`. Safe to ignore for v1 — UI uses the
+   * collapsed window.
+   */
+  segments?: { start: string; end: string }[];
 }
 
 export interface RosterDoctor {

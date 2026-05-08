@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { getDoctorTint, getDoctorInitials } from "@/lib/rosters-mock";
+import { getDoctorTint, getDoctorInitials } from "@/lib/rosters-utils";
 
 interface DoctorAvatarProps {
   doctorId: string;

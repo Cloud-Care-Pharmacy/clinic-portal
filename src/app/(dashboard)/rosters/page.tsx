@@ -1,9 +1,5 @@
-import {
-  currentSydneyDate,
-  getMockRosterMonth,
-  getMockRosterWeek,
-  startOfWeekMonday,
-} from "@/lib/rosters-mock";
+import { api } from "@/lib/api";
+import { currentSydneyDate, startOfWeekMonday } from "@/lib/rosters-utils";
 import { RostersClient } from "./RostersClient";
 
 function toIsoDate(d: Date): string {
@@ -24,16 +20,17 @@ export default async function RostersPage() {
   const weekStartISO = toIsoDate(startOfWeekMonday(now));
   const monthISO = toIsoMonth(now);
 
-  // TODO: replace with ApiClient calls when backend lands.
-  const initialWeek = getMockRosterWeek(weekStartISO);
-  const initialMonth = getMockRosterMonth(monthISO);
+  const [weekRes, monthRes] = await Promise.all([
+    api.getRosterWeek(weekStartISO).catch(() => undefined),
+    api.getRosterMonth(monthISO).catch(() => undefined),
+  ]);
 
   return (
     <RostersClient
       initialWeekStartISO={weekStartISO}
       initialMonthISO={monthISO}
-      initialWeek={initialWeek}
-      initialMonth={initialMonth}
+      initialWeek={weekRes?.data}
+      initialMonth={monthRes?.data}
     />
   );
 }
