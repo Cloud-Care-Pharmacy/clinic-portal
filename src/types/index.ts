@@ -329,26 +329,38 @@ export interface ClinicalDataApprovalResponse {
   };
 }
 
-/** Payload for PATCH /api/patients/:id */
+/**
+ * Payload for PATCH /api/patients/:id (modern partial update).
+ *
+ * Send only the fields the user actually edited. All fields are optional.
+ * Unknown fields are rejected by the backend with `400 Unknown patient field`.
+ *
+ * Note: `dateOfBirth` is a single `YYYY-MM-DD` string — do NOT split into
+ * `dobDay`/`dobMonth`/`dobYear` (those belong to the legacy intake-replay
+ * `PUT /api/patients/:id` endpoint). `medicareIrn` uses lowercase `Irn`.
+ */
 export interface UpdatePatientPayload {
-  firstName: string;
-  lastName: string;
-  dobDay: string;
-  dobMonth: string;
-  dobYear: string;
-  gender: string;
-  streetAddress: string;
-  city: string;
-  postcode: string;
-  mobile: string;
-  proofOfAgeFileName: string;
-  proofOfAgeFileType: string;
+  namePrefix?: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string; // YYYY-MM-DD
+  gender?: string;
+  mobile?: string;
+  streetAddress?: string;
+  city?: string;
   state?: string;
+  postcode?: string;
   country?: string;
   medicareNumber?: string;
-  medicareIRN?: string;
-  medicareExpiry?: string | null;
+  medicareIrn?: string;
+  medicareExpiry?: string | null; // YYYY-MM-DD
   forwardEmail?: string;
+  pbsPatientId?: string;
+  patientStatus?: string;
+  deceased?: boolean;
+  profileType?: string;
+  introSource?: { date?: string; comments?: string } | null;
+  emergencyContacts?: Array<Record<string, unknown>>;
 }
 
 // ============================================
