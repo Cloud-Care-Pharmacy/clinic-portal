@@ -55,12 +55,10 @@ const updatePatientSchema = z.object({
   city: z.string().min(1, "City is required"),
   postcode: z.string().min(1, "Postcode is required"),
   mobile: z.string().min(8, "Mobile number is required"),
-  proofOfAgeFileName: z.string().min(1, "Proof of age is required"),
-  proofOfAgeFileType: z.string().min(1, "Proof of age is required"),
   state: z.string().optional(),
   country: z.string().optional(),
   medicareNumber: z.string().optional(),
-  medicareIRN: z.string().optional(),
+  medicareIrn: z.string().optional(),
   medicareExpiry: medicareExpirySchema,
   forwardEmail: z.string().optional(),
 });
@@ -143,12 +141,10 @@ function patientToFormDefaults(patient: PatientMapping): ProfileFormData {
     city: patient.city ?? "",
     postcode: patient.postcode ?? "",
     mobile: patient.mobile ?? "",
-    proofOfAgeFileName: patient.proofOfAgeFileName ?? "",
-    proofOfAgeFileType: patient.proofOfAgeFileType ?? "",
     state: patient.state ?? "",
     country: patient.country ?? "Australia",
     medicareNumber: patient.medicareNumber ?? "",
-    medicareIRN: patient.medicareIrn ?? "",
+    medicareIrn: patient.medicareIrn ?? "",
     medicareExpiry: formMedicareExpiry(patient.medicareExpiry),
     forwardEmail: patient.forwardEmail ?? "",
   };
@@ -301,14 +297,48 @@ export function PatientEditSheet({
       return;
     }
 
-    const payload: UpdatePatientPayload = {
-      ...result.data,
-      medicareExpiry: nullableOptional(result.data.medicareExpiry),
-    };
+    // Build a partial payload from only the fields the user actually changed.
+    // The PATCH endpoint accepts any subset of allowed fields and rejects unknown
+    // ones, so we explicitly map dirty form fields → API field names here.
+    const dirty = form.formState.dirtyFields;
+    const payload: UpdatePatientPayload = {};
+    const validated = result.data;
+
+    if (dirty.firstName) payload.firstName = validated.firstName;
+    if (dirty.lastName) payload.lastName = validated.lastName;
+    if (dirty.gender) payload.gender = validated.gender;
+    if (dirty.mobile) payload.mobile = validated.mobile;
+    if (dirty.streetAddress) payload.streetAddress = validated.streetAddress;
+    if (dirty.city) payload.city = validated.city;
+    if (dirty.state) payload.state = validated.state ?? "";
+    if (dirty.postcode) payload.postcode = validated.postcode;
+    if (dirty.country) payload.country = validated.country ?? "";
+    if (dirty.medicareNumber)
+      payload.medicareNumber = validated.medicareNumber ?? "";
+    if (dirty.medicareIrn) payload.medicareIrn = validated.medicareIrn ?? "";
+    if (dirty.medicareExpiry)
+      payload.medicareExpiry = nullableOptional(validated.medicareExpiry);
+    if (dirty.forwardEmail)
+      payload.forwardEmail = validated.forwardEmail ?? "";
+
+    // DOB is split into three inputs in the form but sent as a single
+    // `dateOfBirth: 'YYYY-MM-DD'` string to the PATCH endpoint.
+    if (dirty.dobDay || dirty.dobMonth || dirty.dobYear) {
+      payload.dateOfBirth = `${validated.dobYear}-${validated.dobMonth.padStart(2, "0")}-${validated.dobDay.padStart(2, "0")}`;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      toast.info("No changes to save");
+      onOpenChange(false);
+      return;
+    }
 
     updateMutation.mutate(payload, {
-      onSuccess: () => {
+      onSuccess: ({ data: { patient: updated } }) => {
         toast.success("Patient details updated");
+        // Reset form with the saved data so dirty state clears and a subsequent
+        // edit only sends the next set of changes.
+        form.reset(patientToFormDefaults(updated));
         onOpenChange(false);
       },
       onError: (err) => {
@@ -435,8 +465,8 @@ export function PatientEditSheet({
             <Input id="medicareNumber" {...form.register("medicareNumber")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="medicareIRN">Medicare IRN</Label>
-            <Input id="medicareIRN" {...form.register("medicareIRN")} />
+            <Label htmlFor="medicareIrn">Medicare IRN</Label>
+            <Input id="medicareIrn" {...form.register("medicareIrn")} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="medicareExpiry">Medicare Expiry</Label>
