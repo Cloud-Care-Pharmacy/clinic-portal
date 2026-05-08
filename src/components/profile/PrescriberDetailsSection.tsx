@@ -149,7 +149,7 @@ export function PrescriberDetailsSection({
             <div className="space-y-2">
               <Label htmlFor="pd-specialty">Specialty</Label>
               <Select
-                value={specialtyValue || undefined}
+                value={specialtyValue ?? ""}
                 onValueChange={(v) => {
                   if (v) form.setValue("specialty", v, { shouldDirty: true });
                 }}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarX, Filter, AlertTriangle, Loader2 } from "lucide-react";
+import { CalendarX, Filter, AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +11,9 @@ import type { RosterMonthResponse, RosterWeekResponse } from "@/types";
 import { RosterCard, type ViewMode } from "@/components/rosters/RosterCard";
 import { RosterLegend } from "@/components/rosters/RosterLegend";
 import { WeekGrid } from "@/components/rosters/WeekGrid";
+import { WeekGridSkeleton } from "@/components/rosters/WeekGridSkeleton";
 import { MonthGrid } from "@/components/rosters/MonthGrid";
+import { MonthGridSkeleton } from "@/components/rosters/MonthGridSkeleton";
 import { DoctorDrawer } from "@/components/rosters/DoctorDrawer";
 
 interface RostersClientProps {
@@ -196,7 +198,7 @@ export function RostersClient({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Doctor Rosters"
+        title="Rosters"
         description="Weekly availability across the practice. Click a doctor to view their full week."
       />
 
@@ -295,11 +297,7 @@ function WeekViewBody({
   onClearFilter,
 }: WeekViewBodyProps) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center px-4 py-16 text-sm text-muted-foreground">
-        <Loader2 className="mr-2 size-4 animate-spin" /> Loading roster…
-      </div>
-    );
+    return <WeekGridSkeleton />;
   }
   if (isError) {
     return (
@@ -369,11 +367,7 @@ function MonthViewBody({
   onSelectDay,
 }: MonthViewBodyProps) {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center px-4 py-16 text-sm text-muted-foreground">
-        <Loader2 className="mr-2 size-4 animate-spin" /> Loading roster…
-      </div>
-    );
+    return <MonthGridSkeleton />;
   }
   if (isError) {
     return (

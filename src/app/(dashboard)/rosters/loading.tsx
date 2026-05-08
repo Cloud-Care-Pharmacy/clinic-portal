@@ -1,24 +1,76 @@
+"use client";
+
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RosterCard } from "@/components/rosters/RosterCard";
+import { RosterLegend } from "@/components/rosters/RosterLegend";
+import { WeekGridSkeleton } from "@/components/rosters/WeekGridSkeleton";
+import { startOfWeekMonday } from "@/lib/rosters-utils";
+
+function addDays(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
 
 export default function RostersLoading() {
+  const monday = startOfWeekMonday(new Date());
+  const sunday = addDays(monday, 6);
+  const rangeLabel = `${monday.toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    timeZone: "Australia/Sydney",
+  })} – ${sunday.toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Australia/Sydney",
+  })}`;
+  const stepLabel = `Week of ${monday.toLocaleDateString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Australia/Sydney",
+  })}`;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Rosters" }]}
-        title="Doctor Rosters"
+        title="Rosters"
         description="Weekly availability across the practice. Click a doctor to view their full week."
       />
-      <div className="rounded-2xl border border-border bg-card">
-        <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-          <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-          <div className="ml-auto h-8 w-44 animate-pulse rounded-md bg-muted" />
-        </div>
-        <div className="grid grid-cols-8 gap-px bg-border p-px">
-          {Array.from({ length: 8 * 6 }).map((_, i) => (
-            <div key={i} className="h-20 bg-card" />
-          ))}
-        </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs value="all">
+          <TabsList>
+            <TabsTrigger value="all" disabled>
+              All doctors
+            </TabsTrigger>
+            <TabsTrigger value="available-now" disabled>
+              Available now
+            </TabsTrigger>
+            <TabsTrigger value="on-leave" disabled>
+              On leave
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <RosterLegend className="ml-auto" />
       </div>
+
+      <RosterCard
+        title="Weekly roster"
+        rangeLabel={rangeLabel}
+        stepLabel={stepLabel}
+        view="week"
+        onView={() => undefined}
+        onPrev={() => undefined}
+        onNext={() => undefined}
+        onToday={() => undefined}
+      >
+        <WeekGridSkeleton />
+      </RosterCard>
     </div>
   );
 }
