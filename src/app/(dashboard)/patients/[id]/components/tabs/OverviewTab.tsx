@@ -182,7 +182,7 @@ export function OverviewTab({
       new Date(p.prescriptionDate).getTime() > new Date(best.prescriptionDate).getTime()
         ? p
         : best,
-    undefined,
+    undefined
   );
   const recentNotes = notes.slice(0, 3);
 
@@ -462,7 +462,10 @@ export function OverviewTab({
             ) : (
               <div className="flex flex-col gap-3">
                 {careTeam.map((member) => (
-                  <div key={`${member.name}|${member.role}`} className="flex items-center gap-3">
+                  <div
+                    key={`${member.name}|${member.role}`}
+                    className="flex items-center gap-3"
+                  >
                     <div className="flex size-9  shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-xs font-semibold">
                       {getInitials(member.name)}
                     </div>

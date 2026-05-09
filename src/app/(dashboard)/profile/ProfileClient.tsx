@@ -135,8 +135,8 @@ export function ProfileClient({
   // core identifying credentials needed to actually prescribe are present.
   const isPrescriberComplete = Boolean(
     practitioner?.specialty?.trim() &&
-      practitioner?.prescriberNumber?.trim() &&
-      practitioner?.ahpraNumber?.trim()
+    practitioner?.prescriberNumber?.trim() &&
+    practitioner?.ahpraNumber?.trim()
   );
 
   const [activeTab, setActiveTab] = useState("contact");
@@ -316,8 +316,8 @@ export function ProfileClient({
                 <AlertTitle>Prescriber profile required</AlertTitle>
                 <AlertBody>
                   You need to complete your prescriber profile before setting your
-                  availability. Add your specialty, prescriber number, and AHPRA
-                  number first.
+                  availability. Add your specialty, prescriber number, and AHPRA number
+                  first.
                 </AlertBody>
                 <div className="mt-3">
                   <Button

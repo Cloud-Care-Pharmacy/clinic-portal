@@ -15,7 +15,7 @@ export default async function PrescriptionsPage({
         return emptyListPrescriptionsResponse(id);
       }
       return undefined;
-    }),
+    })
   );
   const [{ id }, { selected }, initialPrescriptions] = await Promise.all([
     params,

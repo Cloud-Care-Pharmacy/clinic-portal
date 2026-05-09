@@ -46,14 +46,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               icon={<ShieldCheck className="size-3.5 " />}
               label="AHPRA compliant"
             />
-            <Badge
-              icon={<Lock className="size-3.5 " />}
-              label="End-to-end encrypted"
-            />
-            <Badge
-              icon={<Server className="size-3.5 " />}
-              label="AU data residency"
-            />
+            <Badge icon={<Lock className="size-3.5 " />} label="End-to-end encrypted" />
+            <Badge icon={<Server className="size-3.5 " />} label="AU data residency" />
           </div>
         </div>
       </div>

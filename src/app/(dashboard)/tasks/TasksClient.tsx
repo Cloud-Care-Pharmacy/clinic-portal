@@ -260,17 +260,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     const counts: Record<string, number> = {};
     for (const preset of presets) {
       counts[preset.id] = summaryTasks.filter((task) =>
-        matchesTaskQueuePreset(
-          task,
-          preset.filter,
-          currentInternalUserId,
-          meModeActive
-        )
+        matchesTaskQueuePreset(task, preset.filter, currentInternalUserId, meModeActive)
       ).length;
     }
     return counts;
   }, [currentInternalUserId, meModeActive, summaryTasks, presets]);
-  const presetCountsLoading = isLoading || presetsQuery.isLoading || profileQuery.isLoading;
+  const presetCountsLoading =
+    isLoading || presetsQuery.isLoading || profileQuery.isLoading;
 
   function applyPreset(preset: TaskQueuePresetDef) {
     setActivePreset(preset.id);
