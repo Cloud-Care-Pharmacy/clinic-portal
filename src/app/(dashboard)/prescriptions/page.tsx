@@ -8,8 +8,9 @@ export default async function PrescriptionsPage({
 }: {
   searchParams: Promise<{ patientId?: string }>;
 }) {
-  const { patientId } = await searchParams;
-  const entityId = await getEntityId();
+  const searchParamsP = searchParams;
+  const entityIdP = getEntityId();
+  const [{ patientId }, entityId] = await Promise.all([searchParamsP, entityIdP]);
   const [initialPatients, initialPrescriptions] = await Promise.all([
     entityId
       ? api.getPatients(entityId, { limit: 50, offset: 0 }).catch(() => undefined)

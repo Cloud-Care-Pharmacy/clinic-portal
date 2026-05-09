@@ -18,7 +18,7 @@ export function StickyFormBar({ isDirty, isPending, onDiscard }: StickyFormBarPr
       style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,.15)" }}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span className="h-2 w-2 rounded-full bg-primary" />
+        <span className="size-2  rounded-full bg-primary" />
         Unsaved changes
       </div>
       <div className="flex items-center gap-2">
@@ -26,7 +26,7 @@ export function StickyFormBar({ isDirty, isPending, onDiscard }: StickyFormBarPr
           Discard
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending && <Loader2 className="mr-2 size-4  animate-spin" />}
           Save Changes
         </Button>
       </div>

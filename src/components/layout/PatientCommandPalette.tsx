@@ -154,7 +154,7 @@ export function PatientCommandPalette({
   open,
   onOpenChange,
 }: PatientCommandPaletteProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const listboxId = useId();
@@ -298,7 +298,7 @@ export function PatientCommandPalette({
       return;
     }
 
-    router.push(href);
+    push(href);
   }
 
   function activateItem(item: SearchItem | undefined, newTab = false) {
@@ -342,7 +342,7 @@ export function PatientCommandPalette({
 
   function goToHref(href: string) {
     closePalette();
-    router.push(href);
+    push(href);
   }
 
   return (
@@ -360,7 +360,7 @@ export function PatientCommandPalette({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-3 border-b border-border px-4 py-4 focus-within:ring-3 focus-within:ring-ring/20">
+        <div className="flex items-center gap-3 border-b border-border p-4  focus-within:ring-3 focus-within:ring-ring/20">
           <Search
             className="size-4.5 shrink-0 text-muted-foreground"
             aria-hidden="true"
@@ -666,7 +666,7 @@ function EmptySearchState({
             );
           })
         ) : (
-          <p className="mx-1 rounded-lg border border-dashed border-border bg-background px-3 py-3 text-sm text-muted-foreground">
+          <p className="mx-1 rounded-lg border border-dashed border-border bg-background p-3  text-sm text-muted-foreground">
             Open a patient from search and they will appear here.
           </p>
         )}

@@ -115,7 +115,7 @@ export function PrescriberDetailsSection({
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">
-              No practitioner profile yet — fill in the fields below and save to create
+              No practitioner profile yet, fill in the fields below and save to create
               one.
             </p>
           </CardContent>
@@ -213,7 +213,7 @@ export function PrescriberDetailsSection({
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                Healthcare Provider Identifier — Individual
+                Healthcare Provider Identifier (Individual)
               </p>
             </div>
           </div>

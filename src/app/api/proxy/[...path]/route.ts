@@ -47,9 +47,12 @@ async function handler(
     headers["Content-Type"] = "application/json";
   }
 
-  const fetchOptions: RequestInit = {
+  const fetchOptions: RequestInit & { next?: { revalidate: number } } = {
     method: req.method,
     headers,
+    // Auth proxy must never cache: every request is per-user and time-sensitive.
+    cache: "no-store",
+    next: { revalidate: 0 },
   };
 
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -58,6 +61,8 @@ async function handler(
     fetchOptions.body = buf;
   }
 
+  // Auth proxy: cache disabled via fetchOptions.cache and next.revalidate above.
+  // oxlint-disable-next-line react-doctor/server-fetch-without-revalidate
   const backendRes = await fetch(url.toString(), fetchOptions);
 
   // Stream binary responses (e.g. document downloads) directly

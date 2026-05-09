@@ -31,7 +31,7 @@ export function TasksTab({
   selectedTaskId,
   initialTasks,
 }: TasksTabProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<TaskStatus[]>([
     "open",
@@ -82,12 +82,12 @@ export function TasksTab({
 
   function openTask(task: Task) {
     setSelectedFromRow(task);
-    router.push(selectedTaskHref(task.taskId), { scroll: false });
+    push(selectedTaskHref(task.taskId), { scroll: false });
   }
 
   function clearSelectedTask() {
     setSelectedFromRow(null);
-    router.replace(`/patients/${encodeURIComponent(patientId)}/tasks`, {
+    replace(`/patients/${encodeURIComponent(patientId)}/tasks`, {
       scroll: false,
     });
   }

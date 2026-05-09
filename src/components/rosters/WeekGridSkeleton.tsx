@@ -76,7 +76,7 @@ function SkeletonRow() {
           height: "var(--row-h)",
         }}
       >
-        <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-muted" />
+        <div className="size-9  shrink-0 animate-pulse rounded-full bg-muted" />
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="h-3.5 w-32 animate-pulse rounded bg-muted" />
           <div className="h-3 w-24 animate-pulse rounded bg-muted" />

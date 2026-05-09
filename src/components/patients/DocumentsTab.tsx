@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useState, useRef } from "react";
@@ -100,7 +101,7 @@ export function DocumentsTab({
   selectedDocumentId,
   initialDocuments,
 }: DocumentsTabProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<PatientDocument | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PatientDocument | null>(null);
   const [selectedFromRow, setSelectedFromRow] = useState<PatientDocument | null>(null);
@@ -118,7 +119,7 @@ export function DocumentsTab({
 
   const handleUploadOpenChange = (open: boolean) => {
     if (!open && initialAction === "upload") {
-      router.replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
+      replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
         scroll: false,
       });
     }
@@ -178,14 +179,14 @@ export function DocumentsTab({
 
   function clearSelectedDocument() {
     setSelectedFromRow(null);
-    router.replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
+    replace(`/patients/${encodeURIComponent(patientId)}/documents`, {
       scroll: false,
     });
   }
 
   function openDocument(doc: PatientDocument) {
     setSelectedFromRow(doc);
-    router.push(selectedDocumentHref(doc.id), { scroll: false });
+    push(selectedDocumentHref(doc.id), { scroll: false });
   }
 
   const columns: GridColDef<PatientDocument>[] = [
@@ -604,7 +605,7 @@ function UploadDialog({
                       })
                     : "Pick a date"}
                 </span>
-                <CalendarIcon className="h-4 w-4 opacity-50" />
+                <CalendarIcon className="size-4  opacity-50" />
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <CalendarWidget

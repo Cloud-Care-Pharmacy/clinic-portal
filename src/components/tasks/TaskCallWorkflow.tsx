@@ -1,6 +1,7 @@
+/* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `minimized` IS read during render at `if (minimized) { return ... }`. */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -363,7 +364,7 @@ export function TaskCallDialog({
                         AIRCALL · ACTIVE CALL
                       </DialogTitle>
                       <DialogDescription className="mt-0.5 text-xs">
-                        Mute, hold, transfer, hang up — in the Aircall extension
+                        Mute, hold, transfer, hang up, in the Aircall extension
                       </DialogDescription>
                     </div>
                   </div>
@@ -394,7 +395,7 @@ export function TaskCallDialog({
                     <p className="mt-1 text-xs text-muted-foreground">
                       For task:{" "}
                       <span className="font-semibold text-foreground">
-                        {displayTitle} — {taskReferenceStatus}
+                        {displayTitle}, {taskReferenceStatus}
                       </span>
                     </p>
                   </div>
@@ -412,7 +413,7 @@ export function TaskCallDialog({
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <label className={OVERLINE_CLASS}>Consultation notes — draft</label>
+                  <span className={OVERLINE_CLASS}>Consultation notes, draft</span>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Check className="size-3.5" />
                     Saved just now
@@ -463,7 +464,7 @@ export function TaskCallDialog({
                       hangUpAction({ durationSeconds: seconds, durationLabel, notes })
                     }
                   >
-                    I&apos;ve hung up — finalise
+                    I&apos;ve hung up, finalise
                     <ArrowRight className="size-4" />
                   </Button>
                 </div>
@@ -623,6 +624,8 @@ export function TaskOutcomeDialog({
   const [manualNotes, setManualNotes] = useState("");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
+  const manualNotesId = useId();
+  const manualDurationId = useId();
 
   if (!open || !task) return null;
 
@@ -750,16 +753,22 @@ export function TaskOutcomeDialog({
 
         {isManual && selected === "reached" && (
           <div className="px-5 pt-0 pb-4">
-            <label className={OVERLINE_CLASS}>Consultation notes</label>
+            <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
+              Consultation notes
+            </label>
             <Textarea
+              id={manualNotesId}
               value={manualNotes}
               onChange={(event) => setManualNotes(event.target.value)}
               placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
               className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
             />
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <label className={OVERLINE_CLASS}>Call duration</label>
+              <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
+                Call duration
+              </label>
               <Input
+                id={manualDurationId}
                 value={manualDuration}
                 onChange={(event) => setManualDuration(event.target.value)}
                 placeholder="e.g. 4 min"

@@ -76,7 +76,7 @@ export function PrescriptionsTab({
   selectedPrescriptionId,
   initialPrescriptions,
 }: PrescriptionsTabProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const { data, isLoading } = usePrescriptions(patientId, initialPrescriptions);
   const sync = useSyncPrescriptions(patientId);
   const [selectedFromRow, setSelectedFromRow] = useState<PatientPrescription | null>(
@@ -96,14 +96,14 @@ export function PrescriptionsTab({
 
   function clearSelectedPrescription() {
     setSelectedFromRow(null);
-    router.replace(`/patients/${encodeURIComponent(patientId)}/prescriptions`, {
+    replace(`/patients/${encodeURIComponent(patientId)}/prescriptions`, {
       scroll: false,
     });
   }
 
   function openPrescription(prescription: PatientPrescription) {
     setSelectedFromRow(prescription);
-    router.push(selectedPrescriptionHref(prescription.id), { scroll: false });
+    push(selectedPrescriptionHref(prescription.id), { scroll: false });
   }
 
   function handleRefresh() {

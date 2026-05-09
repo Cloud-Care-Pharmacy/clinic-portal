@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- Document image previews use blob: URLs which next/image cannot optimize. */
+/* oxlint-disable react-doctor/nextjs-no-img-element -- Document image previews use blob: URLs which next/image cannot optimize. */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -38,6 +40,10 @@ export function DocumentPreviewDialog({
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Authenticated document previews require a user-triggered blob URL fetch.
+  // Keep the fetch local to the open dialog, abort in-flight requests on cleanup,
+  // and revoke generated object URLs to avoid leaking blob memory.
+  // oxlint-disable-next-line react-doctor/no-fetch-in-effect
   useEffect(() => {
     if (!open || !document) return;
 
@@ -140,8 +146,8 @@ export function DocumentPreviewDialog({
           {!loading && !error && objectUrl && previewKind === "pdf" && (
             <iframe
               src={objectUrl}
-              title={document?.filename ?? "Document preview"}
-              className="h-full w-full border-0"
+              title={`Document preview: ${document?.filename ?? "untitled"}`}
+              className="size-full  border-0"
             />
           )}
 

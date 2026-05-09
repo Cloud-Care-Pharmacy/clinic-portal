@@ -1,6 +1,8 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,8 +135,8 @@ export function ProfileClient({
   // core identifying credentials needed to actually prescribe are present.
   const isPrescriberComplete = Boolean(
     practitioner?.specialty?.trim() &&
-      practitioner?.prescriberNumber?.trim() &&
-      practitioner?.ahpraNumber?.trim()
+    practitioner?.prescriberNumber?.trim() &&
+    practitioner?.ahpraNumber?.trim()
   );
 
   const [activeTab, setActiveTab] = useState("contact");
@@ -148,7 +150,7 @@ export function ProfileClient({
         <Card>
           <CardContent className="px-6 py-4">
             <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="size-10  rounded-full" />
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-6 w-20 rounded-full" />
             </div>
@@ -170,17 +172,20 @@ export function ProfileClient({
           <div className="flex flex-col gap-3">
             {/* Row 1: avatar, name, role badge, contact icons */}
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+              <div className="flex size-10  shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
                 {imageUrl ? (
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={fullName}
-                    className="h-10 w-10 rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="size-10 rounded-full object-cover"
+                    unoptimized
                   />
                 ) : initials ? (
                   initials
                 ) : (
-                  <User className="h-5 w-5" />
+                  <User className="size-5 " />
                 )}
               </div>
               <h2 className="text-lg font-semibold leading-tight whitespace-nowrap">
@@ -311,8 +316,8 @@ export function ProfileClient({
                 <AlertTitle>Prescriber profile required</AlertTitle>
                 <AlertBody>
                   You need to complete your prescriber profile before setting your
-                  availability. Add your specialty, prescriber number, and AHPRA
-                  number first.
+                  availability. Add your specialty, prescriber number, and AHPRA number
+                  first.
                 </AlertBody>
                 <div className="mt-3">
                   <Button

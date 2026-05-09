@@ -131,7 +131,7 @@ export function DashboardClient({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {statCards.map((stat) => (
               <Card key={stat.title} className="overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row items-center justify-between gap-y-0 pb-2">
                   <CardTitle className="text-[15px] font-medium text-foreground/75">
                     {stat.title}
                   </CardTitle>
@@ -140,9 +140,9 @@ export function DashboardClient({
                     className="gap-1 rounded-full text-xs font-medium bg-white/70 border-foreground/10"
                   >
                     {stat.trend === "up" ? (
-                      <TrendingUp className="h-3 w-3" />
+                      <TrendingUp className="size-3 " />
                     ) : (
-                      <TrendingDown className="h-3 w-3" />
+                      <TrendingDown className="size-3 " />
                     )}
                     {stat.badge}
                   </Badge>
@@ -153,9 +153,9 @@ export function DashboardClient({
                     <p className="text-sm font-semibold flex items-center gap-1.5">
                       {stat.description}
                       {stat.trend === "up" ? (
-                        <TrendingUp className="h-4 w-4" />
+                        <TrendingUp className="size-4 " />
                       ) : (
-                        <TrendingDown className="h-4 w-4" />
+                        <TrendingDown className="size-4 " />
                       )}
                     </p>
                     <p className="text-[13px] text-foreground/55 mt-1">
