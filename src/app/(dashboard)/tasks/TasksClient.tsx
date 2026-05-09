@@ -195,11 +195,11 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const presets = useMemo(() => {
     const raw = presetsQuery.data?.data.presets ?? FALLBACK_TASK_PRESETS;
     // Drop any "all" preset and override backend-supplied labels for portal terminology.
-    return raw
-      .filter((preset) => preset.id !== "all")
-      .map((preset) =>
-        preset.id === "mine_active" ? { ...preset, label: "Claimed" } : preset
-      );
+    return raw.flatMap((preset) => {
+      if (preset.id === "all") return [];
+      if (preset.id === "mine_active") return [{ ...preset, label: "Claimed" }];
+      return [preset];
+    });
   }, [presetsQuery.data]);
 
   const [activePreset, setActivePreset] = useState<string>("mine_active");

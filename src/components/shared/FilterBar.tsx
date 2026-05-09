@@ -29,6 +29,8 @@ export interface FilterDefinition {
   formatOption?: (option: string) => string;
 }
 
+const EMPTY_FILTERS: FilterDefinition[] = [];
+
 interface FilterBarProps {
   /** Left-side content before search (quick presets, tabs, etc.) */
   leading?: React.ReactNode;
@@ -55,7 +57,7 @@ export function FilterBar({
   searchPlaceholder = "Search…",
   searchQuery,
   onSearchChange,
-  filters = [],
+  filters = EMPTY_FILTERS,
   trailing,
   resultCount,
   resultCountLoading = false,

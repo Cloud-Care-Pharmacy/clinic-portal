@@ -8,10 +8,14 @@ export default async function ClinicalPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ selected?: string; action?: string }>;
 }) {
-  const [{ id }, { selected, action }] = await Promise.all([params, searchParams]);
-  const initialClinicalData = await api
-    .getClinicalData(id, { limit: 50, offset: 0 })
-    .catch(() => undefined);
+  const initialClinicalDataP = params.then(({ id }) =>
+    api.getClinicalData(id, { limit: 50, offset: 0 }).catch(() => undefined),
+  );
+  const [{ id }, { selected, action }, initialClinicalData] = await Promise.all([
+    params,
+    searchParams,
+    initialClinicalDataP,
+  ]);
 
   return (
     <ClinicalHistoryTab

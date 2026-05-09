@@ -208,16 +208,11 @@ function validateDay(day: DayForm): DayIssues {
   });
 
   // Overlap detection between slots that already parse correctly.
-  const ranges = day.slots
-    .map((s, idx) => ({
-      idx,
-      a: toMinutes(s.startTime),
-      b: toMinutes(s.endTime),
-    }))
-    .filter(
-      (r): r is { idx: number; a: number; b: number } =>
-        r.a != null && r.b != null && r.b > r.a
-    );
+  const ranges = day.slots.flatMap((s, idx) => {
+    const a = toMinutes(s.startTime);
+    const b = toMinutes(s.endTime);
+    return a != null && b != null && b > a ? [{ idx, a, b }] : [];
+  });
 
   for (let i = 0; i < ranges.length; i++) {
     for (let j = i + 1; j < ranges.length; j++) {

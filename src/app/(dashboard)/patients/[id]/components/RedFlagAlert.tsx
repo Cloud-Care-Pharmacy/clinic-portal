@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `dismissed` IS read during render: `if (!redFlags.hasRedFlag || dismissed) return null`. */
 "use client";
 
 import { useState } from "react";

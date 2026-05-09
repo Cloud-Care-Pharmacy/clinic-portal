@@ -91,9 +91,9 @@ function SectionHead({
         {title}
       </h3>
       <div className="inline-flex items-center gap-2">
-        {count && (
+        {count ? (
           <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
-        )}
+        ) : null}
         {actionLabel && actionHref && (
           <Link href={actionHref} scroll={false} className={actionClassName}>
             {actionLabel}
@@ -168,16 +168,22 @@ export function OverviewTab({
   const notes = notesData?.data?.notes ?? [];
   const clinical = clinicalData?.data?.clinicalData;
 
-  const recentConsults = [...consultations]
-    .sort(
+  const recentConsults = consultations
+    .toSorted(
       (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
     )
     .slice(0, 4);
 
-  const latestPrescription = [...prescriptions].sort(
-    (a, b) =>
-      new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
-  )[0];
+  const latestPrescription = prescriptions.reduce<
+    (typeof prescriptions)[number] | undefined
+  >(
+    (best, p) =>
+      !best ||
+      new Date(p.prescriptionDate).getTime() > new Date(best.prescriptionDate).getTime()
+        ? p
+        : best,
+    undefined,
+  );
   const recentNotes = notes.slice(0, 3);
 
   const conditions = clinical?.medicalConditions ?? [];
@@ -455,8 +461,8 @@ export function OverviewTab({
               <p className="text-[13px] text-muted-foreground">No care team assigned</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {careTeam.map((member, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                {careTeam.map((member) => (
+                  <div key={`${member.name}|${member.role}`} className="flex items-center gap-3">
                     <div className="flex size-9  shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-xs font-semibold">
                       {getInitials(member.name)}
                     </div>

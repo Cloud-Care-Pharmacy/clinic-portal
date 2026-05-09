@@ -111,7 +111,7 @@ export function DoctorDrawer({
                   const isToday = todayIndex === i;
                   return (
                     <DayRow
-                      key={i}
+                      key={DOW_LONG[i]}
                       dow={DOW_LONG[i]!}
                       date={date}
                       shift={shift}

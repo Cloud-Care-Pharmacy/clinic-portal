@@ -1,6 +1,8 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -172,10 +174,13 @@ export function ProfileClient({
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex size-10  shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
                 {imageUrl ? (
-                  <img
+                  <Image
                     src={imageUrl}
                     alt={fullName}
-                    className="size-10  rounded-full object-cover"
+                    width={40}
+                    height={40}
+                    className="size-10 rounded-full object-cover"
+                    unoptimized
                   />
                 ) : initials ? (
                   initials

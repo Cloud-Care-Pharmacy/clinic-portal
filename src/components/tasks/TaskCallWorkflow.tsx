@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `minimized` IS read during render at `if (minimized) { return ... }`. */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -412,7 +413,7 @@ export function TaskCallDialog({
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <label className={OVERLINE_CLASS}>Consultation notes, draft</label>
+                  <span className={OVERLINE_CLASS}>Consultation notes, draft</span>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Check className="size-3.5" />
                     Saved just now
@@ -750,21 +751,27 @@ export function TaskOutcomeDialog({
 
         {isManual && selected === "reached" && (
           <div className="px-5 pt-0 pb-4">
-            <label className={OVERLINE_CLASS}>Consultation notes</label>
-            <Textarea
-              value={manualNotes}
-              onChange={(event) => setManualNotes(event.target.value)}
-              placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
-              className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
-            />
+            {/* oxlint-disable-next-line jsx-a11y/label-has-associated-control */}
+            <label className={OVERLINE_CLASS}>
+              <span>Consultation notes</span>
+              <Textarea
+                value={manualNotes}
+                onChange={(event) => setManualNotes(event.target.value)}
+                placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
+                className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
+              />
+            </label>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <label className={OVERLINE_CLASS}>Call duration</label>
-              <Input
-                value={manualDuration}
-                onChange={(event) => setManualDuration(event.target.value)}
-                placeholder="e.g. 4 min"
+              {/* oxlint-disable-next-line jsx-a11y/label-has-associated-control */}
+              <label className={OVERLINE_CLASS}>
+                <span>Call duration</span>
+                <Input
+                  value={manualDuration}
+                  onChange={(event) => setManualDuration(event.target.value)}
+                  placeholder="e.g. 4 min"
                 className="w-36 bg-background text-sm"
               />
+              </label>
               <span className="text-xs text-muted-foreground">(optional)</span>
             </div>
           </div>

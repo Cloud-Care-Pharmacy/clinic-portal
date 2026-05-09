@@ -1,9 +1,14 @@
 "use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import dynamic from "next/dynamic";
 import { BarChart3 } from "lucide-react";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { DashboardIntakeSeriesPoint } from "@/types";
+
+const OverviewChart = dynamic(() => import("./OverviewChart"), {
+  ssr: false,
+  loading: () => <div className="h-87.5" />,
+});
 
 interface OverviewProps {
   series: DashboardIntakeSeriesPoint[];
@@ -24,32 +29,5 @@ export function Overview({ series }: OverviewProps) {
     );
   }
 
-  return (
-    <ResponsiveContainer width="100%" height={350}>
-      <BarChart data={data}>
-        <XAxis
-          dataKey="name"
-          stroke="var(--muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke="var(--muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Tooltip
-          contentStyle={{
-            backgroundColor: "var(--popover)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius)",
-            fontSize: 12,
-          }}
-        />
-        <Bar dataKey="total" fill="var(--primary)" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
+  return <OverviewChart data={data} />;
 }
