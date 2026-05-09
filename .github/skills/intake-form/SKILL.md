@@ -25,12 +25,13 @@ description: "Patient intake form wizard. Use when modifying the 8-step intake f
 - Single `useForm<IntakeFormData>()` holds all steps
 - Per-step Zod schemas validated via manual `safeParse()` before advancing
 - `IntakeFormData` type in `src/types/index.ts` must match backend's expected payload exactly
-- Submits to `POST /api/proxy/submit` which forwards to `prescription-gateway`
+- Submits to `POST /api/proxy/intake/submit` which forwards to `prescription-gateway`
 - Uses `signature_pad` for the consent signature step
 
 ## Modification Checklist
 
 When adding/changing a step:
+
 1. Update `IntakeFormData` in `src/types/index.ts`
 2. Add Zod schema for the new step
 3. Add step component in the wizard
