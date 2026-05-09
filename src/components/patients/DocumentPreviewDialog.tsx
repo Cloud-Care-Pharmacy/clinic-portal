@@ -40,6 +40,10 @@ export function DocumentPreviewDialog({
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Authenticated document previews require a user-triggered blob URL fetch.
+  // Keep the fetch local to the open dialog, abort in-flight requests on cleanup,
+  // and revoke generated object URLs to avoid leaking blob memory.
+  // oxlint-disable-next-line react-doctor/no-fetch-in-effect
   useEffect(() => {
     if (!open || !document) return;
 

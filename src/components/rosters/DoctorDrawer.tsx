@@ -47,9 +47,10 @@ export function DoctorDrawer({
   // still has data to render after the parent clears its selection.
   // Conditional state update during render is the React-recommended
   // pattern for derived-from-props values (no effect required).
-  const [displayed, setDisplayed] = useState<RosterDoctor | null>(doctor);
-  if (doctor && doctor !== displayed) {
-    setDisplayed(doctor);
+  const [cachedDoctor, setCachedDoctor] = useState<RosterDoctor | null>(null);
+  const displayed = doctor ?? cachedDoctor;
+  if (doctor && doctor !== cachedDoctor) {
+    setCachedDoctor(doctor);
   }
 
   const monday = useMemo(() => parseIsoDate(weekStartISO), [weekStartISO]);

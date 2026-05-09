@@ -1,7 +1,7 @@
 /* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `minimized` IS read during render at `if (minimized) { return ... }`. */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -624,6 +624,8 @@ export function TaskOutcomeDialog({
   const [manualNotes, setManualNotes] = useState("");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
+  const manualNotesId = useId();
+  const manualDurationId = useId();
 
   if (!open || !task) return null;
 
@@ -751,27 +753,27 @@ export function TaskOutcomeDialog({
 
         {isManual && selected === "reached" && (
           <div className="px-5 pt-0 pb-4">
-            {/* oxlint-disable-next-line jsx-a11y/label-has-associated-control */}
-            <label className={OVERLINE_CLASS}>
-              <span>Consultation notes</span>
-              <Textarea
-                value={manualNotes}
-                onChange={(event) => setManualNotes(event.target.value)}
-                placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
-                className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
-              />
+            <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
+              Consultation notes
             </label>
+            <Textarea
+              id={manualNotesId}
+              value={manualNotes}
+              onChange={(event) => setManualNotes(event.target.value)}
+              placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
+              className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
+            />
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {/* oxlint-disable-next-line jsx-a11y/label-has-associated-control */}
-              <label className={OVERLINE_CLASS}>
-                <span>Call duration</span>
-                <Input
-                  value={manualDuration}
-                  onChange={(event) => setManualDuration(event.target.value)}
-                  placeholder="e.g. 4 min"
+              <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
+                Call duration
+              </label>
+              <Input
+                id={manualDurationId}
+                value={manualDuration}
+                onChange={(event) => setManualDuration(event.target.value)}
+                placeholder="e.g. 4 min"
                 className="w-36 bg-background text-sm"
               />
-              </label>
               <span className="text-xs text-muted-foreground">(optional)</span>
             </div>
           </div>
