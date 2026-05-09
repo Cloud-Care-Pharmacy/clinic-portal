@@ -1,4 +1,5 @@
 /* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
+/* oxlint-disable react/no-danger -- Patient notes are controlled portal rich-text HTML and must be sanitized at the API/editor boundary before rendering. */
 "use client";
 
 import { useEffect, useId, useState } from "react";
