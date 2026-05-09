@@ -238,7 +238,7 @@ export function DoctorDrawer({
               disabled
               title="Coming soon"
             >
-              <CalendarPlus className="h-4 w-4" />
+              <CalendarPlus className="size-4 " />
               Add shift
             </Button>
             <Button
@@ -248,7 +248,7 @@ export function DoctorDrawer({
               disabled
               title="Coming soon"
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="size-4 " />
               Message
             </Button>
             <Button
@@ -259,7 +259,7 @@ export function DoctorDrawer({
               title="Coming soon"
               className="ml-auto"
             >
-              <User className="h-4 w-4" />
+              <User className="size-4 " />
               View profile
             </Button>
           </div>

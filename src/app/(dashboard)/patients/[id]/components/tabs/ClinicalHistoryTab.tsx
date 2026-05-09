@@ -265,7 +265,7 @@ function IntakeFormSheet({
                 variant="outline"
                 className="text-[10px] px-1.5 py-0 bg-status-success-bg text-status-success-fg border-status-success-border"
               >
-                <ShieldCheck className="mr-1 h-3 w-3" />
+                <ShieldCheck className="mr-1 size-3 " />
                 Approved
               </Badge>
             ) : (
@@ -273,7 +273,7 @@ function IntakeFormSheet({
                 variant="outline"
                 className="text-[10px] px-1.5 py-0 bg-status-warning-bg text-status-warning-fg border-status-warning-border"
               >
-                <Clock className="mr-1 h-3 w-3" />
+                <Clock className="mr-1 size-3 " />
                 Pending review
               </Badge>
             ))}
@@ -314,7 +314,7 @@ function IntakeFormSheet({
             <Separator />
             <section aria-label="Doctor review" className="space-y-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <ShieldCheck className="size-4  text-muted-foreground" />
                 <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em]">
                   Doctor Review
                 </h4>
@@ -363,7 +363,7 @@ function IntakeFormSheet({
                   </div>
                   <div className="flex justify-end">
                     <Button onClick={handleApprove} disabled={approveRecord.isPending}>
-                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      <ShieldCheck className="mr-2 size-4 " />
                       {approveRecord.isPending ? "Approving…" : "Approve"}
                     </Button>
                   </div>
@@ -424,7 +424,7 @@ export function ClinicalHistoryTab({
   reviewMode,
   initialClinicalData,
 }: ClinicalHistoryTabProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const { data, isLoading, error } = useClinicalData(
     patientId,
     undefined,
@@ -451,14 +451,14 @@ export function ClinicalHistoryTab({
 
   function clearSelectedClinicalRecord() {
     setSelectedFromRow(null);
-    router.replace(`/patients/${encodeURIComponent(patientId)}/clinical`, {
+    replace(`/patients/${encodeURIComponent(patientId)}/clinical`, {
       scroll: false,
     });
   }
 
   function openClinicalRecord(record: ClinicalDataRecord) {
     setSelectedFromRow(record);
-    router.push(selectedClinicalHref(record.id), { scroll: false });
+    push(selectedClinicalHref(record.id), { scroll: false });
   }
 
   if (isLoading) {

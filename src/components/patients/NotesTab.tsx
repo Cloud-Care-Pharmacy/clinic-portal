@@ -416,7 +416,7 @@ function NoteDetailSheet({
             </Badge>
             {stash.isPinned && (
               <Badge variant="outline" className="text-xs px-2 py-0.5">
-                <Pin className="mr-1.5 h-3 w-3" />
+                <Pin className="mr-1.5 size-3 " />
                 Pinned
               </Badge>
             )}
@@ -435,10 +435,10 @@ function NoteDetailSheet({
 // ---- Category Icons ----
 
 const CATEGORY_ICONS: Record<NoteCategory, React.ReactNode> = {
-  clinical: <Stethoscope className="h-4 w-4" />,
-  pharmacy: <Pill className="h-4 w-4" />,
-  "follow-up": <CalendarCheck className="h-4 w-4" />,
-  general: <FileText className="h-4 w-4" />,
+  clinical: <Stethoscope className="size-4 " />,
+  pharmacy: <Pill className="size-4 " />,
+  "follow-up": <CalendarCheck className="size-4 " />,
+  general: <FileText className="size-4 " />,
 };
 
 // ---- Helpers ----
@@ -482,7 +482,7 @@ function NoteCard({
     <div className="flex gap-4 items-start">
       {/* Left icon */}
       <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground ${
+        className={`flex size-9  shrink-0 items-center justify-center rounded-full border bg-background text-muted-foreground ${
           note.isPinned ? "border-status-warning-border text-status-warning-fg" : ""
         }`}
       >
@@ -499,8 +499,8 @@ function NoteCard({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               {/* Author avatar */}
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                <User className="h-4 w-4 text-muted-foreground" />
+              <div className="flex size-9  shrink-0 items-center justify-center rounded-full bg-muted">
+                <User className="size-4  text-muted-foreground" />
               </div>
 
               <div className="flex-1 min-w-0 space-y-1">
@@ -508,7 +508,7 @@ function NoteCard({
                 <p className="text-sm font-semibold leading-tight">
                   {note.title}
                   {note.isPinned && (
-                    <Pin className="inline-block ml-1.5 h-3 w-3 text-status-warning-fg" />
+                    <Pin className="inline-block ml-1.5 size-3  text-status-warning-fg" />
                   )}
                 </p>
 
@@ -548,35 +548,35 @@ function NoteCard({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7"
+                className="size-7 "
                 onClick={onEdit}
                 title="Edit note"
               >
-                <Pencil className="h-3.5 w-3.5" />
+                <Pencil className="size-3.5 " />
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7"
+                className="size-7 "
                 onClick={onTogglePin}
                 disabled={isPinning}
                 title={note.isPinned ? "Unpin note" : "Pin note"}
               >
                 {note.isPinned ? (
-                  <PinOff className="h-3.5 w-3.5" />
+                  <PinOff className="size-3.5 " />
                 ) : (
-                  <Pin className="h-3.5 w-3.5" />
+                  <Pin className="size-3.5 " />
                 )}
               </Button>
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 text-destructive hover:text-destructive"
+                className="size-7  text-destructive hover:text-destructive"
                 onClick={onDelete}
                 disabled={isDeleting}
                 title="Delete note"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="size-3.5 " />
               </Button>
             </div>
           </div>
@@ -601,7 +601,7 @@ export function NotesTab({
   selectedNoteId,
   initialNotes,
 }: NotesTabProps) {
-  const router = useRouter();
+  const { replace } = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PatientNote | null>(null);
   const { data, isLoading, error } = usePatientNotes(patientId, initialNotes);
@@ -612,7 +612,7 @@ export function NotesTab({
   function handleSheetOpenChange(open: boolean) {
     setSheetOpen(open);
     if (!open && initialAction === "new") {
-      router.replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
+      replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
         scroll: false,
       });
     }
@@ -658,7 +658,7 @@ export function NotesTab({
 
   function clearSelectedNote() {
     if (selectedNoteId) {
-      router.replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
+      replace(`/patients/${encodeURIComponent(patientId)}/notes`, {
         scroll: false,
       });
     }
@@ -699,7 +699,7 @@ export function NotesTab({
         <div className="space-y-6">
           <div className="flex justify-end">
             <Button size="sm" onClick={() => setSheetOpen(true)}>
-              <StickyNote className="mr-2 h-4 w-4" />
+              <StickyNote className="mr-2 size-4 " />
               Add Note
             </Button>
           </div>
@@ -708,7 +708,7 @@ export function NotesTab({
             <div className="space-y-3">
               <div className="flex justify-center">
                 <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
-                  <Pin className="mr-1.5 h-3 w-3" />
+                  <Pin className="mr-1.5 size-3 " />
                   Pinned
                 </Badge>
               </div>

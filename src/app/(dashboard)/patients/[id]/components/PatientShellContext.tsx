@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 import type { PatientMapping } from "@/types";
 
 interface PatientShellContextValue {
@@ -30,7 +30,7 @@ export function PatientShellProvider({
 }
 
 export function usePatientShell() {
-  const context = useContext(PatientShellContext);
+  const context = use(PatientShellContext);
   if (!context) {
     throw new Error("usePatientShell must be used inside PatientShellProvider");
   }

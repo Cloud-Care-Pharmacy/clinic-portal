@@ -298,9 +298,9 @@ export function ConsultationTable({
               rel="noopener noreferrer"
               aria-label={`Open ${name} in new tab`}
               onClick={(e) => e.stopPropagation()}
-              className="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-hover/patient:opacity-100"
+              className="ml-1 inline-flex size-6  items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-hover/patient:opacity-100"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="size-3.5 " />
             </Link>
           </div>
         );
@@ -336,7 +336,7 @@ export function ConsultationTable({
             className={cn("capitalize text-xs gap-1.5", TYPE_COLORS[type])}
           >
             <span
-              className={cn("h-1.5 w-1.5 rounded-full", TYPE_DOT[type])}
+              className={cn("size-1.5  rounded-full", TYPE_DOT[type])}
               aria-hidden="true"
             />
             {type === "follow-up" ? "Follow-Up" : type}

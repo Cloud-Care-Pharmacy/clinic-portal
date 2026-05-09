@@ -52,7 +52,7 @@ export function TaskActionsCell({
   currentUserId,
   pending,
 }: TaskActionsCellProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const completed = isTaskCompleted(task);
   const unassigned = isTaskUnassigned(task);
   const mine = isTaskAssignedToCurrentUser(task, currentUserId);
@@ -154,7 +154,7 @@ export function TaskActionsCell({
         <DropdownMenuItem
           onClick={(event) => {
             event.stopPropagation();
-            router.push(`/patients/${encodeURIComponent(task.patientId)}`);
+            push(`/patients/${encodeURIComponent(task.patientId)}`);
           }}
         >
           <UserRound />

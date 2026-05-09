@@ -26,7 +26,7 @@ export function PageHeader({
           <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-1">
             {breadcrumbs.map((crumb, i) => (
               <span key={i} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3 w-3" />}
+                {i > 0 && <ChevronRight className="size-3 " />}
                 {crumb.href ? (
                   <Link
                     href={crumb.href}
@@ -41,7 +41,7 @@ export function PageHeader({
             ))}
           </nav>
         )}
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
         {description && (
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}

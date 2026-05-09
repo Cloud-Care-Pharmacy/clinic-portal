@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <Card className="border-status-danger-border bg-status-danger-bg">
           <CardContent className="flex flex-col items-center justify-center py-10 gap-4 text-center">
-            <AlertCircle className="h-10 w-10 text-destructive" />
+            <AlertCircle className="size-10  text-destructive" />
             <div>
               <p className="text-lg font-semibold text-status-danger-fg">
                 Something went wrong

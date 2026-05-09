@@ -304,7 +304,7 @@ function ShiftBlock({ shift }: { shift: Shift }) {
       {isBusy && (
         <span
           aria-hidden="true"
-          className="rosters-pulse absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+          className="rosters-pulse absolute right-2 top-2 size-1.5  rounded-full"
           style={{ background: "currentColor" }}
         />
       )}
@@ -312,7 +312,7 @@ function ShiftBlock({ shift }: { shift: Shift }) {
         {shift.start}&ndash;{shift.end}
       </div>
       <div className="flex items-center gap-1.5 text-[11px] leading-tight">
-        <Users className="h-3 w-3" aria-hidden="true" />
+        <Users className="size-3 " aria-hidden="true" />
         <span className="tabular-nums">
           {shift.booked ?? 0}/{shift.capacity ?? 0}
         </span>

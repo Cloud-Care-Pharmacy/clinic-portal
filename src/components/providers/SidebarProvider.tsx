@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, use, useState, type ReactNode } from "react";
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -13,7 +13,7 @@ const SidebarContext = createContext<SidebarContextValue>({
 });
 
 export function useSidebarState() {
-  return useContext(SidebarContext);
+  return use(SidebarContext);
 }
 
 export function SidebarStateProvider({ children }: { children: ReactNode }) {

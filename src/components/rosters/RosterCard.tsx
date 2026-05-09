@@ -62,9 +62,9 @@ export function RosterCard({
               type="button"
               onClick={onPrev}
               aria-label="Previous"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted"
+              className="inline-flex size-7  items-center justify-center rounded-lg hover:bg-muted"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <ChevronLeft className="size-3.5 " />
             </button>
             <span className="min-w-[152px] px-1 text-center text-[13px] font-medium tabular-nums">
               {stepLabel}
@@ -73,9 +73,9 @@ export function RosterCard({
               type="button"
               onClick={onNext}
               aria-label="Next"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-muted"
+              className="inline-flex size-7  items-center justify-center rounded-lg hover:bg-muted"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="size-3.5 " />
             </button>
           </div>
           <SegmentedControl<ViewMode>

@@ -363,7 +363,7 @@ export function TaskCallDialog({
                         AIRCALL · ACTIVE CALL
                       </DialogTitle>
                       <DialogDescription className="mt-0.5 text-xs">
-                        Mute, hold, transfer, hang up — in the Aircall extension
+                        Mute, hold, transfer, hang up, in the Aircall extension
                       </DialogDescription>
                     </div>
                   </div>
@@ -394,7 +394,7 @@ export function TaskCallDialog({
                     <p className="mt-1 text-xs text-muted-foreground">
                       For task:{" "}
                       <span className="font-semibold text-foreground">
-                        {displayTitle} — {taskReferenceStatus}
+                        {displayTitle}, {taskReferenceStatus}
                       </span>
                     </p>
                   </div>
@@ -412,7 +412,7 @@ export function TaskCallDialog({
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <label className={OVERLINE_CLASS}>Consultation notes — draft</label>
+                  <label className={OVERLINE_CLASS}>Consultation notes, draft</label>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Check className="size-3.5" />
                     Saved just now
@@ -463,7 +463,7 @@ export function TaskCallDialog({
                       hangUpAction({ durationSeconds: seconds, durationLabel, notes })
                     }
                   >
-                    I&apos;ve hung up — finalise
+                    I&apos;ve hung up, finalise
                     <ArrowRight className="size-4" />
                   </Button>
                 </div>

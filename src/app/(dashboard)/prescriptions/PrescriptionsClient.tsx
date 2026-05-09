@@ -180,7 +180,7 @@ export function PrescriptionsClient({
   initialPatients,
   initialPrescriptions,
 }: PrescriptionsClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const { data: patientsData, isLoading } = usePatients(
     entityId || undefined,
     undefined,
@@ -189,7 +189,7 @@ export function PrescriptionsClient({
   const patients = patientsData?.data?.patients ?? [];
 
   function selectPatient(patientId: string) {
-    router.push(`/prescriptions?patientId=${encodeURIComponent(patientId)}`, {
+    push(`/prescriptions?patientId=${encodeURIComponent(patientId)}`, {
       scroll: false,
     });
   }
