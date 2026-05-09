@@ -1,3 +1,22 @@
+# Patient Portal
+
+The Cloud Care Pharmacy Patient Portal — a web app for managing patients, prescriptions, consultations, and day-to-day clinic operations.
+
+## What it does
+
+- Manage patient records and intake
+- View and track prescriptions
+- Schedule and review consultations
+- Coordinate tasks, orders, and rosters across the team
+
+## Who it's for
+
+Cloud Care Pharmacy staff, doctors, and administrators.
+
+## License
+
+Private — Cloud Care Pharmacy
+
 # Patient Portal — Cloud Care Pharmacy
 
 A Next.js 16 Patient Management System frontend that connects to the [prescription-gateway](https://github.com/Cloud-Care-Pharmacy/prescription-gateway) Cloudflare Worker API.
@@ -56,17 +75,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Environment Variables
 
-| Variable                        | Description                                                                                 | Required |
-| ------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
-| `NEXTAUTH_URL`                  | App URL (e.g., `http://localhost:3000`)                                                     | Yes      |
-| `NEXTAUTH_SECRET`               | Random secret for NextAuth session encryption                                               | Yes      |
-| `GOOGLE_CLIENT_ID`              | Google OAuth Client ID                                                                      | Yes      |
-| `GOOGLE_CLIENT_SECRET`          | Google OAuth Client Secret                                                                  | Yes      |
-| `NEXT_PUBLIC_API_URL`           | Backend API URL (prescription-gateway)                                                      | Yes      |
-| `API_SECRET`                    | API key matching `API_SECRET` in prescription-gateway                                       | Yes      |
+| Variable                                 | Description                                                                               | Required |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------- | -------- |
+| `NEXTAUTH_URL`                           | App URL (e.g., `http://localhost:3000`)                                                   | Yes      |
+| `NEXTAUTH_SECRET`                        | Random secret for NextAuth session encryption                                             | Yes      |
+| `GOOGLE_CLIENT_ID`                       | Google OAuth Client ID                                                                    | Yes      |
+| `GOOGLE_CLIENT_SECRET`                   | Google OAuth Client Secret                                                                | Yes      |
+| `NEXT_PUBLIC_API_URL`                    | Backend API URL (prescription-gateway)                                                    | Yes      |
+| `API_SECRET`                             | API key matching `API_SECRET` in prescription-gateway                                     | Yes      |
 | `NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE` | Parchment patient portal base URL from Vercel env; use sandbox for local/dev environments | Yes      |
-| `ADMIN_EMAILS`                  | Comma-separated admin emails                                                                | No       |
-| `DOCTOR_EMAILS`                 | Comma-separated doctor emails                                                               | No       |
+| `ADMIN_EMAILS`                           | Comma-separated admin emails                                                              | No       |
+| `DOCTOR_EMAILS`                          | Comma-separated doctor emails                                                             | No       |
 
 ## Pages
 
