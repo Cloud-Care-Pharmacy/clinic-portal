@@ -17,7 +17,7 @@ export default async function PatientTasksPage({
         sort: "dueAt",
         order: "asc",
       })
-      .catch(() => undefined),
+      .catch(() => undefined)
   );
   const [{ id }, { selected }, initialTasks] = await Promise.all([
     params,

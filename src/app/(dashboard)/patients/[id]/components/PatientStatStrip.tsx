@@ -59,14 +59,9 @@ export const PatientStatStrip = memo(function PatientStatStrip({
 
   const lastConsult = consultations
     .filter((c) => c.status === "completed")
-    .reduce<(typeof consultations)[number] | undefined>(
-      (best, c) =>
-        !best ||
-        new Date(c.scheduledAt).getTime() > new Date(best.scheduledAt).getTime()
-          ? c
-          : best,
-      undefined,
-    );
+    .reduce<
+      (typeof consultations)[number] | undefined
+    >((best, c) => (!best || new Date(c.scheduledAt).getTime() > new Date(best.scheduledAt).getTime() ? c : best), undefined);
 
   const latestPrescription = prescriptions.reduce<
     (typeof prescriptions)[number] | undefined
@@ -76,21 +71,16 @@ export const PatientStatStrip = memo(function PatientStatStrip({
       new Date(p.prescriptionDate).getTime() > new Date(best.prescriptionDate).getTime()
         ? p
         : best,
-    undefined,
+    undefined
   );
 
   // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
   const now = Date.now();
   const nextAppt = consultations
     .filter((c) => c.status === "scheduled" && new Date(c.scheduledAt).getTime() > now)
-    .reduce<(typeof consultations)[number] | undefined>(
-      (best, c) =>
-        !best ||
-        new Date(c.scheduledAt).getTime() < new Date(best.scheduledAt).getTime()
-          ? c
-          : best,
-      undefined,
-    );
+    .reduce<
+      (typeof consultations)[number] | undefined
+    >((best, c) => (!best || new Date(c.scheduledAt).getTime() < new Date(best.scheduledAt).getTime() ? c : best), undefined);
 
   // Conditions count (since no allergies)
   const conditions = clinical?.medicalConditions ?? [];

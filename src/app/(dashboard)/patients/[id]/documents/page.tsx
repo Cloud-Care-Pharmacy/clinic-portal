@@ -9,7 +9,7 @@ export default async function DocumentsPage({
   searchParams: Promise<{ action?: string; selected?: string }>;
 }) {
   const initialDocumentsP = params.then(({ id }) =>
-    api.getPatientDocuments(id).catch(() => undefined),
+    api.getPatientDocuments(id).catch(() => undefined)
   );
   const [{ id }, { action, selected }, initialDocuments] = await Promise.all([
     params,

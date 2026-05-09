@@ -9,7 +9,7 @@ export default async function ConsultationsPage({
   searchParams: Promise<{ selected?: string }>;
 }) {
   const initialConsultationsP = params.then(({ id }) =>
-    api.getPatientConsultations(id, { limit: 50, offset: 0 }).catch(() => undefined),
+    api.getPatientConsultations(id, { limit: 50, offset: 0 }).catch(() => undefined)
   );
   const [{ id }, { selected }, initialConsultations] = await Promise.all([
     params,
