@@ -38,6 +38,7 @@ export function MonthGrid({ days, todayISO, onSelectDay }: MonthGridProps) {
           key={day.date}
           day={day}
           isToday={todayISO === day.date}
+          isPast={todayISO ? day.date < todayISO : false}
           onClick={() => onSelectDay(day.date)}
         />
       ))}
@@ -48,10 +49,12 @@ export function MonthGrid({ days, todayISO, onSelectDay }: MonthGridProps) {
 function MonthDayCell({
   day,
   isToday,
+  isPast,
   onClick,
 }: {
   day: RosterMonthDay;
   isToday: boolean;
+  isPast: boolean;
   onClick: () => void;
 }) {
   const dateNum = useMemo(() => Number(day.date.split("-")[2]), [day.date]);
@@ -78,9 +81,11 @@ function MonthDayCell({
     ? "color-mix(in srgb, var(--muted) 50%, var(--background))"
     : isToday
       ? "color-mix(in srgb, var(--primary) 3%, var(--background))"
-      : isWeekendIdx
-        ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
-        : "var(--background)";
+      : isPast
+        ? "color-mix(in srgb, var(--muted) 30%, var(--background))"
+        : isWeekendIdx
+          ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
+          : "var(--background)";
 
   return (
     <button
@@ -88,7 +93,8 @@ function MonthDayCell({
       onClick={onClick}
       className={cn(
         "flex min-h-[120px] flex-col gap-1 border-b border-r px-2.5 py-2 text-left transition-colors hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        !day.inMonth && "opacity-55"
+        !day.inMonth && "opacity-55",
+        day.inMonth && isPast && !isToday && "opacity-70"
       )}
       style={{
         background: bg,

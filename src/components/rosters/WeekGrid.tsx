@@ -77,19 +77,23 @@ export function WeekGrid({
           const date = addDays(monday, i);
           const isToday = todayIndex === i;
           const isWeekend = i >= 5;
+          const isPast = todayIndex !== null && i < todayIndex;
           return (
             <div
               key={dow}
               className={cn(
                 "sticky top-0 z-[3] border-b px-3.5 py-2.5",
-                i < 6 && "border-r"
+                i < 6 && "border-r",
+                isPast && "opacity-70"
               )}
               style={{
                 background: isToday
                   ? "color-mix(in srgb, var(--primary) 6%, var(--table-header))"
-                  : isWeekend
-                    ? "color-mix(in srgb, var(--muted) 60%, var(--table-header))"
-                    : "var(--table-header)",
+                  : isPast
+                    ? "color-mix(in srgb, var(--muted) 50%, var(--table-header))"
+                    : isWeekend
+                      ? "color-mix(in srgb, var(--muted) 60%, var(--table-header))"
+                      : "var(--table-header)",
                 borderColor: "var(--table-separator)",
               }}
             >
@@ -196,6 +200,7 @@ function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps)
           shift={shift}
           isToday={todayIndex === dayIdx}
           isWeekend={dayIdx >= 5}
+          isPast={todayIndex !== null && dayIdx < todayIndex}
           isLastCol={dayIdx === 6}
           rowSelected={isSelected}
           rowIsMe={isMe}
@@ -209,6 +214,7 @@ interface DayCellProps {
   shift: Shift;
   isToday: boolean;
   isWeekend: boolean;
+  isPast: boolean;
   isLastCol: boolean;
   rowSelected: boolean;
   rowIsMe: boolean;
@@ -218,19 +224,26 @@ function DayCell({
   shift,
   isToday,
   isWeekend,
+  isPast,
   isLastCol,
   rowSelected,
   rowIsMe,
 }: DayCellProps) {
   const baseBg = isToday
     ? "color-mix(in srgb, var(--primary) 3%, var(--background))"
-    : isWeekend
-      ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
-      : "var(--background)";
+    : isPast
+      ? "color-mix(in srgb, var(--muted) 30%, var(--background))"
+      : isWeekend
+        ? "color-mix(in srgb, var(--muted) 35%, var(--background))"
+        : "var(--background)";
 
   return (
     <div
-      className={cn("flex flex-col gap-1 border-b p-2", !isLastCol && "border-r")}
+      className={cn(
+        "flex flex-col gap-1 border-b p-2",
+        !isLastCol && "border-r",
+        isPast && !isToday && "opacity-70"
+      )}
       style={{
         background: baseBg,
         borderColor: "var(--table-separator)",
