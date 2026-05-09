@@ -126,7 +126,7 @@ export const PatientHeader = memo(
           {/* Identity row */}
           <div className="flex items-start gap-4">
             {/* Avatar — 56×56 */}
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-lg font-semibold">
+            <div className="flex size-14  shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-lg font-semibold">
               {patient?.firstName ? (
                 (
                   patient.firstName.charAt(0) + (patient.lastName?.charAt(0) ?? "")
@@ -134,7 +134,7 @@ export const PatientHeader = memo(
               ) : patient?.originalEmail ? (
                 patient.originalEmail.charAt(0).toUpperCase()
               ) : (
-                <User className="h-5 w-5" />
+                <User className="size-5 " />
               )}
             </div>
 

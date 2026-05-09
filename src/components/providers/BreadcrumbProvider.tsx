@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, use, useState, useCallback, type ReactNode } from "react";
 
 interface BreadcrumbOverrides {
   [path: string]: string;
@@ -19,7 +19,7 @@ const BreadcrumbContext = createContext<BreadcrumbContextValue>({
 });
 
 export function useBreadcrumbOverrides() {
-  return useContext(BreadcrumbContext);
+  return use(BreadcrumbContext);
 }
 
 export function BreadcrumbProvider({ children }: { children: ReactNode }) {

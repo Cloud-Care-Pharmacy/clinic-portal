@@ -74,7 +74,7 @@ const consultationColumns: GridColDef<Consultation>[] = [
     minWidth: 150,
     renderCell: (params) => {
       const text = htmlToPlainText(params.value as string | null | undefined);
-      if (!text) return <span className="text-muted-foreground">—</span>;
+      if (!text) return <span className="text-muted-foreground">,</span>;
       return (
         <span className="truncate" title={text}>
           {text}
@@ -97,7 +97,7 @@ export function ConsultationsTab({
   selectedConsultationId,
   initialConsultations,
 }: ConsultationsTabProps) {
-  const router = useRouter();
+  const { push, replace } = useRouter();
   const { data, isLoading } = useConsultations(patientId, initialConsultations);
   const [newSheetOpen, setNewSheetOpen] = useState(false);
   const [selectedFromRow, setSelectedFromRow] = useState<Consultation | null>(null);
@@ -116,14 +116,14 @@ export function ConsultationsTab({
 
   function clearSelectedConsultation() {
     setSelectedFromRow(null);
-    router.replace(`/patients/${encodeURIComponent(patientId)}/consultations`, {
+    replace(`/patients/${encodeURIComponent(patientId)}/consultations`, {
       scroll: false,
     });
   }
 
   function openConsultation(consultation: Consultation) {
     setSelectedFromRow(consultation);
-    router.push(selectedConsultationHref(consultation.id), { scroll: false });
+    push(selectedConsultationHref(consultation.id), { scroll: false });
   }
 
   if (isLoading) {

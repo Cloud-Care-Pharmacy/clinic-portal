@@ -150,7 +150,7 @@ export function PatientTable({
   sortModel,
   onSortModelChange,
 }: PatientTableProps) {
-  const router = useRouter();
+  const { push, prefetch } = useRouter();
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
     DEFAULT_COLUMN_VISIBILITY
   );
@@ -314,7 +314,7 @@ export function PatientTable({
       renderCell: (params) => (
         <ActionsCell
           patient={params.row}
-          onView={() => router.push(`/patients/${params.row.id}`)}
+          onView={() => push(`/patients/${params.row.id}`)}
           onCopyEmail={() => handleCopyEmail(params.row.originalEmail)}
           onDelete={() => setDeleteTarget(params.row)}
         />
@@ -368,7 +368,7 @@ export function PatientTable({
           </DropdownMenu>
           <Link href="/patients/new">
             <Button size="sm" className="h-9">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4 " />
               Add Patient
             </Button>
           </Link>
@@ -383,7 +383,7 @@ export function PatientTable({
         title="No patients yet"
         description="Get started by adding your first patient intake."
         actionLabel="Add Patient"
-        onAction={() => router.push("/patients/new")}
+        onAction={() => push("/patients/new")}
       />
     );
   }
@@ -423,7 +423,7 @@ export function PatientTable({
           initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
           rowHeight={56}
           onRowClick={(params: GridRowParams<PatientMapping>) =>
-            router.push(`/patients/${params.row.id}`, { scroll: false })
+            push(`/patients/${params.row.id}`, { scroll: false })
           }
           slotProps={{
             loadingOverlay: {
@@ -433,7 +433,7 @@ export function PatientTable({
             row: {
               onMouseEnter: (event) => {
                 const id = (event.currentTarget as HTMLElement).getAttribute("data-id");
-                if (id) router.prefetch(`/patients/${id}`);
+                if (id) prefetch(`/patients/${id}`);
               },
             },
           }}

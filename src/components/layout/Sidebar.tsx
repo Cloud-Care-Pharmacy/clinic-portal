@@ -45,27 +45,27 @@ const generalNav: NavItem[] = [
   {
     label: "Dashboard",
     href: "/dashboard",
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    icon: <LayoutDashboard className="size-5 " />,
   },
   {
     label: "Patients",
     href: "/patients",
-    icon: <Users className="h-5 w-5" />,
+    icon: <Users className="size-5 " />,
   },
   {
     label: "Tasks",
     href: "/tasks",
-    icon: <ClipboardCheck className="h-5 w-5" />,
+    icon: <ClipboardCheck className="size-5 " />,
   },
   {
     label: "Consultations",
     href: "/consultations",
-    icon: <Calendar className="h-5 w-5" />,
+    icon: <Calendar className="size-5 " />,
   },
   {
     label: "Rosters",
     href: "/rosters",
-    icon: <CalendarClock className="h-5 w-5" />,
+    icon: <CalendarClock className="size-5 " />,
   },
 ];
 
@@ -73,12 +73,12 @@ const catalogNav: NavItem[] = [
   {
     label: "Products",
     href: "/products",
-    icon: <Package className="h-5 w-5" />,
+    icon: <Package className="size-5 " />,
   },
   {
     label: "Orders",
     href: "/orders",
-    icon: <ShoppingCart className="h-5 w-5" />,
+    icon: <ShoppingCart className="size-5 " />,
   },
 ];
 
@@ -175,7 +175,7 @@ function NavGroup({
 
 function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean }) {
   const { signOut } = useClerk();
-  const router = useRouter();
+  const { push } = useRouter();
   const filteredCatalog = catalogNav.filter(
     (item) => !item.roles || item.roles.includes(user.role)
   );
@@ -192,12 +192,12 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       {/* Team / App Header */}
       <div
         className={cn(
-          "flex items-center gap-3 overflow-hidden px-4 py-4 transition-all",
+          "flex items-center gap-3 overflow-hidden p-4  transition-all",
           sidebarTransition
         )}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Pill className="h-4 w-4" />
+        <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+          <Pill className="size-4 " />
         </div>
         <div
           className={cn(
@@ -287,13 +287,13 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/profile")}>
-              <User className="mr-2 h-4 w-4" />
+            <DropdownMenuItem onClick={() => push("/profile")}>
+              <User className="mr-2 size-4 " />
               My Profile
             </DropdownMenuItem>
             {user.role === "admin" && (
-              <DropdownMenuItem onClick={() => router.push("/workspace")}>
-                <Building2 className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => push("/workspace")}>
+                <Building2 className="mr-2 size-4 " />
                 Workspace management
               </DropdownMenuItem>
             )}
@@ -302,7 +302,7 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
               className="text-destructive focus:text-destructive"
               onClick={() => signOut({ redirectUrl: "/sign-in" })}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 size-4 " />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -332,7 +332,7 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Mobile sidebar (Sheet) */}
       <Sheet>
         <SheetTrigger className="lg:hidden fixed top-3 left-3 z-40 inline-flex items-center justify-center rounded-lg p-2 hover:bg-accent">
-          <Menu className="h-5 w-5" />
+          <Menu className="size-5 " />
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 bg-sidebar">
           <SheetTitle className="sr-only">Navigation</SheetTitle>

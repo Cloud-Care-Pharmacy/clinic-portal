@@ -46,7 +46,7 @@ export function MonthGridSkeleton({ weeks = 6 }: MonthGridSkeletonProps) {
               <div className="h-3 w-8 animate-pulse rounded bg-muted/70" />
             </div>
             <div className="mt-1 space-y-1">
-              <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
+              <div className="size-3 /4 animate-pulse rounded bg-muted" />
               <div className="h-3 w-2/3 animate-pulse rounded bg-muted/80" />
               <div className="h-3 w-1/2 animate-pulse rounded bg-muted/70" />
             </div>

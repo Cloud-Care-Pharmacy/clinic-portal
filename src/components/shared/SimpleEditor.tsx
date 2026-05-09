@@ -37,7 +37,7 @@ function ToolbarButton({
       type="button"
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", active && "bg-muted")}
+      className={cn("size-7 ", active && "bg-muted")}
       onClick={onClick}
       title={title}
     >
@@ -81,34 +81,34 @@ export function SimpleEditor({
   return (
     <div className="rounded-md border border-input bg-background">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 border-b px-1 py-1">
+      <div className="flex items-center gap-0.5 border-b p-1 ">
         <ToolbarButton
           active={editor.isActive("bold")}
           onClick={() => editor.chain().focus().toggleBold().run()}
           title="Bold"
         >
-          <Bold className="h-3.5 w-3.5" />
+          <Bold className="size-3.5 " />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("italic")}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           title="Italic"
         >
-          <Italic className="h-3.5 w-3.5" />
+          <Italic className="size-3.5 " />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("underline")}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           title="Underline"
         >
-          <UnderlineIcon className="h-3.5 w-3.5" />
+          <UnderlineIcon className="size-3.5 " />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("strike")}
           onClick={() => editor.chain().focus().toggleStrike().run()}
           title="Strikethrough"
         >
-          <Strikethrough className="h-3.5 w-3.5" />
+          <Strikethrough className="size-3.5 " />
         </ToolbarButton>
 
         <div className="mx-1 h-4 w-px bg-border" />
@@ -118,14 +118,14 @@ export function SimpleEditor({
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           title="Bullet list"
         >
-          <List className="h-3.5 w-3.5" />
+          <List className="size-3.5 " />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("orderedList")}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           title="Numbered list"
         >
-          <ListOrdered className="h-3.5 w-3.5" />
+          <ListOrdered className="size-3.5 " />
         </ToolbarButton>
       </div>
 

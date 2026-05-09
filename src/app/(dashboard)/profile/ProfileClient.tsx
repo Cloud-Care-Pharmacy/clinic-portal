@@ -148,7 +148,7 @@ export function ProfileClient({
         <Card>
           <CardContent className="px-6 py-4">
             <div className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="size-10  rounded-full" />
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-6 w-20 rounded-full" />
             </div>
@@ -170,17 +170,17 @@ export function ProfileClient({
           <div className="flex flex-col gap-3">
             {/* Row 1: avatar, name, role badge, contact icons */}
             <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+              <div className="flex size-10  shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
                 {imageUrl ? (
                   <img
                     src={imageUrl}
                     alt={fullName}
-                    className="h-10 w-10 rounded-full object-cover"
+                    className="size-10  rounded-full object-cover"
                   />
                 ) : initials ? (
                   initials
                 ) : (
-                  <User className="h-5 w-5" />
+                  <User className="size-5 " />
                 )}
               </div>
               <h2 className="text-lg font-semibold leading-tight whitespace-nowrap">

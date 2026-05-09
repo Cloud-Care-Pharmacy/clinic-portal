@@ -323,7 +323,7 @@ export function OverviewTab({
                     >
                       <div
                         className={cn(
-                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                          "flex size-8  shrink-0 items-center justify-center rounded-lg border",
                           config.tileClass
                         )}
                       >
@@ -376,7 +376,7 @@ export function OverviewTab({
               })}
               scroll={false}
               aria-label={`Open prescription ${formatPrescriptionReference(latestPrescription)}`}
-              className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg py-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 px-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg p-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -457,7 +457,7 @@ export function OverviewTab({
               <div className="flex flex-col gap-3">
                 {careTeam.map((member, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-xs font-semibold">
+                    <div className="flex size-9  shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary text-xs font-semibold">
                       {getInitials(member.name)}
                     </div>
                     <div className="min-w-0">

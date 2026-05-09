@@ -290,7 +290,7 @@ function Step2SmokingStatus() {
             label: "I have never smoked or vaped",
           },
         ].map((opt) => (
-          <div key={opt.value} className="flex items-center space-x-2">
+          <div key={opt.value} className="flex items-center gap-x-2">
             <RadioGroupItem value={opt.value} id={opt.value} />
             <Label htmlFor={opt.value}>{opt.label}</Label>
           </div>
@@ -354,7 +354,7 @@ function Step4VapingStatus() {
           { value: "yes", label: "Yes" },
           { value: "no", label: "No" },
         ].map((opt) => (
-          <div key={opt.value} className="flex items-center space-x-2">
+          <div key={opt.value} className="flex items-center gap-x-2">
             <RadioGroupItem value={opt.value} id={`vaping-${opt.value}`} />
             <Label htmlFor={`vaping-${opt.value}`}>{opt.label}</Label>
           </div>
@@ -432,11 +432,11 @@ function Step6MedicalHistory() {
           value={watch("hasMedicalConditions")}
           onValueChange={(v) => setValue("hasMedicalConditions", v)}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="yes" id="conditions-yes" />
             <Label htmlFor="conditions-yes">Yes</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="no" id="conditions-no" />
             <Label htmlFor="conditions-no">No</Label>
           </div>
@@ -453,7 +453,7 @@ function Step6MedicalHistory() {
           <Label>Select conditions:</Label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {MEDICAL_CONDITIONS.map((cond) => (
-              <div key={cond} className="flex items-center space-x-2">
+              <div key={cond} className="flex items-center gap-x-2">
                 <Checkbox
                   id={cond}
                   checked={conditions.includes(cond)}
@@ -488,11 +488,11 @@ function Step6MedicalHistory() {
           value={watch("takesMedication")}
           onValueChange={(v) => setValue("takesMedication", v)}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="yes" id="meds-yes" />
             <Label htmlFor="meds-yes">Yes</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="no" id="meds-no" />
             <Label htmlFor="meds-no">No</Label>
           </div>
@@ -507,7 +507,7 @@ function Step6MedicalHistory() {
           <Label>High-risk medications:</Label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {HIGH_RISK_MEDS.map((med) => (
-              <div key={med} className="flex items-center space-x-2">
+              <div key={med} className="flex items-center gap-x-2">
                 <Checkbox
                   id={med}
                   checked={medications.includes(med)}
@@ -542,11 +542,11 @@ function Step6MedicalHistory() {
           value={watch("cardiovascular")}
           onValueChange={(v) => setValue("cardiovascular", v)}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="yes" id="cv-yes" />
             <Label htmlFor="cv-yes">Yes</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="no" id="cv-no" />
             <Label htmlFor="cv-no">No</Label>
           </div>
@@ -562,15 +562,15 @@ function Step6MedicalHistory() {
           value={watch("pregnancy")}
           onValueChange={(v) => setValue("pregnancy", v)}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="yes" id="preg-yes" />
             <Label htmlFor="preg-yes">Yes</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="no" id="preg-no" />
             <Label htmlFor="preg-no">No</Label>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-x-2">
             <RadioGroupItem value="na" id="preg-na" />
             <Label htmlFor="preg-na">Not applicable</Label>
           </div>
@@ -688,7 +688,7 @@ function Step8Consent() {
           </li>
         </ul>
       </div>
-      <div className="flex items-start space-x-2">
+      <div className="flex items-start gap-x-2">
         <Checkbox
           id="safetyAck"
           checked={ack === "yes"}
@@ -724,7 +724,7 @@ const STEP_COMPONENTS = [
 // ---- Main Wizard ----
 
 export function NewPatientClient() {
-  const router = useRouter();
+  const { push } = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -836,7 +836,7 @@ export function NewPatientClient() {
       const data = await res.json();
       localStorage.removeItem(DRAFT_KEY);
       toast.success("Patient intake submitted successfully!");
-      router.push(`/patients/${data.patientId}`);
+      push(`/patients/${data.patientId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to submit intake");
     } finally {

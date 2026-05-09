@@ -38,7 +38,7 @@ export function RecentActivity({ items }: RecentActivityProps) {
     <div className="space-y-8">
       {items.map((item) => (
         <div key={item.id} className="flex items-center gap-4">
-          <Avatar className="h-9 w-9">
+          <Avatar className="size-9 ">
             <AvatarFallback>{item.patientInitials}</AvatarFallback>
           </Avatar>
           <div className="flex flex-1 flex-wrap items-center justify-between">

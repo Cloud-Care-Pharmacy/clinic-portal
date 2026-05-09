@@ -141,7 +141,7 @@ export function DocumentPreviewDialog({
             <iframe
               src={objectUrl}
               title={document?.filename ?? "Document preview"}
-              className="h-full w-full border-0"
+              className="size-full  border-0"
             />
           )}
 

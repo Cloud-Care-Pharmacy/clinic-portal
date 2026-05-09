@@ -501,7 +501,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
                       {field.label}
                     </span>
                     {dayHasError ? (
-                      <AlertCircle className="h-4 w-4 text-destructive" />
+                      <AlertCircle className="size-4  text-destructive" />
                     ) : (
                       <span className="text-xs tabular-nums text-muted-foreground">
                         {enabled ? formatDuration(dur) : "Off"}
@@ -568,7 +568,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
                       : "border-border bg-background hover:bg-muted"
                   )}
                 >
-                  <Icon className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
+                  <Icon className="size-5  mt-0.5 shrink-0 text-primary" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">{t.name}</div>
                     <div className="text-xs text-muted-foreground">{t.desc}</div>
@@ -591,7 +591,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
             <Button type="button" variant="outline" className="border-dashed">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4 " />
               Add leave period
             </Button>
             <span className="text-[13px] text-muted-foreground">
@@ -669,7 +669,7 @@ function DayEditor({
 
       {issues.day ? (
         <p className="flex items-center gap-2 text-xs text-destructive">
-          <AlertCircle className="h-3.5 w-3.5" />
+          <AlertCircle className="size-3.5 " />
           {issues.day}
         </p>
       ) : null}
@@ -715,11 +715,11 @@ function DayEditor({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="ml-auto h-8 w-8 text-muted-foreground hover:text-destructive"
+                    className="ml-auto size-8  text-muted-foreground hover:text-destructive"
                     onClick={() => onRemoveSlot(slotIdx)}
                     aria-label="Remove time range"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="size-4 " />
                   </Button>
                 </div>
                 {issue?.start ? (
@@ -730,7 +730,7 @@ function DayEditor({
                 ) : null}
                 {issue?.row ? (
                   <p className="ml-1 flex items-center gap-1.5 text-xs text-destructive">
-                    <AlertCircle className="h-3 w-3" />
+                    <AlertCircle className="size-3 " />
                     {issue.row}
                   </p>
                 ) : null}
@@ -749,7 +749,7 @@ function DayEditor({
           onClick={onAddSlot}
           disabled={!day.enabled || atCap}
         >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          <Plus className="mr-1.5 size-3.5 " />
           Add time range
         </Button>
         {day.enabled && day.slots.length > 0 ? (
@@ -757,7 +757,7 @@ function DayEditor({
             <PopoverTrigger
               render={
                 <Button type="button" variant="ghost" size="sm" onClick={onOpenCopy}>
-                  <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  <Copy className="mr-1.5 size-3.5 " />
                   Copy to…
                 </Button>
               }
