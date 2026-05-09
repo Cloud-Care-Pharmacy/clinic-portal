@@ -1564,3 +1564,288 @@ export interface RosterMonthResponse {
   monthEnd: string;
   days: RosterMonthDay[];
 }
+
+// ============================================================================
+// Workflows
+// ============================================================================
+
+export type WorkflowStatus = "draft" | "active" | "disabled";
+
+export type WorkflowTriggerKind =
+  | "event"
+  | "manual"
+  | "schedule"
+  | "webhook"
+  | "workflow";
+
+export interface WorkflowEventTrigger {
+  kind: "event";
+  eventType: string;
+}
+
+export interface WorkflowManualTrigger {
+  kind: "manual";
+}
+
+export interface WorkflowScheduleTrigger {
+  kind: "schedule";
+  cron: string;
+}
+
+export interface WorkflowWebhookTrigger {
+  kind: "webhook";
+  /** Server-generated; absent on the create request. */
+  token?: string;
+}
+
+export interface WorkflowSubflowTrigger {
+  kind: "workflow";
+}
+
+export type WorkflowTrigger =
+  | WorkflowEventTrigger
+  | WorkflowManualTrigger
+  | WorkflowScheduleTrigger
+  | WorkflowWebhookTrigger
+  | WorkflowSubflowTrigger;
+
+export type WorkflowStepKind =
+  | "send_email"
+  | "send_sms"
+  | "wait"
+  | "branch_if"
+  | "lookup_patient"
+  | "lookup_consultation"
+  | "record_activity"
+  | "http_call"
+  | "wait_for_event"
+  | "call_workflow";
+
+export type WorkflowBranchOp =
+  | "eq"
+  | "neq"
+  | "truthy"
+  | "falsy"
+  | "gt"
+  | "lt";
+
+interface WorkflowStepBase {
+  id?: string;
+}
+
+export interface SendEmailStep extends WorkflowStepBase {
+  kind: "send_email";
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  from?: string;
+  replyTo?: string;
+  idempotencyKeySuffix?: string;
+  storeAs?: string;
+}
+
+export interface SendSmsStep extends WorkflowStepBase {
+  kind: "send_sms";
+  to: string;
+  body: string;
+  from?: string;
+  idempotencyKeySuffix?: string;
+  storeAs?: string;
+}
+
+export interface WaitStep extends WorkflowStepBase {
+  kind: "wait";
+  seconds: number;
+}
+
+export interface BranchIfStep extends WorkflowStepBase {
+  kind: "branch_if";
+  left: string;
+  op: WorkflowBranchOp;
+  right?: string;
+  gotoIfTrue?: string;
+  gotoIfFalse?: string;
+}
+
+export interface LookupPatientStep extends WorkflowStepBase {
+  kind: "lookup_patient";
+  patientId: string;
+  storeAs: string;
+}
+
+export interface LookupConsultationStep extends WorkflowStepBase {
+  kind: "lookup_consultation";
+  consultationId: string;
+  storeAs: string;
+}
+
+export interface RecordActivityStep extends WorkflowStepBase {
+  kind: "record_activity";
+  patientId: string;
+  type: string;
+  entityType: string;
+  entityId?: string;
+  title: string;
+  description?: string;
+}
+
+export interface HttpCallStep extends WorkflowStepBase {
+  kind: "http_call";
+  url: string;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  headers?: Record<string, string>;
+  body?: string;
+  storeAs?: string;
+  maxResponseBytes?: number;
+}
+
+export interface WaitForEventStep extends WorkflowStepBase {
+  kind: "wait_for_event";
+  eventType: string;
+  timeoutSeconds?: number;
+}
+
+export interface CallWorkflowStep extends WorkflowStepBase {
+  kind: "call_workflow";
+  workflowId: string;
+  payload?: Record<string, unknown>;
+  storeAs?: string;
+}
+
+export type WorkflowStep =
+  | SendEmailStep
+  | SendSmsStep
+  | WaitStep
+  | BranchIfStep
+  | LookupPatientStep
+  | LookupConsultationStep
+  | RecordActivityStep
+  | HttpCallStep
+  | WaitForEventStep
+  | CallWorkflowStep;
+
+export interface WorkflowDefinitionBody {
+  version?: number;
+  steps: WorkflowStep[];
+}
+
+export interface Workflow {
+  id: string;
+  entityId: string;
+  name: string;
+  description: string | null;
+  triggerEventType: string | null;
+  triggers: WorkflowTrigger[];
+  status: WorkflowStatus;
+  version: number;
+  definition: WorkflowDefinitionBody;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+}
+
+export interface WorkflowsListResponse {
+  success: boolean;
+  data: Workflow[];
+}
+
+export interface WorkflowResponse {
+  success: boolean;
+  data: Workflow;
+}
+
+export interface CreateWorkflowPayload {
+  entityId: string;
+  name: string;
+  description?: string | null;
+  triggerEventType?: string;
+  triggers: WorkflowTrigger[];
+  status?: WorkflowStatus;
+  definition: WorkflowDefinitionBody;
+}
+
+export interface UpdateWorkflowPayload {
+  name?: string;
+  description?: string | null;
+  triggers?: WorkflowTrigger[];
+  status?: WorkflowStatus;
+  version?: number;
+  definition?: WorkflowDefinitionBody;
+}
+
+export type WorkflowRunStatus =
+  | "running"
+  | "waiting"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface WorkflowRun {
+  id: string;
+  entityId: string;
+  definitionId: string;
+  eventId: string | null;
+  status: WorkflowRunStatus;
+  currentStep: number;
+  context: Record<string, unknown>;
+  nextStepAt: string | null;
+  awaitingEventType: string | null;
+  lastError: string | null;
+  attempts: number;
+  startedAt: string;
+  completedAt: string | null;
+}
+
+export interface WorkflowRunsListResponse {
+  success: boolean;
+  data: WorkflowRun[];
+}
+
+export type WorkflowRunEventType =
+  | "run_started"
+  | "step_started"
+  | "step_completed"
+  | "step_failed"
+  | "wait_scheduled"
+  | "run_resumed"
+  | "run_completed"
+  | "run_failed";
+
+export interface WorkflowRunEvent {
+  id: string;
+  runId: string;
+  sequence: number;
+  stepIndex: number | null;
+  stepKind: string | null;
+  eventType: WorkflowRunEventType;
+  durationMs: number | null;
+  detail: Record<string, unknown> | null;
+  occurredAt: string;
+}
+
+export interface WorkflowRunDetailResponse {
+  success: boolean;
+  data: {
+    run: WorkflowRun;
+    events: WorkflowRunEvent[];
+  };
+}
+
+export interface TriggerWorkflowPayload {
+  entityId: string;
+  eventType: string;
+  idempotencyKey: string;
+  aggregateType?: string | null;
+  aggregateId?: string | null;
+  payload?: Record<string, unknown>;
+}
+
+export interface TriggerWorkflowResponse {
+  success: boolean;
+  data: {
+    created: boolean;
+    event: Record<string, unknown> | null;
+  };
+}

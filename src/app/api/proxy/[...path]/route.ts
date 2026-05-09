@@ -22,7 +22,13 @@ async function handler(
   }
 
   const { path } = await params;
-  const backendPath = `/api/${path.join("/")}`;
+  // Backend has two top-level groups: regular `/api/...` endpoints and the
+  // workflows-specific `/internal/...` endpoints. Skip the `/api/` prefix
+  // for paths the client opts into via the `internal/` segment.
+  const isInternal = path[0] === "internal" || path[0] === "webhooks";
+  const backendPath = isInternal
+    ? `/${path.join("/")}`
+    : `/api/${path.join("/")}`;
   const url = new URL(backendPath, API_URL);
 
   // Forward query params

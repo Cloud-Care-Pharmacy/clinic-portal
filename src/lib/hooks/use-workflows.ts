@@ -1,0 +1,204 @@
+"use client";
+
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type {
+  CreateWorkflowPayload,
+  TriggerWorkflowPayload,
+  TriggerWorkflowResponse,
+  UpdateWorkflowPayload,
+  WorkflowResponse,
+  WorkflowStatus,
+  WorkflowsListResponse,
+} from "@/types";
+
+// ---- Errors ----
+
+export class WorkflowApiError extends Error {
+  readonly status: number;
+  readonly path?: string;
+  readonly fieldMessage?: string;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "WorkflowApiError";
+    this.status = status;
+    // Backend uses a flat envelope `{ success:false, error:"path.to: message" }`
+    // for validation. Surface the dotted path so the inspector can highlight
+    // the offending field.
+    const colonIndex = message.indexOf(": ");
+    if (colonIndex > 0 && /^[\w.\-[\]]+$/.test(message.slice(0, colonIndex))) {
+      this.path = message.slice(0, colonIndex);
+      this.fieldMessage = message.slice(colonIndex + 2);
+    }
+  }
+}
+
+async function readError(res: Response, fallback: string) {
+  let message = fallback;
+  try {
+    const body = await res.json();
+    if (body && typeof body === "object" && typeof body.error === "string") {
+      message = body.error;
+    }
+  } catch {
+    // ignore
+  }
+  return new WorkflowApiError(res.status, message);
+}
+
+// ---- Fetchers ----
+
+interface ListOpts {
+  entityId?: string;
+  status?: WorkflowStatus;
+  triggerEventType?: string;
+  limit?: number;
+}
+
+async function fetchWorkflows(opts: ListOpts): Promise<WorkflowsListResponse> {
+  const params = new URLSearchParams();
+  if (opts.entityId) params.set("entityId", opts.entityId);
+  if (opts.status) params.set("status", opts.status);
+  if (opts.triggerEventType)
+    params.set("triggerEventType", opts.triggerEventType);
+  if (opts.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString() ? `?${params.toString()}` : "";
+  const res = await fetch(`/api/proxy/internal/workflows${qs}`);
+  if (!res.ok) throw await readError(res, "Failed to load workflows");
+  return res.json();
+}
+
+async function fetchWorkflow(workflowId: string): Promise<WorkflowResponse> {
+  const res = await fetch(
+    `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`
+  );
+  if (!res.ok) throw await readError(res, "Failed to load workflow");
+  return res.json();
+}
+
+// ---- Query options ----
+
+export function workflowsQueryOptions(opts: ListOpts = {}) {
+  return queryOptions({
+    queryKey: ["workflows", "list", opts],
+    queryFn: () => fetchWorkflows(opts),
+    staleTime: 30_000,
+  });
+}
+
+export function workflowQueryOptions(workflowId: string) {
+  return queryOptions({
+    queryKey: ["workflows", "detail", workflowId],
+    queryFn: () => fetchWorkflow(workflowId),
+    enabled: Boolean(workflowId),
+    staleTime: 10_000,
+  });
+}
+
+// ---- Hooks ----
+
+export function useWorkflows(
+  opts: ListOpts = {},
+  initialData?: WorkflowsListResponse
+) {
+  return useQuery({
+    ...workflowsQueryOptions(opts),
+    initialData,
+  });
+}
+
+export function useWorkflow(
+  workflowId: string,
+  initialData?: WorkflowResponse
+) {
+  return useQuery({
+    ...workflowQueryOptions(workflowId),
+    initialData,
+  });
+}
+
+export function useCreateWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload: CreateWorkflowPayload
+    ): Promise<WorkflowResponse> => {
+      const res = await fetch(`/api/proxy/internal/workflows`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw await readError(res, "Failed to create workflow");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workflows", "list"] });
+    },
+  });
+}
+
+export function useUpdateWorkflow(workflowId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload: UpdateWorkflowPayload
+    ): Promise<WorkflowResponse> => {
+      const res = await fetch(
+        `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) throw await readError(res, "Failed to save workflow");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(["workflows", "detail", workflowId], data);
+      qc.invalidateQueries({ queryKey: ["workflows", "list"] });
+    },
+  });
+}
+
+export function useDeleteWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (workflowId: string): Promise<void> => {
+      const res = await fetch(
+        `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw await readError(res, "Failed to delete workflow");
+    },
+    onSuccess: (_data, workflowId) => {
+      qc.invalidateQueries({ queryKey: ["workflows", "list"] });
+      qc.removeQueries({ queryKey: ["workflows", "detail", workflowId] });
+    },
+  });
+}
+
+export function useTriggerWorkflow() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload: TriggerWorkflowPayload
+    ): Promise<TriggerWorkflowResponse> => {
+      const res = await fetch(`/api/proxy/internal/workflows/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw await readError(res, "Failed to trigger workflow");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workflow-runs"] });
+    },
+  });
+}
