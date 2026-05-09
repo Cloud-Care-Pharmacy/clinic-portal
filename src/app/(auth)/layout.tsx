@@ -19,8 +19,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Brand */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-(--auth-accent) shadow-[0_4px_14px_var(--auth-accent)/40]">
-            <Stethoscope className="h-4 w-4 text-white" />
+          <div className="grid size-8  place-items-center rounded-lg bg-(--auth-accent) shadow-[0_4px_14px_var(--auth-accent)/40]">
+            <Stethoscope className="size-4  text-white" />
           </div>
           <span className="text-[17px] font-semibold">
             Quity <span className="text-(--auth-accent)">Clinic</span>
@@ -37,23 +37,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <em className="not-italic text-(--auth-accent)">practice</em>.
           </h1>
           <p className="max-w-115 text-base leading-relaxed text-white/70">
-            Manage patients, prescriptions, and consultations in one place —
+            Manage patients, prescriptions, and consultations in one place,
             purpose-built for prescribers and clinic staff.
           </p>
 
           <div className="mt-11 flex flex-wrap gap-2.5">
             <Badge
-              icon={<ShieldCheck className="h-3.5 w-3.5" />}
+              icon={<ShieldCheck className="size-3.5 " />}
               label="AHPRA compliant"
             />
-            <Badge
-              icon={<Lock className="h-3.5 w-3.5" />}
-              label="End-to-end encrypted"
-            />
-            <Badge
-              icon={<Server className="h-3.5 w-3.5" />}
-              label="AU data residency"
-            />
+            <Badge icon={<Lock className="size-3.5 " />} label="End-to-end encrypted" />
+            <Badge icon={<Server className="size-3.5 " />} label="AU data residency" />
           </div>
         </div>
       </div>

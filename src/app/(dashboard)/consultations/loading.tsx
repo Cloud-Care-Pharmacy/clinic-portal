@@ -39,12 +39,12 @@ export default function ConsultationsLoading() {
                 {
                   value: "table",
                   label: "Table",
-                  icon: <Table2 className="h-3.5 w-3.5" />,
+                  icon: <Table2 className="size-3.5 " />,
                 },
                 {
                   value: "calendar",
                   label: "Calendar",
-                  icon: <CalendarDays className="h-3.5 w-3.5" />,
+                  icon: <CalendarDays className="size-3.5 " />,
                 },
               ]}
             />

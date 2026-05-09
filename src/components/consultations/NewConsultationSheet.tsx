@@ -1,3 +1,5 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
+/* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `trackedId` is read during render to drive a derived-state pattern (see `if (consultationInput && incomingId !== trackedId)`). */
 "use client";
 
 import { useState, useCallback, useEffect, useId, useMemo } from "react";
@@ -520,7 +522,7 @@ export function NewConsultationSheet({
             {selectedPatient || isEditing || defaultPatientName ? (
               <div className="flex h-10 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm">
                 <UserIcon
-                  className="h-4 w-4 text-muted-foreground"
+                  className="size-4  text-muted-foreground"
                   aria-hidden="true"
                 />
                 <span className="flex-1 truncate">{patientNameValue || "Patient"}</span>
@@ -534,7 +536,7 @@ export function NewConsultationSheet({
                       form.setValue("patientName", "", { shouldDirty: true });
                     }}
                   >
-                    <XIcon className="h-4 w-4" />
+                    <XIcon className="size-4 " />
                   </button>
                 )}
               </div>
@@ -687,7 +689,7 @@ export function NewConsultationSheet({
                     <span className="flex items-center gap-2 text-sm font-medium">
                       <span
                         aria-hidden="true"
-                        className={cn("h-2 w-2 rounded-full", option.dotClass)}
+                        className={cn("size-2  rounded-full", option.dotClass)}
                       />
                       {option.label}
                     </span>
@@ -729,7 +731,7 @@ export function NewConsultationSheet({
                         })
                       : "Pick a date"}
                   </span>
-                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                  <CalendarIcon className="size-4  opacity-50" />
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar

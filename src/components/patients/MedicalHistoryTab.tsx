@@ -349,9 +349,9 @@ function MedicalSummaryCard({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {reviewed ? (
-                  <CheckCircle2 className="h-5 w-5 text-status-warning-fg" />
+                  <CheckCircle2 className="size-5  text-status-warning-fg" />
                 ) : (
-                  <AlertTriangle className="h-5 w-5 text-status-danger-fg" />
+                  <AlertTriangle className="size-5  text-status-danger-fg" />
                 )}
                 <span
                   className={cn(
@@ -406,13 +406,13 @@ function MedicalSummaryCard({
         ) : (
           <div className="rounded-lg border border-status-success-border bg-status-success-bg p-4">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-status-success-fg" />
+              <CheckCircle2 className="size-5  text-status-success-fg" />
               <div>
                 <p className="text-sm font-medium text-status-success-fg">
                   No Red Flags
                 </p>
                 <p className="text-xs text-status-success-fg">
-                  All medical history questions answered negatively — no doctor review
+                  All medical history questions answered negatively, no doctor review
                   required.
                 </p>
               </div>
@@ -423,19 +423,19 @@ function MedicalSummaryCard({
         {/* Summary Fields */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SummaryField
-            icon={<Cigarette className="h-4 w-4" />}
+            icon={<Cigarette className="size-4 " />}
             label="Smoking Status"
             value={SMOKING_LABELS[record.smokingStatus] ?? record.smokingStatus}
             badge={record.cigarettesPerDay ?? undefined}
           />
           <SummaryField
-            icon={<Wind className="h-4 w-4" />}
+            icon={<Wind className="size-4 " />}
             label="Vaping Status"
             value={VAPING_LABELS[record.vapingStatus] ?? record.vapingStatus}
             badge={record.vapingMethod ?? undefined}
           />
           <SummaryField
-            icon={<HeartPulse className="h-4 w-4" />}
+            icon={<HeartPulse className="size-4 " />}
             label="Medical Conditions"
             value={
               record.hasMedicalConditions === "yes"
@@ -444,7 +444,7 @@ function MedicalSummaryCard({
             }
           />
           <SummaryField
-            icon={<Pill className="h-4 w-4" />}
+            icon={<Pill className="size-4 " />}
             label="Medications"
             value={
               record.takesMedication === "yes"
@@ -453,12 +453,12 @@ function MedicalSummaryCard({
             }
           />
           <SummaryField
-            icon={<ShieldAlert className="h-4 w-4" />}
+            icon={<ShieldAlert className="size-4 " />}
             label="Cardiovascular Risk"
             value={record.cardiovascular === "yes" ? "Yes" : "No"}
           />
           <SummaryField
-            icon={<Baby className="h-4 w-4" />}
+            icon={<Baby className="size-4 " />}
             label="Pregnancy"
             value={
               record.pregnancy === "yes"

@@ -27,25 +27,25 @@ import type {
 } from "@/types";
 
 const EVENT_ICONS: Record<ActivityEventType, React.ReactNode> = {
-  "consultation-scheduled": <CalendarPlus className="h-4 w-4" />,
-  "consultation-completed": <Stethoscope className="h-4 w-4" />,
-  "consultation-updated": <Stethoscope className="h-4 w-4" />,
-  "task-created": <ClipboardCheck className="h-4 w-4" />,
-  "task-assigned": <ClipboardCheck className="h-4 w-4" />,
-  "task-started": <ClipboardCheck className="h-4 w-4" />,
-  "task-completed": <ClipboardCheck className="h-4 w-4" />,
-  "task-cancelled": <ClipboardCheck className="h-4 w-4" />,
-  "note-added": <StickyNote className="h-4 w-4" />,
-  "note-updated": <StickyNote className="h-4 w-4" />,
-  "note-deleted": <StickyNote className="h-4 w-4" />,
-  "prescription-issued": <Pill className="h-4 w-4" />,
-  "document-uploaded": <Upload className="h-4 w-4" />,
-  "document-verified": <FileCheck className="h-4 w-4" />,
-  "document-rejected": <FileX className="h-4 w-4" />,
-  "flag-raised": <Flag className="h-4 w-4" />,
-  "flag-resolved": <Flag className="h-4 w-4" />,
-  "patient-created": <UserPlus className="h-4 w-4" />,
-  "details-updated": <Pencil className="h-4 w-4" />,
+  "consultation-scheduled": <CalendarPlus className="size-4 " />,
+  "consultation-completed": <Stethoscope className="size-4 " />,
+  "consultation-updated": <Stethoscope className="size-4 " />,
+  "task-created": <ClipboardCheck className="size-4 " />,
+  "task-assigned": <ClipboardCheck className="size-4 " />,
+  "task-started": <ClipboardCheck className="size-4 " />,
+  "task-completed": <ClipboardCheck className="size-4 " />,
+  "task-cancelled": <ClipboardCheck className="size-4 " />,
+  "note-added": <StickyNote className="size-4 " />,
+  "note-updated": <StickyNote className="size-4 " />,
+  "note-deleted": <StickyNote className="size-4 " />,
+  "prescription-issued": <Pill className="size-4 " />,
+  "document-uploaded": <Upload className="size-4 " />,
+  "document-verified": <FileCheck className="size-4 " />,
+  "document-rejected": <FileX className="size-4 " />,
+  "flag-raised": <Flag className="size-4 " />,
+  "flag-resolved": <Flag className="size-4 " />,
+  "patient-created": <UserPlus className="size-4 " />,
+  "details-updated": <Pencil className="size-4 " />,
 };
 
 const EVENT_TILE_CLASSES: Record<ActivityEventCategory, string> = {
@@ -108,7 +108,7 @@ function ActivityRow({ event }: { event: PatientActivityEvent }) {
   const description = event.description ?? "No additional details";
 
   return (
-    <div className="flex gap-3 border-b border-border px-4 py-4 last:border-b-0">
+    <div className="flex gap-3 border-b border-border p-4  last:border-b-0">
       <div
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-[10px] border",

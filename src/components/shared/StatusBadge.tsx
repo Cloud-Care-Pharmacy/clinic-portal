@@ -70,7 +70,7 @@ export function StatusBadge({
         className
       )}
     >
-      {dot && <span className="h-2 w-2 rounded-full bg-current" aria-hidden="true" />}
+      {dot && <span className="size-2  rounded-full bg-current" aria-hidden="true" />}
       {label}
     </span>
   );

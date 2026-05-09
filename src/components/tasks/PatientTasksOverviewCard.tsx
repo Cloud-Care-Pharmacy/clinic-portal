@@ -38,7 +38,7 @@ function TaskRow({ task }: { task: Task }) {
     <Link
       href={`/patients/${encodeURIComponent(task.patientId)}/tasks?selected=${encodeURIComponent(task.taskId)}`}
       scroll={false}
-      className="group flex min-h-11 items-center gap-3 rounded-lg -mx-2 px-2 py-2.5 transition-colors duration-120 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex min-h-11 items-center gap-3 rounded-lg -mx-2 p-2 .5 transition-colors duration-120 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <span
         aria-hidden
@@ -184,7 +184,7 @@ export function PatientTasksOverviewCard({
           ))}
         </div>
       ) : error ? (
-        <p className="rounded-xl border border-status-warning-border bg-status-warning-bg px-3 py-3 text-sm text-status-warning-fg">
+        <p className="rounded-xl border border-status-warning-border bg-status-warning-bg p-3  text-sm text-status-warning-fg">
           Tasks could not be loaded.
         </p>
       ) : tasks.length === 0 ? (

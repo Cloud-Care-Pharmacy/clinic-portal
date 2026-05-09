@@ -66,7 +66,7 @@ export function NotificationsBell() {
     <Popover>
       <PopoverTrigger
         className={cn(
-          "relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          "relative inline-flex size-9  items-center justify-center rounded-lg border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         )}
         aria-label={
           count > 0
@@ -106,7 +106,7 @@ export function NotificationsBell() {
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      className="flex items-start gap-3 px-3 py-3 transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
+                      className="flex items-start gap-3 p-3  transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
                     >
                       <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-status-warning-bg text-status-warning-fg">
                         <Icon className="size-4" />

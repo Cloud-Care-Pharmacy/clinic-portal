@@ -76,6 +76,8 @@ function Alert({
 
 function AlertTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
+    // shadcn primitive: heading content is provided by consumers via children.
+    // oxlint-disable-next-line jsx-a11y/heading-has-content
     <h5 className={cn("text-sm font-medium leading-snug", className)} {...props} />
   );
 }

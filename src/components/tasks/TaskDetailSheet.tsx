@@ -72,7 +72,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {icon}
       </div>
       <div className="min-w-0">
@@ -101,13 +101,13 @@ function TaskHistory({
       <Separator />
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+          <ClipboardCheck className="size-4  text-muted-foreground" />
           <p className="text-sm font-medium">Task history</p>
         </div>
         <div className="rounded-md border bg-muted/30 p-2 text-sm">
           {loading ? (
             <div className="space-y-2" aria-label="Loading task history">
-              <Skeleton className="h-4 w-4/5" />
+              <Skeleton className="size-4 /5" />
               <Skeleton className="h-4 w-2/3" />
             </div>
           ) : errorMessage ? (
@@ -282,7 +282,7 @@ export function TaskDetailSheet({
                 disabled={isPending}
                 aria-label="More actions"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="size-4 " />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" side="top" className="w-56">
                 {canAction && (
@@ -291,12 +291,12 @@ export function TaskDetailSheet({
                       disabled={!currentInternalUserId}
                       onClick={handleClaim}
                     >
-                      <UserCheck className="h-4 w-4" />
+                      <UserCheck className="size-4 " />
                       Claim
                     </DropdownMenuItem>
                     {activeTask.status === "open" && (
                       <DropdownMenuItem onClick={handleStart}>
-                        <Play className="h-4 w-4" />
+                        <Play className="size-4 " />
                         Start
                       </DropdownMenuItem>
                     )}
@@ -304,7 +304,7 @@ export function TaskDetailSheet({
                       <DropdownMenuItem
                         onClick={() => onScheduleConsultation(activeTask)}
                       >
-                        <CalendarPlus className="h-4 w-4" />
+                        <CalendarPlus className="size-4 " />
                         Schedule consultation
                       </DropdownMenuItem>
                     )}
@@ -313,7 +313,7 @@ export function TaskDetailSheet({
                       variant="destructive"
                       onClick={() => setCancelOpen(true)}
                     >
-                      <XCircle className="h-4 w-4" />
+                      <XCircle className="size-4 " />
                       Cancel task
                     </DropdownMenuItem>
                   </>
@@ -323,7 +323,7 @@ export function TaskDetailSheet({
 
             {canAction ? (
               <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="size-4 " />
                 {completeTask.isPending ? "Saving…" : "Mark completed"}
               </Button>
             ) : null}
@@ -340,7 +340,7 @@ export function TaskDetailSheet({
             </StatusBadge>
           </div>
 
-          <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
+          <DetailRow icon={<User className="size-4 " />} label="Patient">
             {activeTask.patientId ? (
               <Link
                 href={`/patients/${encodeURIComponent(activeTask.patientId)}`}
@@ -348,35 +348,35 @@ export function TaskDetailSheet({
                 scroll={false}
               >
                 {activeTask.patientName || "Patient record"}
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="size-3 " />
               </Link>
             ) : (
               activeTask.patientName || "—"
             )}
           </DetailRow>
 
-          <DetailRow icon={<ClipboardList className="h-4 w-4" />} label="Type">
+          <DetailRow icon={<ClipboardList className="size-4 " />} label="Type">
             {TASK_TYPE_LABELS[activeTask.taskType] ?? activeTask.taskType}
           </DetailRow>
 
-          <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Due">
+          <DetailRow icon={<CalendarDays className="size-4 " />} label="Due">
             {formatTaskDateTime(activeTask.dueAt) || "—"}
           </DetailRow>
 
-          <DetailRow icon={<UserCheck className="h-4 w-4" />} label="Assigned to">
+          <DetailRow icon={<UserCheck className="size-4 " />} label="Assigned to">
             {assignedToLabel}
           </DetailRow>
 
-          <DetailRow icon={<Inbox className="h-4 w-4" />} label="Source">
+          <DetailRow icon={<Inbox className="size-4 " />} label="Source">
             {activeTask.source || "—"}
           </DetailRow>
 
-          <DetailRow icon={<Clock className="h-4 w-4" />} label="Created">
+          <DetailRow icon={<Clock className="size-4 " />} label="Created">
             {formatTaskDateTime(activeTask.createdAt) || "—"}
           </DetailRow>
 
           {activeTask.description && (
-            <DetailRow icon={<FileText className="h-4 w-4" />} label="Description">
+            <DetailRow icon={<FileText className="size-4 " />} label="Description">
               <p className="whitespace-pre-wrap leading-6 text-muted-foreground">
                 {activeTask.description}
               </p>

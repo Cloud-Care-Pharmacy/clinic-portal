@@ -11,9 +11,9 @@ interface DoctorAvatarProps {
 }
 
 const sizeMap = {
-  sm: "h-7 w-7 text-[11px]",
-  md: "h-9 w-9 text-[13px]",
-  lg: "h-11 w-11 text-[15px]",
+  sm: "size-7  text-[11px]",
+  md: "size-9  text-[13px]",
+  lg: "size-11  text-[15px]",
 };
 
 export function DoctorAvatar({

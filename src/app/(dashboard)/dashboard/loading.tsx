@@ -36,7 +36,7 @@ export default function DashboardLoading() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STAT_CARD_TITLES.map((title) => (
               <Card key={title} className="overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardHeader className="flex flex-row items-center justify-between gap-y-0 pb-2">
                   <CardTitle className="text-[15px] font-medium text-foreground/75">
                     {title}
                   </CardTitle>
@@ -44,7 +44,7 @@ export default function DashboardLoading() {
                     variant="outline"
                     className="gap-1 rounded-full border-foreground/10 bg-background/70 text-xs font-medium"
                   >
-                    <TrendingUp className="h-3 w-3" />
+                    <TrendingUp className="size-3 " />
                     <Skeleton className="h-3 w-10" />
                   </Badge>
                 </CardHeader>
@@ -53,7 +53,7 @@ export default function DashboardLoading() {
                   <div>
                     <p className="flex items-center gap-1.5 text-sm font-semibold">
                       <Skeleton className="h-4 w-32" />
-                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <TrendingUp className="size-4  text-muted-foreground" />
                     </p>
                     <Skeleton className="mt-2 h-3 w-44" />
                   </div>
@@ -105,7 +105,7 @@ function DashboardActivitySkeleton() {
     <div className="space-y-8">
       {Array.from({ length: 5 }).map((_, index) => (
         <div key={index} className="flex items-center gap-4">
-          <Skeleton className="h-9 w-9 rounded-full" />
+          <Skeleton className="size-9  rounded-full" />
           <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-4 w-32" />

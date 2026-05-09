@@ -52,12 +52,12 @@ export function Header({ onSearchOpen }: HeaderProps) {
           variant="outline"
           size="icon"
           onClick={toggle}
-          className="hidden lg:inline-flex h-8 w-8"
+          className="hidden lg:inline-flex size-8 "
         >
           {collapsed ? (
-            <PanelLeftOpen className="h-4 w-4" />
+            <PanelLeftOpen className="size-4 " />
           ) : (
-            <PanelLeftClose className="h-4 w-4" />
+            <PanelLeftClose className="size-4 " />
           )}
         </Button>
         <div className="hidden lg:block h-4 w-px shrink-0 bg-border" />

@@ -8,8 +8,14 @@ export default async function NotesPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ action?: string; selected?: string }>;
 }) {
-  const [{ id }, { action, selected }] = await Promise.all([params, searchParams]);
-  const initialNotes = await api.getPatientNotes(id).catch(() => undefined);
+  const initialNotesP = params.then(({ id }) =>
+    api.getPatientNotes(id).catch(() => undefined)
+  );
+  const [{ id }, { action, selected }, initialNotes] = await Promise.all([
+    params,
+    searchParams,
+    initialNotesP,
+  ]);
 
   return (
     <NotesTab

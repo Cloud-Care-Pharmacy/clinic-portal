@@ -45,7 +45,7 @@ export function AppSheet({
           className
         )}
       >
-        <SheetHeader className="shrink-0 border-b border-border px-4 py-4 pr-12 text-left">
+        <SheetHeader className="shrink-0 border-b border-border p-4  pr-12 text-left">
           <SheetTitle className="text-base font-medium text-foreground">
             {title}
           </SheetTitle>
@@ -58,7 +58,7 @@ export function AppSheet({
 
         <div
           className={cn(
-            "min-h-0 flex-1 overflow-y-auto px-4 py-4 text-sm leading-[1.55]",
+            "min-h-0 flex-1 overflow-y-auto p-4  text-sm leading-[1.55]",
             bodyClassName
           )}
         >

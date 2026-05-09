@@ -88,8 +88,8 @@ export function prefetchLikelyPatientTabs(
   activeTab: PatientTabSegment
 ) {
   return Promise.allSettled(
-    IDLE_PREFETCH_SEGMENTS.filter((tab) => tab !== activeTab).map((tab) =>
-      prefetchPatientTab(queryClient, patientId, tab)
+    IDLE_PREFETCH_SEGMENTS.flatMap((tab) =>
+      tab === activeTab ? [] : [prefetchPatientTab(queryClient, patientId, tab)]
     )
   ).then(() => undefined);
 }

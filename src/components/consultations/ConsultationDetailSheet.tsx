@@ -1,3 +1,5 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
+/* oxlint-disable react/no-danger -- Consultation rich-text notes/outcomes are controlled portal HTML and must be sanitized at the API/editor boundary before rendering. */
 "use client";
 
 import { useState } from "react";
@@ -73,7 +75,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {icon}
       </div>
       <div>
@@ -162,30 +164,30 @@ export function ConsultationDetailSheet({
           disabled={isPending}
           aria-label="More actions"
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="size-4 " />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" side="top" className="w-56">
           {onEdit && (
             <DropdownMenuItem onClick={() => onEdit(consultation)}>
-              <Pencil className="h-4 w-4" />
+              <Pencil className="size-4 " />
               Edit
             </DropdownMenuItem>
           )}
           {isScheduled && (
             <>
               <DropdownMenuItem onClick={() => handleStatusChange("no-show")}>
-                <AlertTriangle className="h-4 w-4" />
+                <AlertTriangle className="size-4 " />
                 Mark as no-show
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleStatusChange("cancelled")}>
-                <XCircle className="h-4 w-4" />
+                <XCircle className="size-4 " />
                 Cancel consultation
               </DropdownMenuItem>
             </>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="size-4 " />
             Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -193,7 +195,7 @@ export function ConsultationDetailSheet({
 
       {isScheduled ? (
         <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
-          <CheckCircle2 className="h-4 w-4" />
+          <CheckCircle2 className="size-4 " />
           {showOutcomeInput
             ? updateConsultation.isPending
               ? "Saving…"
@@ -207,7 +209,7 @@ export function ConsultationDetailSheet({
           disabled={isPending}
           className="gap-1.5"
         >
-          <Pencil className="h-4 w-4" />
+          <Pencil className="size-4 " />
           Edit
         </Button>
       ) : null}
@@ -241,7 +243,7 @@ export function ConsultationDetailSheet({
               </Badge>
             </div>
 
-            <DetailRow icon={<User className="h-4 w-4" />} label="Patient">
+            <DetailRow icon={<User className="size-4 " />} label="Patient">
               <Link
                 href={`/patients/${consultation.patientId}`}
                 target="_blank"
@@ -249,15 +251,15 @@ export function ConsultationDetailSheet({
                 className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
               >
                 {consultation.patientName}
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="size-3 " />
               </Link>
             </DetailRow>
 
-            <DetailRow icon={<Stethoscope className="h-4 w-4" />} label="Doctor">
+            <DetailRow icon={<Stethoscope className="size-4 " />} label="Doctor">
               {consultation.doctorName}
             </DetailRow>
 
-            <DetailRow icon={<CalendarDays className="h-4 w-4" />} label="Scheduled">
+            <DetailRow icon={<CalendarDays className="size-4 " />} label="Scheduled">
               {new Date(consultation.scheduledAt).toLocaleString("en-AU", {
                 weekday: "long",
                 day: "2-digit",
@@ -269,13 +271,13 @@ export function ConsultationDetailSheet({
             </DetailRow>
 
             {consultation.duration && (
-              <DetailRow icon={<Clock className="h-4 w-4" />} label="Duration">
+              <DetailRow icon={<Clock className="size-4 " />} label="Duration">
                 {consultation.duration} minutes
               </DetailRow>
             )}
 
             {consultation.notes && (
-              <DetailRow icon={<FileText className="h-4 w-4" />} label="Notes">
+              <DetailRow icon={<FileText className="size-4 " />} label="Notes">
                 <div
                   className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
                   dangerouslySetInnerHTML={{ __html: consultation.notes }}
@@ -285,7 +287,7 @@ export function ConsultationDetailSheet({
 
             {consultation.completedAt && (
               <DetailRow
-                icon={<CheckCircle2 className="h-4 w-4" />}
+                icon={<CheckCircle2 className="size-4 " />}
                 label="Completed At"
               >
                 {new Date(consultation.completedAt).toLocaleString("en-AU", {
@@ -299,7 +301,7 @@ export function ConsultationDetailSheet({
             )}
 
             {consultation.outcome && (
-              <DetailRow icon={<CheckCircle2 className="h-4 w-4" />} label="Outcome">
+              <DetailRow icon={<CheckCircle2 className="size-4 " />} label="Outcome">
                 <div
                   className="prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
                   dangerouslySetInnerHTML={{ __html: consultation.outcome }}
@@ -312,7 +314,7 @@ export function ConsultationDetailSheet({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Pill className="h-4 w-4 text-muted-foreground" />
+                  <Pill className="size-4  text-muted-foreground" />
                   <p className="text-sm font-medium">Recent prescriptions</p>
                 </div>
                 <Link
@@ -320,7 +322,7 @@ export function ConsultationDetailSheet({
                   className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   View all
-                  <ExternalLink className="h-3 w-3" />
+                  <ExternalLink className="size-3 " />
                 </Link>
               </div>
               {prescriptionsQuery.isLoading ? (

@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
@@ -231,7 +232,7 @@ function DateOfBirthPicker({
           )}
         >
           <span>{displayValue ?? "Pick a date"}</span>
-          <CalendarIcon className="h-4 w-4 opacity-50" />
+          <CalendarIcon className="size-4  opacity-50" />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <CalendarWidget
@@ -526,7 +527,7 @@ export function ProfileTab({
           <CardTitle className="text-sm font-semibold">Patient Details</CardTitle>
           <CardAction>
             <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              <Pencil className="h-4 w-4 mr-1" />
+              <Pencil className="size-4  mr-1" />
               Edit
             </Button>
           </CardAction>
@@ -534,37 +535,37 @@ export function ProfileTab({
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <DetailField
-              icon={<User className="h-4 w-4" />}
+              icon={<User className="size-4 " />}
               label="Full Name"
               value={displayName || null}
             />
             <DetailField
-              icon={<Mail className="h-4 w-4" />}
+              icon={<Mail className="size-4 " />}
               label="Email"
               value={patient?.originalEmail}
             />
             <DetailField
-              icon={<Phone className="h-4 w-4" />}
+              icon={<Phone className="size-4 " />}
               label="Phone"
               value={patient?.mobile}
             />
             <DetailField
-              icon={<CalendarIcon className="h-4 w-4" />}
+              icon={<CalendarIcon className="size-4 " />}
               label="Date of Birth"
               value={formatDob(patient?.dateOfBirth ?? null)}
             />
             <DetailField
-              icon={<User className="h-4 w-4" />}
+              icon={<User className="size-4 " />}
               label="Gender"
               value={patient?.gender}
             />
             <DetailField
-              icon={<MapPin className="h-4 w-4" />}
+              icon={<MapPin className="size-4 " />}
               label="Address"
               value={patient ? formatAddress(patient) : null}
             />
             <DetailField
-              icon={<CreditCard className="h-4 w-4" />}
+              icon={<CreditCard className="size-4 " />}
               label="Medicare Number"
               value={
                 patient?.medicareNumber
@@ -573,17 +574,17 @@ export function ProfileTab({
               }
             />
             <DetailField
-              icon={<CalendarIcon className="h-4 w-4" />}
+              icon={<CalendarIcon className="size-4 " />}
               label="Medicare Expiry"
               value={formatMedicareExpiry(patient?.medicareExpiry)}
             />
             <DetailField
-              icon={<Hash className="h-4 w-4" />}
+              icon={<Hash className="size-4 " />}
               label="PMS Patient ID"
               value={patient?.halaxyPatientId}
             />
             <DetailField
-              icon={<Forward className="h-4 w-4" />}
+              icon={<Forward className="size-4 " />}
               label="Forward Email"
               value={patient?.forwardEmail}
             />

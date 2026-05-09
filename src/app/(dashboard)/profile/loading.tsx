@@ -9,12 +9,12 @@ export default function ProfileLoading() {
         <CardContent className="px-6 py-4">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-3 flex-wrap">
-              <Skeleton className="h-10 w-10 rounded-full" />
+              <Skeleton className="size-10  rounded-full" />
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-6 w-20 rounded-full" />
               <div className="flex items-center gap-1.5">
-                <Skeleton className="h-9 w-9 rounded-md" />
-                <Skeleton className="h-9 w-9 rounded-md" />
+                <Skeleton className="size-9  rounded-md" />
+                <Skeleton className="size-9  rounded-md" />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">

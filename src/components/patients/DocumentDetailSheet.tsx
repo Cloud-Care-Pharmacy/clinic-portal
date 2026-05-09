@@ -105,7 +105,7 @@ function MetadataItem({
 }) {
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -288,7 +288,7 @@ export function DocumentDetailSheet({
           >
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-bg text-status-info-fg">
+                <div className="flex size-10  shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-bg text-status-info-fg">
                   <FileText className="size-5" />
                 </div>
                 <div className="min-w-0 flex-1">

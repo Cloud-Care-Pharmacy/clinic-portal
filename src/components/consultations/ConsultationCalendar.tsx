@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useState, useMemo } from "react";
@@ -77,7 +78,7 @@ function EventChip({
           style.text
         )}
       >
-        {formatShortName(consultation.patientName)} — {style.label}
+        {formatShortName(consultation.patientName)}, {style.label}
       </span>
     </button>
   );
@@ -189,7 +190,7 @@ function MonthView({
             >
               <div
                 className={cn(
-                  "text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full",
+                  "text-xs font-medium mb-1 size-6  flex items-center justify-center rounded-full",
                   isToday && "bg-primary text-primary-foreground"
                 )}
               >
@@ -352,18 +353,18 @@ export function ConsultationCalendar({
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-r-none"
+              className="size-8  rounded-r-none"
               onClick={() => navigate(-1)}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="size-4 " />
             </Button>
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8 rounded-l-none border-l-0"
+              className="size-8  rounded-l-none border-l-0"
               onClick={() => navigate(1)}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="size-4 " />
             </Button>
           </div>
           <h3 className="text-lg font-semibold">{title}</h3>
@@ -371,15 +372,15 @@ export function ConsultationCalendar({
           {/* Legend */}
           <div className="hidden md:flex items-center gap-3 pl-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-info-fg" />
+              <span className="size-2.5  rounded-full bg-status-info-fg" />
               Initial
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-accent-fg" />
+              <span className="size-2.5  rounded-full bg-status-accent-fg" />
               Follow-up
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-status-success-fg" />
+              <span className="size-2.5  rounded-full bg-status-success-fg" />
               Renewal
             </span>
           </div>
@@ -390,7 +391,7 @@ export function ConsultationCalendar({
             Showing all doctors
           </span>
           <Button variant="outline" size="sm" className="h-8 gap-1.5 border-dashed">
-            <Users className="h-4 w-4" />
+            <Users className="size-4 " />
             Doctors
           </Button>
           <SegmentedControl

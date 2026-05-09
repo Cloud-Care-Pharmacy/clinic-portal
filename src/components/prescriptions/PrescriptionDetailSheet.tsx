@@ -18,7 +18,7 @@ function MedicationCard({ detail }: { detail: ParchmentPrescriptionDetail }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-status-accent-border bg-status-accent-bg text-status-accent-fg">
+        <div className="flex size-8  shrink-0 items-center justify-center rounded-lg border border-status-accent-border bg-status-accent-bg text-status-accent-fg">
           <Pill className="size-4" />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
@@ -119,13 +119,13 @@ export function PrescriptionDetailSheet({
               <Skeleton className="h-32 w-full rounded-xl" />
             ) : error ? (
               <p className="text-destructive text-sm">
-                Medication detail unavailable — try again or contact support.
+                Medication detail unavailable, try again or contact support.
               </p>
             ) : detail ? (
               <MedicationCard detail={detail} />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Medication detail unavailable — try again or contact support.
+                Medication detail unavailable, try again or contact support.
               </p>
             )}
             {detail?.url && (

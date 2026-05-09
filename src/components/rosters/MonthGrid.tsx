@@ -71,7 +71,7 @@ function MonthDayCell({
 
   // Sort: leave → busy → available (per spec §8.3)
   const order: Record<string, number> = { leave: 0, busy: 1, available: 2 };
-  const sorted = [...day.shifts].sort(
+  const sorted = day.shifts.toSorted(
     (a, b) => (order[a.shift.kind] ?? 9) - (order[b.shift.kind] ?? 9)
   );
   const visible = sorted.slice(0, 5);

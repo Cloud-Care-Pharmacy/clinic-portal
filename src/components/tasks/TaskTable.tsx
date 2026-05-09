@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { useMemo, type ComponentType, type ReactNode } from "react";
@@ -111,6 +112,9 @@ interface TaskTableProps {
   trailing?: ReactNode;
 }
 
+const EMPTY_ASSIGNMENT_FILTERS: TaskAssignmentFilter[] = [];
+const EMPTY_PENDING_IDS: string[] = [];
+
 export function TaskTable({
   tasks,
   loading,
@@ -124,7 +128,7 @@ export function TaskTable({
   onTypeFiltersChange,
   roleFilters,
   onRoleFiltersChange,
-  assignmentFilters = [],
+  assignmentFilters = EMPTY_ASSIGNMENT_FILTERS,
   onAssignmentFiltersChange,
   currentUserId,
   onRowClick,
@@ -139,7 +143,7 @@ export function TaskTable({
   onClaimTask,
   onCallTask,
   onManualLogTask,
-  pendingActionIds = [],
+  pendingActionIds = EMPTY_PENDING_IDS,
   pendingUpdates,
   emptyTitle = "No tasks found",
   emptyDescription = "New intake review tasks will appear here after patients submit intake forms.",
@@ -542,9 +546,9 @@ export function TaskTable({
                   } else {
                     const excluded = model.ids;
                     onSelectionChange(
-                      visibleTasks
-                        .map((task) => task.taskId)
-                        .filter((id) => !excluded.has(id))
+                      visibleTasks.flatMap((task) =>
+                        excluded.has(task.taskId) ? [] : [task.taskId]
+                      )
                     );
                   }
                 }

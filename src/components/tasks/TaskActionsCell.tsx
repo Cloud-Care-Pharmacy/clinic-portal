@@ -52,7 +52,7 @@ export function TaskActionsCell({
   currentUserId,
   pending,
 }: TaskActionsCellProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const completed = isTaskCompleted(task);
   const unassigned = isTaskUnassigned(task);
   const mine = isTaskAssignedToCurrentUser(task, currentUserId);
@@ -69,6 +69,9 @@ export function TaskActionsCell({
 
     if (unassigned) {
       return (
+        // Wrapper exists only to stop row-click bubbling so action buttons inside
+        // don't open the row drawer.
+        // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div
           className="flex justify-start gap-1"
           onClick={(event) => event.stopPropagation()}
@@ -104,6 +107,9 @@ export function TaskActionsCell({
 
     if (mine) {
       return (
+        // Wrapper exists only to stop row-click bubbling so action buttons inside
+        // don't open the row drawer.
+        // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div
           className="flex justify-start gap-1"
           onClick={(event) => event.stopPropagation()}
@@ -154,7 +160,7 @@ export function TaskActionsCell({
         <DropdownMenuItem
           onClick={(event) => {
             event.stopPropagation();
-            router.push(`/patients/${encodeURIComponent(task.patientId)}`);
+            push(`/patients/${encodeURIComponent(task.patientId)}`);
           }}
         >
           <UserRound />

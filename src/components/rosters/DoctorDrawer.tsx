@@ -47,9 +47,10 @@ export function DoctorDrawer({
   // still has data to render after the parent clears its selection.
   // Conditional state update during render is the React-recommended
   // pattern for derived-from-props values (no effect required).
-  const [displayed, setDisplayed] = useState<RosterDoctor | null>(doctor);
-  if (doctor && doctor !== displayed) {
-    setDisplayed(doctor);
+  const [cachedDoctor, setCachedDoctor] = useState<RosterDoctor | null>(null);
+  const displayed = doctor ?? cachedDoctor;
+  if (doctor && doctor !== cachedDoctor) {
+    setCachedDoctor(doctor);
   }
 
   const monday = useMemo(() => parseIsoDate(weekStartISO), [weekStartISO]);
@@ -111,7 +112,7 @@ export function DoctorDrawer({
                   const isToday = todayIndex === i;
                   return (
                     <DayRow
-                      key={i}
+                      key={DOW_LONG[i]}
                       dow={DOW_LONG[i]!}
                       date={date}
                       shift={shift}
@@ -238,7 +239,7 @@ export function DoctorDrawer({
               disabled
               title="Coming soon"
             >
-              <CalendarPlus className="h-4 w-4" />
+              <CalendarPlus className="size-4 " />
               Add shift
             </Button>
             <Button
@@ -248,7 +249,7 @@ export function DoctorDrawer({
               disabled
               title="Coming soon"
             >
-              <Mail className="h-4 w-4" />
+              <Mail className="size-4 " />
               Message
             </Button>
             <Button
@@ -259,7 +260,7 @@ export function DoctorDrawer({
               title="Coming soon"
               className="ml-auto"
             >
-              <User className="h-4 w-4" />
+              <User className="size-4 " />
               View profile
             </Button>
           </div>
