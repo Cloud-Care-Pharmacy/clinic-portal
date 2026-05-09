@@ -63,9 +63,11 @@ export function RostersClient({
 }: RostersClientProps) {
   const [view, setView] = useState<ViewMode>("week");
   const [tab, setTab] = useState<FilterTab>("all");
-  const [weekStartISO, setWeekStartISO] = useState(initialWeekStartISO);
-  const [monthISO, setMonthISO] = useState(initialMonthISO);
+  const [weekStartISOOverride, setWeekStartISO] = useState<string | null>(null);
+  const [monthISOOverride, setMonthISO] = useState<string | null>(null);
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+  const weekStartISO = weekStartISOOverride ?? initialWeekStartISO;
+  const monthISO = monthISOOverride ?? initialMonthISO;
 
   const weekQuery = useRosterWeek(
     weekStartISO,
