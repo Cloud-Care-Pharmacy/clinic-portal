@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const STAT_CARD_TITLES = [
   "Total Patients",
@@ -20,68 +19,55 @@ const STAT_CARD_TITLES = [
 export default function DashboardLoading() {
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="overview" className="space-y-4">
-        <div className="w-full overflow-x-auto pb-2">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="analytics" disabled>
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reports" disabled>
-              Reports
-            </TabsTrigger>
-          </TabsList>
+      <div className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STAT_CARD_TITLES.map((title) => (
+            <Card key={title} className="overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between gap-y-0 pb-2">
+                <CardTitle className="text-[15px] font-medium text-foreground/75">
+                  {title}
+                </CardTitle>
+                <Badge
+                  variant="outline"
+                  className="gap-1 rounded-full border-foreground/10 bg-background/70 text-xs font-medium"
+                >
+                  <TrendingUp className="size-3 " />
+                  <Skeleton className="h-3 w-10" />
+                </Badge>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-10 w-16" />
+                <div>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Skeleton className="h-4 w-32" />
+                    <TrendingUp className="size-4  text-muted-foreground" />
+                  </p>
+                  <Skeleton className="mt-2 h-3 w-44" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STAT_CARD_TITLES.map((title) => (
-              <Card key={title} className="overflow-hidden">
-                <CardHeader className="flex flex-row items-center justify-between gap-y-0 pb-2">
-                  <CardTitle className="text-[15px] font-medium text-foreground/75">
-                    {title}
-                  </CardTitle>
-                  <Badge
-                    variant="outline"
-                    className="gap-1 rounded-full border-foreground/10 bg-background/70 text-xs font-medium"
-                  >
-                    <TrendingUp className="size-3 " />
-                    <Skeleton className="h-3 w-10" />
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Skeleton className="h-10 w-16" />
-                  <div>
-                    <p className="flex items-center gap-1.5 text-sm font-semibold">
-                      <Skeleton className="h-4 w-32" />
-                      <TrendingUp className="size-4  text-muted-foreground" />
-                    </p>
-                    <Skeleton className="mt-2 h-3 w-44" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
-            <Card className="col-span-1 lg:col-span-4">
-              <CardHeader>
-                <CardTitle>Patient Intake Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <DashboardChartSkeleton />
-              </CardContent>
-            </Card>
-            <Card className="col-span-1 lg:col-span-3">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Latest actions across the portal.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DashboardActivitySkeleton />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-7">
+          <Card className="col-span-1 lg:col-span-4">
+            <CardHeader>
+              <CardTitle>Patient Intake Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="pl-2">
+              <DashboardChartSkeleton />
+            </CardContent>
+          </Card>
+          <Card className="col-span-1 lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest actions across the portal.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DashboardActivitySkeleton />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
