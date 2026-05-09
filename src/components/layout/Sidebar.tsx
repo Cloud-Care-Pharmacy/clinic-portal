@@ -18,6 +18,7 @@ import {
   Building2,
   Package,
   ShoppingCart,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -66,6 +67,11 @@ const generalNav: NavItem[] = [
     label: "Rosters",
     href: "/rosters",
     icon: <CalendarClock className="size-5 " />,
+  },
+  {
+    label: "Workflows",
+    href: "/workflows",
+    icon: <Workflow className="size-5 " />,
   },
 ];
 

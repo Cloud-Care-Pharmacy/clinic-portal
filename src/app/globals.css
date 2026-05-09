@@ -321,3 +321,15 @@
     animation: none;
   }
 }
+
+/* Workflow canvas/run pulse for active/running indicators */
+@keyframes wf-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="wf-pulse"] {
+    animation: none !important;
+  }
+}

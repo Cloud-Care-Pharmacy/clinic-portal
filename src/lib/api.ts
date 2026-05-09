@@ -58,6 +58,11 @@ import type {
   UserRole,
   RosterWeekResponse,
   RosterMonthResponse,
+  WorkflowsListResponse,
+  WorkflowResponse,
+  WorkflowStatus,
+  WorkflowRunsListResponse,
+  WorkflowRunDetailResponse,
 } from "@/types";
 import { normalizeApiPayload, toBackendPatientSort } from "@/lib/api-normalize";
 
@@ -769,6 +774,55 @@ class ApiClient {
 
   getDocumentDownloadUrl(patientId: string, documentId: string): string {
     return `${this.baseUrl}/api/patients/${encodeURIComponent(patientId)}/documents/${encodeURIComponent(documentId)}/download`;
+  }
+
+  // ---- Workflows ----
+
+  async listWorkflows(opts?: {
+    entityId?: string;
+    status?: WorkflowStatus;
+    triggerEventType?: string;
+    limit?: number;
+  }): Promise<WorkflowsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.entityId) params.set("entityId", opts.entityId);
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.triggerEventType)
+      params.set("triggerEventType", opts.triggerEventType);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(`/internal/workflows${qs}`);
+  }
+
+  async getWorkflow(workflowId: string): Promise<WorkflowResponse> {
+    return this.request(
+      `/internal/workflows/${encodeURIComponent(workflowId)}`
+    );
+  }
+
+  async listWorkflowRuns(
+    workflowId: string,
+    opts?: { limit?: number }
+  ): Promise<WorkflowRunsListResponse> {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/internal/workflows/${encodeURIComponent(workflowId)}/runs${qs}`
+    );
+  }
+
+  async getWorkflowRun(
+    runId: string,
+    opts?: { includeEvents?: boolean; eventLimit?: number }
+  ): Promise<WorkflowRunDetailResponse> {
+    const params = new URLSearchParams();
+    if (opts?.includeEvents === false) params.set("includeEvents", "false");
+    if (opts?.eventLimit) params.set("eventLimit", String(opts.eventLimit));
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return this.request(
+      `/internal/workflows/runs/${encodeURIComponent(runId)}${qs}`
+    );
   }
 }
 
