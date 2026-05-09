@@ -1,3 +1,5 @@
+/* eslint-disable @next/next/no-img-element -- Document image previews use blob: URLs which next/image cannot optimize. */
+/* oxlint-disable react-doctor/nextjs-no-img-element -- Document image previews use blob: URLs which next/image cannot optimize. */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -140,7 +142,7 @@ export function DocumentPreviewDialog({
           {!loading && !error && objectUrl && previewKind === "pdf" && (
             <iframe
               src={objectUrl}
-              title={document?.filename ?? "Document preview"}
+              title={`Document preview: ${document?.filename ?? "untitled"}`}
               className="size-full  border-0"
             />
           )}

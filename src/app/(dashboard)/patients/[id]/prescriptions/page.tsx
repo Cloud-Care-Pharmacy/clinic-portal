@@ -9,13 +9,19 @@ export default async function PrescriptionsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ selected?: string }>;
 }) {
-  const [{ id }, { selected }] = await Promise.all([params, searchParams]);
-  const initialPrescriptions = await api.getPatientPrescriptions(id).catch((error) => {
-    if (error instanceof ApiError && error.status === 404) {
-      return emptyListPrescriptionsResponse(id);
-    }
-    return undefined;
-  });
+  const initialPrescriptionsP = params.then(({ id }) =>
+    api.getPatientPrescriptions(id).catch((error) => {
+      if (error instanceof ApiError && error.status === 404) {
+        return emptyListPrescriptionsResponse(id);
+      }
+      return undefined;
+    }),
+  );
+  const [{ id }, { selected }, initialPrescriptions] = await Promise.all([
+    params,
+    searchParams,
+    initialPrescriptionsP,
+  ]);
 
   return (
     <PrescriptionsTab

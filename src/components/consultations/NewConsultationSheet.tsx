@@ -1,3 +1,5 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
+/* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `trackedId` is read during render to drive a derived-state pattern (see `if (consultationInput && incomingId !== trackedId)`). */
 "use client";
 
 import { useState, useCallback, useEffect, useId, useMemo } from "react";

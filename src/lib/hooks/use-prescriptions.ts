@@ -164,8 +164,13 @@ export function useSyncPrescriptions(patientId: string | undefined) {
 }
 
 export function useCreateParchmentPrescriptionLink() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (patientId: string) => createParchmentPrescriptionLink(patientId),
+    onSuccess: (_data, patientId) => {
+      // A new Parchment link may produce a new prescription on the patient.
+      queryClient.invalidateQueries({ queryKey: ["prescriptions", patientId] });
+    },
   });
 }
 

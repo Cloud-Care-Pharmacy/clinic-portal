@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
 import { memo } from "react";
@@ -58,22 +59,38 @@ export const PatientStatStrip = memo(function PatientStatStrip({
 
   const lastConsult = consultations
     .filter((c) => c.status === "completed")
-    .sort(
-      (a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
-    )[0];
+    .reduce<(typeof consultations)[number] | undefined>(
+      (best, c) =>
+        !best ||
+        new Date(c.scheduledAt).getTime() > new Date(best.scheduledAt).getTime()
+          ? c
+          : best,
+      undefined,
+    );
 
-  const latestPrescription = [...prescriptions].sort(
-    (a, b) =>
-      new Date(b.prescriptionDate).getTime() - new Date(a.prescriptionDate).getTime()
-  )[0];
+  const latestPrescription = prescriptions.reduce<
+    (typeof prescriptions)[number] | undefined
+  >(
+    (best, p) =>
+      !best ||
+      new Date(p.prescriptionDate).getTime() > new Date(best.prescriptionDate).getTime()
+        ? p
+        : best,
+    undefined,
+  );
 
   // eslint-disable-next-line react-hooks/purity -- Date.now() is intentional for filtering future appointments
   const now = Date.now();
   const nextAppt = consultations
     .filter((c) => c.status === "scheduled" && new Date(c.scheduledAt).getTime() > now)
-    .sort(
-      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
-    )[0];
+    .reduce<(typeof consultations)[number] | undefined>(
+      (best, c) =>
+        !best ||
+        new Date(c.scheduledAt).getTime() < new Date(best.scheduledAt).getTime()
+          ? c
+          : best,
+      undefined,
+    );
 
   // Conditions count (since no allergies)
   const conditions = clinical?.medicalConditions ?? [];

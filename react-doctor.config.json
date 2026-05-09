@@ -1,0 +1,19 @@
+{
+  "$schema": "https://www.react.doctor/react-doctor.schema.json",
+  "ignore": {
+    "rules": [
+      "knip/exports",
+      "knip/types"
+    ],
+    "overrides": [
+      {
+        "files": ["src/components/ui/**"],
+        "rules": [
+          "knip/files",
+          "jsx-a11y/label-has-associated-control",
+          "jsx-a11y/heading-has-content"
+        ]
+      }
+    ]
+  }
+}

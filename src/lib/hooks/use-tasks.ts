@@ -369,7 +369,10 @@ export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createTask,
-    onSuccess: (response) => invalidateTaskQueries(queryClient, response),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateTaskQueries(queryClient, response);
+    },
   });
 }
 
@@ -377,7 +380,10 @@ export function useUpdateTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: updateTask,
-    onSuccess: (response) => invalidateTaskQueries(queryClient, response),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateTaskQueries(queryClient, response);
+    },
   });
 }
 
@@ -385,7 +391,10 @@ export function useCompleteTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: completeTask,
-    onSuccess: (response) => invalidateTaskQueries(queryClient, response),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateTaskQueries(queryClient, response);
+    },
   });
 }
 
@@ -456,7 +465,7 @@ export function useClaimTasks() {
 
       const affectedTaskIds = new Set(result?.tasks.map((task) => task.taskId) ?? []);
       const affectedPatientIds = new Set(
-        result?.tasks.map((task) => task.patientId).filter(Boolean) ?? []
+        result?.tasks.flatMap((task) => (task.patientId ? [task.patientId] : [])) ?? []
       );
       for (const taskId of affectedTaskIds) {
         invalidations.push(
