@@ -17,8 +17,3 @@ Cloud Care Pharmacy staff, doctors, and administrators.
 
 Private — Cloud Care Pharmacy
 
-4. Deploy
-
-## License
-
-Private — Cloud Care Pharmacy
