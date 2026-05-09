@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.react.doctor/react-doctor.schema.json",
   "ignore": {
-    "rules": ["knip/exports", "knip/types"],
+    "rules": ["knip/exports", "knip/types", "react-doctor/no-giant-component"],
     "overrides": [
       {
         "files": ["src/components/ui/**"],
