@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { matchesSearchQuery } from "@/lib/table-search";
+import { OutdatedRunsBadge } from "@/components/workflows/OutdatedRunsBadge";
 import {
   useCreateWorkflow,
   useDeleteWorkflow,
@@ -228,9 +229,15 @@ export function WorkflowsClient({
         minWidth: 240,
         renderCell: (params) => (
           <div className="flex flex-col justify-center min-w-0">
-            <span className="truncate font-medium text-foreground">
-              {params.row.name}
-            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="truncate font-medium text-foreground">
+                {params.row.name}
+              </span>
+              <OutdatedRunsBadge
+                workflowId={params.row.id}
+                definitionVersion={params.row.version}
+              />
+            </div>
             {params.row.description ? (
               <span className="truncate text-xs text-muted-foreground">
                 {params.row.description}
