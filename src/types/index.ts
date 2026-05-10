@@ -2059,6 +2059,33 @@ export interface WorkflowRunStep {
   awaitingEventType: string | null;
   /** Step-kind-specific extras. */
   detail: Record<string, unknown> | null;
+  /**
+   * Resolved step input (templates interpolated, sensitive keys redacted to
+   * `'***'` server-side). `null` when the step hasn't started, opted out via
+   * `capture: 'none'` / `sensitive: true`, or capture failed transiently.
+   * When `captureTruncated` is true the value is a
+   * `{ truncated: true; originalBytes: number; preview: string }` envelope.
+   */
+  input: unknown | null;
+  /**
+   * Captured step output (e.g. `{ messageId }` for `send_email`,
+   * `{ status, body }` for `http_call`, or `{ error }` for failed steps).
+   * Same `null` / truncation semantics as `input`.
+   */
+  output: unknown | null;
+  /** True when either `input` or `output` exceeded the inline 2 KB cap. */
+  captureTruncated: boolean;
+}
+
+/**
+ * Inline truncation envelope returned in `WorkflowRunStep.input` / `.output`
+ * when the resolved payload exceeded the inline 2 KB cap. Render `preview`
+ * verbatim — it is already a string, not JSON.
+ */
+export interface WorkflowRunStepCaptureTruncated {
+  truncated: true;
+  originalBytes: number;
+  preview: string;
 }
 
 export interface WorkflowRunsListResponse {

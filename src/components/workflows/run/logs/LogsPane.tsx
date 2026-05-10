@@ -6,11 +6,16 @@ import { useWorkflowRunCaptures } from "@/lib/hooks/use-workflow-runs";
 import { buildTimeline } from "../timeline-utils";
 import { TimelineColumn } from "./TimelineColumn";
 import { IoPane } from "./IoPane";
-import type { WorkflowRunEvent, WorkflowStep } from "@/types";
+import type { WorkflowRunEvent, WorkflowRunStep, WorkflowStep } from "@/types";
 
 export interface LogsPaneProps {
   runId: string;
   events: WorkflowRunEvent[];
+  /**
+   * Server-computed per-step projection. Carries the inline
+   * `input` / `output` / `captureTruncated` fields surfaced in the IO panes.
+   */
+  runSteps: WorkflowRunStep[];
   /** Workflow definition steps (flat). Used for the disabled-capture
    *  empty state, indexed by `stepIndex`. */
   definitionSteps: WorkflowStep[];
@@ -28,6 +33,7 @@ export interface LogsPaneProps {
 export function LogsPane({
   runId,
   events,
+  runSteps,
   definitionSteps,
   isLive,
   workflowId,
@@ -52,6 +58,12 @@ export function LogsPane({
   const definitionStep = selectedRow
     ? definitionSteps[selectedRow.stepIndex]
     : undefined;
+  // Per-step projection entry for the selected timeline row. Carries the
+  // inline `input` / `output` / `captureTruncated` fields the IO panes
+  // prefer over the legacy `/captures` endpoint.
+  const runStep = selectedRow
+    ? (runSteps.find((s) => s.stepIndex === selectedRow.stepIndex) ?? null)
+    : null;
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[260px_1fr]">
@@ -66,6 +78,7 @@ export function LogsPane({
         <IoPane
           runId={runId}
           row={selectedRow}
+          runStep={runStep}
           definitionStep={definitionStep}
           editHref={`/workflows/${workflowId}`}
         />
