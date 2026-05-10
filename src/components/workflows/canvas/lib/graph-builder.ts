@@ -32,12 +32,7 @@ export type WfEdgeType =
   | "routerStart"
   | "routerEnd";
 
-export type NodeRunStatus =
-  | "pending"
-  | "running"
-  | "done"
-  | "failed"
-  | "waiting";
+export type NodeRunStatus = "pending" | "running" | "done" | "failed" | "waiting";
 
 export type WorkflowNodeData =
   | {
@@ -227,19 +222,16 @@ interface BuildOpts {
   stepLabel: (
     s: WorkflowStep,
     flatIndex: number,
-    displayIndex: number,
+    displayIndex: number
   ) => { label: string; sub: string };
   stepRunStatus?: Record<number, NodeRunStatus>;
 }
 
-function makeStepNode(
-  treeNode: StepTreeNode,
-  opts: BuildOpts,
-): WfNode {
+function makeStepNode(treeNode: StepTreeNode, opts: BuildOpts): WfNode {
   const { label, sub } = opts.stepLabel(
     treeNode.step,
     treeNode.flatIndex,
-    treeNode.displayIndex,
+    treeNode.displayIndex
   );
   return {
     id: treeNode.nodeName,
@@ -262,7 +254,7 @@ function makeStraightEdge(
   source: string,
   target: string,
   data: WfStraightEdgeData,
-  idHint: string,
+  idHint: string
 ): Edge {
   return {
     id: `${idHint}__${source}->${target}`,
@@ -276,7 +268,7 @@ function makeStraightEdge(
 function makeBigAddButton(
   parentName: string,
   branchIndex: number | undefined,
-  parentStepName: string,
+  parentStepName: string
 ): WfNode {
   return {
     id: `${parentName}__big-add__${branchIndex ?? 0}`,
@@ -292,11 +284,7 @@ function makeBigAddButton(
   };
 }
 
-function makeGraphEnd(
-  id: string,
-  showWidget: boolean,
-  y: number,
-): WfNode {
+function makeGraphEnd(id: string, showWidget: boolean, y: number): WfNode {
   return {
     id,
     type: "graphEnd",
@@ -341,14 +329,11 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   // right rail mirrored by the loop-return spacer on the left rail.
   const childOffsetX =
     deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
-  const childOffsetY =
-    NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
+  const childOffsetY = NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
   const offsetChild = offsetGraph(child, childOffsetX, childOffsetY);
 
   const childHeadId =
-    offsetChild.entryId ??
-    offsetChild.nodes[0]?.id ??
-    `${loop.nodeName}__big-add__0`;
+    offsetChild.entryId ?? offsetChild.nodes[0]?.id ?? `${loop.nodeName}__big-add__0`;
   const childTailId = offsetChild.exitId ?? childHeadId;
 
   // Loop start edge (top → child head) and loop return edge (child tail → loop)
@@ -402,7 +387,7 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const subEnd = makeGraphEnd(
     `${loop.nodeName}__loop-end`,
     false,
-    childOffsetY + childBox.height + ARC_LENGTH,
+    childOffsetY + childBox.height + ARC_LENGTH
   );
 
   return {
@@ -413,19 +398,12 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   };
 }
 
-function buildRouterChildren(
-  router: StepTreeRouter,
-  opts: BuildOpts,
-): SubGraph {
+function buildRouterChildren(router: StepTreeRouter, opts: BuildOpts): SubGraph {
   const branchGraphs: SubGraph[] = router.branches.map((branch) => {
     if (branch.head) return buildChainGraph(branch.head, opts);
     // Empty branch: BigAddButton placeholder. No graphEnd needed — the
     // router-end edge will source from the BigAddButton itself.
-    const big = makeBigAddButton(
-      router.nodeName,
-      branch.branchIndex,
-      router.nodeName,
-    );
+    const big = makeBigAddButton(router.nodeName, branch.branchIndex, router.nodeName);
     big.position = { x: 0, y: 0 };
     return { nodes: [big], edges: [], entryId: big.id, exitId: big.id };
   });
@@ -454,7 +432,7 @@ function buildRouterChildren(
 
   const childOffsetY = NODE_H + VERTICAL_OFFSET_BETWEEN_ROUTER_AND_CHILD;
   const placedBranches: SubGraph[] = branchGraphs.map((g, i) =>
-    offsetGraph(g, centeredOffsets[i], childOffsetY),
+    offsetGraph(g, centeredOffsets[i], childOffsetY)
   );
 
   // Determine maximum branch height to position the merge end node.
@@ -465,7 +443,7 @@ function buildRouterChildren(
   // arrow head into the merge node. This stays correct under reorder/delete.
   const arrowBranchIdx = centeredOffsets.reduce(
     (best, x, i, arr) => (Math.abs(x) < Math.abs(arr[best]) ? i : best),
-    0,
+    0
   );
 
   // Router start edges: from router → first node of each branch.
@@ -494,11 +472,7 @@ function buildRouterChildren(
   });
 
   // Router end node — merges branches back together.
-  const mergeEndNode = makeGraphEnd(
-    `${router.nodeName}__router-merge`,
-    false,
-    mergeY,
-  );
+  const mergeEndNode = makeGraphEnd(`${router.nodeName}__router-merge`, false, mergeY);
 
   // Router end edges: from each branch tail → mergeEndNode.
   const endEdges: Edge[] = placedBranches
@@ -522,15 +496,8 @@ function buildRouterChildren(
     .filter(Boolean) as Edge[];
 
   return {
-    nodes: [
-      ...placedBranches.flatMap((g) => g.nodes),
-      mergeEndNode,
-    ],
-    edges: [
-      ...startEdges,
-      ...endEdges,
-      ...placedBranches.flatMap((g) => g.edges),
-    ],
+    nodes: [...placedBranches.flatMap((g) => g.nodes), mergeEndNode],
+    edges: [...startEdges, ...endEdges, ...placedBranches.flatMap((g) => g.edges)],
     exitId: mergeEndNode.id,
   };
 }
@@ -582,8 +549,8 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
               branchIndex: prevParentInfo.branchIndex,
             },
           },
-          "between",
-        ),
+          "between"
+        )
       );
     }
 
@@ -591,7 +558,8 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
 
     // Advance cursor past the entire stepGraph height.
     const box = calculateBoundingBox(stepGraph);
-    cursorY = stepNode.position.y + Math.max(box.height, NODE_H) + VERTICAL_SPACE_BETWEEN_STEPS;
+    cursorY =
+      stepNode.position.y + Math.max(box.height, NODE_H) + VERTICAL_SPACE_BETWEEN_STEPS;
     prevNodeId = stepGraph.exitId ?? stepNode.id;
     prevFlatIndex = cur.flatIndex;
     prevParentInfo = {
@@ -604,11 +572,7 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
   // Append a graphEnd node at the very end of the chain (with `+` button to
   // append at end). Caller decides if `showWidget` should be true.
   const endY = cursorY;
-  const endNode = makeGraphEnd(
-    `${head.nodeName}__chain-end`,
-    false,
-    endY,
-  );
+  const endNode = makeGraphEnd(`${head.nodeName}__chain-end`, false, endY);
   result.nodes.push(endNode);
   if (prevNodeId) {
     result.edges.push(
@@ -623,8 +587,8 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
             branchIndex: prevParentInfo.branchIndex,
           },
         },
-        "tail",
-      ),
+        "tail"
+      )
     );
   }
 
@@ -635,11 +599,7 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
 }
 
 /** Build a single trigger node. */
-function makeTriggerNode(
-  t: WorkflowTrigger,
-  i: number,
-  opts: BuildOpts,
-): WfNode {
+function makeTriggerNode(t: WorkflowTrigger, i: number, opts: BuildOpts): WfNode {
   const { label, sub } = opts.triggerLabel(t, i);
   return {
     id: `trigger-${i}`,
@@ -678,9 +638,7 @@ export function buildWorkflowGraph(opts: BuildOpts): {
       ? (triggers.length - 1) * (NODE_H + VERTICAL_SPACE_BETWEEN_STEPS)
       : 0;
   const stepChainOffsetY =
-    triggers.length > 0
-      ? lastTriggerY + NODE_H + VERTICAL_SPACE_BETWEEN_STEPS
-      : 0;
+    triggers.length > 0 ? lastTriggerY + NODE_H + VERTICAL_SPACE_BETWEEN_STEPS : 0;
 
   // Build step chain graph.
   let chainGraph: SubGraph = empty();
@@ -699,8 +657,8 @@ export function buildWorkflowGraph(opts: BuildOpts): {
         triggerNodes[i - 1].id,
         triggerNodes[i].id,
         { drawArrowHead: true, hideAddButton: true },
-        "trig",
-      ),
+        "trig"
+      )
     );
   }
 
@@ -719,8 +677,8 @@ export function buildWorkflowGraph(opts: BuildOpts): {
               branchIndex: undefined,
             },
           },
-          "trig-step",
-        ),
+          "trig-step"
+        )
       );
     }
     result.nodes.push(...chainGraph.nodes);
@@ -739,8 +697,8 @@ export function buildWorkflowGraph(opts: BuildOpts): {
             drawArrowHead: false,
             insertion: { afterFlatIndex: null },
           },
-          "trig-end",
-        ),
+          "trig-end"
+        )
       );
     }
   }
@@ -748,8 +706,7 @@ export function buildWorkflowGraph(opts: BuildOpts): {
   // Mark the root-chain end as the "show End widget" anchor.
   const rootEnd = result.nodes.findLast(
     (n) =>
-      (n.data as WorkflowNodeData).kind === "graphEnd" &&
-      n.id.endsWith("__chain-end"),
+      (n.data as WorkflowNodeData).kind === "graphEnd" && n.id.endsWith("__chain-end")
   );
   if (rootEnd) {
     (rootEnd.data as { kind: "graphEnd"; showWidget: boolean }).showWidget = true;
@@ -764,7 +721,7 @@ export function buildWorkflowGraph(opts: BuildOpts): {
  */
 export function computeStepRunStatus(
   events: { eventType: string; stepIndex: number | null }[],
-  runStatus: "running" | "waiting" | "completed" | "failed" | "cancelled",
+  runStatus: "running" | "waiting" | "completed" | "failed" | "cancelled"
 ): Record<number, NodeRunStatus> {
   const map: Record<number, NodeRunStatus> = {};
   for (const e of events) {
