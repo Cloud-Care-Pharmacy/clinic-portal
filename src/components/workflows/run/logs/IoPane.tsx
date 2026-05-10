@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { fetchCapturePayload } from "@/lib/hooks/use-workflow-runs";
 import { STEP_KIND_CONFIG } from "../../canvas/lib/node-kind-config";
 import type {
+  WorkflowRunStep,
+  WorkflowRunStepCaptureTruncated,
   WorkflowRunTimelineRow,
   WorkflowStepCaptureMode,
   WorkflowStepKind,
@@ -26,11 +28,34 @@ import type {
 export interface IoPaneProps {
   runId: string;
   row: WorkflowRunTimelineRow | null;
+  /**
+   * Per-step projection entry for the same `stepIndex` as `row`. When
+   * present, its `input` / `output` / `captureTruncated` fields are the
+   * primary source for the IO panes (the gateway already redacts and caps
+   * these server-side).
+   */
+  runStep?: WorkflowRunStep | null;
   /** Definition step at `row.stepIndex`. Used to detect `capture: 'none'` /
    * `sensitive: true` so we can deep-link the user back to the editor. */
   definitionStep?: WorkflowStep;
   /** Edit URL for the workflow definition (deep-link on disabled-capture). */
   editHref?: string;
+}
+
+/**
+ * The gateway clips inline `input` / `output` payloads at 2 KB and replaces
+ * the value with a `{ truncated, originalBytes, preview }` envelope. The
+ * preview is already stringified — render it verbatim, not as JSON.
+ */
+function isTruncatedEnvelope(
+  v: unknown
+): v is WorkflowRunStepCaptureTruncated {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    (v as { truncated?: unknown }).truncated === true &&
+    typeof (v as { preview?: unknown }).preview === "string"
+  );
 }
 
 const STATUS_META: Record<
@@ -60,7 +85,13 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function IoPane({ runId, row, definitionStep, editHref }: IoPaneProps) {
+export function IoPane({
+  runId,
+  row,
+  runStep,
+  definitionStep,
+  editHref,
+}: IoPaneProps) {
   if (!row) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">
@@ -74,8 +105,17 @@ export function IoPane({ runId, row, definitionStep, editHref }: IoPaneProps) {
   const label = config?.label ?? row.stepKind;
   const status = STATUS_META[row.status];
   const dur = formatDuration(row.durationMs);
+  // Capture is disabled by definition (`capture: 'none'` or `sensitive: true`)
+  // *and* the server returned no inline payload + no legacy capture row.
+  // The inline projection is the new authoritative source — when it carries
+  // a value we render it even if a legacy capture row is missing.
+  const hasInlineInput = runStep?.input !== undefined && runStep?.input !== null;
+  const hasInlineOutput =
+    runStep?.output !== undefined && runStep?.output !== null;
   const captureDisabled =
     row.capture === null &&
+    !hasInlineInput &&
+    !hasInlineOutput &&
     (definitionStep?.sensitive === true || definitionStep?.capture === "none");
 
   return (
@@ -115,6 +155,8 @@ export function IoPane({ runId, row, definitionStep, editHref }: IoPaneProps) {
           runId={runId}
           row={row}
           side="input"
+          inlineValue={runStep ? runStep.input : undefined}
+          inlineTruncated={runStep?.captureTruncated ?? false}
           captureDisabled={captureDisabled}
           editHref={editHref}
         />
@@ -122,6 +164,8 @@ export function IoPane({ runId, row, definitionStep, editHref }: IoPaneProps) {
           runId={runId}
           row={row}
           side="output"
+          inlineValue={runStep ? runStep.output : undefined}
+          inlineTruncated={runStep?.captureTruncated ?? false}
           captureDisabled={captureDisabled}
           editHref={editHref}
           errorMessage={row.errorMessage}
@@ -135,6 +179,14 @@ interface IoSideProps {
   runId: string;
   row: WorkflowRunTimelineRow;
   side: "input" | "output";
+  /**
+   * Inline value from the per-step projection. `undefined` means "no
+   * projection available — fall back to the legacy capture row". `null`
+   * means "projection present but no payload was captured".
+   */
+  inlineValue?: unknown;
+  /** `WorkflowRunStep.captureTruncated` for the matching step. */
+  inlineTruncated?: boolean;
   captureDisabled: boolean;
   editHref?: string;
   errorMessage?: string | null;
@@ -144,6 +196,8 @@ function IoSide({
   runId,
   row,
   side,
+  inlineValue,
+  inlineTruncated = false,
   captureDisabled,
   editHref,
   errorMessage,
@@ -157,7 +211,16 @@ function IoSide({
   const bytes = side === "input" ? row.capture?.inputBytes : row.capture?.outputBytes;
   const isError = side === "output" && row.status === "error";
   const captureMode: WorkflowStepCaptureMode | undefined = row.capture?.captureMode;
-  const truncated = row.capture?.truncated ?? false;
+  const legacyTruncated = row.capture?.truncated ?? false;
+
+  // Prefer the inline projection field when the projection is available
+  // (the gateway already redacted + capped it). Falls back to the legacy
+  // `/captures` row for runs that predate the projection fields.
+  const useInline = inlineValue !== undefined;
+  const inlineEnvelope = useInline && isTruncatedEnvelope(inlineValue)
+    ? (inlineValue as WorkflowRunStepCaptureTruncated)
+    : null;
+  const truncated = useInline ? inlineTruncated : legacyTruncated;
 
   async function onShowFull() {
     setLoadingFull(true);
@@ -206,6 +269,53 @@ function IoSide({
             </a>
           ) : null}
         </div>
+      ) : useInline ? (
+        // New path: render directly off `WorkflowRunStep.input` / `.output`
+        // returned by the gateway. Server already redacted + capped at 2 KB.
+        inlineValue === null ? (
+          <div className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+            {row.status === "running" || row.status === "waiting"
+              ? "Awaiting capture…"
+              : side === "output" && row.status === "success"
+                ? "Step produced no output."
+                : "Not captured."}
+          </div>
+        ) : (
+          <>
+            {truncated ? (
+              <div
+                className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs"
+                style={{
+                  background: "var(--status-warning-bg)",
+                  color: "var(--status-warning-fg)",
+                  borderColor: "var(--status-warning-border)",
+                }}
+              >
+                <span className="inline-flex items-center rounded-full bg-background/60 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
+                  Truncated
+                </span>
+                <span>
+                  {heading} exceeded 2 KB
+                  {inlineEnvelope
+                    ? ` (${formatBytes(inlineEnvelope.originalBytes)} original)`
+                    : ""}
+                  .
+                </span>
+              </div>
+            ) : null}
+            {inlineEnvelope ? (
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-border/60 bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground">
+                {inlineEnvelope.preview}
+              </pre>
+            ) : (
+              <JsonTreeViewer
+                value={inlineValue}
+                label={heading}
+                emptyMessage="No data."
+              />
+            )}
+          </>
+        )
       ) : !row.capture ? (
         <div className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
           {row.status === "running" || row.status === "waiting"
@@ -214,7 +324,7 @@ function IoSide({
         </div>
       ) : (
         <>
-          {truncated && captureMode === "summary" ? (
+          {legacyTruncated && captureMode === "summary" ? (
             <div
               className="rounded-md border px-3 py-2 text-xs"
               style={{

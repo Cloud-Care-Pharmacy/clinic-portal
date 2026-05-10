@@ -671,6 +671,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
             <LogsPane
               runId={runId}
               events={data.data.events ?? []}
+              runSteps={data.data.steps ?? []}
               definitionSteps={steps}
               isLive={isInFlight}
               workflowId={workflowId}
