@@ -72,6 +72,13 @@ export type WfNode = Node<WorkflowNodeData>;
 
 export interface WfEdgeBaseData {
   runActive?: boolean;
+  /**
+   * Status of the *target* step at the time of render. When set, the edge
+   * paints itself in the matching status color and (for `running` targets)
+   * animates a flowing dash to convey motion. Populated by the run canvas;
+   * `undefined` in the editor.
+   */
+  runStatus?: NodeRunStatus;
   // Index signature so React Flow's edge data constraint
   // (`Record<string, unknown>`) is satisfied.
   [key: string]: unknown;

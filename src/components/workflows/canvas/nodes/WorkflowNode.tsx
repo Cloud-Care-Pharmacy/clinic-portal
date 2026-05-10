@@ -85,21 +85,64 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
   const displayIndex = node.kind === "step" ? node.displayIndex : null;
   const stepName = node.kind === "step" ? node.stepName : null;
 
+  // Per-status outer chrome — used for the run canvas to convey liveness.
+  // The badge in the corner already shows the icon, but the card itself
+  // needs to read "active" / "done" / "failed" at a glance.
+  const isRunning = runStatus === "running";
+  const isDone = runStatus === "done";
+  const isFailed = runStatus === "failed";
+  const isWaiting = runStatus === "waiting";
+  const statusBorder = isRunning
+    ? "var(--primary)"
+    : isFailed
+      ? "var(--status-danger-fg)"
+      : isDone
+        ? "var(--status-success-fg)"
+        : isWaiting
+          ? "var(--status-warning-fg)"
+          : null;
+  const ringColor = isRunning
+    ? "color-mix(in oklab, var(--primary) 45%, transparent)"
+    : isFailed
+      ? "color-mix(in oklab, var(--status-danger-fg) 35%, transparent)"
+      : null;
+
+  const border = statusBorder
+    ? `2px solid ${statusBorder}`
+    : selected
+      ? `2px solid ${cfg.accent}`
+      : "1px solid var(--border)";
+  const boxShadow = selected
+    ? `0 0 0 4px ${cfg.bg}, 0 4px 12px rgba(40,38,27,0.06)`
+    : isFailed
+      ? `0 0 0 3px color-mix(in oklab, var(--status-danger-fg) 25%, transparent)`
+      : isDone
+        ? `0 0 0 2px color-mix(in oklab, var(--status-success-fg) 22%, transparent)`
+        : "0 1px 2px rgba(40,38,27,0.04)";
+
   return (
     <div
-      style={{
-        width: NODE_W,
-        minHeight: NODE_H,
-        background: "var(--popover)",
-        border: selected ? `2px solid ${cfg.accent}` : "1px solid var(--border)",
-        borderRadius: 12,
-        padding: "10px 12px",
-        boxShadow: selected
-          ? `0 0 0 4px ${cfg.bg}, 0 4px 12px rgba(40,38,27,0.06)`
-          : "0 1px 2px rgba(40,38,27,0.04)",
-        transition: "box-shadow 120ms ease, border-color 120ms ease",
-      }}
-      className="group relative cursor-pointer text-popover-foreground"
+      style={
+        {
+          width: NODE_W,
+          minHeight: NODE_H,
+          background: "var(--popover)",
+          border,
+          borderRadius: 12,
+          padding: "10px 12px",
+          boxShadow,
+          transition: "box-shadow 120ms ease, border-color 120ms ease",
+          // Soft pulsing ring around active step. CSS reads `--wf-ring-color`
+          // so the keyframe stays generic (defined in `globals.css`).
+          ...(isRunning && ringColor
+            ? {
+                animation: "wf-ring 1.6s ease-in-out infinite",
+                ["--wf-ring-color" as string]: ringColor,
+              }
+            : null),
+        } as React.CSSProperties
+      }
+      className="group relative cursor-pointer text-popover-foreground motion-reduce:animate-none"
     >
       <div className="flex items-center gap-2">
         <div

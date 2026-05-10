@@ -54,6 +54,12 @@ export interface WorkflowGraphProps {
   stepRunStatus?: Record<number, NodeRunStatus>;
   runActive?: boolean;
   panningMode: "grab" | "select";
+  /**
+   * Read-only mode: hides the inline `+` add buttons / placeholders so the
+   * canvas can be reused inside the run view. Editing affordances (drag /
+   * insert / palette) are inert in this mode.
+   */
+  readOnly?: boolean;
 }
 
 function ArrowMarker() {
@@ -86,6 +92,7 @@ export function WorkflowGraph({
   stepRunStatus,
   runActive,
   panningMode,
+  readOnly = false,
 }: WorkflowGraphProps) {
   const { fitView } = useReactFlow();
 
@@ -101,18 +108,58 @@ export function WorkflowGraph({
     [triggers, steps, stepRunStatus]
   );
 
-  const selectedNodes = useMemo<WfNode[]>(
-    () => nodes.map((n) => ({ ...n, selected: n.id === selectedId })),
-    [nodes, selectedId]
+  // In read-only mode (run view) we strip out the editing affordances so
+  // the graph reads as a pure visualization. We also drop the orphan edges
+  // that would have been pointing at the removed add buttons.
+  const visibleNodes = useMemo<WfNode[]>(() => {
+    if (!readOnly) return nodes;
+    return nodes.filter((n) => {
+      const k = (n.data as WorkflowNodeData).kind;
+      return k !== "addButton" && k !== "bigAddButton";
+    });
+  }, [nodes, readOnly]);
+
+  const visibleNodeIds = useMemo(
+    () => new Set(visibleNodes.map((n) => n.id)),
+    [visibleNodes]
   );
+
+  const selectedNodes = useMemo<WfNode[]>(
+    () => visibleNodes.map((n) => ({ ...n, selected: n.id === selectedId })),
+    [visibleNodes, selectedId]
+  );
+
+  // Build a lookup of node -> runStatus so each edge can colour itself by
+  // the status of the step it terminates at. Only steps carry `runStatus`.
+  const runStatusByNodeId = useMemo<Record<string, NodeRunStatus>>(() => {
+    if (!stepRunStatus) return {};
+    const out: Record<string, NodeRunStatus> = {};
+    for (const n of nodes) {
+      const data = n.data as WorkflowNodeData;
+      if (data.kind === "step" && data.runStatus) {
+        out[n.id] = data.runStatus;
+      }
+    }
+    return out;
+  }, [nodes, stepRunStatus]);
 
   const themedEdges = useMemo(
     () =>
-      edges.map((e) => ({
-        ...e,
-        data: { ...(e.data ?? {}), runActive } as Record<string, unknown>,
-      })),
-    [edges, runActive]
+      edges
+        .filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
+        .map((e) => {
+          const targetStatus = runStatusByNodeId[e.target];
+          return {
+            ...e,
+            data: {
+              ...(e.data ?? {}),
+              runActive,
+              runStatus: targetStatus,
+              ...(readOnly ? { hideAddButton: true } : null),
+            } as Record<string, unknown>,
+          };
+        }),
+    [edges, visibleNodeIds, runActive, runStatusByNodeId, readOnly]
   );
 
   useEffect(() => {
@@ -120,7 +167,7 @@ export function WorkflowGraph({
       fitView({ padding: 0.2, maxZoom: 1, duration: 200 });
     }, 50);
     return () => window.clearTimeout(id);
-  }, [nodes.length, edges.length, fitView]);
+  }, [visibleNodes.length, themedEdges.length, fitView]);
 
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     const data = node.data as WorkflowNodeData;
@@ -144,7 +191,7 @@ export function WorkflowGraph({
           edgeTypes={edgeTypes}
           nodesDraggable={false}
           nodesConnectable={false}
-          elementsSelectable
+          elementsSelectable={!readOnly}
           onNodeClick={handleNodeClick}
           onPaneClick={() => onSelect(null)}
           panOnDrag={panningMode === "grab" ? [0, 1, 2] : [1, 2]}

@@ -25,6 +25,7 @@ import {
 } from "@/lib/hooks/use-workflow-runs";
 import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { STEP_KIND_CONFIG } from "../canvas/lib/node-kind-config";
+import { RunCanvas } from "./RunCanvas";
 import type {
   WorkflowRun,
   WorkflowRunDetailResponse,
@@ -32,6 +33,7 @@ import type {
   WorkflowRunsListResponse,
   WorkflowStep,
   WorkflowStepKind,
+  WorkflowTrigger,
 } from "@/types";
 
 interface RunViewProps {
@@ -447,63 +449,24 @@ function JsonBlock({
 }
 
 interface RunDetailProps {
-  runId: string | null;
   /** Top-level steps from the workflow definition (used to pre-fill the trace). */
   topLevelSteps: WorkflowStep[];
-  initial?: WorkflowRunDetailResponse;
+  /** Cached run + events. `undefined` while loading. */
+  data: WorkflowRunDetailResponse | undefined;
+  isLoading: boolean;
+  /** True while the SSE stream is open — drives the live elapsed counter. */
+  isLive: boolean;
+  /** Ticking timestamp from the parent (only re-renders during a live run). */
+  now: number;
 }
 
-function RunDetail({ runId, topLevelSteps, initial }: RunDetailProps) {
-  const queryClient = useQueryClient();
-  const { data, isLoading, refetch } = useWorkflowRun(runId ?? "", initial);
-
-  // Subscribe to the SSE stream while the run is `running`. The hook handles
-  // reconnect on `max-duration`; we mirror live `run`/`step` events into the
-  // cached run detail so the timeline updates without polling.
-  const isLive = data?.data?.run?.status === "running";
-  // Tick every 500ms while live so the elapsed counter on the active step
-  // moves between SSE events.
-  const now = useNow(500, Boolean(isLive));
-  useWorkflowRunStream(runId, Boolean(runId) && isLive, {
-    onRun: (run) => {
-      queryClient.setQueryData<WorkflowRunDetailResponse>(
-        ["workflow-runs", "detail", runId],
-        (prev) =>
-          prev ? { ...prev, data: { ...prev.data, run } } : prev
-      );
-    },
-    onStep: (event) => {
-      queryClient.setQueryData<WorkflowRunDetailResponse>(
-        ["workflow-runs", "detail", runId],
-        (prev) => {
-          if (!prev) return prev;
-          const events = prev.data.events;
-          if (events.some((e) => e.sequence === event.sequence)) return prev;
-          const next = [...events, event].sort(
-            (a, b) => a.sequence - b.sequence
-          );
-          return { ...prev, data: { ...prev.data, events: next } };
-        }
-      );
-    },
-    onDone: () => {
-      // Pull the canonical audit (status + full event list) once the stream
-      // closes — covers terminal runs and waiting/paused runs alike.
-      void refetch();
-    },
-  });
-
-  if (!runId) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-6">
-        <EmptyState
-          title="Select a run"
-          description="Pick a run from the rail to see its step trace."
-        />
-      </div>
-    );
-  }
-
+function RunDetail({
+  topLevelSteps,
+  data,
+  isLoading,
+  isLive,
+  now,
+}: RunDetailProps) {
   if (isLoading || !data) {
     return (
       <div className="flex-1 space-y-4 p-6">
@@ -609,7 +572,7 @@ function RunDetail({ runId, topLevelSteps, initial }: RunDetailProps) {
   const hasRunningStep = stepRows.some((r) => r.status === "running");
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="p-6">
       {/* Top progress bar — fills as steps complete; an indeterminate sweep
           overlays it whenever a step is mid-flight so the user sees motion
           even between completions. */}
@@ -730,11 +693,12 @@ function RunDetail({ runId, topLevelSteps, initial }: RunDetailProps) {
 export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps) {
   const { data, isLoading } = useWorkflowRuns(workflowId, { limit: 50 }, initialRuns);
   const { data: workflowData } = useWorkflow(workflowId);
+  const triggers = workflowData?.data.triggers ?? [];
+  const allSteps = workflowData?.data.definition.steps ?? [];
   // Top-level steps drive the pre-filled trace; nested steps (children of
   // routers / loops) live under their parent in the flat array and are
   // surfaced when the parent expands, so we filter them out here.
-  const topLevelSteps =
-    workflowData?.data.definition.steps.filter((s) => !s.parentStepName) ?? [];
+  const topLevelSteps = allSteps.filter((s) => !s.parentStepName);
   const runs = data?.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(
     initialRunId ?? runs[0]?.id ?? null
@@ -753,7 +717,120 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
         onSelect={setSelectedId}
         loading={isLoading}
       />
-      <RunDetail runId={selectedId} topLevelSteps={topLevelSteps} />
+      <RunPanel
+        runId={selectedId}
+        triggers={triggers}
+        steps={allSteps}
+        topLevelSteps={topLevelSteps}
+      />
+    </div>
+  );
+}
+
+interface RunPanelProps {
+  runId: string | null;
+  triggers: WorkflowTrigger[];
+  /** Full flat step list (used by the canvas to render nested branches). */
+  steps: WorkflowStep[];
+  /** Top-level steps used by the timeline pre-fill. */
+  topLevelSteps: WorkflowStep[];
+}
+
+/**
+ * Owns the run query + SSE stream subscription, then forks the data into
+ * two synchronized views:
+ *   - `RunCanvas` (top): the workflow graph painted with live status
+ *   - `RunDetail` (bottom): the metric strip + step trace timeline
+ *
+ * Hoisting these here means there is exactly one TanStack Query subscription
+ * and one SSE stream open per selected run, even though both children render
+ * the same data.
+ */
+function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
+  const queryClient = useQueryClient();
+  const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
+
+  const isLive = data?.data?.run?.status === "running";
+
+  // Tick every 500ms while live so both the canvas's run-elapsed counter and
+  // the timeline's per-step elapsed counter advance between SSE events.
+  const now = useNow(500, Boolean(isLive));
+
+  useWorkflowRunStream(runId, Boolean(runId) && isLive, {
+    onRun: (run) => {
+      queryClient.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) => (prev ? { ...prev, data: { ...prev.data, run } } : prev)
+      );
+    },
+    onStep: (event) => {
+      queryClient.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) => {
+          if (!prev) return prev;
+          const events = prev.data.events;
+          if (events.some((e) => e.sequence === event.sequence)) return prev;
+          const next = [...events, event].sort(
+            (a, b) => a.sequence - b.sequence
+          );
+          return { ...prev, data: { ...prev.data, events: next } };
+        }
+      );
+    },
+    onDone: () => {
+      // Pull the canonical audit (status + full event list) once the stream
+      // closes — covers terminal runs and waiting/paused runs alike.
+      void refetch();
+    },
+  });
+
+  if (!runId) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-6">
+        <EmptyState
+          title="Select a run"
+          description="Pick a run from the rail to see its step trace."
+        />
+      </div>
+    );
+  }
+
+  // Run-level elapsed feeds the canvas status strip. Once the run is
+  // terminal we use its persisted completion timestamp so the value stops.
+  const run = data?.data?.run;
+  const elapsedMs = run
+    ? run.completedAt
+      ? parseUtcMs(run.completedAt) - parseUtcMs(run.startedAt)
+      : Math.max(0, now - parseUtcMs(run.startedAt))
+    : 0;
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative h-1/2 min-h-72 border-b border-border bg-background">
+        {run ? (
+          <RunCanvas
+            triggers={triggers}
+            steps={steps}
+            run={run}
+            events={data?.data.events ?? []}
+            isLive={Boolean(isLive)}
+            elapsedMs={elapsedMs}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center p-6">
+            <Skeleton className="h-40 w-full max-w-md" />
+          </div>
+        )}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <RunDetail
+          topLevelSteps={topLevelSteps}
+          data={data}
+          isLoading={isLoading}
+          isLive={Boolean(isLive)}
+          now={now}
+        />
+      </div>
     </div>
   );
 }
