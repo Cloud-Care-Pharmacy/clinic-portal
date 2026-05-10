@@ -335,9 +335,12 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     ) /
       2 -
     NODE_W / 2;
-  const childOffsetX = isLoopEmpty
-    ? 0
-    : deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
+  // ActivePieces uses the same offset formula regardless of whether the body
+  // is empty — the empty-state child is a single BigAddButton whose bbox
+  // contributes NODE_W of width, so the formula naturally lands it on the
+  // right rail mirrored by the loop-return spacer on the left rail.
+  const childOffsetX =
+    deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
   const childOffsetY =
     NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
   const offsetChild = offsetGraph(child, childOffsetX, childOffsetY);
@@ -364,12 +367,12 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     } as WfLoopStartEdgeData,
   };
 
-  // The loop-return node anchors the right-side return arc.
+  // The loop-return node anchors the left-side return arc.
   const loopReturnNode: WfNode = {
     id: `${loop.nodeName}__loop-return`,
     type: "loopReturn",
     position: {
-      x: isLoopEmpty ? -NODE_W : deltaLeftX + NODE_W / 2,
+      x: deltaLeftX + NODE_W / 2,
       y: childOffsetY + childBox.height / 2,
     },
     data: { kind: "loopReturn" },
@@ -379,7 +382,7 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const returnEdge: Edge = {
     id: `${loop.nodeName}__loop-return-edge`,
     source: childTailId,
-    target: isLoopEmpty ? childHeadId : loopReturnNode.id,
+    target: loopReturnNode.id,
     type: "loopReturn",
     data: {
       isLoopEmpty,

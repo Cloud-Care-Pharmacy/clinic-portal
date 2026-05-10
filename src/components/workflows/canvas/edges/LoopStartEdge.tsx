@@ -27,22 +27,10 @@ export function LoopStartEdge({
   const ed = (data ?? {}) as unknown as WfLoopStartEdgeData;
   const ctx = useCanvasContext();
 
-  if (ed.isLoopEmpty) {
-    const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
-    return (
-      <path
-        id={id}
-        d={`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={LINE_WIDTH}
-        markerEnd="url(#wf-arrow)"
-      />
-    );
-  }
-
   // ActivePieces-style loop entry: down from the loop card, rounded across to
-  // the body rail, then down into the first body node / add target.
+  // the body rail, then down into the first body node. Identical geometry for
+  // empty and non-empty bodies — only the trailing arrowhead and the inline
+  // "add inside loop" button are suppressed when the body is empty.
   const bendY = sourceY + Math.max(32, (targetY - sourceY) / 2 - ARC_LENGTH);
   const radius = Math.min(ARC_LENGTH, Math.abs(targetX - sourceX) / 2);
   const goesRight = targetX >= sourceX;
@@ -67,7 +55,7 @@ export function LoopStartEdge({
         fill="none"
         stroke={stroke}
         strokeWidth={LINE_WIDTH}
-        markerEnd="url(#wf-arrow)"
+        markerEnd={ed.isLoopEmpty ? undefined : "url(#wf-arrow)"}
       />
       {!ed.isLoopEmpty && ed.insertion && (
         <EdgeLabelRenderer>
