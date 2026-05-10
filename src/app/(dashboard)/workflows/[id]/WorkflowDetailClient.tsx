@@ -46,20 +46,23 @@ const WEBHOOK_BASE_URL =
   process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /**
- * Strip default capture/sensitive fields from each step before serializing
- * to the backend. The default `capture: 'summary'` and `sensitive: false`
- * are inferred when missing, so we omit them to keep the stored definition
- * (and JSON diffs) clean.
+ * Strip default capture/sensitive/retry fields from each step before
+ * serializing to the backend. The default `capture: 'summary'` and
+ * `sensitive: false` are inferred when missing, and `retry` is omitted when
+ * unset, so we drop them to keep the stored definition (and JSON diffs)
+ * clean.
  */
 function serializeStepsForSave(steps: WorkflowStep[]): WorkflowStep[] {
   return steps.map((step) => {
-    const { capture, sensitive, ...rest } = step as WorkflowStep & {
+    const { capture, sensitive, retry, ...rest } = step as WorkflowStep & {
       capture?: WorkflowStep["capture"];
       sensitive?: WorkflowStep["sensitive"];
+      retry?: WorkflowStep["retry"];
     };
     const next = { ...rest } as WorkflowStep;
     if (capture && capture !== "summary") next.capture = capture;
     if (sensitive === true) next.sensitive = true;
+    if (retry !== undefined) next.retry = retry;
     return next;
   });
 }

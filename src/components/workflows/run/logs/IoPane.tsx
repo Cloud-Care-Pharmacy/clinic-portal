@@ -8,6 +8,8 @@ import {
   Clock,
   Hourglass,
   Info,
+  RotateCcw,
+  TimerOff,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +69,8 @@ const STATUS_META: Record<
   success: { label: "Success", tone: "text-status-success-fg", Icon: Check },
   error: { label: "Failed", tone: "text-status-danger-fg", Icon: AlertTriangle },
   waiting: { label: "Waiting", tone: "text-status-warning-fg", Icon: Hourglass },
+  retrying: { label: "Retrying", tone: "text-status-warning-fg", Icon: RotateCcw },
+  timed_out: { label: "Timed out", tone: "text-status-danger-fg", Icon: TimerOff },
 };
 
 function formatDuration(ms: number | null): string {

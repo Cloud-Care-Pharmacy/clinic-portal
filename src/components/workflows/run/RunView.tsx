@@ -79,26 +79,73 @@ function highSignalStepLabel(kind: WorkflowStepKind): string {
  * toasted this exact event. We also skip events older than 10s on arrival
  * so the initial SSE replay (when first connecting to a long-lived run)
  * doesn't dump a flood of stale toasts.
+ *
+ * Retry semantics: a `step_failed` immediately followed by
+ * `step_retry_scheduled` is treated as transient. Callers track which
+ * `stepIndex` values have already had a retry scheduled — when the retry
+ * arrives we dismiss any prior failure toast and fire a single info-level
+ * "Retrying" toast (once per step). Subsequent failures on a retried step
+ * are suppressed until the *terminal* failure (which arrives without a
+ * following retry) hits.
  */
-function maybeToastStepEvent(event: WorkflowRunEvent, toasted: Set<number>): void {
+function maybeToastStepEvent(
+  event: WorkflowRunEvent,
+  toasted: Set<number>,
+  retriedSteps: Set<number>
+): void {
   if (toasted.has(event.sequence)) return;
   toasted.add(event.sequence);
 
   const kind = event.stepKind as WorkflowStepKind | undefined;
   if (!kind || !HIGH_SIGNAL_STEP_KINDS.has(kind)) return;
-  if (event.eventType !== "step_completed" && event.eventType !== "step_failed") {
-    return;
-  }
+
   const ageMs = Date.now() - new Date(event.createdAt).getTime();
   if (Number.isFinite(ageMs) && ageMs > 10_000) return;
 
   const label = highSignalStepLabel(kind);
+  const stepIdx = event.stepIndex ?? -1;
+
+  if (event.eventType === "step_retry_scheduled") {
+    const detail = (event.detail ?? {}) as Record<string, unknown>;
+    const nextAttempt = Number(detail.nextAttempt ?? 0);
+    const maxAttempts = Number(detail.maxAttempts ?? 0);
+    const delayMs = Number(detail.delayMs ?? 0);
+    // Dismiss any failure toast we already fired for this step — it was a
+    // transient failure that the engine is about to retry.
+    if (stepIdx >= 0) toast.dismiss(`step-failed-${stepIdx}`);
+    // Only emit one retry toast per step to avoid a flood when a step
+    // retries multiple times.
+    if (stepIdx >= 0 && retriedSteps.has(stepIdx)) return;
+    if (stepIdx >= 0) retriedSteps.add(stepIdx);
+    const delayCopy =
+      delayMs >= 1000 ? `${Math.round(delayMs / 1000)}s` : `${delayMs}ms`;
+    toast.info(`${label} retrying`, {
+      id: stepIdx >= 0 ? `step-retrying-${stepIdx}` : undefined,
+      description:
+        nextAttempt && maxAttempts
+          ? `Next attempt in ${delayCopy} (attempt ${nextAttempt} of ${maxAttempts})`
+          : `Next attempt in ${delayCopy}`,
+    });
+    return;
+  }
+
+  if (event.eventType !== "step_completed" && event.eventType !== "step_failed") {
+    return;
+  }
+
   const duration = event.durationMs != null ? fmtDuration(event.durationMs) : null;
   const detail = (event.detail ?? {}) as Record<string, unknown>;
   const errorMsg = typeof detail.error === "string" ? detail.error : undefined;
 
   if (event.eventType === "step_failed") {
+    // Suppress the failure toast when this step has previously retried —
+    // the retry path already informed the user. The *terminal* failure
+    // after the last retry attempt won't be followed by another
+    // `step_retry_scheduled`, so it stays suppressed too; the run-level
+    // failure (visible in the header status) communicates the final state.
+    if (stepIdx >= 0 && retriedSteps.has(stepIdx)) return;
     toast.error(`${label} failed`, {
+      id: stepIdx >= 0 ? `step-failed-${stepIdx}` : undefined,
       description: errorMsg ?? (duration ? `Took ${duration}` : undefined),
     });
   } else {
@@ -545,8 +592,13 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
   // reconnects don't re-fire toasts. Reset whenever the selected run
   // changes — done in an effect so we don't mutate refs during render.
   const toastedSequencesRef = useRef<Set<number>>(new Set());
+  // Track which `stepIndex` values have had a `step_retry_scheduled`
+  // event observed. Used to suppress the failure toast for retried steps
+  // and to ensure we only fire one "Retrying" toast per step.
+  const retriedStepsRef = useRef<Set<number>>(new Set());
   useEffect(() => {
     toastedSequencesRef.current = new Set();
+    retriedStepsRef.current = new Set();
   }, [runId]);
 
   useWorkflowRunStream(runId, Boolean(runId) && isInFlight, {
@@ -590,7 +642,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
       // a real-world side effect (email / SMS / HTTP) actually happened.
       // We gate on event recency to avoid replaying the entire history
       // when the user opens an old run.
-      maybeToastStepEvent(event, toastedSequencesRef.current);
+      maybeToastStepEvent(event, toastedSequencesRef.current, retriedStepsRef.current);
     },
     onDone: () => {
       // Pull the canonical audit (status + full event list + projection)

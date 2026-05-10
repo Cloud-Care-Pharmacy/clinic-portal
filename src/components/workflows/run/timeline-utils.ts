@@ -6,13 +6,22 @@ import type {
 
 /**
  * Join a run's `events` and `captures` into a flat timeline. One row per
- * `step_started` event; the matching terminator (`step_completed`,
- * `step_failed`, or `wait_scheduled`) drives status / duration / error.
+ * `step_started` event; the matching terminator drives status / duration /
+ * error. Recognised terminators:
+ *
+ *  - `step_completed`         → `success`
+ *  - `step_failed`            → `error` (terminal failure)
+ *  - `step_retry_scheduled`   → `retrying` (transient — supersedes a
+ *                               preceding `step_failed` for the same step)
+ *  - `wait_scheduled`         → `waiting`
+ *  - `wait_for_event_timed_out` → `timed_out`
  *
  * Capture rows are keyed by the `step_started` sequence — when present, the
  * row carries the redacted input/output snapshot for the Input/Output panes.
  *
- * Pure; safe to call on every render.
+ * The `WorkflowRunEventType` union is treated as **open**: any unknown
+ * future terminator falls through and the row stays `running` rather than
+ * crashing. Pure; safe to call on every render.
  */
 export function buildTimeline(
   events: readonly WorkflowRunEvent[],
@@ -27,23 +36,61 @@ export function buildTimeline(
     const e = events[i]!;
     if (e.eventType !== "step_started") continue;
 
-    const term = events
-      .slice(i + 1)
-      .find(
-        (x) =>
-          x.stepIndex === e.stepIndex &&
-          (x.eventType === "step_completed" ||
-            x.eventType === "step_failed" ||
-            x.eventType === "wait_scheduled")
-      );
+    // Find the first event after `step_started` that targets the same
+    // `stepIndex` and is one of the recognised terminators. A
+    // `step_failed` followed by a `step_retry_scheduled` for the same step
+    // is treated as transient — the retry event becomes the terminator and
+    // the failure is folded into the `retrying` row.
+    const term = events.slice(i + 1).find(
+      (x) =>
+        x.stepIndex === e.stepIndex &&
+        (x.eventType === "step_completed" ||
+          x.eventType === "step_failed" ||
+          x.eventType === "step_retry_scheduled" ||
+          x.eventType === "wait_scheduled" ||
+          x.eventType === "wait_for_event_timed_out")
+    );
 
-    const status: WorkflowRunTimelineRow["status"] = !term
-      ? "running"
-      : term.eventType === "step_failed"
-        ? "error"
-        : term.eventType === "wait_scheduled"
-          ? "waiting"
-          : "success";
+    let status: WorkflowRunTimelineRow["status"] = "running";
+    let errorMessage: string | null = null;
+    let retry: WorkflowRunTimelineRow["retry"] | undefined;
+    let awaitingEventType: string | null | undefined;
+
+    if (term) {
+      const detail = (term.detail ?? {}) as Record<string, unknown>;
+      switch (term.eventType) {
+        case "step_completed":
+          status = "success";
+          break;
+        case "step_failed":
+          status = "error";
+          errorMessage = String(detail.error ?? "");
+          break;
+        case "step_retry_scheduled":
+          status = "retrying";
+          // Surface the failure that triggered this retry so users still
+          // see why the step is being retried. The preceding `step_failed`
+          // is intentionally suppressed as a final state.
+          errorMessage = String(detail.error ?? "");
+          retry = {
+            attempt: Number(detail.attempt ?? 0),
+            nextAttempt: Number(detail.nextAttempt ?? 0),
+            maxAttempts: Number(detail.maxAttempts ?? 0),
+            delayMs: Number(detail.delayMs ?? 0),
+            nextStepAt:
+              typeof detail.nextStepAt === "string" ? detail.nextStepAt : null,
+          };
+          break;
+        case "wait_scheduled":
+          status = "waiting";
+          break;
+        case "wait_for_event_timed_out":
+          status = "timed_out";
+          awaitingEventType =
+            typeof detail.eventType === "string" ? detail.eventType : null;
+          break;
+      }
+    }
 
     rows.push({
       sequence: e.sequence,
@@ -53,11 +100,10 @@ export function buildTimeline(
       startedAt: e.createdAt,
       completedAt: term?.createdAt ?? null,
       durationMs: term?.durationMs ?? null,
-      errorMessage:
-        term?.eventType === "step_failed"
-          ? String((term.detail as { error?: unknown } | null)?.error ?? "")
-          : null,
+      errorMessage,
       capture: byCaptureSeq.get(e.sequence) ?? null,
+      ...(retry ? { retry } : {}),
+      ...(awaitingEventType !== undefined ? { awaitingEventType } : {}),
     });
   }
 
