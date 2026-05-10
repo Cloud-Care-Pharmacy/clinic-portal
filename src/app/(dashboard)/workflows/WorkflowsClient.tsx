@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   DataGrid,
   type GridColDef,
@@ -15,6 +15,7 @@ import {
   Plus,
   SlidersHorizontal,
   Trash2,
+  Upload,
   Workflow as WorkflowIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,9 +52,12 @@ import {
   WorkflowApiError,
 } from "@/lib/hooks/use-workflows";
 import type {
+  CreateWorkflowPayload,
   Workflow,
   WorkflowsListResponse,
   WorkflowStatus,
+  WorkflowTrigger,
+  WorkflowDefinitionBody,
 } from "@/types";
 
 interface WorkflowsClientProps {
@@ -115,6 +119,63 @@ function triggerSummary(w: Workflow): string {
     .join(" · ");
 }
 
+interface ImportedWorkflowFields {
+  name: string;
+  description?: string | null;
+  triggerEventType?: string;
+  triggers?: WorkflowTrigger[];
+  definition: WorkflowDefinitionBody;
+}
+
+function normalizeImportedWorkflow(raw: unknown): ImportedWorkflowFields {
+  if (!raw || typeof raw !== "object") {
+    throw new Error("File is not a JSON object.");
+  }
+  // Accept either `{ success, data: Workflow }` (API response) or a bare
+  // Workflow / CreateWorkflowPayload shape.
+  const root = raw as Record<string, unknown>;
+  const candidate =
+    root.data && typeof root.data === "object"
+      ? (root.data as Record<string, unknown>)
+      : root;
+
+  const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+  if (!name) {
+    throw new Error("Missing required field: name");
+  }
+
+  const definition = candidate.definition;
+  if (
+    !definition ||
+    typeof definition !== "object" ||
+    !Array.isArray((definition as { steps?: unknown }).steps)
+  ) {
+    throw new Error("Missing or invalid field: definition.steps");
+  }
+
+  const triggers = Array.isArray(candidate.triggers)
+    ? (candidate.triggers as WorkflowTrigger[])
+    : undefined;
+
+  const description =
+    typeof candidate.description === "string" || candidate.description === null
+      ? (candidate.description as string | null | undefined)
+      : undefined;
+
+  const triggerEventType =
+    typeof candidate.triggerEventType === "string"
+      ? candidate.triggerEventType
+      : undefined;
+
+  return {
+    name,
+    description,
+    triggerEventType,
+    triggers,
+    definition: definition as WorkflowDefinitionBody,
+  };
+}
+
 function ActionsCell({
   onView,
   onCopyId,
@@ -172,6 +233,7 @@ export function WorkflowsClient({
     DEFAULT_COLUMN_VISIBILITY
   );
   const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const workflows = useMemo(() => data?.data ?? [], [data]);
 
@@ -316,6 +378,50 @@ export function WorkflowsClient({
     push(`/workflows/${params.row.id}`);
   }
 
+  async function handleImportFile(file: File) {
+    let parsed: unknown;
+    try {
+      const text = await file.text();
+      parsed = JSON.parse(text);
+    } catch {
+      toast.error("Invalid JSON file");
+      return;
+    }
+
+    let fields: ImportedWorkflowFields;
+    try {
+      fields = normalizeImportedWorkflow(parsed);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Invalid workflow JSON"
+      );
+      return;
+    }
+
+    const payload: CreateWorkflowPayload = {
+      entityId,
+      name: fields.name,
+      description: fields.description ?? null,
+      // Always import as a draft so backend activation rules don't block.
+      status: "draft",
+      triggers: fields.triggers,
+      triggerEventType: fields.triggerEventType,
+      definition: fields.definition,
+    };
+
+    try {
+      const res = await create.mutateAsync(payload);
+      toast.success("Workflow imported");
+      push(`/workflows/${res.data.id}`);
+    } catch (err) {
+      const message =
+        err instanceof WorkflowApiError
+          ? err.message
+          : "Failed to import workflow";
+      toast.error(message);
+    }
+  }
+
   async function handleCreate() {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -383,6 +489,16 @@ export function WorkflowsClient({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={create.isPending}
+          >
+            <Upload className="mr-2 size-4" />
+            Import
+          </Button>
           <Button size="sm" className="h-9" onClick={() => setCreateOpen(true)}>
             <Plus className="mr-2 size-4" />
             New workflow
@@ -399,6 +515,18 @@ export function WorkflowsClient({
 
   return (
     <div className="space-y-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // Reset so re-selecting the same file fires onChange again.
+          e.target.value = "";
+          if (file) void handleImportFile(file);
+        }}
+      />
       <PageHeader
         title="Workflows"
         description="Author and monitor automated flows for this clinic."
