@@ -12,7 +12,9 @@ export const NODE_H = 70;
 // ActivePieces sizing for the inline "+" buttons and arc geometry — keeping
 // these aligned exactly so the loop edge visuals are pixel-identical.
 export const ADD_BUTTON_SIZE = 20;
-export const BIG_ADD_BUTTON_SIZE = 50;
+// Placeholder `+` rendered in empty router branches / loop bodies. Sized to
+// match the inline edge `+` button so the visual weight is consistent.
+export const BIG_ADD_BUTTON_SIZE = ADD_BUTTON_SIZE;
 
 export const VERTICAL_SPACE_BETWEEN_STEPS = 70;
 export const HORIZONTAL_SPACE_BETWEEN_NODES = 80;
