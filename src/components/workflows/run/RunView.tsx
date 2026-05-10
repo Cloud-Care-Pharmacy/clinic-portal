@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -10,6 +10,7 @@ import {
   CircleDashed,
   AlertTriangle,
   Filter,
+  Radio,
 } from "lucide-react";
 import { formatDistanceToNowStrict, format as formatDate } from "date-fns";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -29,6 +30,7 @@ import type {
   WorkflowRunDetailResponse,
   WorkflowRunEvent,
   WorkflowRunsListResponse,
+  WorkflowStep,
   WorkflowStepKind,
 } from "@/types";
 
@@ -83,6 +85,20 @@ const STATUS_TONE = {
 } as const;
 
 type StepStatus = keyof typeof STATUS_TONE;
+
+/**
+ * Re-render at a fixed cadence while `enabled`. Used by the "elapsed" counter
+ * on the currently-running step so it ticks forward between SSE events.
+ */
+function useNow(intervalMs: number, enabled: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!enabled) return;
+    const id = window.setInterval(() => setNow(Date.now()), intervalMs);
+    return () => window.clearInterval(id);
+  }, [enabled, intervalMs]);
+  return now;
+}
 
 function shortId(id: string) {
   return id.slice(0, 8);
@@ -260,30 +276,46 @@ function RunMetric({ label, children }: RunMetricProps) {
 }
 
 interface RunStepCardProps {
-  event: WorkflowRunEvent;
+  /** Present once the run has emitted any event for this step. */
+  event: WorkflowRunEvent | null;
+  /** Step kind from the workflow definition (always known). */
+  kind: WorkflowStepKind | null;
+  /** Top-level step index, used for the `#N` badge. */
+  stepIndex: number;
   status: StepStatus;
   duration: string;
+  /**
+   * When provided overrides `duration` and re-renders on each tick — used for
+   * the currently-running step so the elapsed counter feels live.
+   */
+  liveElapsedMs?: number | null;
   context: Record<string, unknown> | null;
   isLast: boolean;
 }
 
 function RunStepCard({
   event,
+  kind,
+  stepIndex,
   status,
   duration,
+  liveElapsedMs,
   context,
   isLast,
 }: RunStepCardProps) {
   const [expanded, setExpanded] = useState(false);
   const tone = STATUS_TONE[status];
   const ToneIcon = tone.Icon;
-  const cfg = event.stepKind
-    ? STEP_KIND_CONFIG[event.stepKind as WorkflowStepKind]
-    : undefined;
+  const cfg = kind ? STEP_KIND_CONFIG[kind] : undefined;
   const StepIcon = cfg?.icon;
 
-  const detail = (event.detail ?? {}) as Record<string, unknown>;
+  const detail = (event?.detail ?? {}) as Record<string, unknown>;
   const error = typeof detail.error === "string" ? detail.error : undefined;
+
+  const isRunning = status === "running";
+  const isPending = status === "pending";
+  const displayDuration =
+    liveElapsedMs != null ? fmtDuration(liveElapsedMs) : duration;
 
   return (
     <div className="relative flex gap-3">
@@ -294,6 +326,9 @@ function RunStepCard({
             color: tone.fg,
             border: `2px solid ${tone.border}`,
             animation: tone.pulse ? "wf-pulse 1.5s infinite" : undefined,
+            boxShadow: isRunning
+              ? `0 0 0 4px color-mix(in oklab, ${tone.border} 35%, transparent)`
+              : undefined,
           }}
           className="z-10 grid size-7 place-items-center rounded-full motion-reduce:animate-none"
         >
@@ -304,13 +339,27 @@ function RunStepCard({
       <div className="flex-1 pb-4">
         <button
           type="button"
-          onClick={() => setExpanded((e) => !e)}
+          onClick={() => !isPending && setExpanded((e) => !e)}
+          disabled={isPending && !event}
+          aria-disabled={isPending && !event}
+          style={
+            isRunning
+              ? {
+                  borderColor: tone.border,
+                  backgroundImage: `linear-gradient(110deg, transparent 30%, color-mix(in oklab, ${tone.border} 18%, transparent) 50%, transparent 70%)`,
+                  backgroundSize: "200% 100%",
+                  animation: "wf-shimmer 2s linear infinite",
+                }
+              : undefined
+          }
           className={cn(
             "flex w-full flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-left transition-colors",
-            status === "running"
+            isRunning
               ? "bg-popover"
-              : "bg-card",
-            "border-border hover:border-foreground/20"
+              : isPending
+                ? "border-dashed bg-card/60"
+                : "bg-card border-border hover:border-foreground/20",
+            isPending && "cursor-default opacity-70"
           )}
         >
           <div className="flex items-center gap-2.5">
@@ -321,18 +370,19 @@ function RunStepCard({
                   color: cfg.fg,
                   border: `1px solid ${cfg.border}`,
                 }}
-                className="grid size-5.5 place-items-center rounded-md shrink-0"
+                className={cn(
+                  "grid size-5.5 place-items-center rounded-md shrink-0",
+                  isPending && "opacity-60"
+                )}
               >
                 <StepIcon className="size-3" />
               </span>
             )}
             <div className="min-w-0 flex-1 text-sm font-semibold">
-              {cfg?.label ?? event.eventType}
-              {event.stepIndex != null && (
-                <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">
-                  #{event.stepIndex + 1}
-                </span>
-              )}
+              {cfg?.label ?? event?.eventType ?? "Step"}
+              <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">
+                #{stepIndex + 1}
+              </span>
             </div>
             <span
               style={{
@@ -344,14 +394,15 @@ function RunStepCard({
             >
               {tone.label}
             </span>
-            <span className="min-w-14 text-right font-mono text-[11px] text-muted-foreground">
-              {duration}
+            <span className="min-w-14 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+              {displayDuration}
             </span>
-            {expanded ? (
-              <ChevronDown className="size-3.5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="size-3.5 text-muted-foreground" />
-            )}
+            {!isPending &&
+              (expanded ? (
+                <ChevronDown className="size-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="size-3.5 text-muted-foreground" />
+              ))}
           </div>
 
           {error && (
@@ -360,7 +411,7 @@ function RunStepCard({
             </div>
           )}
 
-          {expanded && (
+          {expanded && event && (
             <div className="mt-2 ml-8 flex flex-col gap-2">
               {Object.keys(detail).length > 0 && (
                 <JsonBlock title="Detail" data={detail} />
@@ -397,11 +448,12 @@ function JsonBlock({
 
 interface RunDetailProps {
   runId: string | null;
-  totalSteps: number;
+  /** Top-level steps from the workflow definition (used to pre-fill the trace). */
+  topLevelSteps: WorkflowStep[];
   initial?: WorkflowRunDetailResponse;
 }
 
-function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
+function RunDetail({ runId, topLevelSteps, initial }: RunDetailProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "", initial);
 
@@ -409,6 +461,9 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
   // reconnect on `max-duration`; we mirror live `run`/`step` events into the
   // cached run detail so the timeline updates without polling.
   const isLive = data?.data?.run?.status === "running";
+  // Tick every 500ms while live so the elapsed counter on the active step
+  // moves between SSE events.
+  const now = useNow(500, Boolean(isLive));
   useWorkflowRunStream(runId, Boolean(runId) && isLive, {
     onRun: (run) => {
       queryClient.setQueryData<WorkflowRunDetailResponse>(
@@ -501,27 +556,113 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
         return isTerminal ? "done" : "running";
     }
   }
-  const stepEntries = [...byStep.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([idx, event]) => [idx, { event, status: statusFor(event) }] as const);
 
-  // Step counter: total comes from the workflow definition (audit events
-  // alone over- or under-count). For terminal runs we display N/N; for live
-  // runs we clamp to the known total so we never show e.g. "3 / 2".
-  const stepDenominator = totalSteps > 0 ? totalSteps : stepEntries.length;
-  const stepNumerator = isTerminal
-    ? stepDenominator
-    : Math.min(run.currentStep + 1, stepDenominator || run.currentStep + 1);
+  // Pre-fill: render one row per step in the workflow definition so the
+  // timeline appears deterministic from the first paint. Steps without an
+  // event yet are shown in a `pending` (dashed, dimmed) state — and as
+  // `step` events stream in they swap to running/done/failed in place.
+  type StepRow = {
+    stepIndex: number;
+    kind: WorkflowStepKind | null;
+    event: WorkflowRunEvent | null;
+    status: StepStatus;
+  };
+  const definitionRows: StepRow[] = topLevelSteps.map((step, idx) => {
+    const ev = byStep.get(idx) ?? null;
+    return {
+      stepIndex: idx,
+      kind: step.kind as WorkflowStepKind,
+      event: ev,
+      status: ev ? statusFor(ev) : "pending",
+    };
+  });
+  // Fallback when we don't have a definition (e.g. during loading) — fall
+  // back to the audit-trail derived list so we still render *something*.
+  const auditRows: StepRow[] = [...byStep.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([idx, event]) => ({
+      stepIndex: idx,
+      kind: (event.stepKind as WorkflowStepKind | undefined) ?? null,
+      event,
+      status: statusFor(event),
+    }));
+  const stepRows: StepRow[] =
+    definitionRows.length > 0 ? definitionRows : auditRows;
+
+  // Compute the running step's live elapsed: time since its `step_started`
+  // event was emitted. Used only when the run is still live.
+  function liveElapsedMsFor(row: StepRow): number | null {
+    if (!isLive || row.status !== "running" || !row.event) return null;
+    const startedAt = parseUtcMs(row.event.createdAt);
+    return Math.max(0, now - startedAt);
+  }
+
+  // Progress: completed/failed/waiting all count as "passed"; pending and
+  // running do not. Clamp to total in case we ever overshoot.
+  const total = stepRows.length;
+  const completed = stepRows.filter(
+    (r) => r.status === "done" || r.status === "failed" || r.status === "waiting"
+  ).length;
+  const stepNumerator = isTerminal ? total : Math.min(completed, total);
+  const stepDenominator = total || 0;
+  const progressPct = total > 0 ? (completed / total) * 100 : 0;
+  const hasRunningStep = stepRows.some((r) => r.status === "running");
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
+      {/* Top progress bar — fills as steps complete; an indeterminate sweep
+          overlays it whenever a step is mid-flight so the user sees motion
+          even between completions. */}
+      {total > 0 && (
+        <div
+          className="mb-4 h-1 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={stepNumerator}
+          aria-label="Run progress"
+        >
+          <div
+            className="relative h-full bg-status-success-fg transition-[width] duration-500 ease-out"
+            style={{ width: `${progressPct}%` }}
+          >
+            {hasRunningStep && (
+              <span
+                aria-hidden
+                className="absolute inset-y-0 right-0 w-1/3 motion-reduce:hidden"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--status-success-fg) 65%, white) 50%, transparent)",
+                  animation: "wf-progress-indeterminate 1.4s linear infinite",
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mb-5 flex gap-3">
         <RunMetric label="Status">
-          <StatusBadge status={run.status} dot className="capitalize" />
+          <div className="flex items-center gap-2">
+            <StatusBadge status={run.status} dot className="capitalize" />
+            {isLive && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
+                aria-label="Live stream connected"
+                title="Streaming live updates"
+              >
+                <Radio
+                  className="size-2.5 motion-reduce:animate-none"
+                  style={{ animation: "wf-pulse 1.5s infinite" }}
+                />
+                Live
+              </span>
+            )}
+          </div>
         </RunMetric>
         <RunMetric label="Duration">{runDuration(run)}</RunMetric>
         <RunMetric label="Step">
-          <span className="font-mono text-sm">
+          <span className="font-mono text-sm tabular-nums">
             {stepNumerator}
             <span className="text-muted-foreground"> / {stepDenominator || "?"}</span>
           </span>
@@ -560,21 +701,24 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
 
       <h3 className="mb-3 text-sm font-semibold">Step trace</h3>
 
-      {stepEntries.length === 0 ? (
+      {stepRows.length === 0 ? (
         <EmptyState
           title="No step events yet"
           description="Steps will appear here as the run progresses."
         />
       ) : (
         <div className="flex flex-col">
-          {stepEntries.map(([, { event, status }], i) => (
+          {stepRows.map((row, i) => (
             <RunStepCard
-              key={`${event.stepIndex}-${event.eventType}`}
-              event={event}
-              status={status}
-              duration={fmtDuration(event.durationMs)}
-              context={i === stepEntries.length - 1 ? run.context : null}
-              isLast={i === stepEntries.length - 1}
+              key={row.stepIndex}
+              event={row.event}
+              kind={row.kind}
+              stepIndex={row.stepIndex}
+              status={row.status}
+              duration={fmtDuration(row.event?.durationMs)}
+              liveElapsedMs={liveElapsedMsFor(row)}
+              context={i === stepRows.length - 1 ? run.context : null}
+              isLast={i === stepRows.length - 1}
             />
           ))}
         </div>
@@ -586,7 +730,11 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
 export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps) {
   const { data, isLoading } = useWorkflowRuns(workflowId, { limit: 50 }, initialRuns);
   const { data: workflowData } = useWorkflow(workflowId);
-  const totalSteps = workflowData?.data.definition.steps.length ?? 0;
+  // Top-level steps drive the pre-filled trace; nested steps (children of
+  // routers / loops) live under their parent in the flat array and are
+  // surfaced when the parent expands, so we filter them out here.
+  const topLevelSteps =
+    workflowData?.data.definition.steps.filter((s) => !s.parentStepName) ?? [];
   const runs = data?.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(
     initialRunId ?? runs[0]?.id ?? null
@@ -605,7 +753,7 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
         onSelect={setSelectedId}
         loading={isLoading}
       />
-      <RunDetail runId={selectedId} totalSteps={totalSteps} />
+      <RunDetail runId={selectedId} topLevelSteps={topLevelSteps} />
     </div>
   );
 }

@@ -328,8 +328,22 @@
   50% { opacity: 0.45; }
 }
 
+/* Horizontal sweep used by the live run-step card to convey activity */
+@keyframes wf-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Indeterminate sweep for the run progress bar while a step is in flight */
+@keyframes wf-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  [style*="wf-pulse"] {
+  [style*="wf-pulse"],
+  [style*="wf-shimmer"],
+  [style*="wf-progress-indeterminate"] {
     animation: none !important;
   }
 }
