@@ -491,9 +491,11 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
       case "step_failed":
         return "failed";
       case "wait_scheduled":
-        return run.status === "waiting" && run.currentStep === e.stepIndex
-          ? "waiting"
-          : "done";
+        // `run.currentStep` is the *next* step pointer (advanced past the
+        // wait), so it's not safe to gate on stepIndex equality. Whenever
+        // the run itself is parked, the latest `wait_scheduled` represents
+        // an in-flight wait; otherwise it has elapsed and the step is done.
+        return run.status === "waiting" ? "waiting" : "done";
       case "step_started":
       default:
         return isTerminal ? "done" : "running";
