@@ -388,7 +388,7 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
       isLoopEmpty,
       verticalSpan: childBox.height + VERTICAL_SPACE_BETWEEN_STEPS,
       horizontalSpan: childBox.right + ARC_LENGTH,
-      drawArrowAfterEnd: true,
+      drawArrowAfterEnd: loop.nextAction !== null,
     } as WfLoopReturnEdgeData,
   };
 

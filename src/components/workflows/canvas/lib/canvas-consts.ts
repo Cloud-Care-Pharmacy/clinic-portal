@@ -9,21 +9,43 @@
 export const NODE_W = 240;
 export const NODE_H = 70;
 
-export const ADD_BUTTON_SIZE = 18;
+// ActivePieces sizing for the inline "+" buttons and arc geometry — keeping
+// these aligned exactly so the loop edge visuals are pixel-identical.
+export const ADD_BUTTON_SIZE = 20;
 export const BIG_ADD_BUTTON_SIZE = 50;
 
 export const VERTICAL_SPACE_BETWEEN_STEPS = 70;
 export const HORIZONTAL_SPACE_BETWEEN_NODES = 80;
 
-export const VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD = 90;
-export const VERTICAL_OFFSET_BETWEEN_ROUTER_AND_CHILD = 110;
-export const VERTICAL_SPACE_BETWEEN_STEP_AND_LINE = 6;
+export const ARC_LENGTH = 15;
+export const VERTICAL_SPACE_BETWEEN_STEP_AND_LINE = 7;
 
-export const ARC_LENGTH = 14;
+// AP formula: VSPACE * 1.5 + 2 * ARC. Keeps loop-body breathing room
+// proportional to the inter-step spacing.
+export const VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD =
+  VERTICAL_SPACE_BETWEEN_STEPS * 1.5 + 2 * ARC_LENGTH;
+export const VERTICAL_OFFSET_BETWEEN_ROUTER_AND_CHILD =
+  VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD + 30;
+
 export const LABEL_HEIGHT = 22;
 export const LABEL_VERTICAL_PADDING = 6;
-export const LINE_WIDTH = 1.4;
+export const LINE_WIDTH = 1.5;
 
+// SVG arc fragments matching ActivePieces (`flow-canvas/utils/consts.ts`).
+// All four are quarter-circles of radius ARC_LENGTH.
+export const ARC_LEFT = `a${ARC_LENGTH},${ARC_LENGTH} 0 0,0 -${ARC_LENGTH},${ARC_LENGTH}`;
+export const ARC_RIGHT = `a${ARC_LENGTH},${ARC_LENGTH} 0 0,1 ${ARC_LENGTH},${ARC_LENGTH}`;
+export const ARC_LEFT_DOWN = `a${ARC_LENGTH},${ARC_LENGTH} 0 0,1 -${ARC_LENGTH},${ARC_LENGTH}`;
+export const ARC_RIGHT_DOWN = `a${ARC_LENGTH},${ARC_LENGTH} 0 0,0 ${ARC_LENGTH},${ARC_LENGTH}`;
+export const ARC_RIGHT_UP = `a${ARC_LENGTH},${ARC_LENGTH} 0 0,1 -${ARC_LENGTH},-${ARC_LENGTH}`;
+
+// Inline chevrons drawn at the end of an SVG path (relative `m`/`l` cmds).
+// AP uses these instead of marker-end so the chevron color/width tracks the
+// stroke automatically. Verbatim from AP.
+export const ARROW_DOWN_CHEVRON = "m6 -6 l-6 6 m-6 -6 l6 6";
+export const ARROW_RIGHT_CHEVRON = " m-5 -6 l6 6  m-6 0 m6 0 l-6 6 m3 -6";
+
+// Legacy marker-end arrow (kept for non-loop edges that still rely on it).
 export const ARROW_DOWN_PATH = "M-5,-4 L0,1 L5,-4";
 
 export const HANDLE_STYLING = {
