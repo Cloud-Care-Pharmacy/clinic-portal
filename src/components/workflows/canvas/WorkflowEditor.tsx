@@ -181,35 +181,33 @@ export function WorkflowEditor({
         )}
       </div>
 
-      {paletteOpen && (
-        <NodePalette
-          initialTab={paletteTab}
-          onAddTrigger={addTrigger}
-          onAddStep={addStep}
-          onClose={() => {
-            setPaletteOpen(false);
-            setPendingInsertion(null);
-          }}
-        />
-      )}
+      <NodePalette
+        open={paletteOpen}
+        initialTab={paletteTab}
+        onAddTrigger={addTrigger}
+        onAddStep={addStep}
+        onClose={() => {
+          setPaletteOpen(false);
+          setPendingInsertion(null);
+        }}
+      />
 
-      {showInspector && selection && (
-        <NodeInspector
-          selection={selection}
-          triggers={triggers}
-          steps={steps}
-          onChangeTrigger={updateTrigger}
-          onChangeStep={updateStep}
-          onChangeTriggerKind={updateTriggerKind}
-          onMoveStep={moveStep}
-          onDeleteTrigger={deleteTrigger}
-          onDeleteStep={deleteStep}
-          onClose={() => setSelection(null)}
-          webhookBaseUrl={webhookBaseUrl}
-          otherWorkflows={otherWorkflows}
-          serverError={serverError}
-        />
-      )}
+      <NodeInspector
+        open={showInspector}
+        selection={selection}
+        triggers={triggers}
+        steps={steps}
+        onChangeTrigger={updateTrigger}
+        onChangeStep={updateStep}
+        onChangeTriggerKind={updateTriggerKind}
+        onMoveStep={moveStep}
+        onDeleteTrigger={deleteTrigger}
+        onDeleteStep={deleteStep}
+        onClose={() => setSelection(null)}
+        webhookBaseUrl={webhookBaseUrl}
+        otherWorkflows={otherWorkflows}
+        serverError={serverError}
+      />
     </div>
   );
 }
