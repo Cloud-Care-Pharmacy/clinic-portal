@@ -68,6 +68,9 @@ const generalNav: NavItem[] = [
     href: "/rosters",
     icon: <CalendarClock className="size-5 " />,
   },
+];
+
+const operationsNav: NavItem[] = [
   {
     label: "Workflows",
     href: "/workflows",
@@ -224,6 +227,7 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       {/* Navigation */}
       <nav className="flex-1 space-y-6 py-4">
         <NavGroup title="General" items={generalNav} collapsed={collapsed} />
+        <NavGroup title="Operations" items={operationsNav} collapsed={collapsed} />
         {filteredCatalog.length > 0 && (
           <NavGroup title="Catalog" items={filteredCatalog} collapsed={collapsed} />
         )}
