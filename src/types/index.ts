@@ -1623,7 +1623,33 @@ export type WorkflowStepKind =
   | "wait_for_event"
   | "call_workflow";
 
-export type WorkflowBranchOp = "eq" | "neq" | "truthy" | "falsy" | "gt" | "lt";
+export type WorkflowBranchOp =
+  | "eq"
+  | "neq"
+  | "truthy"
+  | "falsy"
+  | "gt"
+  | "lt"
+  | "contains"
+  | "starts_with"
+  | "ends_with"
+  | "exists"
+  | "not_exists";
+
+/** Operators that don't take a `right` operand. */
+export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set([
+  "truthy",
+  "falsy",
+  "exists",
+  "not_exists",
+]);
+
+/** A single condition clause used inside router branches. */
+export interface WorkflowCondition {
+  left: string;
+  op: WorkflowBranchOp;
+  right?: string;
+}
 
 interface WorkflowStepBase {
   id?: string;
@@ -1644,12 +1670,12 @@ interface WorkflowStepBase {
 /** A named branch of a router step. Each branch is a chain of child steps. */
 export interface WorkflowRouterBranch {
   name: string;
-  /** Optional condition expression. Empty branch acts as the "default" arm. */
-  condition?: {
-    left: string;
-    op: WorkflowBranchOp;
-    right?: string;
-  };
+  /**
+   * Single condition expression (legacy/simple form). The wire format is
+   * OR-of-AND `Condition[][]`; this single condition is wrapped as
+   * `[[condition]]` when serialized. Empty branch acts as the "default" arm.
+   */
+  condition?: WorkflowCondition;
 }
 
 export interface RouterStep extends WorkflowStepBase {
@@ -1657,11 +1683,20 @@ export interface RouterStep extends WorkflowStepBase {
   /** Branch definitions; each child step references one by `branchIndex`. */
   branches: WorkflowRouterBranch[];
   /**
+   * Optional fallback branch that runs only when no condition branch
+   * matches. Its body steps live in the flat array with
+   * `branchIndex = FALLBACK_BRANCH_INDEX`.
+   */
+  fallback?: { name?: string };
+  /**
    * Whether to evaluate every branch (`all_match`) or stop at the first
    * matching branch (`first_match`). Defaults to `first_match`.
    */
   executionType?: "first_match" | "all_match";
 }
+
+/** Sentinel `branchIndex` used to mark steps that belong to the router fallback. */
+export const FALLBACK_BRANCH_INDEX = -1;
 
 export interface LoopOnItemsStep extends WorkflowStepBase {
   kind: "loop_on_items";
@@ -1742,11 +1777,47 @@ export interface LookupConsultationStep extends WorkflowStepBase {
   storeAs: string;
 }
 
+/**
+ * Allowed `record_activity.type` values per the workflows backend handoff.
+ * Stricter than the read-side `ActivityEventType` (which includes additional
+ * activity types emitted directly by the API).
+ */
+export const RECORD_ACTIVITY_STEP_TYPES = [
+  "consultation-scheduled",
+  "consultation-completed",
+  "consultation-updated",
+  "note-added",
+  "prescription-issued",
+  "document-uploaded",
+  "document-verified",
+  "flag-raised",
+  "flag-resolved",
+  "patient-created",
+  "details-updated",
+  "task-created",
+  "task-updated",
+  "task-completed",
+] as const;
+export type RecordActivityStepType = (typeof RECORD_ACTIVITY_STEP_TYPES)[number];
+
+export const RECORD_ACTIVITY_STEP_ENTITY_TYPES = [
+  "consultation",
+  "note",
+  "prescription",
+  "document",
+  "task",
+  "patient",
+  "flag",
+  "system",
+] as const;
+export type RecordActivityStepEntityType =
+  (typeof RECORD_ACTIVITY_STEP_ENTITY_TYPES)[number];
+
 export interface RecordActivityStep extends WorkflowStepBase {
   kind: "record_activity";
   patientId: string;
-  type: string;
-  entityType: string;
+  type: RecordActivityStepType;
+  entityType: RecordActivityStepEntityType;
   entityId?: string;
   title: string;
   description?: string;

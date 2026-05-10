@@ -168,7 +168,7 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
   branch_if: fam("branch", {
     label: "Branch (if/else)",
     shortLabel: "Branch",
-    description: "Conditional jump to another step",
+    description: "Legacy conditional jump — use Router for new flows",
     icon: GitBranch,
   }),
   router: fam("branch", {

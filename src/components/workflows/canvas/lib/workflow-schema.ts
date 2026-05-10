@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  RECORD_ACTIVITY_STEP_ENTITY_TYPES,
+  RECORD_ACTIVITY_STEP_TYPES,
+} from "@/types";
 
 /**
  * Mirror of the server-side validation rules from the handoff §8. The server
@@ -122,14 +126,54 @@ const waitForEventStep = z.object({
   timeoutSeconds: z.number().int().min(1).max(2_592_000).optional(),
 });
 
+const branchOpEnum = z.enum([
+  "eq",
+  "neq",
+  "truthy",
+  "falsy",
+  "gt",
+  "lt",
+  "contains",
+  "starts_with",
+  "ends_with",
+  "exists",
+  "not_exists",
+]);
+
 const branchIfStep = z.object({
   ...baseStep,
   kind: z.literal("branch_if"),
   left: templateString,
-  op: z.enum(["eq", "neq", "truthy", "falsy", "gt", "lt"]),
+  op: branchOpEnum,
   right: z.string().max(8192).optional(),
   gotoIfTrue: stepIdRefinement.optional(),
   gotoIfFalse: stepIdRefinement.optional(),
+});
+
+const routerBranchSchema = z.object({
+  name: z.string().min(1).max(100),
+  condition: z
+    .object({
+      left: templateString,
+      op: branchOpEnum,
+      right: z.string().max(8192).optional(),
+    })
+    .optional(),
+});
+
+const routerStep = z.object({
+  ...baseStep,
+  kind: z.literal("router"),
+  branches: z.array(routerBranchSchema).min(1).max(10),
+  fallback: z.object({ name: z.string().max(100).optional() }).optional(),
+  executionType: z.enum(["first_match", "all_match"]).optional(),
+});
+
+const loopOnItemsStep = z.object({
+  ...baseStep,
+  kind: z.literal("loop_on_items"),
+  items: templateString,
+  maxIterations: z.number().int().min(1).max(1000).optional(),
 });
 
 const lookupPatientStep = z.object({
@@ -150,8 +194,8 @@ const recordActivityStep = z.object({
   ...baseStep,
   kind: z.literal("record_activity"),
   patientId: templateString,
-  type: z.string().min(1).max(64),
-  entityType: z.string().min(1).max(64),
+  type: z.enum(RECORD_ACTIVITY_STEP_TYPES),
+  entityType: z.enum(RECORD_ACTIVITY_STEP_ENTITY_TYPES),
   entityId: z.string().max(8192).optional(),
   title: templateString,
   description: z.string().max(8192).optional(),
@@ -197,6 +241,8 @@ export const stepSchema = z.discriminatedUnion("kind", [
   waitStep,
   waitForEventStep,
   branchIfStep,
+  routerStep,
+  loopOnItemsStep,
   lookupPatientStep,
   lookupConsultationStep,
   recordActivityStep,

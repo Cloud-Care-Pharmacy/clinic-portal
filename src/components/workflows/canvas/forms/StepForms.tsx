@@ -11,6 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field, TemplatedField } from "./Field";
+import {
+  RECORD_ACTIVITY_STEP_ENTITY_TYPES,
+  RECORD_ACTIVITY_STEP_TYPES,
+  UNARY_BRANCH_OPS,
+  type RecordActivityStepEntityType,
+  type RecordActivityStepType,
+} from "@/types";
 import type {
   BranchIfStep,
   CallWorkflowStep,
@@ -599,18 +606,46 @@ function RecordActivityForm(props: StepFormProps<RecordActivityStep>) {
         error={errors?.patientId}
       />
       <Field label="Type" error={errors?.type}>
-        <Input
+        <Select
           value={step.type ?? ""}
-          onChange={(e) => onChange({ ...step, type: e.target.value })}
-          placeholder="note"
-        />
+          onValueChange={(v) => {
+            if (v) onChange({ ...step, type: v as RecordActivityStepType });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select activity type" />
+          </SelectTrigger>
+          <SelectContent>
+            {RECORD_ACTIVITY_STEP_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
       <Field label="Entity type" error={errors?.entityType}>
-        <Input
+        <Select
           value={step.entityType ?? ""}
-          onChange={(e) => onChange({ ...step, entityType: e.target.value })}
-          placeholder="patient"
-        />
+          onValueChange={(v) => {
+            if (v)
+              onChange({
+                ...step,
+                entityType: v as RecordActivityStepEntityType,
+              });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select entity type" />
+          </SelectTrigger>
+          <SelectContent>
+            {RECORD_ACTIVITY_STEP_ENTITY_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </Field>
       <TemplatedField
         label="Title"
@@ -894,7 +929,19 @@ function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
   );
 }
 
-const ROUTER_OPS: WorkflowBranchOp[] = ["eq", "neq", "gt", "lt", "truthy", "falsy"];
+const ROUTER_OPS: WorkflowBranchOp[] = [
+  "eq",
+  "neq",
+  "gt",
+  "lt",
+  "contains",
+  "starts_with",
+  "ends_with",
+  "truthy",
+  "falsy",
+  "exists",
+  "not_exists",
+];
 
 function RouterForm(props: StepFormProps<RouterStep>) {
   const { step, onChange, errors } = props;
@@ -963,7 +1010,7 @@ function RouterForm(props: StepFormProps<RouterStep>) {
 
         {branches.map((branch, idx) => {
           const op = branch.condition?.op;
-          const isUnary = op === "truthy" || op === "falsy";
+          const isUnary = op ? UNARY_BRANCH_OPS.has(op) : false;
           const branchErr = errors?.[`branches.${idx}.name`];
           return (
             <div
@@ -1193,7 +1240,7 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
       return {
         kind: "record_activity",
         patientId: "",
-        type: "note",
+        type: "note-added",
         entityType: "patient",
         title: "",
       };
