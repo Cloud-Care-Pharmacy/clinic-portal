@@ -18,37 +18,68 @@ import type {
 
 // ---- Errors ----
 
+export interface WorkflowValidationIssue {
+  path: string;
+  message: string;
+}
+
 export class WorkflowApiError extends Error {
   readonly status: number;
   readonly path?: string;
   readonly fieldMessage?: string;
+  readonly issues?: WorkflowValidationIssue[];
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(
+    status: number,
+    message: string,
+    opts?: { issues?: WorkflowValidationIssue[]; code?: string }
+  ) {
     super(message);
     this.name = "WorkflowApiError";
     this.status = status;
-    // Backend uses a flat envelope `{ success:false, error:"path.to: message" }`
-    // for validation. Surface the dotted path so the inspector can highlight
-    // the offending field.
-    const colonIndex = message.indexOf(": ");
-    if (colonIndex > 0 && /^[\w.\-[\]]+$/.test(message.slice(0, colonIndex))) {
-      this.path = message.slice(0, colonIndex);
-      this.fieldMessage = message.slice(colonIndex + 2);
+    this.issues = opts?.issues;
+    this.code = opts?.code;
+    // Surface the first issue for inline field highlighting. Falls back to the
+    // legacy `"path.to: message"` envelope from older backend builds.
+    const first = opts?.issues?.[0];
+    if (first) {
+      this.path = first.path;
+      this.fieldMessage = first.message;
+    } else {
+      const colonIndex = message.indexOf(": ");
+      if (colonIndex > 0 && /^[\w.\-[\]]+$/.test(message.slice(0, colonIndex))) {
+        this.path = message.slice(0, colonIndex);
+        this.fieldMessage = message.slice(colonIndex + 2);
+      }
     }
   }
 }
 
 async function readError(res: Response, fallback: string) {
   let message = fallback;
+  let issues: WorkflowValidationIssue[] | undefined;
+  let code: string | undefined;
   try {
     const body = await res.json();
-    if (body && typeof body === "object" && typeof body.error === "string") {
-      message = body.error;
+    if (body && typeof body === "object") {
+      if (typeof body.error === "string") message = body.error;
+      if (typeof body.code === "string") code = body.code;
+      if (Array.isArray(body.issues)) {
+        const filtered = body.issues.filter(
+          (i: unknown): i is WorkflowValidationIssue =>
+            !!i &&
+            typeof i === "object" &&
+            typeof (i as WorkflowValidationIssue).path === "string" &&
+            typeof (i as WorkflowValidationIssue).message === "string"
+        );
+        if (filtered.length) issues = filtered;
+      }
     }
   } catch {
     // ignore
   }
-  return new WorkflowApiError(res.status, message);
+  return new WorkflowApiError(res.status, message, { issues, code });
 }
 
 // ---- Fetchers ----
@@ -64,19 +95,16 @@ async function fetchWorkflows(opts: ListOpts): Promise<WorkflowsListResponse> {
   const params = new URLSearchParams();
   if (opts.entityId) params.set("entityId", opts.entityId);
   if (opts.status) params.set("status", opts.status);
-  if (opts.triggerEventType)
-    params.set("triggerEventType", opts.triggerEventType);
+  if (opts.triggerEventType) params.set("triggerEventType", opts.triggerEventType);
   if (opts.limit) params.set("limit", String(opts.limit));
   const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await fetch(`/api/proxy/internal/workflows${qs}`);
+  const res = await fetch(`/api/proxy/workflows${qs}`);
   if (!res.ok) throw await readError(res, "Failed to load workflows");
   return res.json();
 }
 
 async function fetchWorkflow(workflowId: string): Promise<WorkflowResponse> {
-  const res = await fetch(
-    `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`
-  );
+  const res = await fetch(`/api/proxy/workflows/${encodeURIComponent(workflowId)}`);
   if (!res.ok) throw await readError(res, "Failed to load workflow");
   return res.json();
 }
@@ -102,20 +130,14 @@ export function workflowQueryOptions(workflowId: string) {
 
 // ---- Hooks ----
 
-export function useWorkflows(
-  opts: ListOpts = {},
-  initialData?: WorkflowsListResponse
-) {
+export function useWorkflows(opts: ListOpts = {}, initialData?: WorkflowsListResponse) {
   return useQuery({
     ...workflowsQueryOptions(opts),
     initialData,
   });
 }
 
-export function useWorkflow(
-  workflowId: string,
-  initialData?: WorkflowResponse
-) {
+export function useWorkflow(workflowId: string, initialData?: WorkflowResponse) {
   return useQuery({
     ...workflowQueryOptions(workflowId),
     initialData,
@@ -125,10 +147,8 @@ export function useWorkflow(
 export function useCreateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      payload: CreateWorkflowPayload
-    ): Promise<WorkflowResponse> => {
-      const res = await fetch(`/api/proxy/internal/workflows`, {
+    mutationFn: async (payload: CreateWorkflowPayload): Promise<WorkflowResponse> => {
+      const res = await fetch(`/api/proxy/workflows`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -145,11 +165,9 @@ export function useCreateWorkflow() {
 export function useUpdateWorkflow(workflowId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (
-      payload: UpdateWorkflowPayload
-    ): Promise<WorkflowResponse> => {
+    mutationFn: async (payload: UpdateWorkflowPayload): Promise<WorkflowResponse> => {
       const res = await fetch(
-        `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`,
+        `/api/proxy/workflows/${encodeURIComponent(workflowId)}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -171,7 +189,7 @@ export function useDeleteWorkflow() {
   return useMutation({
     mutationFn: async (workflowId: string): Promise<void> => {
       const res = await fetch(
-        `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}`,
+        `/api/proxy/workflows/${encodeURIComponent(workflowId)}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw await readError(res, "Failed to delete workflow");
@@ -189,7 +207,7 @@ export function useTriggerWorkflow() {
     mutationFn: async (
       payload: TriggerWorkflowPayload
     ): Promise<TriggerWorkflowResponse> => {
-      const res = await fetch(`/api/proxy/internal/workflows/trigger`, {
+      const res = await fetch(`/api/proxy/workflows/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

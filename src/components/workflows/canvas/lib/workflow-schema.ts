@@ -49,6 +49,38 @@ export const triggersSchema = z.array(triggerSchema).min(1).max(20);
 
 const baseStep = { id: stepIdRefinement.optional() };
 
+// Reserved email header names — backend rejects these in `headers`.
+const RESERVED_EMAIL_HEADERS = new Set([
+  "to",
+  "from",
+  "cc",
+  "bcc",
+  "reply-to",
+  "subject",
+  "idempotency-key",
+  "authorization",
+  "content-type",
+  "mime-version",
+  "message-id",
+  "date",
+]);
+
+const emailHeadersSchema = z
+  .record(z.string().min(1), z.string().max(8192))
+  .refine(
+    (h) => Object.keys(h).every((k) => !RESERVED_EMAIL_HEADERS.has(k.toLowerCase())),
+    {
+      message:
+        "Reserved header name — use the dedicated field (to/from/cc/bcc/replyTo/subject) instead",
+    }
+  )
+  .optional();
+
+const emailAttachmentSchema = z.object({
+  url: templateString,
+  filename: z.string().max(255).optional(),
+});
+
 const sendEmailStep = z.object({
   ...baseStep,
   kind: z.literal("send_email"),
@@ -57,7 +89,12 @@ const sendEmailStep = z.object({
   text: z.string().max(8192).optional(),
   html: z.string().max(8192).optional(),
   from: z.string().max(8192).optional(),
+  fromName: z.string().max(255).optional(),
+  cc: z.array(templateString).max(50).optional(),
+  bcc: z.array(templateString).max(50).optional(),
   replyTo: z.string().max(8192).optional(),
+  headers: emailHeadersSchema,
+  attachments: z.array(emailAttachmentSchema).max(10).optional(),
   idempotencyKeySuffix: z.string().max(255).optional(),
   storeAs: z.string().max(64).optional(),
 });
@@ -120,13 +157,28 @@ const recordActivityStep = z.object({
   description: z.string().max(8192).optional(),
 });
 
+const httpAuthSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("none") }),
+  z.object({
+    type: z.literal("basic"),
+    username: templateString,
+    password: templateString,
+  }),
+  z.object({ type: z.literal("bearer"), token: templateString }),
+]);
+
 const httpCallStep = z.object({
   ...baseStep,
   kind: z.literal("http_call"),
   url: templateString,
   method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
   headers: z.record(z.string(), z.string()).optional(),
-  body: z.string().max(8192).optional(),
+  queryParams: z.record(z.string(), z.string()).optional(),
+  auth: httpAuthSchema.optional(),
+  body: z.union([z.string().max(8192), z.record(z.string(), z.unknown())]).optional(),
+  timeoutMs: z.number().int().min(100).max(60_000).optional(),
+  followRedirects: z.boolean().optional(),
+  failureMode: z.enum(["throw", "return"]).optional(),
   storeAs: stepIdRefinement.optional(),
   maxResponseBytes: z.number().int().min(1).max(65_536).optional(),
 });

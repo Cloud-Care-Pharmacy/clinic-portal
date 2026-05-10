@@ -88,7 +88,7 @@ export function ManualTriggerForm() {
     <p className="text-sm text-muted-foreground">
       Manual triggers fire only when the <strong>Test run</strong> button or the{" "}
       <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-        /internal/workflows/trigger
+        /workflows/trigger
       </code>{" "}
       API is invoked.
     </p>
@@ -159,8 +159,7 @@ export function ScheduleTriggerForm({
   );
 }
 
-interface WebhookTriggerFormProps
-  extends TriggerFormProps<WorkflowWebhookTrigger> {
+interface WebhookTriggerFormProps extends TriggerFormProps<WorkflowWebhookTrigger> {
   webhookBaseUrl?: string;
 }
 
@@ -286,7 +285,10 @@ interface TriggerKindSelectProps {
 
 export function TriggerKindSelect({ value, onChange }: TriggerKindSelectProps) {
   return (
-    <Select value={value} onValueChange={(v) => v && onChange(v as WorkflowTrigger["kind"])}>
+    <Select
+      value={value}
+      onValueChange={(v) => v && onChange(v as WorkflowTrigger["kind"])}
+    >
       <SelectTrigger>
         <SelectValue />
       </SelectTrigger>

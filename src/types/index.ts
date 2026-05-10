@@ -1623,13 +1623,7 @@ export type WorkflowStepKind =
   | "wait_for_event"
   | "call_workflow";
 
-export type WorkflowBranchOp =
-  | "eq"
-  | "neq"
-  | "truthy"
-  | "falsy"
-  | "gt"
-  | "lt";
+export type WorkflowBranchOp = "eq" | "neq" | "truthy" | "falsy" | "gt" | "lt";
 
 interface WorkflowStepBase {
   id?: string;
@@ -1663,20 +1657,28 @@ export interface RouterStep extends WorkflowStepBase {
   /** Branch definitions; each child step references one by `branchIndex`. */
   branches: WorkflowRouterBranch[];
   /**
-   * Whether to evaluate every branch (`all`) or stop at the first matching
-   * branch (`first_match`). Defaults to `first_match`.
+   * Whether to evaluate every branch (`all_match`) or stop at the first
+   * matching branch (`first_match`). Defaults to `first_match`.
    */
-  executionType?: "first_match" | "all";
+  executionType?: "first_match" | "all_match";
 }
 
 export interface LoopOnItemsStep extends WorkflowStepBase {
   kind: "loop_on_items";
   /** Template expression that resolves to an array. */
   items: string;
-  /** Variable exposed inside the loop body. Defaults to `item`. */
-  itemAs?: string;
-  /** Optional max iterations safeguard. */
+  /**
+   * Optional max iterations safeguard.
+   *
+   * Inside the loop body, use `{{loop.item}}` and `{{loop.index}}` — the
+   * variable name is no longer configurable.
+   */
   maxIterations?: number;
+}
+
+export interface SendEmailAttachment {
+  url: string;
+  filename?: string;
 }
 
 export interface SendEmailStep extends WorkflowStepBase {
@@ -1686,7 +1688,21 @@ export interface SendEmailStep extends WorkflowStepBase {
   text?: string;
   html?: string;
   from?: string;
+  /** Display name composed into `from` as `"Name <addr>"`. */
+  fromName?: string;
+  /** Up to 50 recipients. */
+  cc?: string[];
+  /** Up to 50 recipients. */
+  bcc?: string[];
   replyTo?: string;
+  /**
+   * Custom `X-*` headers. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/
+   * Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date)
+   * are rejected by the backend.
+   */
+  headers?: Record<string, string>;
+  /** Up to 10 attachments. The provider downloads each `url` and attaches it. */
+  attachments?: SendEmailAttachment[];
   idempotencyKeySuffix?: string;
   storeAs?: string;
 }
@@ -1736,13 +1752,32 @@ export interface RecordActivityStep extends WorkflowStepBase {
   description?: string;
 }
 
+export type HttpCallAuth =
+  | { type: "none" }
+  | { type: "basic"; username: string; password: string }
+  | { type: "bearer"; token: string };
+
 export interface HttpCallStep extends WorkflowStepBase {
   kind: "http_call";
   url: string;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   headers?: Record<string, string>;
-  body?: string;
+  /** Templated values appended to `url` after template resolution. */
+  queryParams?: Record<string, string>;
+  auth?: HttpCallAuth;
+  body?: string | Record<string, unknown>;
+  /** 100 … 60,000 ms. Aborts via AbortController. */
+  timeoutMs?: number;
+  /** Defaults to `true`. `false` sets `redirect: 'manual'`. */
+  followRedirects?: boolean;
+  /**
+   * Defaults to `'return'` (back-compat). On non-2xx:
+   *  - `'throw'` fails the run
+   *  - `'return'` stores the response and continues
+   */
+  failureMode?: "throw" | "return";
   storeAs?: string;
+  /** 1 … 65,536 (default 16,384). */
   maxResponseBytes?: number;
 }
 
@@ -1870,7 +1905,7 @@ export interface WorkflowRunEvent {
   eventType: WorkflowRunEventType;
   durationMs: number | null;
   detail: Record<string, unknown> | null;
-  occurredAt: string;
+  createdAt: string;
 }
 
 export interface WorkflowRunDetailResponse {

@@ -14,12 +14,14 @@ import { Field, TemplatedField } from "./Field";
 import type {
   BranchIfStep,
   CallWorkflowStep,
+  HttpCallAuth,
   HttpCallStep,
   LookupConsultationStep,
   LookupPatientStep,
   LoopOnItemsStep,
   RecordActivityStep,
   RouterStep,
+  SendEmailAttachment,
   SendEmailStep,
   SendSmsStep,
   WaitForEventStep,
@@ -43,11 +45,147 @@ interface StepFormProps<T extends WorkflowStep> {
   otherWorkflows?: Workflow[];
 }
 
-function StepIdField({
-  step,
+// ---- shared helpers ----
+
+function StringListEditor({
+  values,
   onChange,
-  errors,
-}: StepFormProps<WorkflowStep>) {
+  placeholder,
+  addLabel,
+  monospace,
+  max,
+}: {
+  values: string[] | undefined;
+  onChange: (next: string[] | undefined) => void;
+  placeholder?: string;
+  addLabel: string;
+  monospace?: boolean;
+  max?: number;
+}) {
+  const list = values ?? [];
+  function update(next: string[]) {
+    onChange(next.length ? next : undefined);
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {list.map((v, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <Input
+            value={v}
+            onChange={(e) => {
+              const next = [...list];
+              next[i] = e.target.value;
+              update(next);
+            }}
+            placeholder={placeholder}
+            className={monospace ? "font-mono text-xs" : undefined}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => update(list.filter((_, j) => j !== i))}
+            aria-label="Remove"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      ))}
+      {(max === undefined || list.length < max) && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-fit gap-1 text-xs"
+          onClick={() => update([...list, ""])}
+        >
+          <Plus className="size-3.5" />
+          {addLabel}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function KeyValueEditor({
+  values,
+  onChange,
+  keyPlaceholder,
+  valuePlaceholder,
+  addLabel,
+}: {
+  values: Record<string, string> | undefined;
+  onChange: (next: Record<string, string> | undefined) => void;
+  keyPlaceholder?: string;
+  valuePlaceholder?: string;
+  addLabel: string;
+}) {
+  const entries = Object.entries(values ?? {});
+  function update(next: [string, string][]) {
+    if (next.length === 0) {
+      onChange(undefined);
+      return;
+    }
+    const obj: Record<string, string> = {};
+    for (const [k, v] of next) {
+      if (k) obj[k] = v;
+    }
+    onChange(Object.keys(obj).length ? obj : undefined);
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {entries.map(([k, v], i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <Input
+            value={k}
+            onChange={(e) => {
+              const next: [string, string][] = entries.map((p, j) =>
+                j === i ? [e.target.value, p[1]] : p
+              );
+              update(next);
+            }}
+            placeholder={keyPlaceholder ?? "key"}
+            className="font-mono text-xs"
+          />
+          <Input
+            value={v}
+            onChange={(e) => {
+              const next: [string, string][] = entries.map((p, j) =>
+                j === i ? [p[0], e.target.value] : p
+              );
+              update(next);
+            }}
+            placeholder={valuePlaceholder ?? "value"}
+            className="font-mono text-xs"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => update(entries.filter((_, j) => j !== i))}
+            aria-label="Remove"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="w-fit gap-1 text-xs"
+        onClick={() => update([...entries, ["", ""]])}
+      >
+        <Plus className="size-3.5" />
+        {addLabel}
+      </Button>
+    </div>
+  );
+}
+
+function StepIdField({ step, onChange, errors }: StepFormProps<WorkflowStep>) {
   return (
     <Field
       label="Step id (optional)"
@@ -77,6 +215,53 @@ function SendEmailForm(props: StepFormProps<SendEmailStep>) {
         placeholder="{{vars.patient.email}}"
         error={errors?.to}
       />
+      <Field label="From (optional)" hint="Override the configured sender address." error={errors?.from}>
+        <Input
+          value={step.from ?? ""}
+          onChange={(e) => onChange({ ...step, from: e.target.value || undefined })}
+          placeholder="alerts@cloudcare.example"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field
+        label="From name (optional)"
+        hint='Display name composed into "From" as "Name <addr>".'
+        error={errors?.fromName}
+      >
+        <Input
+          value={step.fromName ?? ""}
+          onChange={(e) => onChange({ ...step, fromName: e.target.value || undefined })}
+          placeholder="Cloud Care Pharmacy"
+        />
+      </Field>
+      <Field label="Reply-To (optional)" error={errors?.replyTo}>
+        <Input
+          value={step.replyTo ?? ""}
+          onChange={(e) => onChange({ ...step, replyTo: e.target.value || undefined })}
+          placeholder="reply@cloudcare.example"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field label="Cc (optional)" hint="Up to 50 recipients." error={errors?.cc}>
+        <StringListEditor
+          values={step.cc}
+          onChange={(cc) => onChange({ ...step, cc })}
+          placeholder="{{vars.team.email}}"
+          addLabel="Add Cc"
+          monospace
+          max={50}
+        />
+      </Field>
+      <Field label="Bcc (optional)" hint="Up to 50 recipients." error={errors?.bcc}>
+        <StringListEditor
+          values={step.bcc}
+          onChange={(bcc) => onChange({ ...step, bcc })}
+          placeholder="audit@cloudcare.example"
+          addLabel="Add Bcc"
+          monospace
+          max={50}
+        />
+      </Field>
       <TemplatedField
         label="Subject"
         value={step.subject ?? ""}
@@ -101,8 +286,94 @@ function SendEmailForm(props: StepFormProps<SendEmailStep>) {
         monospace
         error={errors?.html}
       />
+      <Field
+        label="Custom headers (optional)"
+        hint="X-* headers only. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date) are rejected."
+        error={errors?.headers}
+      >
+        <KeyValueEditor
+          values={step.headers}
+          onChange={(headers) => onChange({ ...step, headers })}
+          keyPlaceholder="X-Tenant-Id"
+          valuePlaceholder="{{vars.tenant.id}}"
+          addLabel="Add header"
+        />
+      </Field>
+      <Field
+        label="Attachments (optional)"
+        hint="Up to 10 URL-referenced attachments. The provider downloads each URL."
+        error={errors?.attachments}
+      >
+        <AttachmentsEditor
+          values={step.attachments}
+          onChange={(attachments) => onChange({ ...step, attachments })}
+        />
+      </Field>
       <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
+  );
+}
+
+function AttachmentsEditor({
+  values,
+  onChange,
+}: {
+  values: SendEmailAttachment[] | undefined;
+  onChange: (next: SendEmailAttachment[] | undefined) => void;
+}) {
+  const list = values ?? [];
+  function update(next: SendEmailAttachment[]) {
+    onChange(next.length ? next : undefined);
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      {list.map((a, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <Input
+            value={a.url}
+            onChange={(e) => {
+              const next = [...list];
+              next[i] = { ...next[i], url: e.target.value };
+              update(next);
+            }}
+            placeholder="https://r2.example.com/file.pdf"
+            className="font-mono text-xs"
+          />
+          <Input
+            value={a.filename ?? ""}
+            onChange={(e) => {
+              const next = [...list];
+              next[i] = { ...next[i], filename: e.target.value || undefined };
+              update(next);
+            }}
+            placeholder="filename.pdf"
+            className="font-mono text-xs"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => update(list.filter((_, j) => j !== i))}
+            aria-label="Remove attachment"
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
+      ))}
+      {list.length < 10 && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-fit gap-1 text-xs"
+          onClick={() => update([...list, { url: "" }])}
+        >
+          <Plus className="size-3.5" />
+          Add attachment
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -229,9 +500,7 @@ function BranchIfForm(props: StepFormProps<BranchIfStep>) {
       <Field label="Goto if true" hint="Pick a step id to jump to.">
         <Select
           value={step.gotoIfTrue ?? ""}
-          onValueChange={(v) =>
-            onChange({ ...step, gotoIfTrue: v || undefined })
-          }
+          onValueChange={(v) => onChange({ ...step, gotoIfTrue: v || undefined })}
         >
           <SelectTrigger>
             <SelectValue placeholder="(fall through)" />
@@ -248,9 +517,7 @@ function BranchIfForm(props: StepFormProps<BranchIfStep>) {
       <Field label="Goto if false">
         <Select
           value={step.gotoIfFalse ?? ""}
-          onValueChange={(v) =>
-            onChange({ ...step, gotoIfFalse: v || undefined })
-          }
+          onValueChange={(v) => onChange({ ...step, gotoIfFalse: v || undefined })}
         >
           <SelectTrigger>
             <SelectValue placeholder="(fall through)" />
@@ -280,7 +547,11 @@ function LookupPatientForm(props: StepFormProps<LookupPatientStep>) {
         placeholder="{{event.payload.patientId}}"
         error={errors?.patientId}
       />
-      <Field label="Store as" hint="Available later as {{vars.<storeAs>}}." error={errors?.storeAs}>
+      <Field
+        label="Store as"
+        hint="Available later as {{vars.<storeAs>}}."
+        error={errors?.storeAs}
+      >
         <Input
           value={step.storeAs ?? ""}
           onChange={(e) => onChange({ ...step, storeAs: e.target.value })}
@@ -362,6 +633,7 @@ function RecordActivityForm(props: StepFormProps<RecordActivityStep>) {
 
 function HttpCallForm(props: StepFormProps<HttpCallStep>) {
   const { step, onChange, errors } = props;
+  const auth: HttpCallAuth = step.auth ?? { type: "none" };
   return (
     <>
       <Field label="Method" error={errors?.method}>
@@ -391,22 +663,191 @@ function HttpCallForm(props: StepFormProps<HttpCallStep>) {
         monospace
         error={errors?.url}
       />
+      <Field
+        label="Query params (optional)"
+        hint="Templated values appended to the URL after template resolution."
+        error={errors?.queryParams}
+      >
+        <KeyValueEditor
+          values={step.queryParams}
+          onChange={(queryParams) => onChange({ ...step, queryParams })}
+          keyPlaceholder="patientId"
+          valuePlaceholder="{{event.payload.patientId}}"
+          addLabel="Add param"
+        />
+      </Field>
+      <Field label="Headers (optional)" error={errors?.headers}>
+        <KeyValueEditor
+          values={step.headers}
+          onChange={(headers) => onChange({ ...step, headers })}
+          keyPlaceholder="X-Tenant-Id"
+          valuePlaceholder="{{vars.tenant.id}}"
+          addLabel="Add header"
+        />
+      </Field>
+      <Field label="Auth (optional)">
+        <Select
+          value={auth.type}
+          onValueChange={(v) => {
+            if (!v) return;
+            if (v === "none") {
+              onChange({ ...step, auth: undefined });
+            } else if (v === "basic") {
+              onChange({
+                ...step,
+                auth: { type: "basic", username: "", password: "" },
+              });
+            } else if (v === "bearer") {
+              onChange({ ...step, auth: { type: "bearer", token: "" } });
+            }
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">None</SelectItem>
+            <SelectItem value="basic">Basic</SelectItem>
+            <SelectItem value="bearer">Bearer</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {auth.type === "basic" && (
+        <>
+          <TemplatedField
+            label="Basic — username"
+            value={auth.username}
+            onChange={(v) =>
+              onChange({ ...step, auth: { ...auth, username: v } })
+            }
+            placeholder="{{vars.creds.user}}"
+            monospace
+          />
+          <TemplatedField
+            label="Basic — password"
+            value={auth.password}
+            onChange={(v) =>
+              onChange({ ...step, auth: { ...auth, password: v } })
+            }
+            placeholder="{{vars.creds.password}}"
+            monospace
+          />
+        </>
+      )}
+      {auth.type === "bearer" && (
+        <TemplatedField
+          label="Bearer — token"
+          value={auth.token}
+          onChange={(v) => onChange({ ...step, auth: { ...auth, token: v } })}
+          placeholder="{{vars.token}}"
+          monospace
+        />
+      )}
       <TemplatedField
         label="Body (optional)"
-        value={step.body ?? ""}
+        value={
+          typeof step.body === "string"
+            ? step.body
+            : step.body
+              ? JSON.stringify(step.body, null, 2)
+              : ""
+        }
         onChange={(v) => onChange({ ...step, body: v })}
         multiline
         rows={5}
         monospace
         error={errors?.body}
       />
+      <Field
+        label="Timeout (ms, optional)"
+        hint="100 to 60,000."
+        error={errors?.timeoutMs}
+      >
+        <Input
+          type="number"
+          min={100}
+          max={60_000}
+          value={step.timeoutMs ?? ""}
+          onChange={(e) =>
+            onChange({
+              ...step,
+              timeoutMs: e.target.value ? Number(e.target.value) : undefined,
+            })
+          }
+          placeholder="30000"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field label="Follow redirects" hint="Defaults to true.">
+        <Select
+          value={step.followRedirects === false ? "false" : "true"}
+          onValueChange={(v) => {
+            if (!v) return;
+            onChange({
+              ...step,
+              followRedirects: v === "false" ? false : undefined,
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">Follow (default)</SelectItem>
+            <SelectItem value="false">Manual (do not follow)</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field
+        label="Failure mode"
+        hint="Default 'return' stores non-2xx responses; 'throw' fails the run."
+      >
+        <Select
+          value={step.failureMode ?? "return"}
+          onValueChange={(v) => {
+            if (!v) return;
+            onChange({
+              ...step,
+              failureMode: v === "return" ? undefined : "throw",
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="return">Return (default)</SelectItem>
+            <SelectItem value="throw">Throw on non-2xx</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
       <Field label="Store response as (optional)" error={errors?.storeAs}>
         <Input
           value={step.storeAs ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, storeAs: e.target.value || undefined })
-          }
+          onChange={(e) => onChange({ ...step, storeAs: e.target.value || undefined })}
           placeholder="response"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field
+        label="Max response bytes (optional)"
+        hint="1 to 65,536. Defaults to 16,384."
+        error={errors?.maxResponseBytes}
+      >
+        <Input
+          type="number"
+          min={1}
+          max={65_536}
+          value={step.maxResponseBytes ?? ""}
+          onChange={(e) =>
+            onChange({
+              ...step,
+              maxResponseBytes: e.target.value
+                ? Number(e.target.value)
+                : undefined,
+            })
+          }
+          placeholder="16384"
           className="font-mono text-xs"
         />
       </Field>
@@ -443,9 +884,7 @@ function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
       <Field label="Store result as (optional)" error={errors?.storeAs}>
         <Input
           value={step.storeAs ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, storeAs: e.target.value || undefined })
-          }
+          onChange={(e) => onChange({ ...step, storeAs: e.target.value || undefined })}
           placeholder="subRun"
           className="font-mono text-xs"
         />
@@ -455,14 +894,7 @@ function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
   );
 }
 
-const ROUTER_OPS: WorkflowBranchOp[] = [
-  "eq",
-  "neq",
-  "gt",
-  "lt",
-  "truthy",
-  "falsy",
-];
+const ROUTER_OPS: WorkflowBranchOp[] = ["eq", "neq", "gt", "lt", "truthy", "falsy"];
 
 function RouterForm(props: StepFormProps<RouterStep>) {
   const { step, onChange, errors } = props;
@@ -509,16 +941,14 @@ function RouterForm(props: StepFormProps<RouterStep>) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="first_match">First match wins</SelectItem>
-            <SelectItem value="all">Run all matching</SelectItem>
+            <SelectItem value="all_match">Run all matching</SelectItem>
           </SelectContent>
         </Select>
       </Field>
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            Branches
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Branches</span>
           <Button
             type="button"
             size="sm"
@@ -658,20 +1088,17 @@ function LoopOnItemsForm(props: StepFormProps<LoopOnItemsStep>) {
         placeholder="{{vars.patients}}"
         error={errors?.items}
       />
-      <Field
-        label="Item variable"
-        hint="Name exposed inside the loop body. Defaults to `item`."
-        error={errors?.itemAs}
-      >
-        <Input
-          value={step.itemAs ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, itemAs: e.target.value || undefined })
-          }
-          placeholder="item"
-          className="font-mono text-xs"
-        />
-      </Field>
+      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+        Inside the loop body, use{" "}
+        <code className="rounded bg-muted px-1 py-0.5 font-mono">
+          {"{{loop.item}}"}
+        </code>{" "}
+        and{" "}
+        <code className="rounded bg-muted px-1 py-0.5 font-mono">
+          {"{{loop.index}}"}
+        </code>
+        .
+      </div>
       <Field label="Max iterations (optional)" error={errors?.maxIterations}>
         <Input
           type="number"
@@ -725,9 +1152,7 @@ export function StepInspector(props: StepInspectorProps) {
         <LookupConsultationForm {...(props as StepFormProps<LookupConsultationStep>)} />
       );
     case "record_activity":
-      return (
-        <RecordActivityForm {...(props as StepFormProps<RecordActivityStep>)} />
-      );
+      return <RecordActivityForm {...(props as StepFormProps<RecordActivityStep>)} />;
     case "http_call":
       return <HttpCallForm {...(props as StepFormProps<HttpCallStep>)} />;
     case "call_workflow":
@@ -751,14 +1176,11 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
     case "router":
       return {
         kind: "router",
-        branches: [
-          { name: "Branch 1" },
-          { name: "Otherwise" },
-        ],
+        branches: [{ name: "Branch 1" }, { name: "Otherwise" }],
         executionType: "first_match",
       };
     case "loop_on_items":
-      return { kind: "loop_on_items", items: "", itemAs: "item" };
+      return { kind: "loop_on_items", items: "" };
     case "lookup_patient":
       return { kind: "lookup_patient", patientId: "", storeAs: "patient" };
     case "lookup_consultation":

@@ -15,7 +15,7 @@ async function fetchRuns(
   if (opts.limit) params.set("limit", String(opts.limit));
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(
-    `/api/proxy/internal/workflows/${encodeURIComponent(workflowId)}/runs${qs}`
+    `/api/proxy/workflows/${encodeURIComponent(workflowId)}/runs${qs}`
   );
   if (!res.ok) throw new Error("Failed to load runs");
   return res.json();
@@ -30,7 +30,7 @@ async function fetchRun(
   if (opts.eventLimit) params.set("eventLimit", String(opts.eventLimit));
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(
-    `/api/proxy/internal/workflows/runs/${encodeURIComponent(runId)}${qs}`
+    `/api/proxy/workflows/runs/${encodeURIComponent(runId)}${qs}`
   );
   if (!res.ok) throw new Error("Failed to load run");
   return res.json();
@@ -64,9 +64,7 @@ export function useWorkflowRuns(
     refetchInterval: (query) => {
       const data = query.state.data as WorkflowRunsListResponse | undefined;
       if (!data?.data) return false;
-      return data.data.some((r) => ACTIVE_STATUSES.has(r.status))
-        ? 4_000
-        : false;
+      return data.data.some((r) => ACTIVE_STATUSES.has(r.status)) ? 4_000 : false;
     },
   });
 }
@@ -79,10 +77,7 @@ export function workflowRunDetailQueryOptions(runId: string) {
   });
 }
 
-export function useWorkflowRun(
-  runId: string,
-  initialData?: WorkflowRunDetailResponse
-) {
+export function useWorkflowRun(runId: string, initialData?: WorkflowRunDetailResponse) {
   return useQuery({
     ...workflowRunDetailQueryOptions(runId),
     initialData,
