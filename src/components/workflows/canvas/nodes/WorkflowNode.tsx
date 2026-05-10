@@ -83,7 +83,16 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
   const Icon = cfg.icon;
   const runStatus = node.kind === "step" ? node.runStatus : undefined;
   const displayIndex = node.kind === "step" ? node.displayIndex : null;
-  const stepName = node.kind === "step" ? node.stepName : null;
+  // Hover-revealed pill on the right side of the card. For steps we show a
+  // human-readable "Step N" (1-based) instead of the internal `step_<idx>`
+  // identifier; for triggers we surface "Trigger" so the node still has a
+  // discoverable label on hover.
+  const hoverLabel =
+    node.kind === "step"
+      ? `Step ${node.displayIndex}`
+      : node.kind === "trigger"
+        ? "Trigger"
+        : null;
 
   // Per-status outer chrome — used for the run canvas to convey liveness.
   // The badge in the corner already shows the icon, but the card itself
@@ -177,9 +186,9 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
         {node.sub}
       </div>
 
-      {stepName && (
+      {hoverLabel && (
         <div className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-0.5 font-mono text-[10px] text-muted-foreground opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
-          {stepName}
+          {hoverLabel}
         </div>
       )}
 
