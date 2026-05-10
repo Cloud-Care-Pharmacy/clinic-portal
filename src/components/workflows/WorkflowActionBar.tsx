@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import {
   Code2,
   Copy,
   Download,
   Files,
   Hand,
-  ListTree,
   Maximize2,
   Minus,
   MoreHorizontal,
@@ -34,8 +34,7 @@ import { cn } from "@/lib/utils";
 export type WorkflowActionTab = "canvas" | "run";
 
 interface WorkflowActionBarProps {
-  tab: WorkflowActionTab;
-  onTabChange: (tab: WorkflowActionTab) => void;
+  workflowId: string;
   isActive: boolean;
   onToggleActive: (checked: boolean) => void;
   onAdd: () => void;
@@ -66,8 +65,7 @@ interface WorkflowActionBarProps {
  * ellipsis opens overflow-only actions.
  */
 export function WorkflowActionBar({
-  tab,
-  onTabChange,
+  workflowId,
   isActive,
   onToggleActive,
   onAdd,
@@ -100,8 +98,6 @@ export function WorkflowActionBar({
     [fitView]
   );
 
-  const showCanvasControls = tab === "canvas";
-
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-4 z-30 flex justify-center">
       <div
@@ -109,38 +105,27 @@ export function WorkflowActionBar({
         onMouseLeave={() => setHovered(false)}
         className="pointer-events-auto flex h-11 items-center gap-1 overflow-hidden rounded-full border border-border bg-popover/95 p-1.5 shadow-lg backdrop-blur transition-all duration-200 supports-backdrop-filter:bg-popover/80"
       >
-        {/* Expanded-only group: tabs + canvas tools + add + save */}
+        {/* Expanded-only group: live-runs link + canvas tools + add + save */}
         <div
           className={cn(
             "flex h-8 items-center gap-1 overflow-hidden transition-all duration-200",
             expanded ? "max-w-190 opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
-          <div className="flex items-center gap-0.5 rounded-full bg-muted p-0.5">
-            <TabButton
-              active={tab === "canvas"}
-              onClick={() => onTabChange("canvas")}
-              icon={<ListTree className="size-3.5" />}
-              label="Canvas"
-            />
-            <TabButton
-              active={tab === "run"}
-              onClick={() => onTabChange("run")}
-              icon={<Play className="size-3.5" />}
-              label="Live run"
-            />
-          </div>
+          <Link
+            href={`/workflows/${workflowId}/runs`}
+            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Play className="size-3.5" />
+            Live runs
+          </Link>
 
-          {showCanvasControls && (
-            <>
-              <Separator orientation="vertical" className="mx-1 h-6" />
-              <div className="flex items-center gap-0.5">
-                <IconButton onClick={handleFit} tooltip="Fit view">
-                  <Maximize2 className="size-3.5" />
-                </IconButton>
-              </div>
-            </>
-          )}
+          <Separator orientation="vertical" className="mx-1 h-6" />
+          <div className="flex items-center gap-0.5">
+            <IconButton onClick={handleFit} tooltip="Fit view">
+              <Maximize2 className="size-3.5" />
+            </IconButton>
+          </div>
 
           <Separator orientation="vertical" className="mx-1 h-6" />
 
@@ -170,34 +155,30 @@ export function WorkflowActionBar({
           </Button>
         </div>
 
-        {showCanvasControls && (
-          <>
-            <div className="flex h-8 items-center gap-0.5 rounded-full bg-popover p-0.5">
-              <IconButton onClick={handleZoomOut} tooltip="Zoom out">
-                <Minus className="size-3.5" />
-              </IconButton>
-              <IconButton onClick={handleZoomIn} tooltip="Zoom in">
-                <Plus className="size-3.5" />
-              </IconButton>
-              <IconButton
-                onClick={onTogglePanningMode}
-                tooltip={
-                  panningMode === "grab"
-                    ? "Switch to select tool"
-                    : "Switch to hand tool"
-                }
-                active={panningMode === "grab"}
-              >
-                {panningMode === "grab" ? (
-                  <Hand className="size-3.5" />
-                ) : (
-                  <MousePointer className="size-3.5" />
-                )}
-              </IconButton>
-            </div>
-            <Separator orientation="vertical" className="mx-0.5 h-6" />
-          </>
-        )}
+        <div className="flex h-8 items-center gap-0.5 rounded-full bg-popover p-0.5">
+          <IconButton onClick={handleZoomOut} tooltip="Zoom out">
+            <Minus className="size-3.5" />
+          </IconButton>
+          <IconButton onClick={handleZoomIn} tooltip="Zoom in">
+            <Plus className="size-3.5" />
+          </IconButton>
+          <IconButton
+            onClick={onTogglePanningMode}
+            tooltip={
+              panningMode === "grab"
+                ? "Switch to select tool"
+                : "Switch to hand tool"
+            }
+            active={panningMode === "grab"}
+          >
+            {panningMode === "grab" ? (
+              <Hand className="size-3.5" />
+            ) : (
+              <MousePointer className="size-3.5" />
+            )}
+          </IconButton>
+        </div>
+        <Separator orientation="vertical" className="mx-0.5 h-6" />
 
         {/* Test run executes the real flow — emails, SMS, http_call, and
             record_activity all fire for real. The backend allows test runs on
@@ -281,34 +262,6 @@ export function WorkflowActionBar({
         </DropdownMenu>
       </div>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-        active
-          ? "bg-popover text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground"
-      )}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 

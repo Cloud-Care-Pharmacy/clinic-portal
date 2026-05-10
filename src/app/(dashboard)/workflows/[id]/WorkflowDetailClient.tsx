@@ -25,7 +25,6 @@ import {
   WorkflowApiError,
 } from "@/lib/hooks/use-workflows";
 import { WorkflowEditor } from "@/components/workflows/canvas/WorkflowEditor";
-import { RunView } from "@/components/workflows/run/RunView";
 import { ViewJsonDialog } from "@/components/workflows/ViewJsonDialog";
 import { WorkflowActionBar } from "@/components/workflows/WorkflowActionBar";
 import { workflowSchema } from "@/components/workflows/canvas/lib/workflow-schema";
@@ -33,7 +32,6 @@ import { useTestRunWorkflow } from "@/lib/hooks/use-workflows";
 import type {
   Workflow,
   WorkflowResponse,
-  WorkflowRunsListResponse,
   WorkflowStep,
   WorkflowTrigger,
 } from "@/types";
@@ -42,10 +40,7 @@ interface WorkflowDetailClientProps {
   workflowId: string;
   entityId: string;
   initialWorkflow?: WorkflowResponse;
-  initialRuns?: WorkflowRunsListResponse;
 }
-
-type Tab = "canvas" | "run";
 
 const WEBHOOK_BASE_URL =
   process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -81,7 +76,6 @@ export function WorkflowDetailClient({
   workflowId,
   entityId,
   initialWorkflow,
-  initialRuns,
 }: WorkflowDetailClientProps) {
   const router = useRouter();
   const { data, isLoading } = useWorkflow(workflowId, initialWorkflow);
@@ -93,7 +87,6 @@ export function WorkflowDetailClient({
 
   const workflow = data?.data;
 
-  const [tab, setTab] = useState<Tab>("canvas");
   const [draftTriggers, setDraftTriggers] = useState<WorkflowTrigger[]>([]);
   const [draftSteps, setDraftSteps] = useState<WorkflowStep[]>([]);
   const [draftDirty, setDraftDirty] = useState(false);
@@ -103,7 +96,6 @@ export function WorkflowDetailClient({
   } | null>(null);
   const [showJson, setShowJson] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
@@ -206,10 +198,9 @@ export function WorkflowDetailClient({
     try {
       const result = await testRun.mutateAsync(undefined);
       const run = result.data.run;
-      setActiveRunId(run.id);
-      setTab("run");
-      // The backend now returns 202 with a `running` run; the live timeline
-      // and final status come from the SSE stream opened by `RunDetail`.
+      // The backend returns 202 with a `running` run; navigate to the
+      // dedicated runs page so the live timeline and SSE stream take over.
+      router.push(`/workflows/${workflowId}/runs?runId=${run.id}`);
       toast.success("Test run started", {
         description: "Live progress will stream into the run timeline.",
       });
@@ -309,29 +300,19 @@ export function WorkflowDetailClient({
       {/* Body — full bleed canvas, no top header strip or tabs bar */}
       <ReactFlowProvider>
         <div className="relative min-h-0 flex-1 bg-background">
-          {tab === "canvas" ? (
-            <WorkflowEditor
-              triggers={draftTriggers}
-              steps={draftSteps}
-              onChange={handleDraftChange}
-              webhookBaseUrl={WEBHOOK_BASE_URL}
-              otherWorkflows={subWorkflows}
-              serverError={serverError}
-              openPaletteSignal={addSignal}
-              panningMode={panningMode}
-            />
-          ) : (
-            <RunView
-              key={activeRunId ?? "latest"}
-              workflowId={workflowId}
-              initialRuns={initialRuns}
-              initialRunId={activeRunId ?? undefined}
-            />
-          )}
+          <WorkflowEditor
+            triggers={draftTriggers}
+            steps={draftSteps}
+            onChange={handleDraftChange}
+            webhookBaseUrl={WEBHOOK_BASE_URL}
+            otherWorkflows={subWorkflows}
+            serverError={serverError}
+            openPaletteSignal={addSignal}
+            panningMode={panningMode}
+          />
 
           <WorkflowActionBar
-            tab={tab}
-            onTabChange={setTab}
+            workflowId={workflowId}
             isActive={isActive}
             onToggleActive={toggleActive}
             onAdd={() => setAddSignal((n) => n + 1)}

@@ -10,13 +10,12 @@ interface PageProps {
 
 export default async function WorkflowDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [entityId, workflow, runs] = await Promise.all([
+  const [entityId, workflow] = await Promise.all([
     getEntityId(),
     api.getWorkflow(id).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;
       return undefined;
     }),
-    api.listWorkflowRuns(id, { limit: 50 }).catch(() => undefined),
   ]);
 
   if (workflow === null) notFound();
@@ -26,7 +25,6 @@ export default async function WorkflowDetailPage({ params }: PageProps) {
       workflowId={id}
       entityId={entityId}
       initialWorkflow={workflow}
-      initialRuns={runs}
     />
   );
 }
