@@ -11,7 +11,7 @@ import {
   AlertTriangle,
   Filter,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNowStrict, format as formatDate } from "date-fns";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,10 +111,25 @@ function fmtDuration(ms: number | null | undefined): string {
 
 function relativeTime(iso: string): string {
   try {
-    return formatDistanceToNow(new Date(parseUtcMs(iso)), { addSuffix: true });
+    return formatDistanceToNowStrict(new Date(parseUtcMs(iso)), {
+      addSuffix: true,
+    });
   } catch {
     return iso;
   }
+}
+
+/** Absolute local time, e.g. "10 May 2026, 18:11". */
+function absoluteTime(iso: string): string {
+  try {
+    return formatDate(new Date(parseUtcMs(iso)), "d MMM yyyy, HH:mm");
+  } catch {
+    return iso;
+  }
+}
+
+function isOverdue(iso: string): boolean {
+  return parseUtcMs(iso) <= Date.now();
 }
 
 function runDuration(run: WorkflowRun): string {
@@ -445,51 +460,52 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
   }
 
   const { run, events } = data.data;
-  // Collapse the audit trail to one row per step. We pick a *representative*
-  // event by status priority (failed > done > waiting > running) instead of
-  // last-seen, because the gateway can emit `wait_scheduled` *after* the
-  // matching `step_completed` — last-seen made completed waits render as
-  // still WAITING.
-  const STATUS_PRIORITY: Record<StepStatus, number> = {
-    failed: 4,
-    done: 3,
-    waiting: 2,
-    running: 1,
-    pending: 0,
-  };
-  function statusForEvent(e: WorkflowRunEvent): StepStatus | null {
-    switch (e.eventType) {
-      case "step_failed":
-        return "failed";
-      case "step_completed":
-        return "done";
-      case "wait_scheduled":
-        return "waiting";
-      case "step_started":
-        return "running";
-      default:
-        return null;
-    }
-  }
-  const byStep = new Map<number, { event: WorkflowRunEvent; status: StepStatus }>();
-  for (const e of events) {
-    if (e.stepIndex == null) continue;
-    const status = statusForEvent(e);
-    if (!status) continue;
-    const prev = byStep.get(e.stepIndex);
-    if (!prev || STATUS_PRIORITY[status] >= STATUS_PRIORITY[prev.status]) {
-      byStep.set(e.stepIndex, { event: e, status });
-    }
-  }
-  const stepEntries = [...byStep.entries()].sort(([a], [b]) => a - b);
-
-  // Step counter: total comes from the workflow definition (audit events
-  // alone over- or under-count). For terminal runs we display N/N; for live
-  // runs we clamp to the known total so we never show e.g. "3 / 2".
   const isTerminal =
     run.status === "completed" ||
     run.status === "failed" ||
     run.status === "cancelled";
+
+  // Collapse the audit trail to one row per step. The wait lifecycle emits
+  // `step_started → step_completed → wait_scheduled`; while the run is parked
+  // the step really *is* waiting (not done), but once the run resumes /
+  // finishes the same step is done. So we pick last-seen by sequence and
+  // then post-process: a `wait_scheduled` only counts as `waiting` while the
+  // run itself is still waiting on this step; otherwise treat it as done.
+  const sortedEvents = [...events].sort((a, b) => a.sequence - b.sequence);
+  const byStep = new Map<number, WorkflowRunEvent>();
+  for (const e of sortedEvents) {
+    if (e.stepIndex == null) continue;
+    if (
+      e.eventType === "step_started" ||
+      e.eventType === "step_completed" ||
+      e.eventType === "step_failed" ||
+      e.eventType === "wait_scheduled"
+    ) {
+      byStep.set(e.stepIndex, e);
+    }
+  }
+  function statusFor(e: WorkflowRunEvent): StepStatus {
+    switch (e.eventType) {
+      case "step_completed":
+        return "done";
+      case "step_failed":
+        return "failed";
+      case "wait_scheduled":
+        return run.status === "waiting" && run.currentStep === e.stepIndex
+          ? "waiting"
+          : "done";
+      case "step_started":
+      default:
+        return isTerminal ? "done" : "running";
+    }
+  }
+  const stepEntries = [...byStep.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([idx, event]) => [idx, { event, status: statusFor(event) }] as const);
+
+  // Step counter: total comes from the workflow definition (audit events
+  // alone over- or under-count). For terminal runs we display N/N; for live
+  // runs we clamp to the known total so we never show e.g. "3 / 2".
   const stepDenominator = totalSteps > 0 ? totalSteps : stepEntries.length;
   const stepNumerator = isTerminal
     ? stepDenominator
@@ -517,13 +533,20 @@ function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
         </div>
       )}
 
-      {run.status === "waiting" && run.nextStepAt && (
+      {run.status === "waiting" && (run.nextStepAt || run.awaitingEventType) && (
         <div className="mb-4 rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
-          Waiting until <strong>{relativeTime(run.nextStepAt)}</strong>
+          {run.nextStepAt && (
+            <>
+              {isOverdue(run.nextStepAt) ? "Resume due " : "Resumes "}
+              <strong>{relativeTime(run.nextStepAt)}</strong>
+              <span className="text-status-warning-fg/70">
+                {" "}({absoluteTime(run.nextStepAt)})
+              </span>
+            </>
+          )}
           {run.awaitingEventType && (
             <>
-              {" "}
-              for event{" "}
+              {run.nextStepAt ? " · awaiting event " : "Awaiting event "}
               <code className="rounded bg-popover px-1 py-0.5 font-mono">
                 {run.awaitingEventType}
               </code>
