@@ -22,10 +22,16 @@ export function LoopStartEdge({
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopStartEdgeData;
 
-  // Keep the loop-entry line intentionally boring: the return edge carries
-  // the loop affordance. The previous decorative bend crossed the centered
-  // child path and created a visual duplicate in simple one-step loops.
-  const path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
+  // Draw loop entry as a clean container rail: down from the loop card,
+  // across to the body column, then down into the body. This mirrors the
+  // ActivePieces-style reference and avoids diagonal connector noise.
+  const bendY = sourceY + Math.max(32, (targetY - sourceY) / 3);
+  const path = [
+    `M ${sourceX} ${sourceY}`,
+    `L ${sourceX} ${bendY}`,
+    `L ${targetX} ${bendY}`,
+    `L ${targetX} ${targetY}`,
+  ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
 

@@ -38,7 +38,7 @@ export function BigAddButtonNode({ data, id }: NodeProps) {
           );
         }}
         style={{ width: BIG_ADD_BUTTON_SIZE, height: BIG_ADD_BUTTON_SIZE }}
-        className="grid place-items-center rounded-full border border-dashed border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+        className="grid place-items-center rounded-xl border border-border bg-popover text-foreground shadow-sm transition-colors hover:border-primary hover:text-primary"
         aria-label="Add step here"
       >
         <Plus className="size-4" />

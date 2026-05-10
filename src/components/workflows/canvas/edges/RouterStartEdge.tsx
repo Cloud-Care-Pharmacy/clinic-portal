@@ -7,8 +7,6 @@ import {
   STROKE,
   STROKE_HIGHLIGHTED,
 } from "../lib/canvas-consts";
-import { AddButton } from "./AddButton";
-import { useCanvasContext } from "../lib/canvas-context";
 import type { WfRouterStartEdgeData } from "../lib/graph-builder";
 
 /**
@@ -25,10 +23,9 @@ export function RouterStartEdge({
   id,
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfRouterStartEdgeData;
-  const ctx = useCanvasContext();
 
-  const dx = targetX - sourceX;
   const labelLineY = sourceY + LABEL_HEIGHT;
+  const branchLabelY = labelLineY + 18;
 
   // Orthogonal branch fan-out. It must end at targetX/targetY exactly;
   // otherwise labels/buttons look aligned while the actual edge handle is not.
@@ -40,8 +37,9 @@ export function RouterStartEdge({
   ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
-  const labelX = sourceX + dx / 2;
-  const labelY = labelLineY;
+  const labelClasses = ed.isFallbackBranch
+    ? "border-border bg-muted text-foreground"
+    : "border-primary/70 bg-popover text-primary";
 
   return (
     <>
@@ -57,33 +55,13 @@ export function RouterStartEdge({
         <div
           style={{
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            transform: `translate(-50%, -50%) translate(${targetX}px, ${branchLabelY}px)`,
           }}
-          className="nodrag nopan pointer-events-none rounded-md border border-border bg-popover px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm"
+          className={`nodrag nopan pointer-events-none rounded-md border px-2.5 py-1 text-xs font-semibold shadow-sm ${labelClasses}`}
         >
           {ed.branchLabel}
         </div>
       </EdgeLabelRenderer>
-      {ed.insertion && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: "absolute",
-              transform: `translate(-50%, -50%) translate(${targetX}px, ${
-                targetY - 16
-              }px)`,
-              pointerEvents: "all",
-            }}
-            className="nodrag nopan"
-          >
-            <AddButton
-              onClick={() =>
-                ctx.onRequestInsert(ed.insertion!, { x: targetX, y: targetY })
-              }
-            />
-          </div>
-        </EdgeLabelRenderer>
-      )}
     </>
   );
 }

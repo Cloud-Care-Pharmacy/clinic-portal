@@ -93,6 +93,7 @@ export interface WfStraightEdgeData extends WfEdgeBaseData {
 
 export interface WfRouterStartEdgeData extends WfEdgeBaseData {
   branchLabel: string;
+  isFallbackBranch: boolean;
   /** Horizontal offset (positive = right) between router and branch root. */
   drawHorizontalLineTo: number;
   /** Distance from router bottom-edge to first child top-edge. */
@@ -307,9 +308,10 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const child = buildLoopChild(loop, opts);
   const childBox = calculateBoundingBox(child);
   // Offset child below the loop step, with a vertical gap.
+  const childOffsetX = NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES;
   const childOffsetY =
     NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
-  const offsetChild = offsetGraph(child, 0, childOffsetY);
+  const offsetChild = offsetGraph(child, childOffsetX, childOffsetY);
 
   const isLoopEmpty = !loop.firstLoopAction;
   const childHeadId =
@@ -332,7 +334,7 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     id: `${loop.nodeName}__loop-return`,
     type: "loopReturn",
     position: {
-      x: childBox.right + ARC_LENGTH,
+      x: 0,
       y: childOffsetY + childBox.height + ARC_LENGTH,
     },
     data: { kind: "loopReturn" },
@@ -441,6 +443,7 @@ function buildRouterChildren(
       type: "routerStart",
       data: {
         branchLabel: branch.label,
+        isFallbackBranch: branch.isFallback,
         drawHorizontalLineTo: centeredOffsets[i],
         verticalGap: VERTICAL_OFFSET_BETWEEN_ROUTER_AND_CHILD,
         isFirstBranch: i === 0,
