@@ -213,12 +213,45 @@ function isOverdue(iso: string): boolean {
   return parseUtcMs(iso) <= Date.now();
 }
 
-function runDuration(run: WorkflowRun): string {
+/**
+ * Total elapsed time the run has been in flight. Pass `now` so this is
+ * pure w.r.t. props — that way React (and the React Compiler) re-evaluates
+ * it on every parent tick while the run is `running` or `waiting`, instead
+ * of treating `Date.now()` as a stable read and freezing the display.
+ */
+function runDuration(run: WorkflowRun, now: number): string {
   const start = parseUtcMs(run.startedAt);
   if (!run.completedAt) {
-    return fmtDuration(Date.now() - start);
+    return fmtDuration(Math.max(0, now - start));
   }
   return fmtDuration(parseUtcMs(run.completedAt) - start);
+}
+
+/**
+ * Render `Resumes in 57 seconds` style copy that ticks every parent
+ * render. Mirrors `formatDistanceToNowStrict({ addSuffix: false })` but
+ * computed off the supplied `now` so it stays in sync with the rest of
+ * the live-run UI.
+ */
+function formatTimeUntil(iso: string, now: number): string {
+  const target = parseUtcMs(iso);
+  const diffMs = target - now;
+  const absSec = Math.max(0, Math.round(Math.abs(diffMs) / 1000));
+  if (absSec < 60) {
+    return `${absSec} second${absSec === 1 ? "" : "s"}`;
+  }
+  const min = Math.floor(absSec / 60);
+  const sec = absSec % 60;
+  if (min < 60) {
+    return sec === 0
+      ? `${min} minute${min === 1 ? "" : "s"}`
+      : `${min}m ${sec}s`;
+  }
+  const hr = Math.floor(min / 60);
+  const rm = min % 60;
+  return rm === 0
+    ? `${hr} hour${hr === 1 ? "" : "s"}`
+    : `${hr}h ${rm}m`;
 }
 
 function runStatusDot(run: WorkflowRun): string {
@@ -686,7 +719,7 @@ function RunDetail({
             )}
           </div>
         </RunMetric>
-        <RunMetric label="Duration">{runDuration(run)}</RunMetric>
+        <RunMetric label="Duration">{runDuration(run, now)}</RunMetric>
         <RunMetric label="Step">
           <span className="font-mono text-sm tabular-nums">
             {stepNumerator}
@@ -706,8 +739,15 @@ function RunDetail({
         <div className="mb-4 rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
           {run.nextStepAt && (
             <>
-              {isOverdue(run.nextStepAt) ? "Resume due " : "Resumes "}
-              <strong>{relativeTime(run.nextStepAt)}</strong>
+              {isOverdue(run.nextStepAt) ? (
+                <>
+                  Resume due <strong>{formatTimeUntil(run.nextStepAt, now)} ago</strong>
+                </>
+              ) : (
+                <>
+                  Resumes in <strong>{formatTimeUntil(run.nextStepAt, now)}</strong>
+                </>
+              )}
               <span className="text-status-warning-fg/70">
                 {" "}({absoluteTime(run.nextStepAt)})
               </span>
@@ -814,10 +854,17 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
 
   const isLive = data?.data?.run?.status === "running";
+  // The run is "in flight" while it's actively executing OR parked in a
+  // wait. We tick the clock for both so the Duration metric keeps counting
+  // up during pauses and the "Resumes in 57 seconds" countdown advances
+  // smoothly between SSE events / refetches.
+  const isInFlight =
+    isLive || data?.data?.run?.status === "waiting";
 
-  // Tick every 500ms while live so both the canvas's run-elapsed counter and
-  // the timeline's per-step elapsed counter advance between SSE events.
-  const now = useNow(500, Boolean(isLive));
+  // Tick every 500ms while in-flight so the canvas's run-elapsed counter,
+  // the timeline's per-step elapsed counter, the Duration metric, and any
+  // "Resumes in …" relative time all advance between SSE events.
+  const now = useNow(500, isInFlight);
 
   // Track which step events we've already toasted for this run, so the
   // initial replay (when first connecting to the SSE stream) and any
