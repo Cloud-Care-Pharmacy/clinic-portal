@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
+  BRANCH_OP_VALUES,
   RECORD_ACTIVITY_STEP_ENTITY_TYPES,
   RECORD_ACTIVITY_STEP_TYPES,
+  UNARY_BRANCH_OPS,
 } from "@/types";
 
 /**
@@ -126,39 +128,47 @@ const waitForEventStep = z.object({
   timeoutSeconds: z.number().int().min(1).max(2_592_000).optional(),
 });
 
-const branchOpEnum = z.enum([
-  "eq",
-  "neq",
-  "truthy",
-  "falsy",
-  "gt",
-  "lt",
-  "contains",
-  "starts_with",
-  "ends_with",
-  "exists",
-  "not_exists",
-]);
+const branchOpEnum = z.enum(BRANCH_OP_VALUES);
 
-const branchIfStep = z.object({
-  ...baseStep,
-  kind: z.literal("branch_if"),
-  left: templateString,
-  op: branchOpEnum,
-  right: z.string().max(8192).optional(),
-  gotoIfTrue: stepIdRefinement.optional(),
-  gotoIfFalse: stepIdRefinement.optional(),
-});
+const branchConditionSchema = z
+  .object({
+    left: templateString,
+    op: branchOpEnum,
+    right: z.string().max(8192).optional(),
+  })
+  .superRefine((cond, ctx) => {
+    if (!UNARY_BRANCH_OPS.has(cond.op) && !cond.right) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["right"],
+        message: "Required for this operator",
+      });
+    }
+  });
+
+const branchIfStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("branch_if"),
+    left: templateString,
+    op: branchOpEnum,
+    right: z.string().max(8192).optional(),
+    gotoIfTrue: stepIdRefinement.optional(),
+    gotoIfFalse: stepIdRefinement.optional(),
+  })
+  .superRefine((step, ctx) => {
+    if (!UNARY_BRANCH_OPS.has(step.op) && !step.right) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["right"],
+        message: "Required for this operator",
+      });
+    }
+  });
 
 const routerBranchSchema = z.object({
   name: z.string().min(1).max(100),
-  condition: z
-    .object({
-      left: templateString,
-      op: branchOpEnum,
-      right: z.string().max(8192).optional(),
-    })
-    .optional(),
+  condition: branchConditionSchema.optional(),
 });
 
 const routerStep = z.object({

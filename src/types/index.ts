@@ -1623,26 +1623,46 @@ export type WorkflowStepKind =
   | "wait_for_event"
   | "call_workflow";
 
-export type WorkflowBranchOp =
-  | "eq"
-  | "neq"
-  | "truthy"
-  | "falsy"
-  | "gt"
-  | "lt"
-  | "contains"
-  | "starts_with"
-  | "ends_with"
-  | "exists"
-  | "not_exists";
+/**
+ * Single source of truth for branch operators. Wire `value` is what the
+ * backend accepts; `label` is the human-readable form rendered in pickers;
+ * `arity` decides whether a `right` operand is collected.
+ */
+export const BRANCH_OPS = [
+  { value: "eq", label: "equals", arity: "binary" },
+  { value: "neq", label: "not equals", arity: "binary" },
+  { value: "gt", label: "greater than", arity: "binary" },
+  { value: "lt", label: "less than", arity: "binary" },
+  { value: "contains", label: "contains", arity: "binary" },
+  { value: "starts_with", label: "starts with", arity: "binary" },
+  { value: "ends_with", label: "ends with", arity: "binary" },
+  { value: "truthy", label: "is truthy", arity: "unary" },
+  { value: "falsy", label: "is falsy", arity: "unary" },
+  { value: "exists", label: "exists", arity: "unary" },
+  { value: "not_exists", label: "does not exist", arity: "unary" },
+] as const;
+
+export type WorkflowBranchOp = (typeof BRANCH_OPS)[number]["value"];
+
+export const BRANCH_OP_VALUES = BRANCH_OPS.map((o) => o.value) as unknown as readonly [
+  WorkflowBranchOp,
+  ...WorkflowBranchOp[],
+];
+
+export const BRANCH_OP_LABELS: Record<WorkflowBranchOp, string> =
+  Object.fromEntries(BRANCH_OPS.map((o) => [o.value, o.label])) as Record<
+    WorkflowBranchOp,
+    string
+  >;
 
 /** Operators that don't take a `right` operand. */
-export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set([
-  "truthy",
-  "falsy",
-  "exists",
-  "not_exists",
-]);
+export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set(
+  BRANCH_OPS.filter((o) => o.arity === "unary").map((o) => o.value),
+);
+
+export function isUnaryBranchOp(op: WorkflowBranchOp): boolean {
+  return UNARY_BRANCH_OPS.has(op);
+}
 
 /** A single condition clause used inside router branches. */
 export interface WorkflowCondition {
@@ -1671,9 +1691,11 @@ interface WorkflowStepBase {
 export interface WorkflowRouterBranch {
   name: string;
   /**
-   * Single condition expression (legacy/simple form). The wire format is
-   * OR-of-AND `Condition[][]`; this single condition is wrapped as
-   * `[[condition]]` when serialized. Empty branch acts as the "default" arm.
+   * Single condition expression. The wire format is OR-of-AND
+   * `Condition[][]`; this single condition is wrapped as `[[condition]]`
+   * when serialized. A branch with no condition is treated as
+   * unconditionally matching — for an explicit "no branch matched" arm,
+   * use the router's `fallback` instead.
    */
   condition?: WorkflowCondition;
 }

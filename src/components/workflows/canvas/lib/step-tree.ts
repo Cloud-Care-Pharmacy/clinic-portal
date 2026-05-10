@@ -1,7 +1,8 @@
-import type {
-  LoopOnItemsStep,
-  RouterStep,
-  WorkflowStep,
+import {
+  FALLBACK_BRANCH_INDEX,
+  type LoopOnItemsStep,
+  type RouterStep,
+  type WorkflowStep,
 } from "@/types";
 
 /**
@@ -11,7 +12,7 @@ import type {
  *
  * Top-level chain: linked list via `nextAction`.
  *
- * - `RouterStep` → `branches[i]` is the head of branch `i` (or `null` empty).
+ * - `RouterStep` → `branches[i]` is one branch (regular or fallback).
  * - `LoopOnItemsStep` → `firstLoopAction` is the head of the loop body.
  */
 export type StepTreeNode = StepTreeAction | StepTreeRouter | StepTreeLoop;
@@ -33,10 +34,26 @@ export interface StepTreeAction extends StepTreeBase {
   kind: "action";
 }
 
+/** A single branch (regular or fallback) of a router. */
+export interface StepTreeBranch {
+  /** Display label rendered above the branch. */
+  label: string;
+  /**
+   * `branchIndex` value used to tag child steps in the flat array. Regular
+   * branches use `0..N-1`; the fallback branch uses
+   * `FALLBACK_BRANCH_INDEX` (`-1`).
+   */
+  branchIndex: number;
+  /** True when this branch is the router's fallback / "otherwise" arm. */
+  isFallback: boolean;
+  /** Head of the chain inside this branch, or null when empty. */
+  head: StepTreeNode | null;
+}
+
 export interface StepTreeRouter extends StepTreeBase {
   kind: "router";
   step: RouterStep;
-  branches: (StepTreeNode | null)[];
+  branches: StepTreeBranch[];
 }
 
 export interface StepTreeLoop extends StepTreeBase {
@@ -112,6 +129,29 @@ function buildChain(
   return head;
 }
 
+function buildRouterBranches(
+  ctx: BuildContext,
+  router: RouterStep,
+  parentName: string,
+): StepTreeBranch[] {
+  const branchMap = ctx.byParent.get(parentName);
+  const out: StepTreeBranch[] = router.branches.map((b, i) => ({
+    label: b.name || `Branch ${i + 1}`,
+    branchIndex: i,
+    isFallback: false,
+    head: buildChain(ctx, branchMap?.get(i) ?? []),
+  }));
+  if (router.fallback) {
+    out.push({
+      label: router.fallback.name || "Otherwise",
+      branchIndex: FALLBACK_BRANCH_INDEX,
+      isFallback: true,
+      head: buildChain(ctx, branchMap?.get(FALLBACK_BRANCH_INDEX) ?? []),
+    });
+  }
+  return out;
+}
+
 function buildNode(
   ctx: BuildContext,
   step: WorkflowStep,
@@ -129,11 +169,12 @@ function buildNode(
   };
 
   if (step.kind === "router") {
-    const branchMap = ctx.byParent.get(nodeName);
-    const branches: (StepTreeNode | null)[] = step.branches.map((_b, i) =>
-      buildChain(ctx, branchMap?.get(i) ?? []),
-    );
-    return { ...base, kind: "router", step, branches };
+    return {
+      ...base,
+      kind: "router",
+      step,
+      branches: buildRouterBranches(ctx, step, nodeName),
+    };
   }
 
   if (step.kind === "loop_on_items") {
@@ -168,12 +209,14 @@ export interface InsertionLocation {
  * Splice a new step into a flat array at `loc`. The new step is given the
  * appropriate `parentStepName` / `branchIndex` and inserted directly after
  * the `afterFlatIndex` (or at the very front of its sub-chain if null).
+ *
+ * Returns the new array and the inserted index for callers that need it.
  */
 export function insertStep(
   steps: WorkflowStep[],
   newStep: WorkflowStep,
   loc: InsertionLocation,
-): WorkflowStep[] {
+): { steps: WorkflowStep[]; insertedAt: number } {
   const decorated: WorkflowStep = {
     ...newStep,
     parentStepName: loc.parentStepName,
@@ -181,25 +224,20 @@ export function insertStep(
       loc.parentStepName !== undefined ? (loc.branchIndex ?? 0) : undefined,
   };
   if (loc.afterFlatIndex === null) {
-    // Insert at the head of the matching chain. Find the first index where a
-    // step with this parent/branch lives — insert just before it; otherwise
-    // append.
     const matchIdx = steps.findIndex(
       (s) =>
         s.parentStepName === loc.parentStepName &&
         (s.branchIndex ?? 0) === (loc.branchIndex ?? 0),
     );
     const next = [...steps];
-    if (matchIdx === -1) {
-      next.push(decorated);
-    } else {
-      next.splice(matchIdx, 0, decorated);
-    }
-    return next;
+    const insertedAt = matchIdx === -1 ? next.length : matchIdx;
+    next.splice(insertedAt, 0, decorated);
+    return { steps: next, insertedAt };
   }
   const next = [...steps];
-  next.splice(loc.afterFlatIndex + 1, 0, decorated);
-  return next;
+  const insertedAt = loc.afterFlatIndex + 1;
+  next.splice(insertedAt, 0, decorated);
+  return { steps: next, insertedAt };
 }
 
 /**
@@ -212,33 +250,63 @@ export function removeStepAndDescendants(
 ): WorkflowStep[] {
   const target = steps[flatIndex];
   if (!target) return steps;
-  const targetName = stepNodeName(target, flatIndex);
 
-  // Collect descendants by walking the parent map.
+  // Build name → index map once.
+  const nameToIndex = new Map<string, number>();
+  steps.forEach((s, i) => nameToIndex.set(stepNodeName(s, i), i));
+
+  // Build parent → children index by walking once.
+  const childrenOf = new Map<number, number[]>();
+  steps.forEach((s, i) => {
+    if (!s.parentStepName) return;
+    const parentIdx = nameToIndex.get(s.parentStepName);
+    if (parentIdx === undefined) return;
+    const list = childrenOf.get(parentIdx);
+    if (list) list.push(i);
+    else childrenOf.set(parentIdx, [i]);
+  });
+
+  // BFS from the target, marking every descendant.
   const tombstones = new Set<number>([flatIndex]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    steps.forEach((s, i) => {
-      if (tombstones.has(i)) return;
-      if (s.parentStepName === undefined) return;
-      // Find the flat index of the parent step.
-      const parentIdx = steps.findIndex(
-        (p, pi) => stepNodeName(p, pi) === s.parentStepName,
-      );
-      if (parentIdx >= 0 && tombstones.has(parentIdx)) {
-        tombstones.add(i);
-        changed = true;
+  const queue: number[] = [flatIndex];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const child of childrenOf.get(cur) ?? []) {
+      if (!tombstones.has(child)) {
+        tombstones.add(child);
+        queue.push(child);
       }
-    });
-    // Account for steps whose parent name matches the deleted step.
-    steps.forEach((s, i) => {
-      if (tombstones.has(i)) return;
-      if (s.parentStepName === targetName) {
-        tombstones.add(i);
-        changed = true;
-      }
-    });
+    }
   }
   return steps.filter((_, i) => !tombstones.has(i));
+}
+
+/**
+ * Rename a step's id and propagate the rename to every descendant's
+ * `parentStepName`. Returns the updated flat array. Use this whenever a
+ * router or loop step's id changes from the inspector — direct in-place
+ * mutation will silently orphan the children.
+ */
+export function renameStepId(
+  steps: WorkflowStep[],
+  flatIndex: number,
+  newId: string | undefined,
+): WorkflowStep[] {
+  const target = steps[flatIndex];
+  if (!target) return steps;
+  const oldName = stepNodeName(target, flatIndex);
+  const updated: WorkflowStep = { ...target, id: newId || undefined };
+  const newName = stepNodeName(updated, flatIndex);
+  if (oldName === newName) {
+    const next = [...steps];
+    next[flatIndex] = updated;
+    return next;
+  }
+  return steps.map((s, i) => {
+    if (i === flatIndex) return updated;
+    if (s.parentStepName === oldName) {
+      return { ...s, parentStepName: newName };
+    }
+    return s;
+  });
 }

@@ -1,13 +1,18 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { WorkflowGraph } from "./WorkflowGraph";
 import { EmptyCanvas } from "./EmptyCanvas";
 import { NodePalette } from "./NodePalette";
 import { NodeInspector, type Selection } from "./NodeInspector";
 import { blankTrigger } from "./forms/TriggerForms";
 import { blankStep } from "./forms/StepForms";
-import { insertStep, stepNodeName } from "./lib/step-tree";
+import {
+  insertStep,
+  removeStepAndDescendants,
+  renameStepId,
+  stepNodeName,
+} from "./lib/step-tree";
 import type { InsertionRequest } from "./lib/canvas-context";
 import type {
   Workflow,
@@ -94,9 +99,9 @@ export function WorkflowEditor({
     let nextSteps: WorkflowStep[];
     let newIndex: number;
     if (pendingInsertion) {
-      nextSteps = insertStep(steps, newStep, pendingInsertion);
-      newIndex = nextSteps.findIndex((s, i) => steps[i] !== s);
-      if (newIndex < 0) newIndex = nextSteps.length - 1;
+      const result = insertStep(steps, newStep, pendingInsertion);
+      nextSteps = result.steps;
+      newIndex = result.insertedAt;
     } else {
       nextSteps = [...steps, newStep];
       newIndex = nextSteps.length - 1;
@@ -120,8 +125,19 @@ export function WorkflowEditor({
   };
 
   const updateStep = (index: number, s: WorkflowStep) => {
-    const next = [...steps];
-    next[index] = s;
+    const current = steps[index];
+    const idChanged =
+      current && (current.id ?? undefined) !== (s.id ?? undefined);
+    let next: WorkflowStep[];
+    if (idChanged) {
+      // Apply the non-id changes, then propagate the id rename to children.
+      const intermediate = [...steps];
+      intermediate[index] = { ...s, id: current.id };
+      next = renameStepId(intermediate, index, s.id);
+    } else {
+      next = [...steps];
+      next[index] = s;
+    }
     onChange({ triggers, steps: next });
   };
 
@@ -142,7 +158,7 @@ export function WorkflowEditor({
   };
 
   const deleteStep = (index: number) => {
-    const next = steps.filter((_, i) => i !== index);
+    const next = removeStepAndDescendants(steps, index);
     onChange({ triggers, steps: next });
     setSelection(null);
   };
@@ -157,13 +173,14 @@ export function WorkflowEditor({
         : null;
 
   // Open palette in response to an external signal (e.g. bottom action bar).
-  // Uses the "store previous prop" render-time pattern
-  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
-  const [lastSignal, setLastSignal] = useState(openPaletteSignal ?? 0);
-  if ((openPaletteSignal ?? 0) !== lastSignal) {
-    setLastSignal(openPaletteSignal ?? 0);
+  // Skip the initial mount so the palette only opens on actual signal changes.
+  const lastPaletteSignal = useRef(openPaletteSignal);
+  useEffect(() => {
+    if (openPaletteSignal === undefined) return;
+    if (lastPaletteSignal.current === openPaletteSignal) return;
+    lastPaletteSignal.current = openPaletteSignal;
     openPalette(triggers.length === 0 ? "triggers" : "actions");
-  }
+  }, [openPaletteSignal, openPalette, triggers.length]);
 
   return (
     <div className="flex h-full min-h-0 w-full">

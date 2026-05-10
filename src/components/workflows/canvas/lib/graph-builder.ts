@@ -367,17 +367,17 @@ function buildRouterChildren(
   router: StepTreeRouter,
   opts: BuildOpts,
 ): SubGraph {
-  const branchGraphs: SubGraph[] = router.branches.map((branchHead, i) => {
-    if (branchHead) return buildChainGraph(branchHead, opts);
-    // Empty branch: BigAddButton.
-    const big = makeBigAddButton(router.nodeName, i, router.nodeName);
-    big.position = { x: 0, y: 0 };
-    const end = makeGraphEnd(
-      `${router.nodeName}__br-${i}-end`,
-      false,
-      VERTICAL_SPACE_BETWEEN_STEPS,
+  const branchGraphs: SubGraph[] = router.branches.map((branch) => {
+    if (branch.head) return buildChainGraph(branch.head, opts);
+    // Empty branch: BigAddButton placeholder. No graphEnd needed — the
+    // router-end edge will source from the BigAddButton itself.
+    const big = makeBigAddButton(
+      router.nodeName,
+      branch.branchIndex,
+      router.nodeName,
     );
-    return { nodes: [big, end], edges: [] };
+    big.position = { x: 0, y: 0 };
+    return { nodes: [big], edges: [] };
   });
 
   const branchBoxes = branchGraphs.map(calculateBoundingBox);
@@ -411,16 +411,24 @@ function buildRouterChildren(
   const maxHeight = Math.max(...branchBoxes.map((b) => b.height), 0);
   const mergeY = childOffsetY + maxHeight + VERTICAL_SPACE_BETWEEN_STEPS;
 
+  // Branch closest to the merge column (smallest |centeredOffset|) draws the
+  // arrow head into the merge node. This stays correct under reorder/delete.
+  const arrowBranchIdx = centeredOffsets.reduce(
+    (best, x, i, arr) => (Math.abs(x) < Math.abs(arr[best]) ? i : best),
+    0,
+  );
+
   // Router start edges: from router → first node of each branch.
   const startEdges: Edge[] = placedBranches.map((g, i) => {
     const head = g.nodes[0];
+    const branch = router.branches[i];
     return {
       id: `${router.nodeName}__rs-${i}`,
       source: router.nodeName,
       target: head.id,
       type: "routerStart",
       data: {
-        branchLabel: router.step.branches[i]?.name ?? `Branch ${i + 1}`,
+        branchLabel: branch.label,
         drawHorizontalLineTo: centeredOffsets[i],
         verticalGap: VERTICAL_OFFSET_BETWEEN_ROUTER_AND_CHILD,
         isFirstBranch: i === 0,
@@ -428,7 +436,7 @@ function buildRouterChildren(
         insertion: {
           afterFlatIndex: null,
           parentStepName: router.nodeName,
-          branchIndex: i,
+          branchIndex: branch.branchIndex,
         },
       } as WfRouterStartEdgeData,
     } as Edge;
@@ -442,23 +450,25 @@ function buildRouterChildren(
   );
 
   // Router end edges: from each branch tail → mergeEndNode.
-  const endEdges: Edge[] = placedBranches.map((g, i) => {
-    const tailId = lastStructuralNodeId(g);
-    if (!tailId) return null;
-    return {
-      id: `${router.nodeName}__re-${i}`,
-      source: tailId,
-      target: mergeEndNode.id,
-      type: "routerEnd",
-      data: {
-        drawHorizontalLineTo: -centeredOffsets[i],
-        verticalGap: mergeY - (childOffsetY + branchBoxes[i].height),
-        isFirstBranch: i === 0,
-        isLastBranch: i === placedBranches.length - 1,
-        drawArrowAtEnd: i === 0,
-      } as WfRouterEndEdgeData,
-    } as Edge;
-  }).filter(Boolean) as Edge[];
+  const endEdges: Edge[] = placedBranches
+    .map((g, i) => {
+      const tailId = lastStructuralNodeId(g);
+      if (!tailId) return null;
+      return {
+        id: `${router.nodeName}__re-${i}`,
+        source: tailId,
+        target: mergeEndNode.id,
+        type: "routerEnd",
+        data: {
+          drawHorizontalLineTo: -centeredOffsets[i],
+          verticalGap: mergeY - (childOffsetY + branchBoxes[i].height),
+          isFirstBranch: i === 0,
+          isLastBranch: i === placedBranches.length - 1,
+          drawArrowAtEnd: i === arrowBranchIdx,
+        } as WfRouterEndEdgeData,
+      } as Edge;
+    })
+    .filter(Boolean) as Edge[];
 
   return {
     nodes: [
@@ -485,7 +495,6 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
   } = {};
 
   let cur: StepTreeNode | null = head;
-  let isFirst = true;
 
   while (cur) {
     const stepNode = makeStepNode(cur, opts);
@@ -532,7 +541,6 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
       parentStepName: cur.step.parentStepName,
       branchIndex: cur.step.branchIndex,
     };
-    isFirst = false;
     cur = cur.nextAction;
   }
 
@@ -562,9 +570,6 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
       ),
     );
   }
-
-  // Suppress unused-var lint warning for `isFirst` (kept for future use).
-  void isFirst;
 
   return result;
 }
