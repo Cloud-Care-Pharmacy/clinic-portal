@@ -392,13 +392,17 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     } as WfLoopReturnEdgeData,
   };
 
-  // Graph-end anchor below everything. Parent-chain edges must continue from
-  // this anchor, not from the loop card itself; otherwise the continuation
-  // line cuts through the loop body.
+  // Graph-end anchor below the wraparound. Parent-chain edges must continue
+  // from this anchor, not from the loop card itself; otherwise the
+  // continuation line cuts through the loop body. We place the anchor right
+  // below the wraparound's bottom curve (childBox.height + ARC) so that the
+  // regular straight chain edge between this anchor and the next step picks
+  // up exactly where the wraparound ends — no gap, same VSPACE as everywhere
+  // else in the chain.
   const subEnd = makeGraphEnd(
     `${loop.nodeName}__loop-end`,
     false,
-    childOffsetY + childBox.height + ARC_LENGTH + VERTICAL_SPACE_BETWEEN_STEPS,
+    childOffsetY + childBox.height + ARC_LENGTH,
   );
 
   return {
