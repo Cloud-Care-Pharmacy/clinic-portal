@@ -6,15 +6,14 @@ import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Check,
   Clock,
   CircleDashed,
   AlertTriangle,
   Filter,
-  Radio,
 } from "lucide-react";
 import { formatDistanceToNowStrict, format as formatDate } from "date-fns";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -214,20 +213,6 @@ function isOverdue(iso: string): boolean {
 }
 
 /**
- * Total elapsed time the run has been in flight. Pass `now` so this is
- * pure w.r.t. props — that way React (and the React Compiler) re-evaluates
- * it on every parent tick while the run is `running` or `waiting`, instead
- * of treating `Date.now()` as a stable read and freezing the display.
- */
-function runDuration(run: WorkflowRun, now: number): string {
-  const start = parseUtcMs(run.startedAt);
-  if (!run.completedAt) {
-    return fmtDuration(Math.max(0, now - start));
-  }
-  return fmtDuration(parseUtcMs(run.completedAt) - start);
-}
-
-/**
  * Render `Resumes in 57 seconds` style copy that ticks every parent
  * render. Mirrors `formatDistanceToNowStrict({ addSuffix: false })` but
  * computed off the supplied `now` so it stays in sync with the rest of
@@ -354,22 +339,6 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
         )}
       </div>
     </aside>
-  );
-}
-
-interface RunMetricProps {
-  label: string;
-  children: React.ReactNode;
-}
-
-function RunMetric({ label, children }: RunMetricProps) {
-  return (
-    <div className="flex-1 rounded-xl border border-border bg-popover px-3.5 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1.5 text-base font-semibold">{children}</div>
-    </div>
   );
 }
 
@@ -544,36 +513,32 @@ function JsonBlock({
   );
 }
 
-interface RunDetailProps {
-  /** Top-level steps from the workflow definition (used to pre-fill the trace). */
-  topLevelSteps: WorkflowStep[];
-  /** Cached run + events. `undefined` while loading. */
-  data: WorkflowRunDetailResponse | undefined;
-  isLoading: boolean;
-  /** True while the SSE stream is open — drives the live elapsed counter. */
-  isLive: boolean;
-  /** Ticking timestamp from the parent (only re-renders during a live run). */
-  now: number;
-}
+type StepRow = {
+  stepIndex: number;
+  kind: WorkflowStepKind | null;
+  event: WorkflowRunEvent | null;
+  status: StepStatus;
+};
 
-function RunDetail({
-  topLevelSteps,
-  data,
-  isLoading,
-  isLive,
-  now,
-}: RunDetailProps) {
-  if (isLoading || !data) {
-    return (
-      <div className="flex-1 space-y-4 p-6">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
-  }
+type RunSummary = {
+  rows: StepRow[];
+  total: number;
+  completed: number;
+  hasRunning: boolean;
+  hasFailed: boolean;
+};
 
-  const { run, events } = data.data;
+/**
+ * Pure derivation of the step trace from the workflow definition + the
+ * cached run events. Lifted out of `RunDetail` so the collapsible header
+ * in `RunPanel` can show the same `n / total` summary without rendering
+ * the trace itself.
+ */
+function buildRunSummary(
+  topLevelSteps: WorkflowStep[],
+  run: WorkflowRun,
+  events: WorkflowRunEvent[],
+): RunSummary {
   const isTerminal =
     run.status === "completed" ||
     run.status === "failed" ||
@@ -583,8 +548,7 @@ function RunDetail({
   // `step_started → step_completed → wait_scheduled`; while the run is parked
   // the step really *is* waiting (not done), but once the run resumes /
   // finishes the same step is done. So we pick last-seen by sequence and
-  // then post-process: a `wait_scheduled` only counts as `waiting` while the
-  // run itself is still waiting on this step; otherwise treat it as done.
+  // then post-process below.
   const sortedEvents = [...events].sort((a, b) => a.sequence - b.sequence);
   const byStep = new Map<number, WorkflowRunEvent>();
   for (const e of sortedEvents) {
@@ -598,7 +562,7 @@ function RunDetail({
       byStep.set(e.stepIndex, e);
     }
   }
-  function statusFor(e: WorkflowRunEvent): StepStatus {
+  const statusFor = (e: WorkflowRunEvent): StepStatus => {
     switch (e.eventType) {
       case "step_completed":
         return "done";
@@ -614,18 +578,12 @@ function RunDetail({
       default:
         return isTerminal ? "done" : "running";
     }
-  }
+  };
 
   // Pre-fill: render one row per step in the workflow definition so the
   // timeline appears deterministic from the first paint. Steps without an
   // event yet are shown in a `pending` (dashed, dimmed) state — and as
   // `step` events stream in they swap to running/done/failed in place.
-  type StepRow = {
-    stepIndex: number;
-    kind: WorkflowStepKind | null;
-    event: WorkflowRunEvent | null;
-    status: StepStatus;
-  };
   const definitionRows: StepRow[] = topLevelSteps.map((step, idx) => {
     const ev = byStep.get(idx) ?? null;
     return {
@@ -645,98 +603,42 @@ function RunDetail({
       event,
       status: statusFor(event),
     }));
-  const stepRows: StepRow[] =
-    definitionRows.length > 0 ? definitionRows : auditRows;
+  const rows: StepRow[] = definitionRows.length > 0 ? definitionRows : auditRows;
 
-  // Compute the running step's live elapsed: time since its `step_started`
-  // event was emitted. Used only when the run is still live.
-  function liveElapsedMsFor(row: StepRow): number | null {
-    if (!isLive || row.status !== "running" || !row.event) return null;
-    const startedAt = parseUtcMs(row.event.createdAt);
-    return Math.max(0, now - startedAt);
-  }
-
-  // Progress: completed/failed/waiting all count as "passed"; pending and
-  // running do not. Clamp to total in case we ever overshoot.
-  const total = stepRows.length;
-  const completed = stepRows.filter(
-    (r) => r.status === "done" || r.status === "failed" || r.status === "waiting"
+  const total = rows.length;
+  const completed = rows.filter(
+    (r) => r.status === "done" || r.status === "failed" || r.status === "waiting",
   ).length;
-  const stepNumerator = isTerminal ? total : Math.min(completed, total);
-  const stepDenominator = total || 0;
-  const progressPct = total > 0 ? (completed / total) * 100 : 0;
-  const hasRunningStep = stepRows.some((r) => r.status === "running");
+  const hasRunning = rows.some((r) => r.status === "running");
+  const hasFailed = rows.some((r) => r.status === "failed");
 
+  return { rows, total, completed, hasRunning, hasFailed };
+}
+
+interface RunBannersProps {
+  run: WorkflowRun;
+  now: number;
+}
+
+/**
+ * Run-level banners (last error, waiting countdown). Rendered above the
+ * collapsible Step trace so they remain visible when the trace is minimised.
+ */
+function RunBanners({ run, now }: RunBannersProps) {
+  const showError = Boolean(run.lastError);
+  const showWaiting =
+    run.status === "waiting" && (run.nextStepAt || run.awaitingEventType);
+  if (!showError && !showWaiting) return null;
   return (
-    <div className="p-6">
-      {/* Top progress bar — fills as steps complete; an indeterminate sweep
-          overlays it whenever a step is mid-flight so the user sees motion
-          even between completions. */}
-      {total > 0 && (
-        <div
-          className="mb-4 h-1 w-full overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={stepNumerator}
-          aria-label="Run progress"
-        >
-          <div
-            className="relative h-full bg-status-success-fg transition-[width] duration-500 ease-out"
-            style={{ width: `${progressPct}%` }}
-          >
-            {hasRunningStep && (
-              <span
-                aria-hidden
-                className="absolute inset-y-0 right-0 w-1/3 motion-reduce:hidden"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--status-success-fg) 65%, white) 50%, transparent)",
-                  animation: "wf-progress-indeterminate 1.4s linear infinite",
-                }}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="mb-5 flex gap-3">
-        <RunMetric label="Status">
-          <div className="flex items-center gap-2">
-            <StatusBadge status={run.status} dot className="capitalize" />
-            {isLive && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
-                aria-label="Live stream connected"
-                title="Streaming live updates"
-              >
-                <Radio
-                  className="size-2.5 motion-reduce:animate-none"
-                  style={{ animation: "wf-pulse 1.5s infinite" }}
-                />
-                Live
-              </span>
-            )}
-          </div>
-        </RunMetric>
-        <RunMetric label="Duration">{runDuration(run, now)}</RunMetric>
-        <RunMetric label="Step">
-          <span className="font-mono text-sm tabular-nums">
-            {stepNumerator}
-            <span className="text-muted-foreground"> / {stepDenominator || "?"}</span>
-          </span>
-        </RunMetric>
-      </div>
-
-      {run.lastError && (
-        <div className="mb-4 rounded-xl border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
+    <div className="flex flex-col gap-2 px-6 py-3">
+      {showError && (
+        <div className="rounded-xl border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <div className="font-semibold">Last error</div>
           <div className="mt-1 font-mono text-xs">{run.lastError}</div>
         </div>
       )}
-
-      {run.status === "waiting" && (run.nextStepAt || run.awaitingEventType) && (
-        <div className="mb-4 rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
+      {showWaiting && (
+        <div className="rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
           {run.nextStepAt && (
             <>
               {isOverdue(run.nextStepAt) ? (
@@ -764,9 +666,91 @@ function RunDetail({
           .
         </div>
       )}
+    </div>
+  );
+}
 
-      <h3 className="mb-3 text-sm font-semibold">Step trace</h3>
+interface StepTraceHeaderProps {
+  summary: RunSummary | null;
+  collapsed: boolean;
+  onToggle: () => void;
+  isTerminal: boolean;
+}
 
+/**
+ * Slim header bar above the Step trace panel, modelled on n8n's "Logs"
+ * row. Always visible; clicking anywhere on it (or the chevron) toggles
+  * the trace open/closed.
+ */
+function StepTraceHeader({
+  summary,
+  collapsed,
+  onToggle,
+  isTerminal,
+}: StepTraceHeaderProps) {
+  const total = summary?.total ?? 0;
+  const completed = summary?.completed ?? 0;
+  const numerator = isTerminal ? total : Math.min(completed, total);
+  const dotClass = !summary
+    ? "bg-muted-foreground"
+    : summary.hasFailed
+      ? "bg-status-danger-fg"
+      : summary.hasRunning
+        ? "bg-status-warning-fg animate-pulse motion-reduce:animate-none"
+        : completed === total && total > 0
+          ? "bg-status-success-fg"
+          : "bg-muted-foreground";
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      aria-controls="run-step-trace"
+      className="flex w-full items-center gap-2.5 border-t border-border bg-card/80 px-6 py-2.5 text-left transition-colors hover:bg-muted/60"
+    >
+      <span className={cn("size-1.5 rounded-full", dotClass)} aria-hidden />
+      <h3 className="text-sm font-semibold">Step trace</h3>
+      {total > 0 && (
+        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+          {numerator}
+          <span className="text-muted-foreground/60"> / {total}</span>
+        </span>
+      )}
+      <span className="ml-auto inline-flex items-center text-muted-foreground">
+        {collapsed ? (
+          <ChevronUp className="size-4" />
+        ) : (
+          <ChevronDown className="size-4" />
+        )}
+      </span>
+    </button>
+  );
+}
+
+interface RunDetailProps {
+  /** Pre-computed step rows for the timeline. */
+  summary: RunSummary;
+  /** The run, used for live-elapsed and last-row context display. */
+  run: WorkflowRun;
+  /** True while the SSE stream is open — drives the live elapsed counter. */
+  isLive: boolean;
+  /** Ticking timestamp from the parent (only re-renders during a live run). */
+  now: number;
+}
+
+function RunDetail({ summary, run, isLive, now }: RunDetailProps) {
+  const stepRows = summary.rows;
+
+  // Compute the running step's live elapsed: time since its `step_started`
+  // event was emitted. Used only when the run is still live.
+  const liveElapsedMsFor = (row: StepRow): number | null => {
+    if (!isLive || row.status !== "running" || !row.event) return null;
+    const startedAt = parseUtcMs(row.event.createdAt);
+    return Math.max(0, now - startedAt);
+  };
+
+  return (
+    <div className="p-6 pt-4">
       {stepRows.length === 0 ? (
         <EmptyState
           title="No step events yet"
@@ -866,6 +850,11 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
   // "Resumes in …" relative time all advance between SSE events.
   const now = useNow(500, isInFlight);
 
+  // Local UI state: the Step trace section starts expanded and can be
+  // minimised so the canvas takes the full pane (mirrors the n8n "Logs"
+  // collapse pattern). Not persisted across selections.
+  const [traceCollapsed, setTraceCollapsed] = useState(false);
+
   // Track which step events we've already toasted for this run, so the
   // initial replay (when first connecting to the SSE stream) and any
   // reconnects don't re-fire toasts. Reset whenever the selected run
@@ -928,9 +917,21 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
       : Math.max(0, now - parseUtcMs(run.startedAt))
     : 0;
 
+  // Pre-compute the step trace summary so the collapsible header can show
+  // `n / total` and a status dot without rendering the trace itself.
+  const summary = run ? buildRunSummary(topLevelSteps, run, data?.data.events ?? []) : null;
+  const isTerminal = run
+    ? run.status === "completed" || run.status === "failed" || run.status === "cancelled"
+    : false;
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <div className="relative h-1/2 min-h-72 border-b border-border bg-background">
+      <div
+        className={cn(
+          "relative border-b border-border bg-background",
+          traceCollapsed ? "min-h-0 flex-1" : "h-1/2 min-h-72",
+        )}
+      >
         {run ? (
           <RunCanvas
             triggers={triggers}
@@ -947,15 +948,33 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
           </div>
         )}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <RunDetail
-          topLevelSteps={topLevelSteps}
-          data={data}
-          isLoading={isLoading}
-          isLive={Boolean(isLive)}
-          now={now}
-        />
-      </div>
+      {run && <RunBanners run={run} now={now} />}
+      <StepTraceHeader
+        summary={summary}
+        collapsed={traceCollapsed}
+        onToggle={() => setTraceCollapsed((c) => !c)}
+        isTerminal={isTerminal}
+      />
+      {!traceCollapsed && (
+        <div
+          id="run-step-trace"
+          className="min-h-0 flex-1 overflow-y-auto"
+        >
+          {isLoading || !data || !run || !summary ? (
+            <div className="space-y-4 p-6">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : (
+            <RunDetail
+              summary={summary}
+              run={run}
+              isLive={Boolean(isLive)}
+              now={now}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
