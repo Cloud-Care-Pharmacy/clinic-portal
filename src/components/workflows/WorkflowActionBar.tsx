@@ -14,7 +14,6 @@ import {
   MousePointer,
   Play,
   Plus,
-  Power,
   Save,
   Trash2,
 } from "lucide-react";
@@ -59,8 +58,9 @@ interface WorkflowActionBarProps {
 /**
  * Sticky floating bottom bar — combines canvas viewport tools and workflow
  * actions into a single expandable pill. Collapsed state shows only the
- * primary `Test run` button and a more-actions trigger. Hovering anywhere on
- * the pill reveals the full toolset; the ellipsis opens overflow actions.
+ * canvas zoom/hand controls, primary `Test run` button, and a more-actions
+ * trigger. Hovering anywhere on the pill reveals the full toolset; the
+ * ellipsis opens overflow-only actions.
  */
 export function WorkflowActionBar({
   tab,
@@ -133,21 +133,6 @@ export function WorkflowActionBar({
                 <IconButton onClick={handleFit} tooltip="Fit view">
                   <Maximize2 className="size-3.5" />
                 </IconButton>
-                <IconButton
-                  onClick={onTogglePanningMode}
-                  tooltip={
-                    panningMode === "grab"
-                      ? "Switch to select tool"
-                      : "Switch to hand tool"
-                  }
-                  active={panningMode === "grab"}
-                >
-                  {panningMode === "grab" ? (
-                    <Hand className="size-3.5" />
-                  ) : (
-                    <MousePointer className="size-3.5" />
-                  )}
-                </IconButton>
               </div>
             </>
           )}
@@ -182,12 +167,27 @@ export function WorkflowActionBar({
 
         {showCanvasControls && (
           <>
-            <div className="flex h-8 items-center gap-0.5 rounded-full bg-muted/70 p-0.5">
+            <div className="flex h-8 items-center gap-0.5 rounded-full bg-popover p-0.5">
               <IconButton onClick={handleZoomOut} tooltip="Zoom out">
                 <Minus className="size-3.5" />
               </IconButton>
               <IconButton onClick={handleZoomIn} tooltip="Zoom in">
                 <Plus className="size-3.5" />
+              </IconButton>
+              <IconButton
+                onClick={onTogglePanningMode}
+                tooltip={
+                  panningMode === "grab"
+                    ? "Switch to select tool"
+                    : "Switch to hand tool"
+                }
+                active={panningMode === "grab"}
+              >
+                {panningMode === "grab" ? (
+                  <Hand className="size-3.5" />
+                ) : (
+                  <MousePointer className="size-3.5" />
+                )}
               </IconButton>
             </div>
             <Separator orientation="vertical" className="mx-0.5 h-6" />
@@ -242,16 +242,6 @@ export function WorkflowActionBar({
             <MoreHorizontal className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="top" className="min-w-56">
-            {showCanvasControls && (
-              <DropdownMenuItem onClick={onAdd}>
-                <Plus className="mr-2 size-3.5" />
-                Add step
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={onSave} disabled={saveDisabled}>
-              <Save className="mr-2 size-3.5" />
-              {saving ? "Saving…" : dirty ? "Save draft" : "Saved"}
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={onViewJson}>
               <Code2 className="mr-2 size-3.5" />
               View JSON
@@ -267,14 +257,6 @@ export function WorkflowActionBar({
             <DropdownMenuItem onClick={onDuplicate} disabled={duplicating}>
               <Files className="mr-2 size-3.5" />
               {duplicating ? "Duplicating…" : "Duplicate workflow"}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onToggleActive(!isActive)}
-              disabled={togglePending}
-            >
-              <Power className="mr-2 size-3.5" />
-              {isActive ? "Disable workflow" : "Enable workflow"}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={onDelete}>
@@ -336,8 +318,8 @@ function IconButton({
       aria-label={tooltip}
       onClick={onClick}
       className={cn(
-        "size-7 p-0 text-muted-foreground hover:text-foreground",
-        active && "bg-muted text-foreground"
+        "size-7 bg-popover p-0 text-muted-foreground hover:bg-popover hover:text-foreground",
+        active && "bg-popover text-foreground shadow-sm ring-1 ring-border"
       )}
     >
       {children}
