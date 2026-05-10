@@ -1,5 +1,7 @@
 "use client";
 
+import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -15,12 +17,16 @@ import type {
   HttpCallStep,
   LookupConsultationStep,
   LookupPatientStep,
+  LoopOnItemsStep,
   RecordActivityStep,
+  RouterStep,
   SendEmailStep,
   SendSmsStep,
   WaitForEventStep,
   WaitStep,
   Workflow,
+  WorkflowBranchOp,
+  WorkflowRouterBranch,
   WorkflowStep,
   WorkflowStepKind,
 } from "@/types";
@@ -449,6 +455,245 @@ function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
   );
 }
 
+const ROUTER_OPS: WorkflowBranchOp[] = [
+  "eq",
+  "neq",
+  "gt",
+  "lt",
+  "truthy",
+  "falsy",
+];
+
+function RouterForm(props: StepFormProps<RouterStep>) {
+  const { step, onChange, errors } = props;
+  const branches = step.branches ?? [];
+
+  const updateBranch = (idx: number, next: WorkflowRouterBranch) => {
+    const copy = branches.slice();
+    copy[idx] = next;
+    onChange({ ...step, branches: copy });
+  };
+
+  const addBranch = () => {
+    onChange({
+      ...step,
+      branches: [...branches, { name: `Branch ${branches.length + 1}` }],
+    });
+  };
+
+  const removeBranch = (idx: number) => {
+    onChange({
+      ...step,
+      branches: branches.filter((_, i) => i !== idx),
+    });
+  };
+
+  return (
+    <>
+      <Field
+        label="Execution"
+        hint="Whether all matching branches run, or only the first."
+      >
+        <Select
+          value={step.executionType ?? "first_match"}
+          onValueChange={(v) =>
+            v &&
+            onChange({
+              ...step,
+              executionType: v as RouterStep["executionType"],
+            })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="first_match">First match wins</SelectItem>
+            <SelectItem value="all">Run all matching</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-muted-foreground">
+            Branches
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={addBranch}
+            className="h-7 gap-1 px-2 text-xs"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add branch
+          </Button>
+        </div>
+
+        {branches.map((branch, idx) => {
+          const op = branch.condition?.op;
+          const isUnary = op === "truthy" || op === "falsy";
+          const branchErr = errors?.[`branches.${idx}.name`];
+          return (
+            <div
+              key={idx}
+              className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/30 p-3"
+            >
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <Field label={`Branch ${idx + 1} name`} error={branchErr}>
+                    <Input
+                      value={branch.name}
+                      onChange={(e) =>
+                        updateBranch(idx, { ...branch, name: e.target.value })
+                      }
+                      placeholder="Branch name"
+                    />
+                  </Field>
+                </div>
+                {branches.length > 1 && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => removeBranch(idx)}
+                    className="mt-6 h-8 w-8 text-muted-foreground"
+                    aria-label="Remove branch"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+
+              <Field
+                label="Condition (optional)"
+                hint="Leave blank for a default/fallback branch."
+              >
+                <div className="flex flex-col gap-2">
+                  <TemplatedField
+                    label=""
+                    value={branch.condition?.left ?? ""}
+                    onChange={(v) =>
+                      updateBranch(idx, {
+                        ...branch,
+                        condition: v
+                          ? {
+                              left: v,
+                              op: branch.condition?.op ?? "eq",
+                              right: branch.condition?.right,
+                            }
+                          : undefined,
+                      })
+                    }
+                    placeholder="{{vars.outreach.outcome}}"
+                  />
+                  {branch.condition?.left ? (
+                    <div className="flex gap-2">
+                      <Select
+                        value={branch.condition.op}
+                        onValueChange={(v) =>
+                          v &&
+                          branch.condition &&
+                          updateBranch(idx, {
+                            ...branch,
+                            condition: {
+                              ...branch.condition,
+                              op: v as WorkflowBranchOp,
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROUTER_OPS.map((op) => (
+                            <SelectItem key={op} value={op}>
+                              {op}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!isUnary && (
+                        <Input
+                          value={branch.condition.right ?? ""}
+                          onChange={(e) =>
+                            branch.condition &&
+                            updateBranch(idx, {
+                              ...branch,
+                              condition: {
+                                ...branch.condition,
+                                right: e.target.value,
+                              },
+                            })
+                          }
+                          placeholder='"reached"'
+                          className="flex-1 font-mono text-xs"
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              </Field>
+            </div>
+          );
+        })}
+      </div>
+
+      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
+    </>
+  );
+}
+
+function LoopOnItemsForm(props: StepFormProps<LoopOnItemsStep>) {
+  const { step, onChange, errors } = props;
+  return (
+    <>
+      <TemplatedField
+        label="Items"
+        hint="Template expression that resolves to an array."
+        value={step.items ?? ""}
+        onChange={(v) => onChange({ ...step, items: v })}
+        placeholder="{{vars.patients}}"
+        error={errors?.items}
+      />
+      <Field
+        label="Item variable"
+        hint="Name exposed inside the loop body. Defaults to `item`."
+        error={errors?.itemAs}
+      >
+        <Input
+          value={step.itemAs ?? ""}
+          onChange={(e) =>
+            onChange({ ...step, itemAs: e.target.value || undefined })
+          }
+          placeholder="item"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field label="Max iterations (optional)" error={errors?.maxIterations}>
+        <Input
+          type="number"
+          min={1}
+          value={step.maxIterations ?? ""}
+          onChange={(e) => {
+            const n = e.target.value ? Number(e.target.value) : undefined;
+            onChange({
+              ...step,
+              maxIterations:
+                typeof n === "number" && Number.isFinite(n) ? n : undefined,
+            });
+          }}
+          placeholder="100"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
+    </>
+  );
+}
+
 interface StepInspectorProps {
   step: WorkflowStep;
   onChange: (next: WorkflowStep) => void;
@@ -469,6 +714,10 @@ export function StepInspector(props: StepInspectorProps) {
       return <WaitForEventForm {...(props as StepFormProps<WaitForEventStep>)} />;
     case "branch_if":
       return <BranchIfForm {...(props as StepFormProps<BranchIfStep>)} />;
+    case "router":
+      return <RouterForm {...(props as StepFormProps<RouterStep>)} />;
+    case "loop_on_items":
+      return <LoopOnItemsForm {...(props as StepFormProps<LoopOnItemsStep>)} />;
     case "lookup_patient":
       return <LookupPatientForm {...(props as StepFormProps<LookupPatientStep>)} />;
     case "lookup_consultation":
@@ -499,6 +748,17 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
       return { kind: "wait_for_event", eventType: "" };
     case "branch_if":
       return { kind: "branch_if", left: "", op: "eq", right: "" };
+    case "router":
+      return {
+        kind: "router",
+        branches: [
+          { name: "Branch 1" },
+          { name: "Otherwise" },
+        ],
+        executionType: "first_match",
+      };
+    case "loop_on_items":
+      return { kind: "loop_on_items", items: "", itemAs: "item" };
     case "lookup_patient":
       return { kind: "lookup_patient", patientId: "", storeAs: "patient" };
     case "lookup_consultation":

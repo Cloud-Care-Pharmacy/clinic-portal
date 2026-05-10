@@ -9,6 +9,8 @@ import { NodePalette } from "./NodePalette";
 import { NodeInspector, type Selection } from "./NodeInspector";
 import { blankTrigger } from "./forms/TriggerForms";
 import { blankStep } from "./forms/StepForms";
+import { insertStep, stepNodeName } from "./lib/step-tree";
+import type { InsertionRequest } from "./lib/canvas-context";
 import type {
   Workflow,
   WorkflowStep,
@@ -36,20 +38,19 @@ export function WorkflowEditor({
 }: WorkflowEditorProps) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [paletteTab, setPaletteTab] = useState<"triggers" | "actions">(
-    "actions"
+  const [paletteTab, setPaletteTab] = useState<"triggers" | "actions">("actions");
+  const [pendingInsertion, setPendingInsertion] = useState<InsertionRequest | null>(
+    null,
   );
 
   const isEmpty = triggers.length === 0 && steps.length === 0;
 
-  const openPalette = useCallback(
-    (tab: "triggers" | "actions") => {
-      setPaletteTab(tab);
-      setPaletteOpen(true);
-      setSelection(null);
-    },
-    []
-  );
+  const openPalette = useCallback((tab: "triggers" | "actions") => {
+    setPaletteTab(tab);
+    setPaletteOpen(true);
+    setPendingInsertion(null);
+    setSelection(null);
+  }, []);
 
   const handleSelectNodeId = useCallback(
     (id: string | null) => {
@@ -58,28 +59,48 @@ export function WorkflowEditor({
         return;
       }
       setPaletteOpen(false);
-      const m = id.match(/^(trigger|step)-(\d+)$/);
-      if (!m) return;
-      setSelection({
-        kind: m[1] as "trigger" | "step",
-        index: Number(m[2]),
-      });
+      const triggerMatch = id.match(/^trigger-(\d+)$/);
+      if (triggerMatch) {
+        setSelection({ kind: "trigger", index: Number(triggerMatch[1]) });
+        return;
+      }
+      const flatIndex = steps.findIndex((s, i) => stepNodeName(s, i) === id);
+      if (flatIndex >= 0) setSelection({ kind: "step", index: flatIndex });
     },
-    []
+    [steps],
   );
+
+  const handleRequestInsert = useCallback((req: InsertionRequest) => {
+    setPendingInsertion(req);
+    setPaletteTab("actions");
+    setPaletteOpen(true);
+    setSelection(null);
+  }, []);
 
   const addTrigger = (kind: WorkflowTriggerKind) => {
     const next = [...triggers, blankTrigger(kind)];
     onChange({ triggers: next, steps });
     setPaletteOpen(false);
+    setPendingInsertion(null);
     setSelection({ kind: "trigger", index: next.length - 1 });
   };
 
   const addStep = (kind: WorkflowStepKind) => {
-    const next = [...steps, blankStep(kind)];
-    onChange({ triggers, steps: next });
+    const newStep = blankStep(kind);
+    let nextSteps: WorkflowStep[];
+    let newIndex: number;
+    if (pendingInsertion) {
+      nextSteps = insertStep(steps, newStep, pendingInsertion);
+      newIndex = nextSteps.findIndex((s, i) => steps[i] !== s);
+      if (newIndex < 0) newIndex = nextSteps.length - 1;
+    } else {
+      nextSteps = [...steps, newStep];
+      newIndex = nextSteps.length - 1;
+    }
+    onChange({ triggers, steps: nextSteps });
     setPaletteOpen(false);
-    setSelection({ kind: "step", index: next.length - 1 });
+    setPendingInsertion(null);
+    setSelection({ kind: "step", index: newIndex });
   };
 
   const updateTrigger = (index: number, t: WorkflowTrigger) => {
@@ -123,12 +144,17 @@ export function WorkflowEditor({
   };
 
   const showInspector = selection !== null && !paletteOpen;
-  const rightOpen = showInspector || paletteOpen;
+
+  const selectedId =
+    selection?.kind === "trigger"
+      ? `trigger-${selection.index}`
+      : selection?.kind === "step" && steps[selection.index]
+        ? stepNodeName(steps[selection.index], selection.index)
+        : null;
 
   return (
     <div className="flex h-full min-h-0 w-full">
       <div className="relative flex-1">
-        {/* Top-right controls */}
         <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-lg border border-border bg-popover p-1 shadow-sm">
           <Button
             type="button"
@@ -150,14 +176,9 @@ export function WorkflowEditor({
           <WorkflowGraph
             triggers={triggers}
             steps={steps}
-            selectedId={
-              selection
-                ? selection.kind === "trigger"
-                  ? `trigger-${selection.index}`
-                  : `step-${selection.index}`
-                : null
-            }
+            selectedId={selectedId}
             onSelect={handleSelectNodeId}
+            onRequestInsert={handleRequestInsert}
           />
         )}
       </div>
@@ -167,7 +188,10 @@ export function WorkflowEditor({
           initialTab={paletteTab}
           onAddTrigger={addTrigger}
           onAddStep={addStep}
-          onClose={() => setPaletteOpen(false)}
+          onClose={() => {
+            setPaletteOpen(false);
+            setPendingInsertion(null);
+          }}
         />
       )}
 
@@ -188,9 +212,6 @@ export function WorkflowEditor({
           serverError={serverError}
         />
       )}
-
-      {/* Hidden marker to keep React happy when right panel toggles */}
-      {!rightOpen && null}
     </div>
   );
 }

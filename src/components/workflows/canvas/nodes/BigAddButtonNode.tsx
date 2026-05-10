@@ -1,0 +1,51 @@
+"use client";
+
+import { Plus } from "lucide-react";
+import { Handle, Position, type NodeProps } from "@xyflow/react";
+import {
+  BIG_ADD_BUTTON_SIZE,
+  HANDLE_STYLING,
+  NODE_W,
+} from "../lib/canvas-consts";
+import { useCanvasContext } from "../lib/canvas-context";
+import type { WorkflowNodeData } from "../lib/graph-builder";
+
+/**
+ * Large `+` button rendered in place of an empty router branch or loop body.
+ */
+export function BigAddButtonNode({ data, id }: NodeProps) {
+  const node = data as WorkflowNodeData;
+  const ctx = useCanvasContext();
+  if (node.kind !== "bigAddButton") return null;
+
+  return (
+    <div
+      style={{ width: NODE_W, height: BIG_ADD_BUTTON_SIZE }}
+      className="grid place-items-center"
+    >
+      <Handle type="target" position={Position.Top} style={HANDLE_STYLING} />
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          ctx.onRequestInsert(
+            {
+              afterFlatIndex: node.afterFlatIndex,
+              parentStepName: node.parentStepName,
+              branchIndex: node.branchIndex,
+            },
+            { x: 0, y: 0 },
+          );
+        }}
+        style={{ width: BIG_ADD_BUTTON_SIZE, height: BIG_ADD_BUTTON_SIZE }}
+        className="grid place-items-center rounded-full border border-dashed border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+        aria-label="Add step here"
+      >
+        <Plus className="size-4" />
+      </button>
+      <Handle type="source" position={Position.Bottom} style={HANDLE_STYLING} />
+      {/* Suppress unused-var lint for `id` */}
+      {false && <span data-id={id} />}
+    </div>
+  );
+}

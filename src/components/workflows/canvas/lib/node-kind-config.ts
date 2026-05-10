@@ -9,13 +9,20 @@ import {
   Globe,
   Hourglass,
   GitBranch,
+  GitFork,
+  Repeat,
   UserSearch,
   CalendarSearch,
   Activity,
   PhoneOutgoing,
   type LucideIcon,
 } from "lucide-react";
-import type { WorkflowStepKind, WorkflowTriggerKind } from "@/types";
+import type {
+  WorkflowStep,
+  WorkflowStepKind,
+  WorkflowTrigger,
+  WorkflowTriggerKind,
+} from "@/types";
 
 /**
  * Visual config for a workflow node. Maps directly to the design's family
@@ -164,6 +171,18 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
     description: "Conditional jump to another step",
     icon: GitBranch,
   }),
+  router: fam("branch", {
+    label: "Router",
+    shortLabel: "Router",
+    description: "Fan out into named branches with conditions",
+    icon: GitFork,
+  }),
+  loop_on_items: fam("branch", {
+    label: "Loop on items",
+    shortLabel: "Loop",
+    description: "Iterate a sub-flow over each item in a list",
+    icon: Repeat,
+  }),
   call_workflow: fam("agent", {
     label: "Call workflow",
     shortLabel: "Sub-flow",
@@ -187,6 +206,8 @@ export const STEP_KINDS: WorkflowStepKind[] = [
   "wait",
   "wait_for_event",
   "branch_if",
+  "router",
+  "loop_on_items",
   "lookup_patient",
   "lookup_consultation",
   "record_activity",
@@ -199,4 +220,65 @@ export function triggerConfig(kind: WorkflowTriggerKind): NodeKindConfig {
 
 export function stepConfig(kind: WorkflowStepKind): NodeKindConfig {
   return STEP_KIND_CONFIG[kind];
+}
+
+/**
+ * Default labelers for graph nodes. The graph builder calls these to render
+ * the visible name/sub-label on each step or trigger card.
+ */
+export function triggerLabel(t: WorkflowTrigger): { label: string; sub: string } {
+  switch (t.kind) {
+    case "event":
+      return { label: "Event", sub: t.eventType || "—" };
+    case "manual":
+      return { label: "Manual", sub: "Test run / API" };
+    case "schedule":
+      return { label: "Schedule", sub: t.cron || "—" };
+    case "webhook":
+      return {
+        label: "Webhook",
+        sub: t.token ? "/" + t.token.slice(0, 10) + "…" : "(saves on create)",
+      };
+    case "workflow":
+      return { label: "Sub-workflow", sub: "Called by another flow" };
+  }
+}
+
+export function stepLabel(
+  s: WorkflowStep,
+  flatIndex: number,
+): { label: string; sub: string } {
+  const fallback = s.id ?? `step_${flatIndex + 1}`;
+  switch (s.kind) {
+    case "send_email":
+      return { label: "Send email", sub: s.subject || s.to || fallback };
+    case "send_sms":
+      return { label: "Send SMS", sub: s.to || fallback };
+    case "wait":
+      return { label: "Wait", sub: `${s.seconds ?? 0}s` };
+    case "wait_for_event":
+      return { label: "Wait for event", sub: s.eventType || fallback };
+    case "branch_if":
+      return {
+        label: "Branch",
+        sub: `${s.left ?? "?"} ${s.op ?? "?"} ${s.right ?? ""}`.trim(),
+      };
+    case "router":
+      return {
+        label: "Router",
+        sub: `${s.branches.length} branch${s.branches.length === 1 ? "" : "es"}`,
+      };
+    case "loop_on_items":
+      return { label: "Loop", sub: s.items || fallback };
+    case "lookup_patient":
+      return { label: "Lookup patient", sub: s.storeAs || fallback };
+    case "lookup_consultation":
+      return { label: "Lookup consultation", sub: s.storeAs || fallback };
+    case "record_activity":
+      return { label: "Record activity", sub: s.title || fallback };
+    case "http_call":
+      return { label: "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
+    case "call_workflow":
+      return { label: "Call workflow", sub: s.workflowId || fallback };
+  }
 }

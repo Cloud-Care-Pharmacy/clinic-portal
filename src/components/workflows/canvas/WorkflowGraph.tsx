@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Background,
+  BackgroundVariant,
+  PanOnScrollMode,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -10,23 +12,51 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { WorkflowNode } from "./nodes/WorkflowNode";
-import { WorkflowEdge } from "./WorkflowEdge";
+import { BigAddButtonNode } from "./nodes/BigAddButtonNode";
+import { GraphEndNode } from "./nodes/GraphEndNode";
+import { LoopReturnNode } from "./nodes/LoopReturnNode";
+import { StraightLineEdge } from "./edges/StraightLineEdge";
+import { RouterStartEdge } from "./edges/RouterStartEdge";
+import { RouterEndEdge } from "./edges/RouterEndEdge";
+import { LoopStartEdge } from "./edges/LoopStartEdge";
+import { LoopReturnEdge } from "./edges/LoopReturnEdge";
+import { CanvasControls } from "./CanvasControls";
+import { CanvasMinimap } from "./CanvasMinimap";
 import {
-  buildGraph,
+  buildWorkflowGraph,
   type NodeRunStatus,
-  type WorkflowNode as WfNode,
-} from "./lib/workflow-graph";
+  type WfNode,
+  type WorkflowNodeData,
+} from "./lib/graph-builder";
+import {
+  CanvasContextProvider,
+  type InsertionRequest,
+} from "./lib/canvas-context";
+import { triggerLabel, stepLabel } from "./lib/node-kind-config";
 import type { WorkflowStep, WorkflowTrigger } from "@/types";
 
-const nodeTypes = { workflow: WorkflowNode };
-const edgeTypes = { workflow: WorkflowEdge };
+const nodeTypes = {
+  step: WorkflowNode,
+  trigger: WorkflowNode,
+  bigAddButton: BigAddButtonNode,
+  graphEnd: GraphEndNode,
+  loopReturn: LoopReturnNode,
+};
 
-interface WorkflowGraphProps {
+const edgeTypes = {
+  straight: StraightLineEdge,
+  routerStart: RouterStartEdge,
+  routerEnd: RouterEndEdge,
+  loopStart: LoopStartEdge,
+  loopReturn: LoopReturnEdge,
+};
+
+export interface WorkflowGraphProps {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
-  /** Selected node id ("trigger-N" or "step-N"). */
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onRequestInsert: (req: InsertionRequest) => void;
   stepRunStatus?: Record<number, NodeRunStatus>;
   runActive?: boolean;
 }
@@ -57,35 +87,40 @@ function GraphInner({
   steps,
   selectedId,
   onSelect,
+  onRequestInsert,
   stepRunStatus,
   runActive,
 }: WorkflowGraphProps) {
   const { fitView } = useReactFlow();
+  const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
+  const [showMinimap, setShowMinimap] = useState(false);
 
   const { nodes, edges } = useMemo(
-    () => buildGraph({ triggers, steps, stepRunStatus }),
-    [triggers, steps, stepRunStatus]
+    () =>
+      buildWorkflowGraph({
+        triggers,
+        steps,
+        triggerLabel,
+        stepLabel,
+        stepRunStatus,
+      }),
+    [triggers, steps, stepRunStatus],
   );
 
   const selectedNodes = useMemo<WfNode[]>(
-    () =>
-      nodes.map((n) => ({
-        ...n,
-        selected: n.id === selectedId,
-      })),
-    [nodes, selectedId]
+    () => nodes.map((n) => ({ ...n, selected: n.id === selectedId })),
+    [nodes, selectedId],
   );
 
   const themedEdges = useMemo(
     () =>
       edges.map((e) => ({
         ...e,
-        data: { ...(e.data ?? {}), runActive },
+        data: { ...(e.data ?? {}), runActive } as Record<string, unknown>,
       })),
-    [edges, runActive]
+    [edges, runActive],
   );
 
-  // Re-fit when graph shape changes.
   useEffect(() => {
     const id = window.setTimeout(() => {
       fitView({ padding: 0.2, duration: 200 });
@@ -94,36 +129,60 @@ function GraphInner({
   }, [nodes.length, edges.length, fitView]);
 
   const handleNodeClick: NodeMouseHandler = (_, node) => {
-    onSelect(node.id);
+    const data = node.data as WorkflowNodeData;
+    if (data.kind === "step" || data.kind === "trigger") {
+      onSelect(node.id);
+    }
   };
 
   return (
-    <div className="relative h-full w-full">
-      <ArrowMarker />
-      <ReactFlow
-        nodes={selectedNodes}
-        edges={themedEdges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodesDraggable={false}
-        nodesConnectable={false}
-        elementsSelectable
-        onNodeClick={handleNodeClick}
-        onPaneClick={() => onSelect(null)}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.4}
-        maxZoom={1.2}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background
-          gap={20}
-          size={1}
-          color="var(--border)"
-          style={{ background: "var(--background)" }}
+    <CanvasContextProvider
+      value={{
+        onRequestInsert: (req) => onRequestInsert(req),
+      }}
+    >
+      <div className="relative h-full w-full">
+        <ArrowMarker />
+        <ReactFlow
+          nodes={selectedNodes}
+          edges={themedEdges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          elementsSelectable
+          onNodeClick={handleNodeClick}
+          onPaneClick={() => onSelect(null)}
+          panOnDrag={panningMode === "grab" ? [0, 1, 2] : [1, 2]}
+          panOnScroll
+          panOnScrollMode={PanOnScrollMode.Free}
+          selectionOnDrag={panningMode === "select"}
+          zoomOnDoubleClick={false}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          minZoom={0.4}
+          maxZoom={1.5}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background
+            gap={20}
+            size={1}
+            color="var(--border)"
+            variant={BackgroundVariant.Dots}
+            style={{ background: "var(--background)" }}
+          />
+          {showMinimap && <CanvasMinimap />}
+        </ReactFlow>
+        <CanvasControls
+          panningMode={panningMode}
+          onTogglePanningMode={() =>
+            setPanningMode((m) => (m === "grab" ? "select" : "grab"))
+          }
+          showMinimap={showMinimap}
+          onToggleMinimap={() => setShowMinimap((s) => !s)}
         />
-      </ReactFlow>
-    </div>
+      </div>
+    </CanvasContextProvider>
   );
 }
 

@@ -1614,6 +1614,8 @@ export type WorkflowStepKind =
   | "send_sms"
   | "wait"
   | "branch_if"
+  | "router"
+  | "loop_on_items"
   | "lookup_patient"
   | "lookup_consultation"
   | "record_activity"
@@ -1631,6 +1633,50 @@ export type WorkflowBranchOp =
 
 interface WorkflowStepBase {
   id?: string;
+  /**
+   * Flat-encoded tree marker. When set, this step is a child of the named
+   * parent step (which must be a `router` or `loop_on_items`). Steps without
+   * this marker live in the top-level chain.
+   */
+  parentStepName?: string;
+  /**
+   * Index of the branch this step belongs to under its parent.
+   *  - `router` parents: 0..N-1 corresponds to `branches[i]`
+   *  - `loop_on_items` parents: always 0 (the loop body)
+   */
+  branchIndex?: number;
+}
+
+/** A named branch of a router step. Each branch is a chain of child steps. */
+export interface WorkflowRouterBranch {
+  name: string;
+  /** Optional condition expression. Empty branch acts as the "default" arm. */
+  condition?: {
+    left: string;
+    op: WorkflowBranchOp;
+    right?: string;
+  };
+}
+
+export interface RouterStep extends WorkflowStepBase {
+  kind: "router";
+  /** Branch definitions; each child step references one by `branchIndex`. */
+  branches: WorkflowRouterBranch[];
+  /**
+   * Whether to evaluate every branch (`all`) or stop at the first matching
+   * branch (`first_match`). Defaults to `first_match`.
+   */
+  executionType?: "first_match" | "all";
+}
+
+export interface LoopOnItemsStep extends WorkflowStepBase {
+  kind: "loop_on_items";
+  /** Template expression that resolves to an array. */
+  items: string;
+  /** Variable exposed inside the loop body. Defaults to `item`. */
+  itemAs?: string;
+  /** Optional max iterations safeguard. */
+  maxIterations?: number;
 }
 
 export interface SendEmailStep extends WorkflowStepBase {
@@ -1718,6 +1764,8 @@ export type WorkflowStep =
   | SendSmsStep
   | WaitStep
   | BranchIfStep
+  | RouterStep
+  | LoopOnItemsStep
   | LookupPatientStep
   | LookupConsultationStep
   | RecordActivityStep
