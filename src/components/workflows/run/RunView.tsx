@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Filter, Radio } from "lucide-react";
+import { ChevronDown, ChevronUp, Radio } from "lucide-react";
 import { format as formatDate } from "date-fns";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { isRunOutdated } from "@/lib/workflow-versions";
 import {
   useWorkflowRun,
   useWorkflowRunStream,
@@ -34,7 +41,20 @@ interface RunViewProps {
   initialRuns?: WorkflowRunsListResponse;
   /** Selected run id (deep-linked or last test-run). */
   initialRunId?: string;
+  /** Current/latest definition version — used to flag outdated runs. */
+  definitionVersion?: number;
+  /** Boot the rail filter into "Outdated only" (deep-link from banner). */
+  initialOutdatedOnly?: boolean;
 }
+
+/** Rail filter — combinable with the existing run-status filter. */
+type VersionFilter = "all" | "current" | "outdated";
+
+const VERSION_FILTER_LABEL: Record<VersionFilter, string> = {
+  all: "All versions",
+  current: "Current only",
+  outdated: "Outdated only",
+};
 
 /**
  * Re-render at a fixed cadence while `enabled`. Used by the "elapsed" counter
@@ -255,28 +275,61 @@ interface RunListRailProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   loading: boolean;
+  /** Current/latest definition version \u2014 cells annotate stale rows. */
+  definitionVersion: number;
+  /** Filter selection (controlled). */
+  versionFilter: VersionFilter;
+  onVersionFilterChange: (next: VersionFilter) => void;
+  /** Total runs available before the version filter, for empty-state copy. */
+  totalRuns: number;
 }
 
-function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) {
+function RunListRail({
+  runs,
+  selectedId,
+  onSelect,
+  loading,
+  definitionVersion,
+  versionFilter,
+  onVersionFilterChange,
+  totalRuns,
+}: RunListRailProps) {
   // Tick once per second so the elapsed duration on in-progress runs stays
-  // in sync without depending on the SSE stream — keeps the rail feeling
+  // in sync without depending on the SSE stream \u2014 keeps the rail feeling
   // alive even if no events fire.
   const hasLive = runs.some((r) => r.status === "running" || r.status === "waiting");
   const now = useNow(1000, hasLive);
   return (
     <aside className="flex w-72 flex-col border-r border-border bg-background">
-      <header className="flex items-center justify-between px-3.5 py-3">
+      <header className="flex items-center justify-between gap-2 px-3.5 py-3">
         <h3 className="text-sm font-semibold">Recent runs</h3>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-7 text-muted-foreground"
-          aria-label="Filter runs"
-          disabled
-        >
-          <Filter className="size-3.5" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Filter runs by version"
+          >
+            {VERSION_FILTER_LABEL[versionFilter]}
+            <ChevronDown className="size-3" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" sideOffset={4} className="w-44">
+            <DropdownMenuRadioGroup
+              value={versionFilter}
+              onValueChange={(v) =>
+                onVersionFilterChange(v as VersionFilter)
+              }
+            >
+              <DropdownMenuRadioItem value="all">
+                All versions
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="current">
+                Current only (v{definitionVersion})
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="outdated">
+                Outdated only
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
       <div className="flex-1 overflow-y-auto px-2 pb-3">
         {loading && runs.length === 0 ? (
@@ -287,13 +340,19 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
           </div>
         ) : runs.length === 0 ? (
           <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-            No runs yet. Use the Test run button to fire a manual trigger.
+            {totalRuns === 0
+              ? "No runs yet. Use the Test run button to fire a manual trigger."
+              : "No runs match this filter."}
           </p>
         ) : (
           <ul className="space-y-0.5">
             {runs.map((r) => {
               const active = r.id === selectedId;
               const isFailed = r.status === "failed";
+              const outdated =
+                definitionVersion > 0 &&
+                r.definitionVersion < definitionVersion;
+              const unknownVersion = r.definitionVersion > definitionVersion;
               return (
                 <li key={r.id}>
                   <button
@@ -304,8 +363,33 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
                       active ? "bg-muted" : "hover:bg-muted/60"
                     )}
                   >
-                    <div className="text-[13px] font-semibold leading-tight text-foreground">
-                      {runRailStartedAt(r)}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[13px] font-semibold leading-tight text-foreground">
+                        {runRailStartedAt(r)}
+                      </div>
+                      <span
+                        className={cn(
+                          "shrink-0 font-mono text-[10px] tabular-nums",
+                          unknownVersion
+                            ? "text-destructive"
+                            : outdated
+                              ? "text-status-warning-fg"
+                              : "text-muted-foreground/70"
+                        )}
+                        title={
+                          unknownVersion
+                            ? `Unknown version (current is v${definitionVersion})`
+                            : outdated
+                              ? `Outdated \u2014 current is v${definitionVersion}`
+                              : `Definition v${r.definitionVersion}`
+                        }
+                      >
+                        {unknownVersion
+                          ? `v? (unknown)`
+                          : outdated
+                            ? `v${r.definitionVersion} (outdated)`
+                            : `v${r.definitionVersion}`}
+                      </span>
                     </div>
                     <div
                       className={cn(
@@ -441,6 +525,8 @@ interface StepTraceHeaderProps {
   run: WorkflowRun | null;
   isLive: boolean;
   elapsedMs: number;
+  /** Current/latest definition version — used to render the outdated chip. */
+  definitionVersion: number;
 }
 
 /**
@@ -461,10 +547,19 @@ function StepTraceHeader({
   run,
   isLive,
   elapsedMs,
+  definitionVersion,
 }: StepTraceHeaderProps) {
   const total = summary?.total ?? 0;
   const completed = summary?.completed ?? 0;
   const numerator = isTerminal ? total : Math.min(completed, total);
+  // Only flag the version chip when this run is genuinely on an older
+  // definition. A `definitionDeleted` chip variant covers the edge case
+  // where the workflow row vanished but its runs persist (definitionVersion
+  // is still meaningful, but the current version is unknowable).
+  const showVersionChip =
+    run != null && run.definitionVersion < definitionVersion;
+  const unknownVersion =
+    run != null && run.definitionVersion > definitionVersion;
   return (
     <button
       type="button"
@@ -474,6 +569,22 @@ function StepTraceHeader({
       className="flex w-full items-center gap-2.5 border-t border-border bg-card/80 px-6 py-2.5 text-left transition-colors hover:bg-muted/60"
     >
       {run && <StatusBadge status={run.status} dot className="capitalize" />}
+      {showVersionChip && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-status-warning-fg"
+          title={`This run is pinned to v${run!.definitionVersion}; current is v${definitionVersion}.`}
+        >
+          Running on v{run!.definitionVersion} (current is v{definitionVersion})
+        </span>
+      )}
+      {unknownVersion && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-destructive"
+          title={`Run reports v${run!.definitionVersion} but current is only v${definitionVersion}. Possible definition rollback or stale cache.`}
+        >
+          v? (unknown — current is v{definitionVersion})
+        </span>
+      )}
       {isLive && (
         <span
           className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
@@ -512,7 +623,13 @@ function StepTraceHeader({
   );
 }
 
-export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps) {
+export function RunView({
+  workflowId,
+  initialRuns,
+  initialRunId,
+  definitionVersion = 1,
+  initialOutdatedOnly = false,
+}: RunViewProps) {
   const { data, isLoading } = useWorkflowRuns(workflowId, { limit: 50 }, initialRuns);
   // The workflow definition is still required for the canvas (graph layout +
   // nested branches). The timeline no longer reads from it — the gateway
@@ -520,29 +637,62 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
   const { data: workflowData } = useWorkflow(workflowId);
   const triggers = workflowData?.data.triggers ?? [];
   const allSteps = workflowData?.data.definition.steps ?? [];
-  const runs = data?.data ?? [];
-  const [selectedId, setSelectedId] = useState<string | null>(
-    initialRunId ?? runs[0]?.id ?? null
+  // Prefer the live workflow version when available; fall back to the SSR
+  // value supplied by `RunsClient`.
+  const currentVersion = workflowData?.data.version ?? definitionVersion;
+  const allRuns = useMemo(() => data?.data ?? [], [data]);
+
+  const [versionFilter, setVersionFilter] = useState<VersionFilter>(
+    initialOutdatedOnly ? "outdated" : "all"
   );
 
-  // If no selection but runs arrive, auto-pick the first.
-  if (!selectedId && runs[0]) {
-    setSelectedId(runs[0].id);
+  // Apply the version filter as an AND-combinable layer over the existing
+  // status-driven rail. Uses the shared `isRunOutdated()` selector so the
+  // count here cannot drift from the badge / banner / chip on other screens.
+  const visibleRuns = useMemo(() => {
+    if (versionFilter === "all") return allRuns;
+    if (versionFilter === "outdated") {
+      return allRuns.filter((r) =>
+        isRunOutdated(r, { version: currentVersion })
+      );
+    }
+    return allRuns.filter((r) => r.definitionVersion === currentVersion);
+  }, [allRuns, versionFilter, currentVersion]);
+
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialRunId ?? visibleRuns[0]?.id ?? allRuns[0]?.id ?? null
+  );
+
+  // If the selection is filtered out, fall back to the first visible row so
+  // the right-hand pane never sticks on a stale empty state.
+  if (
+    selectedId &&
+    visibleRuns.length > 0 &&
+    !visibleRuns.some((r) => r.id === selectedId)
+  ) {
+    setSelectedId(visibleRuns[0].id);
+  } else if (!selectedId && visibleRuns[0]) {
+    setSelectedId(visibleRuns[0].id);
   }
 
   return (
     <div className="flex h-full min-h-0">
       <RunListRail
-        runs={runs}
+        runs={visibleRuns}
         selectedId={selectedId}
         onSelect={setSelectedId}
         loading={isLoading}
+        definitionVersion={currentVersion}
+        versionFilter={versionFilter}
+        onVersionFilterChange={setVersionFilter}
+        totalRuns={allRuns.length}
       />
       <RunPanel
         runId={selectedId}
         workflowId={workflowId}
         triggers={triggers}
         steps={allSteps}
+        definitionVersion={currentVersion}
       />
     </div>
   );
@@ -554,6 +704,8 @@ interface RunPanelProps {
   triggers: WorkflowTrigger[];
   /** Full flat step list (used by the canvas to render nested branches). */
   steps: WorkflowStep[];
+  /** Current/latest definition version — drives the run-detail version chip. */
+  definitionVersion: number;
 }
 
 /**
@@ -566,7 +718,13 @@ interface RunPanelProps {
  * and one SSE stream open per selected run, even though both children render
  * the same data.
  */
-function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
+function RunPanel({
+  runId,
+  workflowId,
+  triggers,
+  steps,
+  definitionVersion,
+}: RunPanelProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
 
@@ -711,6 +869,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
         run={run ?? null}
         isLive={Boolean(isLive)}
         elapsedMs={elapsedMs}
+        definitionVersion={definitionVersion}
       />
       {!traceCollapsed && (
         <div id="run-step-trace" className="min-h-0 flex-1 overflow-y-auto">

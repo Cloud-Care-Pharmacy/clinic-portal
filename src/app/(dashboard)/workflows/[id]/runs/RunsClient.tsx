@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { RunView } from "@/components/workflows/run/RunView";
@@ -21,6 +22,12 @@ export function RunsClient({
 }: RunsClientProps) {
   const { data } = useWorkflow(workflowId);
   const workflowName = data?.data.name ?? initialWorkflowName;
+  const definitionVersion = data?.data.version ?? 1;
+
+  // Read the `?outdated=1` deep-link from the definition-detail banner so
+  // the rail boots into the "Outdated only" view.
+  const searchParams = useSearchParams();
+  const initialOutdatedOnly = searchParams.get("outdated") === "1";
 
   // Replace the workflow id segment in the breadcrumb with its name so the
   // header reads: Dashboard > Workflows > {{name}} > Runs.
@@ -38,6 +45,8 @@ export function RunsClient({
         workflowId={workflowId}
         initialRuns={initialRuns}
         initialRunId={initialRunId}
+        definitionVersion={definitionVersion}
+        initialOutdatedOnly={initialOutdatedOnly}
       />
     </div>
   );

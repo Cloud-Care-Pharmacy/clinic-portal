@@ -27,8 +27,12 @@ import {
 import { WorkflowEditor } from "@/components/workflows/canvas/WorkflowEditor";
 import { ViewJsonDialog } from "@/components/workflows/ViewJsonDialog";
 import { WorkflowActionBar } from "@/components/workflows/WorkflowActionBar";
+import { OutdatedRunsBanner } from "@/components/workflows/OutdatedRunsBanner";
+import { SaveNewVersionDialog } from "@/components/workflows/SaveNewVersionDialog";
 import { workflowSchema } from "@/components/workflows/canvas/lib/workflow-schema";
 import { useTestRunWorkflow } from "@/lib/hooks/use-workflows";
+import { useWorkflowRuns } from "@/lib/hooks/use-workflow-runs";
+import { countOutdatedRuns } from "@/lib/workflow-versions";
 import type {
   Workflow,
   WorkflowResponse,
@@ -122,7 +126,21 @@ export function WorkflowDetailClient({
   const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
   const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+
+  // Pull the runs list so we can warn the user before bumping `version` on
+  // a workflow that still has in-flight runs pinned to the current version.
+  // The same data drives the top banner — single subscription, two views.
+  const { data: runsData } = useWorkflowRuns(workflowId, { limit: 50 });
+  const inflightOutdatedCount = workflow
+    ? countOutdatedRuns(runsData?.data ?? [], {
+        // After save the server will increment to `version + 1`, so any run
+        // currently on the *current* version becomes outdated. Compute that
+        // by treating "next version" as the comparator.
+        version: workflow.version + 1,
+      })
+    : 0;
 
   // Sync server state into draft when the workflow loads or refreshes,
   // unless the user has unsaved changes. Done during render via the
@@ -171,8 +189,22 @@ export function WorkflowDetailClient({
     setServerError(null);
   }
 
-  async function handleSave(opts?: { activate?: boolean }) {
+  async function handleSave(opts?: { activate?: boolean; force?: boolean }) {
     if (!workflow) return;
+    // Gate on a confirmation modal when the save will bump `version` and
+    // would orphan in-flight runs on the current version. The bump only
+    // happens when the definition actually changes — which the editor
+    // tracks via `draftDirty` — so non-definition edits (rename,
+    // status-only) skip the modal automatically.
+    if (
+      !opts?.force &&
+      !opts?.activate &&
+      draftDirty &&
+      inflightOutdatedCount > 0
+    ) {
+      setConfirmSaveOpen(true);
+      return;
+    }
     const stepsForSave = serializeStepsForSave(draftSteps);
     const parsed = workflowSchema.safeParse({
       name: workflow.name,
@@ -382,6 +414,10 @@ export function WorkflowDetailClient({
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
+      <OutdatedRunsBanner
+        workflowId={workflowId}
+        definitionVersion={workflow.version}
+      />
       {/* Body — full bleed canvas, no top header strip or tabs bar */}
       <ReactFlowProvider>
         <div className="relative min-h-0 flex-1 bg-background">
@@ -480,6 +516,17 @@ export function WorkflowDetailClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <SaveNewVersionDialog
+        open={confirmSaveOpen}
+        onOpenChange={setConfirmSaveOpen}
+        inflightCount={inflightOutdatedCount}
+        currentVersion={workflow.version}
+        onConfirm={() => {
+          setConfirmSaveOpen(false);
+          void handleSave({ force: true });
+        }}
+        pending={update.isPending}
+      />
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
