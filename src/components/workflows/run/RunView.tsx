@@ -30,6 +30,7 @@ import type {
   WorkflowRun,
   WorkflowRunDetailResponse,
   WorkflowRunEvent,
+  WorkflowRunStep,
   WorkflowRunsListResponse,
   WorkflowStep,
   WorkflowStepKind,
@@ -84,9 +85,15 @@ const STATUS_TONE = {
     label: "Waiting",
     pulse: false,
   },
+  skipped: {
+    bg: "var(--status-neutral-bg)",
+    fg: "var(--status-neutral-fg)",
+    border: "var(--status-neutral-border)",
+    Icon: CircleDashed,
+    label: "Skipped",
+    pulse: false,
+  },
 } as const;
-
-type StepStatus = keyof typeof STATUS_TONE;
 
 /**
  * Re-render at a fixed cadence while `enabled`. Used by the "elapsed" counter
@@ -168,17 +175,6 @@ function shortId(id: string) {
   return id.slice(0, 8);
 }
 
-/**
- * Parse a backend timestamp as UTC. The gateway emits some columns as
- * `"YYYY-MM-DD HH:MM:SS"` (no timezone marker), which JS would otherwise
- * interpret as local time and silently skew durations by the client offset.
- */
-function parseUtcMs(ts: string): number {
-  const hasOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(ts);
-  const iso = hasOffset ? ts : `${ts.replace(" ", "T")}Z`;
-  return new Date(iso).getTime();
-}
-
 function fmtDuration(ms: number | null | undefined): string {
   if (ms == null) return "—";
   if (ms < 1000) return `${ms}ms`;
@@ -191,7 +187,7 @@ function fmtDuration(ms: number | null | undefined): string {
 
 function relativeTime(iso: string): string {
   try {
-    return formatDistanceToNowStrict(new Date(parseUtcMs(iso)), {
+    return formatDistanceToNowStrict(new Date(iso), {
       addSuffix: true,
     });
   } catch {
@@ -202,14 +198,14 @@ function relativeTime(iso: string): string {
 /** Absolute local time, e.g. "10 May 2026, 18:11". */
 function absoluteTime(iso: string): string {
   try {
-    return formatDate(new Date(parseUtcMs(iso)), "d MMM yyyy, HH:mm");
+    return formatDate(new Date(iso), "d MMM yyyy, HH:mm");
   } catch {
     return iso;
   }
 }
 
 function isOverdue(iso: string): boolean {
-  return parseUtcMs(iso) <= Date.now();
+  return new Date(iso).getTime() <= Date.now();
 }
 
 /**
@@ -219,7 +215,7 @@ function isOverdue(iso: string): boolean {
  * the live-run UI.
  */
 function formatTimeUntil(iso: string, now: number): string {
-  const target = parseUtcMs(iso);
+  const target = new Date(iso).getTime();
   const diffMs = target - now;
   const absSec = Math.max(0, Math.round(Math.abs(diffMs) / 1000));
   if (absSec < 60) {
@@ -343,46 +339,57 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
 }
 
 interface RunStepCardProps {
-  /** Present once the run has emitted any event for this step. */
-  event: WorkflowRunEvent | null;
-  /** Step kind from the workflow definition (always known). */
-  kind: WorkflowStepKind | null;
-  /** Top-level step index, used for the `#N` badge. */
-  stepIndex: number;
-  status: StepStatus;
-  duration: string;
   /**
-   * When provided overrides `duration` and re-renders on each tick — used for
-   * the currently-running step so the elapsed counter feels live.
+   * The server-computed projection for this step. Drives kind, status,
+   * duration, error, and detail rendering.
+   */
+  step: WorkflowRunStep;
+  /**
+   * When provided overrides the step's persisted duration and re-renders on
+   * each tick — used for the currently-running step so the elapsed counter
+   * feels live.
    */
   liveElapsedMs?: number | null;
+  /**
+   * Optional countdown string for waiting-on-timer rows (parent-ticked).
+   * E.g. `in 57s` or `12s ago`. Falls back to `await {eventType}` when the
+   * step is waiting on an external event.
+   */
+  waitCountdown?: string | null;
   context: Record<string, unknown> | null;
   isLast: boolean;
 }
 
 function RunStepCard({
-  event,
-  kind,
-  stepIndex,
-  status,
-  duration,
+  step,
   liveElapsedMs,
+  waitCountdown,
   context,
   isLast,
 }: RunStepCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const status = step.status;
   const tone = STATUS_TONE[status];
   const ToneIcon = tone.Icon;
-  const cfg = kind ? STEP_KIND_CONFIG[kind] : undefined;
+  // `step.stepKind` is a string and may be `'unknown'` when the snapshot
+  // index falls outside the current definition (rare, mid-run edit).
+  // `STEP_KIND_CONFIG[...]` returns `undefined` for unknown kinds, which we
+  // already render as a generic step.
+  const cfg = STEP_KIND_CONFIG[step.stepKind as WorkflowStepKind];
   const StepIcon = cfg?.icon;
 
-  const detail = (event?.detail ?? {}) as Record<string, unknown>;
-  const error = typeof detail.error === "string" ? detail.error : undefined;
+  const detail = (step.detail ?? {}) as Record<string, unknown>;
+  const error = step.lastError ?? undefined;
 
   const isRunning = status === "running";
+  const isWaiting = status === "waiting";
   const isPending = status === "pending";
-  const displayDuration =
-    liveElapsedMs != null ? fmtDuration(liveElapsedMs) : duration;
+  const displayDuration = isWaiting
+    ? (waitCountdown ?? (step.awaitingEventType ? `await ${step.awaitingEventType}` : "—"))
+    : liveElapsedMs != null
+      ? fmtDuration(liveElapsedMs)
+      : fmtDuration(step.durationMs);
+  const stepIndex = step.stepIndex;
 
   return (
     <div className="relative flex gap-3">
@@ -407,8 +414,8 @@ function RunStepCard({
         <button
           type="button"
           onClick={() => !isPending && setExpanded((e) => !e)}
-          disabled={isPending && !event}
-          aria-disabled={isPending && !event}
+          disabled={isPending}
+          aria-disabled={isPending}
           style={
             isRunning
               ? {
@@ -446,7 +453,7 @@ function RunStepCard({
               </span>
             )}
             <div className="min-w-0 flex-1 text-sm font-semibold">
-              {cfg?.label ?? event?.eventType ?? "Step"}
+              {cfg?.label ?? step.stepKind ?? "Step"}
               <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">
                 #{stepIndex + 1}
               </span>
@@ -478,7 +485,7 @@ function RunStepCard({
             </div>
           )}
 
-          {expanded && event && (
+          {expanded && !isPending && (
             <div className="mt-2 ml-8 flex flex-col gap-2">
               {Object.keys(detail).length > 0 && (
                 <JsonBlock title="Detail" data={detail} />
@@ -514,10 +521,7 @@ function JsonBlock({
 }
 
 type StepRow = {
-  stepIndex: number;
-  kind: WorkflowStepKind | null;
-  event: WorkflowRunEvent | null;
-  status: StepStatus;
+  step: WorkflowRunStep;
 };
 
 type RunSummary = {
@@ -529,90 +533,45 @@ type RunSummary = {
 };
 
 /**
- * Pure derivation of the step trace from the workflow definition + the
- * cached run events. Lifted out of `RunDetail` so the collapsible header
- * in `RunPanel` can show the same `n / total` summary without rendering
- * the trace itself.
+ * Pure derivation of the step trace summary from the server-computed
+ * projection. Lifted out of `RunDetail` so the collapsible header in
+ * `RunPanel` can show the same `n / total` summary without rendering the
+ * trace itself.
+ *
+ * The gateway returns one `WorkflowRunStep` per definition step (snapshotted
+ * at run start), so we just pass them through; the only derived values are
+ * the aggregate counts the header needs.
  */
 function buildRunSummary(
-  topLevelSteps: WorkflowStep[],
   run: WorkflowRun,
-  events: WorkflowRunEvent[],
+  steps: WorkflowRunStep[],
 ): RunSummary {
-  const isTerminal =
-    run.status === "completed" ||
-    run.status === "failed" ||
-    run.status === "cancelled";
-
-  // Collapse the audit trail to one row per step. The wait lifecycle emits
-  // `step_started → step_completed → wait_scheduled`; while the run is parked
-  // the step really *is* waiting (not done), but once the run resumes /
-  // finishes the same step is done. So we pick last-seen by sequence and
-  // then post-process below.
-  const sortedEvents = [...events].sort((a, b) => a.sequence - b.sequence);
-  const byStep = new Map<number, WorkflowRunEvent>();
-  for (const e of sortedEvents) {
-    if (e.stepIndex == null) continue;
+  const rows: StepRow[] = steps.map((s) => ({ step: s }));
+  let completed = 0;
+  let hasRunning = false;
+  let hasFailed = false;
+  for (const s of steps) {
     if (
-      e.eventType === "step_started" ||
-      e.eventType === "step_completed" ||
-      e.eventType === "step_failed" ||
-      e.eventType === "wait_scheduled"
+      s.status === "done" ||
+      s.status === "failed" ||
+      s.status === "waiting" ||
+      s.status === "skipped"
     ) {
-      byStep.set(e.stepIndex, e);
+      completed += 1;
     }
+    if (s.status === "running") hasRunning = true;
+    if (s.status === "failed") hasFailed = true;
   }
-  const statusFor = (e: WorkflowRunEvent): StepStatus => {
-    switch (e.eventType) {
-      case "step_completed":
-        return "done";
-      case "step_failed":
-        return "failed";
-      case "wait_scheduled":
-        // `run.currentStep` is the *next* step pointer (advanced past the
-        // wait), so it's not safe to gate on stepIndex equality. Whenever
-        // the run itself is parked, the latest `wait_scheduled` represents
-        // an in-flight wait; otherwise it has elapsed and the step is done.
-        return run.status === "waiting" ? "waiting" : "done";
-      case "step_started":
-      default:
-        return isTerminal ? "done" : "running";
-    }
+  return {
+    rows,
+    // `run.totalSteps` is the snapshot of `definition.steps.length` at run
+    // start \u2014 immune to mid-run definition edits and the canonical
+    // denominator for the Step trace header.
+    total: run.totalSteps,
+    completed,
+    hasRunning,
+    hasFailed,
   };
-
-  // Pre-fill: render one row per step in the workflow definition so the
-  // timeline appears deterministic from the first paint. Steps without an
-  // event yet are shown in a `pending` (dashed, dimmed) state — and as
-  // `step` events stream in they swap to running/done/failed in place.
-  const definitionRows: StepRow[] = topLevelSteps.map((step, idx) => {
-    const ev = byStep.get(idx) ?? null;
-    return {
-      stepIndex: idx,
-      kind: step.kind as WorkflowStepKind,
-      event: ev,
-      status: ev ? statusFor(ev) : "pending",
-    };
-  });
-  // Fallback when we don't have a definition (e.g. during loading) — fall
-  // back to the audit-trail derived list so we still render *something*.
-  const auditRows: StepRow[] = [...byStep.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([idx, event]) => ({
-      stepIndex: idx,
-      kind: (event.stepKind as WorkflowStepKind | undefined) ?? null,
-      event,
-      status: statusFor(event),
-    }));
-  const rows: StepRow[] = definitionRows.length > 0 ? definitionRows : auditRows;
-
-  const total = rows.length;
-  const completed = rows.filter(
-    (r) => r.status === "done" || r.status === "failed" || r.status === "waiting",
-  ).length;
-  const hasRunning = rows.some((r) => r.status === "running");
-  const hasFailed = rows.some((r) => r.status === "failed");
-
-  return { rows, total, completed, hasRunning, hasFailed };
 }
 
 interface RunBannersProps {
@@ -741,12 +700,21 @@ interface RunDetailProps {
 function RunDetail({ summary, run, isLive, now }: RunDetailProps) {
   const stepRows = summary.rows;
 
-  // Compute the running step's live elapsed: time since its `step_started`
-  // event was emitted. Used only when the run is still live.
-  const liveElapsedMsFor = (row: StepRow): number | null => {
-    if (!isLive || row.status !== "running" || !row.event) return null;
-    const startedAt = parseUtcMs(row.event.createdAt);
-    return Math.max(0, now - startedAt);
+  // Compute the running step's live elapsed: time since the projection's
+  // `startedAt` was set. Used only when the run is still live.
+  const liveElapsedMsFor = (step: WorkflowRunStep): number | null => {
+    if (!isLive || step.status !== "running" || !step.startedAt) return null;
+    return Math.max(0, now - new Date(step.startedAt).getTime());
+  };
+
+  // Render a `Resumes in 12s` / `2s ago` countdown for waiting-on-timer
+  // rows. Returns null when the step is waiting on an event instead — the
+  // card falls back to `await {eventType}` in that case.
+  const waitCountdownFor = (step: WorkflowRunStep): string | null => {
+    if (step.status !== "waiting" || !step.waitUntil) return null;
+    return isOverdue(step.waitUntil)
+      ? `${formatTimeUntil(step.waitUntil, now)} ago`
+      : `in ${formatTimeUntil(step.waitUntil, now)}`;
   };
 
   return (
@@ -760,13 +728,10 @@ function RunDetail({ summary, run, isLive, now }: RunDetailProps) {
         <div className="flex flex-col">
           {stepRows.map((row, i) => (
             <RunStepCard
-              key={row.stepIndex}
-              event={row.event}
-              kind={row.kind}
-              stepIndex={row.stepIndex}
-              status={row.status}
-              duration={fmtDuration(row.event?.durationMs)}
-              liveElapsedMs={liveElapsedMsFor(row)}
+              key={row.step.stepIndex}
+              step={row.step}
+              liveElapsedMs={liveElapsedMsFor(row.step)}
+              waitCountdown={waitCountdownFor(row.step)}
               context={i === stepRows.length - 1 ? run.context : null}
               isLast={i === stepRows.length - 1}
             />
@@ -779,13 +744,12 @@ function RunDetail({ summary, run, isLive, now }: RunDetailProps) {
 
 export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps) {
   const { data, isLoading } = useWorkflowRuns(workflowId, { limit: 50 }, initialRuns);
+  // The workflow definition is still required for the canvas (graph layout +
+  // nested branches). The timeline no longer reads from it — the gateway
+  // returns a per-step projection on the run detail response.
   const { data: workflowData } = useWorkflow(workflowId);
   const triggers = workflowData?.data.triggers ?? [];
   const allSteps = workflowData?.data.definition.steps ?? [];
-  // Top-level steps drive the pre-filled trace; nested steps (children of
-  // routers / loops) live under their parent in the flat array and are
-  // surfaced when the parent expands, so we filter them out here.
-  const topLevelSteps = allSteps.filter((s) => !s.parentStepName);
   const runs = data?.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(
     initialRunId ?? runs[0]?.id ?? null
@@ -808,7 +772,6 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
         runId={selectedId}
         triggers={triggers}
         steps={allSteps}
-        topLevelSteps={topLevelSteps}
       />
     </div>
   );
@@ -819,8 +782,6 @@ interface RunPanelProps {
   triggers: WorkflowTrigger[];
   /** Full flat step list (used by the canvas to render nested branches). */
   steps: WorkflowStep[];
-  /** Top-level steps used by the timeline pre-fill. */
-  topLevelSteps: WorkflowStep[];
 }
 
 /**
@@ -833,7 +794,7 @@ interface RunPanelProps {
  * and one SSE stream open per selected run, even though both children render
  * the same data.
  */
-function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
+function RunPanel({ runId, triggers, steps }: RunPanelProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
 
@@ -864,11 +825,30 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
     toastedSequencesRef.current = new Set();
   }, [runId]);
 
-  useWorkflowRunStream(runId, Boolean(runId) && isLive, {
+  useWorkflowRunStream(runId, Boolean(runId) && isInFlight, {
     onRun: (run) => {
       queryClient.setQueryData<WorkflowRunDetailResponse>(
         ["workflow-runs", "detail", runId],
         (prev) => (prev ? { ...prev, data: { ...prev.data, run } } : prev)
+      );
+    },
+    onStepState: (step) => {
+      // Replace the matching projection entry by `stepIndex`. The server
+      // re-emits `step_state` for every step on (re)connect, so this is
+      // safely idempotent — unknown indices are appended (defensive,
+      // shouldn't happen since `totalSteps` is snapshot-stable).
+      queryClient.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) => {
+          if (!prev) return prev;
+          const steps = prev.data.steps ?? [];
+          const idx = steps.findIndex((s) => s.stepIndex === step.stepIndex);
+          const next =
+            idx === -1
+              ? [...steps, step].sort((a, b) => a.stepIndex - b.stepIndex)
+              : steps.map((s, i) => (i === idx ? step : s));
+          return { ...prev, data: { ...prev.data, steps: next } };
+        }
       );
     },
     onStep: (event) => {
@@ -891,8 +871,9 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
       maybeToastStepEvent(event, toastedSequencesRef.current);
     },
     onDone: () => {
-      // Pull the canonical audit (status + full event list) once the stream
-      // closes — covers terminal runs and waiting/paused runs alike.
+      // Pull the canonical audit (status + full event list + projection)
+      // once the stream closes — covers terminal runs and waiting/paused
+      // runs alike.
       void refetch();
     },
   });
@@ -913,13 +894,13 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
   const run = data?.data?.run;
   const elapsedMs = run
     ? run.completedAt
-      ? parseUtcMs(run.completedAt) - parseUtcMs(run.startedAt)
-      : Math.max(0, now - parseUtcMs(run.startedAt))
+      ? new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()
+      : Math.max(0, now - new Date(run.startedAt).getTime())
     : 0;
 
   // Pre-compute the step trace summary so the collapsible header can show
   // `n / total` and a status dot without rendering the trace itself.
-  const summary = run ? buildRunSummary(topLevelSteps, run, data?.data.events ?? []) : null;
+  const summary = run ? buildRunSummary(run, data?.data.steps ?? []) : null;
   const isTerminal = run
     ? run.status === "completed" || run.status === "failed" || run.status === "cancelled"
     : false;
@@ -937,7 +918,7 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
             triggers={triggers}
             steps={steps}
             run={run}
-            events={data?.data.events ?? []}
+            runSteps={data?.data.steps ?? []}
             isLive={Boolean(isLive)}
             elapsedMs={elapsedMs}
             now={now}

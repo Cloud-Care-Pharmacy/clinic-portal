@@ -1981,7 +1981,14 @@ export interface WorkflowRun {
   definitionId: string;
   eventId: string | null;
   status: WorkflowRunStatus;
+  /** @deprecated Alias for `nextStepIndex`. Prefer `nextStepIndex`. */
   currentStep: number;
+  /** Index of the step the engine WILL run next. */
+  nextStepIndex: number;
+  /** Snapshot of `definition.steps.length` at run start. */
+  totalSteps: number;
+  /** Snapshot of `definition.version` at run start. */
+  definitionVersion: number;
   context: Record<string, unknown>;
   nextStepAt: string | null;
   awaitingEventType: string | null;
@@ -1989,6 +1996,47 @@ export interface WorkflowRun {
   attempts: number;
   startedAt: string;
   completedAt: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Per-step projection status returned by the gateway. */
+export type WorkflowRunStepStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "done"
+  | "failed"
+  | "skipped";
+
+/**
+ * Server-computed projection of a single step within a run. The gateway
+ * returns one entry per definition step (in `data.steps[]`) and re-emits
+ * each entry on the SSE stream as `event: step_state` whenever it changes.
+ */
+export interface WorkflowRunStep {
+  /** 0-based index into the run's snapshotted definition. */
+  stepIndex: number;
+  /** Author-assigned id when present (stable React key). */
+  stepId: string | null;
+  /** Step kind, or `'unknown'` if the snapshot index is outside the current definition. */
+  stepKind: string;
+  status: WorkflowRunStepStatus;
+  /** ISO-8601 UTC; set when the step entered `running`. */
+  startedAt: string | null;
+  /** ISO-8601 UTC; set on terminal status. */
+  completedAt: string | null;
+  durationMs: number | null;
+  /** Count of `running` entries; always 1 today. */
+  attempts: number;
+  /** Populated when status === 'failed'. */
+  lastError: string | null;
+  /** ISO-8601 UTC; only when status === 'waiting' on a timer wait. */
+  waitUntil: string | null;
+  /** Only when status === 'waiting' on a wait_for_event step. */
+  awaitingEventType: string | null;
+  /** Step-kind-specific extras. */
+  detail: Record<string, unknown> | null;
 }
 
 export interface WorkflowRunsListResponse {
@@ -2022,6 +2070,9 @@ export interface WorkflowRunDetailResponse {
   success: boolean;
   data: {
     run: WorkflowRun;
+    /** Server-computed per-step projection. Use this for the timeline. */
+    steps: WorkflowRunStep[];
+    /** Audit trail. Use only for the audit drawer. */
     events: WorkflowRunEvent[];
   };
 }
@@ -2057,12 +2108,15 @@ export interface TestRunWorkflowResponse {
 
 // ---- Workflow run SSE stream ----
 //
-// `GET /workflows/runs/{runId}/stream` emits three named SSE events:
+// `GET /workflows/runs/{runId}/stream` emits four named SSE events:
 //
-//   event: run   → snapshot of the WorkflowRun (status badge updates)
-//   event: step  → a WorkflowRunEvent with `occurredAt` instead of `createdAt`
-//   event: done  → terminal/paused signal, may carry `reason: "max-duration"`
-//                  with a `cursor` to resume via `?afterSequence=<cursor>`
+//   event: run        → snapshot of the WorkflowRun (status badge updates)
+//   event: step       → a WorkflowRunEvent with `occurredAt` instead of `createdAt`
+//                       (audit drawer)
+//   event: step_state → a WorkflowRunStep — the primary timeline channel.
+//                       Re-emitted for every step on (re)connect; idempotent.
+//   event: done       → terminal/paused signal, may carry `reason: "max-duration"`
+//                       with a `cursor` to resume via `?afterSequence=<cursor>`
 //
 // Heartbeat lines (`: keep-alive`) are dropped by the parser.
 
@@ -2085,3 +2139,6 @@ export interface WorkflowRunStreamDonePayload {
   cursor: number;
   reason?: "max-duration" | string;
 }
+
+/** SSE `step_state` payload — same shape as `WorkflowRunStep`. */
+export type WorkflowRunStreamStepStatePayload = WorkflowRunStep;

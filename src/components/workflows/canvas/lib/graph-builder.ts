@@ -743,27 +743,3 @@ export function buildWorkflowGraph(opts: BuildOpts): {
 
   return { nodes: result.nodes, edges: result.edges };
 }
-
-/**
- * Map workflow run events to per-flat-index status. Mirrors the prior
- * implementation but is exported here so the run view can keep using it.
- */
-export function computeStepRunStatus(
-  events: { eventType: string; stepIndex: number | null }[],
-  runStatus: "running" | "waiting" | "completed" | "failed" | "cancelled"
-): Record<number, NodeRunStatus> {
-  const map: Record<number, NodeRunStatus> = {};
-  for (const e of events) {
-    if (e.stepIndex == null) continue;
-    if (e.eventType === "step_started") map[e.stepIndex] = "running";
-    else if (e.eventType === "step_completed") map[e.stepIndex] = "done";
-    else if (e.eventType === "step_failed") map[e.stepIndex] = "failed";
-    else if (e.eventType === "wait_scheduled") map[e.stepIndex] = "waiting";
-  }
-  if (runStatus === "completed") {
-    Object.keys(map).forEach((k) => {
-      if (map[+k] === "running") map[+k] = "done";
-    });
-  }
-  return map;
-}

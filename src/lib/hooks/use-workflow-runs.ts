@@ -6,6 +6,7 @@ import type {
   WorkflowRun,
   WorkflowRunDetailResponse,
   WorkflowRunEvent,
+  WorkflowRunStep,
   WorkflowRunStreamDonePayload,
   WorkflowRunStreamStepPayload,
   WorkflowRunsListResponse,
@@ -98,6 +99,12 @@ export function useWorkflowRun(runId: string, initialData?: WorkflowRunDetailRes
 export interface WorkflowRunStreamHandlers {
   onRun?: (run: WorkflowRun) => void;
   onStep?: (event: WorkflowRunEvent) => void;
+  /**
+   * Per-step projection updates. Re-emitted for every definition step on
+   * (re)connect, then again whenever a step's projection changes. Idempotent
+   * — update by `step.stepIndex`.
+   */
+  onStepState?: (step: WorkflowRunStep) => void;
   onDone?: (info: WorkflowRunStreamDonePayload) => void;
   onError?: (err: unknown) => void;
 }
@@ -180,6 +187,8 @@ export function useWorkflowRunStream(
 
               if (eventName === "run") {
                 handlersRef.current.onRun?.(data as WorkflowRun);
+              } else if (eventName === "step_state") {
+                handlersRef.current.onStepState?.(data as WorkflowRunStep);
               } else if (eventName === "step") {
                 const ev = data as WorkflowRunStreamStepPayload;
                 if (typeof ev.sequence === "number") {

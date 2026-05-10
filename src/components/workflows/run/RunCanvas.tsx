@@ -6,14 +6,11 @@ import { Locate, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { WorkflowGraph } from "@/components/workflows/canvas/WorkflowGraph";
-import {
-  computeStepRunStatus,
-  type NodeRunStatus,
-} from "@/components/workflows/canvas/lib/graph-builder";
+import type { NodeRunStatus } from "@/components/workflows/canvas/lib/graph-builder";
 import { stepNodeName } from "@/components/workflows/canvas/lib/step-tree";
 import type {
   WorkflowRun,
-  WorkflowRunEvent,
+  WorkflowRunStep,
   WorkflowStep,
   WorkflowTrigger,
 } from "@/types";
@@ -22,7 +19,11 @@ interface RunCanvasProps {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
   run: WorkflowRun;
-  events: WorkflowRunEvent[];
+  /**
+   * Server-computed per-step projection (one entry per definition step).
+   * Drives the per-node status pills and the StatusStrip's `n/total`.
+   */
+  runSteps: WorkflowRunStep[];
   /** True while the SSE stream is open — drives the LIVE pill and progress sweep. */
   isLive: boolean;
   /** Live-elapsed for the whole run, in ms. Updated by the parent's ticker. */
@@ -47,17 +48,6 @@ function fmtDuration(ms: number): string {
   const m = Math.floor(s / 60);
   const rs = Math.round(s - m * 60);
   return `${m}m ${rs}s`;
-}
-
-/**
- * Parse a backend timestamp as UTC. Mirrors `parseUtcMs` in `RunView.tsx`
- * — some gateway columns omit the timezone marker and would otherwise be
- * read as local time.
- */
-function parseUtcMs(ts: string): number {
-  const hasOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(ts);
-  const iso = hasOffset ? ts : `${ts.replace(" ", "T")}Z`;
-  return new Date(iso).getTime();
 }
 
 function StatusStrip({
@@ -153,7 +143,7 @@ function RunCanvasBody({
   triggers,
   steps,
   run,
-  events,
+  runSteps,
   isLive,
   elapsedMs,
   now,
@@ -162,57 +152,49 @@ function RunCanvasBody({
 }: RunCanvasProps) {
   const { fitView } = useReactFlow();
 
-  // Map run events → per-step status. `computeStepRunStatus` already normalizes
-  // step_started/completed/failed/wait_scheduled events into the canvas's own
-  // `NodeRunStatus` enum.
-  const stepRunStatus = useMemo(() => {
-    return computeStepRunStatus(
-      events.map((e) => ({ eventType: e.eventType, stepIndex: e.stepIndex })),
-      run.status
-    );
-  }, [events, run.status]);
-
-  // Build per-step metadata (duration / live-elapsed) for the node pills.
-  // We pick the latest event per step index; for terminal events we read
-  // `durationMs`; for the in-flight step we compute `now - startedAt` so the
-  // pill ticks between SSE updates.
-  const stepRunMeta = useMemo<
-    Record<number, { durationMs?: number; liveElapsedMs?: number }>
-  >(() => {
-    type LatestByIdx = {
-      startedAt?: string;
-      durationMs?: number;
-      isTerminal: boolean;
-    };
-    const byIdx = new Map<number, LatestByIdx>();
-    const sorted = [...events].sort((a, b) => a.sequence - b.sequence);
-    for (const e of sorted) {
-      if (e.stepIndex == null) continue;
-      const cur = byIdx.get(e.stepIndex) ?? { isTerminal: false };
-      if (e.eventType === "step_started") {
-        cur.startedAt = e.createdAt;
-      } else if (
-        e.eventType === "step_completed" ||
-        e.eventType === "step_failed"
-      ) {
-        cur.durationMs = e.durationMs ?? undefined;
-        cur.isTerminal = true;
-      }
-      byIdx.set(e.stepIndex, cur);
-    }
-    const out: Record<number, { durationMs?: number; liveElapsedMs?: number }> = {};
-    for (const [idx, info] of byIdx) {
-      const status = stepRunStatus[idx];
-      if (info.isTerminal && info.durationMs != null) {
-        out[idx] = { durationMs: info.durationMs };
-      } else if (status === "running" && info.startedAt) {
-        out[idx] = {
-          liveElapsedMs: Math.max(0, now - parseUtcMs(info.startedAt)),
-        };
+  // Map the projection → per-step canvas status. The projection has 6
+  // statuses; the canvas's `NodeRunStatus` enum has 5 (no `skipped`), so
+  // `skipped` collapses to `done` for display purposes. `pending` entries
+  // are omitted so unstarted nodes paint with their default style.
+  const stepRunStatus = useMemo<Record<number, NodeRunStatus>>(() => {
+    const out: Record<number, NodeRunStatus> = {};
+    for (const s of runSteps) {
+      switch (s.status) {
+        case "running":
+        case "done":
+        case "failed":
+        case "waiting":
+          out[s.stepIndex] = s.status;
+          break;
+        case "skipped":
+          out[s.stepIndex] = "done";
+          break;
+        case "pending":
+          // Leave undefined — the graph treats absence as "not started".
+          break;
       }
     }
     return out;
-  }, [events, stepRunStatus, now]);
+  }, [runSteps]);
+
+  // Per-step metadata for the node pills. `durationMs` for terminal steps,
+  // a ticking `liveElapsedMs` for the in-flight one. Sourced entirely from
+  // the projection — no event folding required.
+  const stepRunMeta = useMemo<
+    Record<number, { durationMs?: number; liveElapsedMs?: number }>
+  >(() => {
+    const out: Record<number, { durationMs?: number; liveElapsedMs?: number }> = {};
+    for (const s of runSteps) {
+      if (s.status === "running" && s.startedAt) {
+        out[s.stepIndex] = {
+          liveElapsedMs: Math.max(0, now - new Date(s.startedAt).getTime()),
+        };
+      } else if (s.durationMs != null) {
+        out[s.stepIndex] = { durationMs: s.durationMs };
+      }
+    }
+    return out;
+  }, [runSteps, now]);
 
   // Identify the currently-active step node id (if any) so the action bar
   // can fit-view onto it.
@@ -245,10 +227,16 @@ function RunCanvasBody({
     return () => window.clearTimeout(id);
   }, [activeStepNodeId, fitView]);
 
-  const completed = Object.values(stepRunStatus).filter(
-    (s: NodeRunStatus) => s === "done" || s === "failed" || s === "waiting"
+  const completed = runSteps.filter(
+    (s) =>
+      s.status === "done" ||
+      s.status === "failed" ||
+      s.status === "waiting" ||
+      s.status === "skipped",
   ).length;
-  const total = steps.filter((s) => !s.parentStepName).length;
+  // `run.totalSteps` is snapshotted at run start (immune to mid-run
+  // definition edits) and matches the timeline header's denominator.
+  const total = run.totalSteps;
   const hasActiveStep = Boolean(activeStepNodeId);
 
   const handleJumpToActive = () => {
