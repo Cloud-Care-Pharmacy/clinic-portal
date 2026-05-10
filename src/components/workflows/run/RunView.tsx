@@ -268,7 +268,7 @@ interface RunListRailProps {
 
 function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) {
   return (
-    <aside className="flex w-65 flex-col border-r border-border bg-card">
+    <aside className="flex w-65 flex-col border-r border-border bg-background">
       <header className="flex items-center justify-between px-3.5 py-3">
         <h3 className="text-sm font-semibold">Recent runs</h3>
         <Button
