@@ -2042,3 +2042,15 @@ export interface TriggerWorkflowResponse {
     event: Record<string, unknown> | null;
   };
 }
+
+export interface TestRunWorkflowPayload {
+  /** Optional seed value bound to `event.payload` in step templates. */
+  payload?: Record<string, unknown>;
+}
+
+export interface TestRunWorkflowResponse {
+  success: boolean;
+  data: {
+    run: WorkflowRun;
+  };
+}

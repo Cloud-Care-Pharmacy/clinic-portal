@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-query";
 import type {
   CreateWorkflowPayload,
+  TestRunWorkflowPayload,
+  TestRunWorkflowResponse,
   TriggerWorkflowPayload,
   TriggerWorkflowResponse,
   UpdateWorkflowPayload,
@@ -218,6 +220,44 @@ export function useTriggerWorkflow() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["workflow-runs"] });
+    },
+  });
+}
+
+/**
+ * Kick off a synthetic run for a workflow definition without publishing an
+ * external event. The backend drains the run inline and returns the resulting
+ * `workflow_runs` row — which may be `running`, `waiting`, `completed`, or
+ * `failed` by the time the response arrives.
+ *
+ * Test runs execute the real flow: emails are sent, SMS messages are
+ * delivered, `http_call` hits the real URL. Make sure the definition points
+ * at non-production recipients before clicking.
+ */
+export function useTestRunWorkflow(workflowId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload?: TestRunWorkflowPayload
+    ): Promise<TestRunWorkflowResponse> => {
+      const hasBody = Boolean(payload && payload.payload !== undefined);
+      const res = await fetch(
+        `/api/proxy/workflows/${encodeURIComponent(workflowId)}/test-run`,
+        {
+          method: "POST",
+          ...(hasBody
+            ? {
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              }
+            : {}),
+        }
+      );
+      if (!res.ok) throw await readError(res, "Failed to start test run");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["workflow-runs", "list", workflowId] });
     },
   });
 }

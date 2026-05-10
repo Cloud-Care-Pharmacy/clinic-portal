@@ -41,6 +41,7 @@ interface WorkflowActionBarProps {
   onAdd: () => void;
   onSave: () => void;
   onTestRun: () => void;
+  testRunPending: boolean;
   onViewJson: () => void;
   onDownloadJson: () => void;
   onCopyId: () => void;
@@ -72,6 +73,7 @@ export function WorkflowActionBar({
   onAdd,
   onSave,
   onTestRun,
+  testRunPending,
   onViewJson,
   onDownloadJson,
   onCopyId,
@@ -197,20 +199,21 @@ export function WorkflowActionBar({
           </>
         )}
 
-        {/* Test run is only meaningful once the workflow is active — the
-            backend's dispatcher only creates a `workflow_runs` row for active
-            workflows, so showing the button on a draft would silently no-op. */}
-        {isActive && (
-          <Button
-            type="button"
-            size="sm"
-            onClick={onTestRun}
-            className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
-          >
-            <Play className="size-3.5 fill-current" />
-            Test run
-          </Button>
-        )}
+        {/* Test run executes the real flow — emails, SMS, http_call, and
+            record_activity all fire for real. The backend allows test runs on
+            drafts as well as active definitions, so the button is always
+            visible here. */}
+        <Button
+          type="button"
+          size="sm"
+          onClick={onTestRun}
+          disabled={testRunPending}
+          title="Test runs execute the real flow — emails, SMS, and HTTP calls fire. Point the workflow at non-production recipients before running."
+          className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+        >
+          <Play className="size-3.5 fill-current" />
+          {testRunPending ? "Running\u2026" : "Test run"}
+        </Button>
 
         {/* Expanded-only: active toggle */}
         <div

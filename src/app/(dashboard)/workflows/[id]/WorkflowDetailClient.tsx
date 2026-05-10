@@ -27,9 +27,9 @@ import {
 import { WorkflowEditor } from "@/components/workflows/canvas/WorkflowEditor";
 import { RunView } from "@/components/workflows/run/RunView";
 import { ViewJsonDialog } from "@/components/workflows/ViewJsonDialog";
-import { TestRunDialog } from "@/components/workflows/TestRunDialog";
 import { WorkflowActionBar } from "@/components/workflows/WorkflowActionBar";
 import { workflowSchema } from "@/components/workflows/canvas/lib/workflow-schema";
+import { useTestRunWorkflow } from "@/lib/hooks/use-workflows";
 import type {
   Workflow,
   WorkflowResponse,
@@ -88,6 +88,7 @@ export function WorkflowDetailClient({
   const update = useUpdateWorkflow(workflowId);
   const create = useCreateWorkflow();
   const remove = useDeleteWorkflow();
+  const testRun = useTestRunWorkflow(workflowId);
   const { data: allWorkflows } = useWorkflows({ status: "active", limit: 100 });
 
   const workflow = data?.data;
@@ -101,8 +102,8 @@ export function WorkflowDetailClient({
     message: string;
   } | null>(null);
   const [showJson, setShowJson] = useState(false);
-  const [showTestRun, setShowTestRun] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
@@ -197,6 +198,36 @@ export function WorkflowDetailClient({
     } catch (err) {
       const message =
         err instanceof WorkflowApiError ? err.message : "Failed to update status";
+      toast.error(message);
+    }
+  }
+
+  async function handleTestRun() {
+    try {
+      const result = await testRun.mutateAsync(undefined);
+      const run = result.data.run;
+      setActiveRunId(run.id);
+      setTab("run");
+      const description =
+        run.status === "waiting"
+          ? run.awaitingEventType
+            ? `Waiting for event: ${run.awaitingEventType}`
+            : "Paused on a wait step."
+          : run.status === "failed"
+            ? (run.lastError ?? "Run failed.")
+            : run.status === "completed"
+              ? "Run completed."
+              : "Run started.";
+      const toastFn =
+        run.status === "failed"
+          ? toast.error
+          : run.status === "waiting"
+            ? toast.warning
+            : toast.success;
+      toastFn(`Test run ${run.status}`, { description });
+    } catch (err) {
+      const message =
+        err instanceof WorkflowApiError ? err.message : "Test run failed";
       toast.error(message);
     }
   }
@@ -302,7 +333,12 @@ export function WorkflowDetailClient({
               panningMode={panningMode}
             />
           ) : (
-            <RunView workflowId={workflowId} initialRuns={initialRuns} />
+            <RunView
+              key={activeRunId ?? "latest"}
+              workflowId={workflowId}
+              initialRuns={initialRuns}
+              initialRunId={activeRunId ?? undefined}
+            />
           )}
 
           <WorkflowActionBar
@@ -312,7 +348,8 @@ export function WorkflowDetailClient({
             onToggleActive={toggleActive}
             onAdd={() => setAddSignal((n) => n + 1)}
             onSave={() => handleSave()}
-            onTestRun={() => setShowTestRun(true)}
+            onTestRun={() => void handleTestRun()}
+            testRunPending={testRun.isPending}
             onViewJson={() => setShowJson(true)}
             onDownloadJson={handleDownloadJson}
             onCopyId={handleCopyWorkflowId}
@@ -336,12 +373,6 @@ export function WorkflowDetailClient({
       </ReactFlowProvider>
 
       <ViewJsonDialog open={showJson} onOpenChange={setShowJson} data={workflow} />
-      <TestRunDialog
-        open={showTestRun}
-        onOpenChange={setShowTestRun}
-        workflow={workflow}
-        onTriggered={() => setTab("run")}
-      />
       <AlertDialog open={renameOpen} onOpenChange={setRenameOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
