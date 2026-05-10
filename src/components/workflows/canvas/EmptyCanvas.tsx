@@ -11,10 +11,10 @@ export function EmptyCanvas({ onAddTrigger }: EmptyCanvasProps) {
     <div
       className="flex h-full w-full items-center justify-center"
       style={{
+        backgroundColor: "var(--background)",
         backgroundImage:
-          "radial-gradient(circle, var(--border) 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
-        background: "var(--background)",
+          "radial-gradient(circle, var(--border) 1.4px, transparent 1.4px)",
+        backgroundSize: "24px 24px",
       }}
     >
       <div className="flex flex-col items-center gap-3">

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Background,
   BackgroundVariant,
   PanOnScrollMode,
   ReactFlow,
-  ReactFlowProvider,
   useReactFlow,
   type NodeMouseHandler,
 } from "@xyflow/react";
@@ -20,7 +19,6 @@ import { RouterStartEdge } from "./edges/RouterStartEdge";
 import { RouterEndEdge } from "./edges/RouterEndEdge";
 import { LoopStartEdge } from "./edges/LoopStartEdge";
 import { LoopReturnEdge } from "./edges/LoopReturnEdge";
-import { CanvasControls } from "./CanvasControls";
 import { CanvasMinimap } from "./CanvasMinimap";
 import {
   buildWorkflowGraph,
@@ -59,6 +57,8 @@ export interface WorkflowGraphProps {
   onRequestInsert: (req: InsertionRequest) => void;
   stepRunStatus?: Record<number, NodeRunStatus>;
   runActive?: boolean;
+  panningMode: "grab" | "select";
+  showMinimap: boolean;
 }
 
 function ArrowMarker() {
@@ -82,7 +82,7 @@ function ArrowMarker() {
   );
 }
 
-function GraphInner({
+export function WorkflowGraph({
   triggers,
   steps,
   selectedId,
@@ -90,10 +90,10 @@ function GraphInner({
   onRequestInsert,
   stepRunStatus,
   runActive,
+  panningMode,
+  showMinimap,
 }: WorkflowGraphProps) {
   const { fitView } = useReactFlow();
-  const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
-  const [showMinimap, setShowMinimap] = useState(false);
 
   const { nodes, edges } = useMemo(
     () =>
@@ -166,30 +166,14 @@ function GraphInner({
         >
           <Background
             gap={24}
-            size={1}
-            color="color-mix(in oklab, var(--muted-foreground) 18%, transparent)"
+            size={1.4}
+            color="var(--border)"
             variant={BackgroundVariant.Dots}
             style={{ background: "var(--background)" }}
           />
           {showMinimap && <CanvasMinimap />}
         </ReactFlow>
-        <CanvasControls
-          panningMode={panningMode}
-          onTogglePanningMode={() =>
-            setPanningMode((m) => (m === "grab" ? "select" : "grab"))
-          }
-          showMinimap={showMinimap}
-          onToggleMinimap={() => setShowMinimap((s) => !s)}
-        />
       </div>
     </CanvasContextProvider>
-  );
-}
-
-export function WorkflowGraph(props: WorkflowGraphProps) {
-  return (
-    <ReactFlowProvider>
-      <GraphInner {...props} />
-    </ReactFlowProvider>
   );
 }

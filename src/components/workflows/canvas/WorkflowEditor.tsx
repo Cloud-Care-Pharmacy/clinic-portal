@@ -34,6 +34,8 @@ interface WorkflowEditorProps {
    * action bars / shortcuts.
    */
   openPaletteSignal?: number;
+  panningMode: "grab" | "select";
+  showMinimap: boolean;
 }
 
 export function WorkflowEditor({
@@ -44,6 +46,8 @@ export function WorkflowEditor({
   otherWorkflows,
   serverError,
   openPaletteSignal,
+  panningMode,
+  showMinimap,
 }: WorkflowEditorProps) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -194,6 +198,8 @@ export function WorkflowEditor({
             selectedId={selectedId}
             onSelect={handleSelectNodeId}
             onRequestInsert={handleRequestInsert}
+            panningMode={panningMode}
+            showMinimap={showMinimap}
           />
         )}
       </div>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ReactFlowProvider } from "@xyflow/react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,8 @@ export function WorkflowDetailClient({
   const [showTestRun, setShowTestRun] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [addSignal, setAddSignal] = useState(0);
+  const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
+  const [showMinimap, setShowMinimap] = useState(false);
 
   // Sync server state into draft when the workflow loads or refreshes,
   // unless the user has unsaved changes. Done during render via the
@@ -187,37 +190,47 @@ export function WorkflowDetailClient({
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       {/* Body — full bleed canvas, no top header strip or tabs bar */}
-      <div className="relative min-h-0 flex-1 bg-background">
-        {tab === "canvas" ? (
-          <WorkflowEditor
-            triggers={draftTriggers}
-            steps={draftSteps}
-            onChange={handleDraftChange}
-            webhookBaseUrl={WEBHOOK_BASE_URL}
-            otherWorkflows={subWorkflows}
-            serverError={serverError}
-            openPaletteSignal={addSignal}
-          />
-        ) : (
-          <RunView workflowId={workflowId} initialRuns={initialRuns} />
-        )}
+      <ReactFlowProvider>
+        <div className="relative min-h-0 flex-1 bg-background">
+          {tab === "canvas" ? (
+            <WorkflowEditor
+              triggers={draftTriggers}
+              steps={draftSteps}
+              onChange={handleDraftChange}
+              webhookBaseUrl={WEBHOOK_BASE_URL}
+              otherWorkflows={subWorkflows}
+              serverError={serverError}
+              openPaletteSignal={addSignal}
+              panningMode={panningMode}
+              showMinimap={showMinimap}
+            />
+          ) : (
+            <RunView workflowId={workflowId} initialRuns={initialRuns} />
+          )}
 
-        <WorkflowActionBar
-          tab={tab}
-          onTabChange={setTab}
-          isActive={isActive}
-          onToggleActive={toggleActive}
-          onAdd={() => setAddSignal((n) => n + 1)}
-          onSave={() => handleSave()}
-          onTestRun={() => setShowTestRun(true)}
-          onViewJson={() => setShowJson(true)}
-          onDelete={() => setShowDelete(true)}
-          saveDisabled={!draftDirty || update.isPending}
-          saving={update.isPending}
-          togglePending={update.isPending}
-          dirty={draftDirty}
-        />
-      </div>
+          <WorkflowActionBar
+            tab={tab}
+            onTabChange={setTab}
+            isActive={isActive}
+            onToggleActive={toggleActive}
+            onAdd={() => setAddSignal((n) => n + 1)}
+            onSave={() => handleSave()}
+            onTestRun={() => setShowTestRun(true)}
+            onViewJson={() => setShowJson(true)}
+            onDelete={() => setShowDelete(true)}
+            saveDisabled={!draftDirty || update.isPending}
+            saving={update.isPending}
+            togglePending={update.isPending}
+            dirty={draftDirty}
+            panningMode={panningMode}
+            onTogglePanningMode={() =>
+              setPanningMode((m) => (m === "grab" ? "select" : "grab"))
+            }
+            showMinimap={showMinimap}
+            onToggleMinimap={() => setShowMinimap((s) => !s)}
+          />
+        </div>
+      </ReactFlowProvider>
 
       <ViewJsonDialog open={showJson} onOpenChange={setShowJson} data={workflow} />
       <TestRunDialog
