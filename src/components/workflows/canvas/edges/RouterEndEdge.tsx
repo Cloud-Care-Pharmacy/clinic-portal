@@ -1,11 +1,7 @@
 "use client";
 
 import { type EdgeProps } from "@xyflow/react";
-import {
-  LINE_WIDTH,
-  STROKE,
-  STROKE_HIGHLIGHTED,
-} from "../lib/canvas-consts";
+import { edgePaintForStatus } from "../lib/edge-paint";
 import type { WfRouterEndEdgeData } from "../lib/graph-builder";
 
 /**
@@ -30,15 +26,17 @@ export function RouterEndEdge({
     `L ${targetX} ${targetY}`,
   ].join(" ");
 
-  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+  const paint = edgePaintForStatus(ed.runStatus, ed.runActive);
 
   return (
     <path
       id={id}
       d={d}
       fill="none"
-      stroke={stroke}
-      strokeWidth={LINE_WIDTH}
+      stroke={paint.stroke}
+      strokeWidth={paint.strokeWidth}
+      strokeDasharray={paint.strokeDasharray}
+      style={paint.style}
       markerEnd={ed.drawArrowAtEnd ? "url(#wf-arrow)" : undefined}
     />
   );

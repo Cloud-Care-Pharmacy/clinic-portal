@@ -1,12 +1,8 @@
 "use client";
 
 import { EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
-import {
-  LABEL_HEIGHT,
-  LINE_WIDTH,
-  STROKE,
-  STROKE_HIGHLIGHTED,
-} from "../lib/canvas-consts";
+import { LABEL_HEIGHT } from "../lib/canvas-consts";
+import { edgePaintForStatus } from "../lib/edge-paint";
 import type { WfRouterStartEdgeData } from "../lib/graph-builder";
 
 /**
@@ -36,7 +32,7 @@ export function RouterStartEdge({
     `L ${targetX} ${targetY}`,
   ].join(" ");
 
-  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+  const paint = edgePaintForStatus(ed.runStatus, ed.runActive);
   const labelClasses = ed.isFallbackBranch
     ? "border-border bg-muted text-foreground"
     : "border-primary/70 bg-popover text-primary";
@@ -47,8 +43,10 @@ export function RouterStartEdge({
         id={id}
         d={d}
         fill="none"
-        stroke={stroke}
-        strokeWidth={LINE_WIDTH}
+        stroke={paint.stroke}
+        strokeWidth={paint.strokeWidth}
+        strokeDasharray={paint.strokeDasharray}
+        style={paint.style}
         markerEnd="url(#wf-arrow)"
       />
       <EdgeLabelRenderer>

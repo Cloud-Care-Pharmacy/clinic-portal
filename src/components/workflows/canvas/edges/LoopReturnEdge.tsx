@@ -6,11 +6,9 @@ import {
   ARC_LENGTH,
   ARC_RIGHT_UP,
   ARROW_RIGHT_CHEVRON,
-  LINE_WIDTH,
-  STROKE,
-  STROKE_HIGHLIGHTED,
   VERTICAL_SPACE_BETWEEN_STEP_AND_LINE,
 } from "../lib/canvas-consts";
+import { edgePaintForStatus } from "../lib/edge-paint";
 import type { WfLoopReturnEdgeData } from "../lib/graph-builder";
 
 /**
@@ -36,7 +34,7 @@ import type { WfLoopReturnEdgeData } from "../lib/graph-builder";
  */
 export function LoopReturnEdge({ sourceX, sourceY, targetX, data, id }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopReturnEdgeData;
-  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+  const paint = edgePaintForStatus(ed.runStatus, ed.runActive);
 
   const horizontalLineLength = Math.abs(sourceX - targetX) - 2 * ARC_LENGTH;
   const verticalLineLength = ed.verticalSpan;
@@ -51,5 +49,15 @@ export function LoopReturnEdge({ sourceX, sourceY, targetX, data, id }: EdgeProp
     ARROW_RIGHT_CHEVRON,
   ].join(" ");
 
-  return <path id={id} d={path} fill="none" stroke={stroke} strokeWidth={LINE_WIDTH} />;
+  return (
+    <path
+      id={id}
+      d={path}
+      fill="none"
+      stroke={paint.stroke}
+      strokeWidth={paint.strokeWidth}
+      strokeDasharray={paint.strokeDasharray}
+      style={paint.style}
+    />
+  );
 }

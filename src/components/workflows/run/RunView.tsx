@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ChevronDown,
   ChevronRight,
@@ -100,6 +101,68 @@ function useNow(intervalMs: number, enabled: boolean): number {
     return () => window.clearInterval(id);
   }, [enabled, intervalMs]);
   return now;
+}
+
+/**
+ * Step kinds that have user-visible side effects on the world. We surface
+ * their completion (and failure) as toasts so users get explicit feedback
+ * during a test run instead of having to scan the timeline.
+ */
+const HIGH_SIGNAL_STEP_KINDS: ReadonlySet<WorkflowStepKind> = new Set<
+  WorkflowStepKind
+>(["send_email", "send_sms", "http_call"]);
+
+/** Human-readable label for the toast title. */
+function highSignalStepLabel(kind: WorkflowStepKind): string {
+  switch (kind) {
+    case "send_email":
+      return "Email";
+    case "send_sms":
+      return "SMS";
+    case "http_call":
+      return "HTTP call";
+    default:
+      return kind;
+  }
+}
+
+/**
+ * Fire a Sonner toast for a streamed step event when it represents a
+ * meaningful side effect (email / SMS / HTTP) and we haven't already
+ * toasted this exact event. We also skip events older than 10s on arrival
+ * so the initial SSE replay (when first connecting to a long-lived run)
+ * doesn't dump a flood of stale toasts.
+ */
+function maybeToastStepEvent(
+  event: WorkflowRunEvent,
+  toasted: Set<number>,
+): void {
+  if (toasted.has(event.sequence)) return;
+  toasted.add(event.sequence);
+
+  const kind = event.stepKind as WorkflowStepKind | undefined;
+  if (!kind || !HIGH_SIGNAL_STEP_KINDS.has(kind)) return;
+  if (event.eventType !== "step_completed" && event.eventType !== "step_failed") {
+    return;
+  }
+  const ageMs = Date.now() - new Date(event.createdAt).getTime();
+  if (Number.isFinite(ageMs) && ageMs > 10_000) return;
+
+  const label = highSignalStepLabel(kind);
+  const duration = event.durationMs != null ? fmtDuration(event.durationMs) : null;
+  const detail = (event.detail ?? {}) as Record<string, unknown>;
+  const errorMsg = typeof detail.error === "string" ? detail.error : undefined;
+
+  if (event.eventType === "step_failed") {
+    toast.error(`${label} failed`, {
+      description: errorMsg ?? (duration ? `Took ${duration}` : undefined),
+    });
+  } else {
+    const verb = kind === "http_call" ? "completed" : "sent";
+    toast.success(`${label} ${verb}`, {
+      description: duration ? `Completed in ${duration}` : undefined,
+    });
+  }
 }
 
 function shortId(id: string) {
@@ -756,6 +819,15 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
   // the timeline's per-step elapsed counter advance between SSE events.
   const now = useNow(500, Boolean(isLive));
 
+  // Track which step events we've already toasted for this run, so the
+  // initial replay (when first connecting to the SSE stream) and any
+  // reconnects don't re-fire toasts. Reset whenever the selected run
+  // changes — done in an effect so we don't mutate refs during render.
+  const toastedSequencesRef = useRef<Set<number>>(new Set());
+  useEffect(() => {
+    toastedSequencesRef.current = new Set();
+  }, [runId]);
+
   useWorkflowRunStream(runId, Boolean(runId) && isLive, {
     onRun: (run) => {
       queryClient.setQueryData<WorkflowRunDetailResponse>(
@@ -776,6 +848,11 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
           return { ...prev, data: { ...prev.data, events: next } };
         }
       );
+      // Surface high-signal step completions as toasts so users notice when
+      // a real-world side effect (email / SMS / HTTP) actually happened.
+      // We gate on event recency to avoid replaying the entire history
+      // when the user opens an old run.
+      maybeToastStepEvent(event, toastedSequencesRef.current);
     },
     onDone: () => {
       // Pull the canonical audit (status + full event list) once the stream
@@ -815,6 +892,7 @@ function RunPanel({ runId, triggers, steps, topLevelSteps }: RunPanelProps) {
             events={data?.data.events ?? []}
             isLive={Boolean(isLive)}
             elapsedMs={elapsedMs}
+            now={now}
           />
         ) : (
           <div className="flex h-full items-center justify-center p-6">

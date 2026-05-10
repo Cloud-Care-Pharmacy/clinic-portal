@@ -52,6 +52,14 @@ export interface WorkflowGraphProps {
   onSelect: (id: string | null) => void;
   onRequestInsert: (req: InsertionRequest) => void;
   stepRunStatus?: Record<number, NodeRunStatus>;
+  /**
+   * Per-step duration / live-elapsed (ms), keyed by flat step index. The
+   * run canvas passes this so each node can render a tiny duration pill.
+   */
+  stepRunMeta?: Record<
+    number,
+    { durationMs?: number; liveElapsedMs?: number }
+  >;
   runActive?: boolean;
   panningMode: "grab" | "select";
   /**
@@ -90,6 +98,7 @@ export function WorkflowGraph({
   onSelect,
   onRequestInsert,
   stepRunStatus,
+  stepRunMeta,
   runActive,
   panningMode,
   readOnly = false,
@@ -104,8 +113,9 @@ export function WorkflowGraph({
         triggerLabel,
         stepLabel,
         stepRunStatus,
+        stepRunMeta,
       }),
-    [triggers, steps, stepRunStatus]
+    [triggers, steps, stepRunStatus, stepRunMeta]
   );
 
   // In read-only mode (run view) we strip out the editing affordances so

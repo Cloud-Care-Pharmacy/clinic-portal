@@ -75,6 +75,16 @@ function configFor(data: WorkflowNodeData): NodeKindConfig | null {
   return null;
 }
 
+/** Compact duration formatter used inside the per-node pill. */
+function fmtNodeDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
+  const m = Math.floor(s / 60);
+  const rs = Math.round(s - m * 60);
+  return `${m}m ${rs}s`;
+}
+
 function WorkflowNodeImpl({ data, selected }: NodeProps) {
   const node = data as WorkflowNodeData;
   const cfg = configFor(node);
@@ -83,7 +93,9 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
   const Icon = cfg.icon;
   const runStatus = node.kind === "step" ? node.runStatus : undefined;
   const displayIndex = node.kind === "step" ? node.displayIndex : null;
-  // Hover-revealed pill on the right side of the card. For steps we show a
+  const runDurationMs = node.kind === "step" ? node.runDurationMs : undefined;
+  const runLiveElapsedMs =
+    node.kind === "step" ? node.runLiveElapsedMs : undefined;
   // human-readable "Step N" (1-based) instead of the internal `step_<idx>`
   // identifier; for triggers we surface "Trigger" so the node still has a
   // discoverable label on hover.
@@ -189,6 +201,19 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
       {hoverLabel && (
         <div className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-0.5 font-mono text-[10px] text-muted-foreground opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
           {hoverLabel}
+        </div>
+      )}
+
+      {/* Per-node duration pill — shows live elapsed while running and the
+          final duration once terminal. Hidden on pending / trigger nodes. */}
+      {(runLiveElapsedMs != null || runDurationMs != null) && (
+        <div
+          className="pointer-events-none absolute -bottom-2 right-2 rounded-full border border-border bg-popover px-1.5 py-px font-mono text-[9px] tabular-nums text-muted-foreground shadow-sm"
+          aria-label="Step duration"
+        >
+          {fmtNodeDuration(
+            runLiveElapsedMs != null ? runLiveElapsedMs : runDurationMs!,
+          )}
         </div>
       )}
 

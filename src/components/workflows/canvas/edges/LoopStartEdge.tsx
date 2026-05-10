@@ -7,14 +7,12 @@ import {
   ARC_RIGHT,
   ARC_RIGHT_DOWN,
   ARROW_DOWN_CHEVRON,
-  LINE_WIDTH,
-  STROKE,
-  STROKE_HIGHLIGHTED,
   VERTICAL_SPACE_BETWEEN_STEPS,
   VERTICAL_SPACE_BETWEEN_STEP_AND_LINE,
 } from "../lib/canvas-consts";
 import { AddButton } from "./AddButton";
 import { useCanvasContext } from "../lib/canvas-context";
+import { edgePaintForStatus } from "../lib/edge-paint";
 import type { WfLoopStartEdgeData } from "../lib/graph-builder";
 
 /**
@@ -54,7 +52,7 @@ export function LoopStartEdge({
     ed.isLoopEmpty ? "" : ARROW_DOWN_CHEVRON,
   ].join(" ");
 
-  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+  const paint = edgePaintForStatus(ed.runStatus, ed.runActive);
 
   const buttonX =
     sourceX -
@@ -69,8 +67,10 @@ export function LoopStartEdge({
         id={id}
         d={path}
         fill="none"
-        stroke={stroke}
-        strokeWidth={LINE_WIDTH}
+        stroke={paint.stroke}
+        strokeWidth={paint.strokeWidth}
+        strokeDasharray={paint.strokeDasharray}
+        style={paint.style}
       />
       {!ed.isLoopEmpty && ed.insertion && (
         <EdgeLabelRenderer>

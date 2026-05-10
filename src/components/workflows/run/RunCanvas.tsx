@@ -28,6 +28,11 @@ interface RunCanvasProps {
   /** Live-elapsed for the whole run, in ms. Updated by the parent's ticker. */
   elapsedMs: number;
   /**
+   * Ticking timestamp from the parent. Drives the live-elapsed pill on the
+   * currently-running node so it advances between SSE events.
+   */
+  now: number;
+  /**
    * Selected step index (drives the canvas selection box). The parent owns
    * selection so clicking a node can scroll the matching timeline card.
    */
@@ -42,6 +47,17 @@ function fmtDuration(ms: number): string {
   const m = Math.floor(s / 60);
   const rs = Math.round(s - m * 60);
   return `${m}m ${rs}s`;
+}
+
+/**
+ * Parse a backend timestamp as UTC. Mirrors `parseUtcMs` in `RunView.tsx`
+ * — some gateway columns omit the timezone marker and would otherwise be
+ * read as local time.
+ */
+function parseUtcMs(ts: string): number {
+  const hasOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(ts);
+  const iso = hasOffset ? ts : `${ts.replace(" ", "T")}Z`;
+  return new Date(iso).getTime();
 }
 
 function StatusStrip({
@@ -140,6 +156,7 @@ function RunCanvasBody({
   events,
   isLive,
   elapsedMs,
+  now,
   selectedStepIndex,
   onSelectStepIndex,
 }: RunCanvasProps) {
@@ -154,6 +171,48 @@ function RunCanvasBody({
       run.status
     );
   }, [events, run.status]);
+
+  // Build per-step metadata (duration / live-elapsed) for the node pills.
+  // We pick the latest event per step index; for terminal events we read
+  // `durationMs`; for the in-flight step we compute `now - startedAt` so the
+  // pill ticks between SSE updates.
+  const stepRunMeta = useMemo<
+    Record<number, { durationMs?: number; liveElapsedMs?: number }>
+  >(() => {
+    type LatestByIdx = {
+      startedAt?: string;
+      durationMs?: number;
+      isTerminal: boolean;
+    };
+    const byIdx = new Map<number, LatestByIdx>();
+    const sorted = [...events].sort((a, b) => a.sequence - b.sequence);
+    for (const e of sorted) {
+      if (e.stepIndex == null) continue;
+      const cur = byIdx.get(e.stepIndex) ?? { isTerminal: false };
+      if (e.eventType === "step_started") {
+        cur.startedAt = e.createdAt;
+      } else if (
+        e.eventType === "step_completed" ||
+        e.eventType === "step_failed"
+      ) {
+        cur.durationMs = e.durationMs ?? undefined;
+        cur.isTerminal = true;
+      }
+      byIdx.set(e.stepIndex, cur);
+    }
+    const out: Record<number, { durationMs?: number; liveElapsedMs?: number }> = {};
+    for (const [idx, info] of byIdx) {
+      const status = stepRunStatus[idx];
+      if (info.isTerminal && info.durationMs != null) {
+        out[idx] = { durationMs: info.durationMs };
+      } else if (status === "running" && info.startedAt) {
+        out[idx] = {
+          liveElapsedMs: Math.max(0, now - parseUtcMs(info.startedAt)),
+        };
+      }
+    }
+    return out;
+  }, [events, stepRunStatus, now]);
 
   // Identify the currently-active step node id (if any) so the action bar
   // can fit-view onto it.
@@ -236,6 +295,7 @@ function RunCanvasBody({
         // Insertion is inert in read-only mode.
         onRequestInsert={() => {}}
         stepRunStatus={stepRunStatus}
+        stepRunMeta={stepRunMeta}
         panningMode="grab"
         readOnly
       />

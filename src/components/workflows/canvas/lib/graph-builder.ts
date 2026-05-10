@@ -51,6 +51,17 @@ export type WorkflowNodeData =
       sub: string;
       displayIndex: number;
       runStatus?: NodeRunStatus;
+      /**
+       * Duration of the most-recent terminal event for this step (ms).
+       * Populated when the step is `done` / `failed` / `waiting`. Used to
+       * render a tiny duration pill on the node.
+       */
+      runDurationMs?: number;
+      /**
+       * Live-elapsed for the step in flight (ms). Re-rendered by the parent
+       * on a tick while the SSE stream is open. Only set on the running step.
+       */
+      runLiveElapsedMs?: number;
     }
   | {
       kind: "addButton";
@@ -232,6 +243,14 @@ interface BuildOpts {
     displayIndex: number
   ) => { label: string; sub: string };
   stepRunStatus?: Record<number, NodeRunStatus>;
+  /**
+   * Per-step run timing, keyed by flat index. Populated by the run canvas
+   * to render duration / live-elapsed pills on each node.
+   */
+  stepRunMeta?: Record<
+    number,
+    { durationMs?: number; liveElapsedMs?: number }
+  >;
 }
 
 function makeStepNode(treeNode: StepTreeNode, opts: BuildOpts): WfNode {
@@ -240,6 +259,7 @@ function makeStepNode(treeNode: StepTreeNode, opts: BuildOpts): WfNode {
     treeNode.flatIndex,
     treeNode.displayIndex
   );
+  const meta = opts.stepRunMeta?.[treeNode.flatIndex];
   return {
     id: treeNode.nodeName,
     type: "step",
@@ -253,6 +273,8 @@ function makeStepNode(treeNode: StepTreeNode, opts: BuildOpts): WfNode {
       sub,
       displayIndex: treeNode.displayIndex,
       runStatus: opts.stepRunStatus?.[treeNode.flatIndex],
+      runDurationMs: meta?.durationMs,
+      runLiveElapsedMs: meta?.liveElapsedMs,
     },
   };
 }
