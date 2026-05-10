@@ -13,7 +13,7 @@ export function EmptyCanvas({ onAddTrigger }: EmptyCanvasProps) {
       style={{
         backgroundColor: "var(--background)",
         backgroundImage:
-          "radial-gradient(circle, var(--border) 1.4px, transparent 1.4px)",
+          "radial-gradient(circle, var(--input) 1.4px, transparent 1.4px)",
         backgroundSize: "24px 24px",
       }}
     >

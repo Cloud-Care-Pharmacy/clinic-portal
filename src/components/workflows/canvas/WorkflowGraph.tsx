@@ -26,10 +26,7 @@ import {
   type WfNode,
   type WorkflowNodeData,
 } from "./lib/graph-builder";
-import {
-  CanvasContextProvider,
-  type InsertionRequest,
-} from "./lib/canvas-context";
+import { CanvasContextProvider, type InsertionRequest } from "./lib/canvas-context";
 import { triggerLabel, stepLabel } from "./lib/node-kind-config";
 import type { WorkflowStep, WorkflowTrigger } from "@/types";
 
@@ -104,12 +101,12 @@ export function WorkflowGraph({
         stepLabel,
         stepRunStatus,
       }),
-    [triggers, steps, stepRunStatus],
+    [triggers, steps, stepRunStatus]
   );
 
   const selectedNodes = useMemo<WfNode[]>(
     () => nodes.map((n) => ({ ...n, selected: n.id === selectedId })),
-    [nodes, selectedId],
+    [nodes, selectedId]
   );
 
   const themedEdges = useMemo(
@@ -118,7 +115,7 @@ export function WorkflowGraph({
         ...e,
         data: { ...(e.data ?? {}), runActive } as Record<string, unknown>,
       })),
-    [edges, runActive],
+    [edges, runActive]
   );
 
   useEffect(() => {
@@ -167,7 +164,7 @@ export function WorkflowGraph({
           <Background
             gap={24}
             size={1.4}
-            color="var(--border)"
+            color="var(--input)"
             variant={BackgroundVariant.Dots}
             style={{ background: "var(--background)" }}
           />

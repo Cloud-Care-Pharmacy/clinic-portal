@@ -3,6 +3,9 @@
 import { useCallback, useState } from "react";
 import {
   Code2,
+  Copy,
+  Download,
+  Files,
   Hand,
   ListTree,
   Map as MapIcon,
@@ -12,6 +15,7 @@ import {
   MousePointer,
   Play,
   Plus,
+  Power,
   Save,
   Trash2,
 } from "lucide-react";
@@ -39,9 +43,13 @@ interface WorkflowActionBarProps {
   onSave: () => void;
   onTestRun: () => void;
   onViewJson: () => void;
+  onDownloadJson: () => void;
+  onCopyId: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
   saveDisabled: boolean;
   saving: boolean;
+  duplicating: boolean;
   togglePending: boolean;
   dirty: boolean;
   // Canvas viewport tools — rendered inside the bar when tab === "canvas".
@@ -54,8 +62,8 @@ interface WorkflowActionBarProps {
 /**
  * Sticky floating bottom bar — combines canvas viewport tools and workflow
  * actions into a single expandable pill. Collapsed state shows only the
- * primary `Test run` button and an expand toggle. Hovering anywhere on the
- * pill or clicking the ellipsis reveals the full toolset.
+ * primary `Test run` button and a more-actions trigger. Hovering anywhere on
+ * the pill reveals the full toolset; the ellipsis opens overflow actions.
  */
 export function WorkflowActionBar({
   tab,
@@ -66,9 +74,13 @@ export function WorkflowActionBar({
   onSave,
   onTestRun,
   onViewJson,
+  onDownloadJson,
+  onCopyId,
+  onDuplicate,
   onDelete,
   saveDisabled,
   saving,
+  duplicating,
   togglePending,
   dirty,
   panningMode,
@@ -77,16 +89,15 @@ export function WorkflowActionBar({
   onToggleMinimap,
 }: WorkflowActionBarProps) {
   const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const expanded = hovered || pinned || menuOpen;
+  const expanded = hovered || menuOpen;
 
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const handleZoomIn = useCallback(() => zoomIn({ duration: 0 }), [zoomIn]);
   const handleZoomOut = useCallback(() => zoomOut({ duration: 0 }), [zoomOut]);
   const handleFit = useCallback(
     () => fitView({ padding: 0.2, duration: 200 }),
-    [fitView],
+    [fitView]
   );
 
   const showCanvasControls = tab === "canvas";
@@ -96,15 +107,13 @@ export function WorkflowActionBar({
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="pointer-events-auto flex items-center gap-1 rounded-full border border-border bg-popover/95 p-1.5 shadow-lg backdrop-blur transition-all duration-200 supports-backdrop-filter:bg-popover/80"
+        className="pointer-events-auto flex h-11 items-center gap-1 overflow-hidden rounded-full border border-border bg-popover/95 p-1.5 shadow-lg backdrop-blur transition-all duration-200 supports-backdrop-filter:bg-popover/80"
       >
         {/* Expanded-only group: tabs + canvas tools + add + save */}
         <div
           className={cn(
-            "flex items-center gap-1 overflow-hidden transition-all duration-200",
-            expanded
-              ? "max-w-190 opacity-100"
-              : "pointer-events-none max-w-0 opacity-0",
+            "flex h-8 items-center gap-1 overflow-hidden transition-all duration-200",
+            expanded ? "max-w-190 opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
           <div className="flex items-center gap-0.5 rounded-full bg-muted p-0.5">
@@ -203,10 +212,8 @@ export function WorkflowActionBar({
         {/* Expanded-only: active toggle */}
         <div
           className={cn(
-            "flex items-center overflow-hidden transition-all duration-200",
-            expanded
-              ? "max-w-50 opacity-100"
-              : "pointer-events-none max-w-0 opacity-0",
+            "flex h-8 items-center overflow-hidden transition-all duration-200",
+            expanded ? "max-w-50 opacity-100" : "pointer-events-none max-w-0 opacity-0"
           )}
         >
           <Separator orientation="vertical" className="mx-1 h-6" />
@@ -214,7 +221,7 @@ export function WorkflowActionBar({
             <span
               className={cn(
                 "text-xs font-medium",
-                isActive ? "text-foreground" : "text-muted-foreground",
+                isActive ? "text-foreground" : "text-muted-foreground"
               )}
             >
               {isActive ? "Active" : "Inactive"}
@@ -228,44 +235,53 @@ export function WorkflowActionBar({
           </div>
         </div>
 
-        {/* Always-visible: expand toggle / more menu.
-            Click toggles expanded; menu opens via dropdown context. */}
+        {/* Always-visible: overflow menu. */}
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger
-            onClick={(e) => {
-              // Plain click toggles the bar instead of opening the menu.
-              e.preventDefault();
-              setPinned((p) => !p);
-            }}
-            onContextMenu={(e) => {
-              // Right-click opens the menu.
-              e.preventDefault();
-              setMenuOpen(true);
-            }}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              setMenuOpen(true);
-            }}
-            className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            aria-label={expanded ? "Collapse toolbar" : "Expand toolbar"}
-            title={
-              expanded
-                ? "Collapse (double-click for menu)"
-                : "Expand (double-click for menu)"
-            }
+            type="button"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:border focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-label="Workflow actions"
+            title="Workflow actions"
           >
             <MoreHorizontal className="size-4" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top">
+          <DropdownMenuContent align="end" side="top" className="min-w-56">
+            {showCanvasControls && (
+              <DropdownMenuItem onClick={onAdd}>
+                <Plus className="mr-2 size-3.5" />
+                Add step
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={onSave} disabled={saveDisabled}>
+              <Save className="mr-2 size-3.5" />
+              {saving ? "Saving…" : dirty ? "Save draft" : "Saved"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onViewJson}>
               <Code2 className="mr-2 size-3.5" />
               View JSON
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDownloadJson}>
+              <Download className="mr-2 size-3.5" />
+              Download JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCopyId}>
+              <Copy className="mr-2 size-3.5" />
+              Copy workflow ID
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDuplicate} disabled={duplicating}>
+              <Files className="mr-2 size-3.5" />
+              {duplicating ? "Duplicating…" : "Duplicate workflow"}
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={onDelete}
+              onClick={() => onToggleActive(!isActive)}
+              disabled={togglePending}
             >
+              <Power className="mr-2 size-3.5" />
+              {isActive ? "Disable workflow" : "Enable workflow"}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
               <Trash2 className="mr-2 size-3.5" />
               Delete workflow
             </DropdownMenuItem>
@@ -295,7 +311,7 @@ function TabButton({
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
         active
           ? "bg-popover text-foreground shadow-sm"
-          : "text-muted-foreground hover:text-foreground",
+          : "text-muted-foreground hover:text-foreground"
       )}
     >
       {icon}
@@ -325,7 +341,7 @@ function IconButton({
       onClick={onClick}
       className={cn(
         "size-7 p-0 text-muted-foreground hover:text-foreground",
-        active && "bg-muted text-foreground",
+        active && "bg-muted text-foreground"
       )}
     >
       {children}

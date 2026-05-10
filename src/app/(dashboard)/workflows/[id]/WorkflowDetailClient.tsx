@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import {
+  useCreateWorkflow,
   useDeleteWorkflow,
   useUpdateWorkflow,
   useWorkflow,
@@ -46,18 +47,45 @@ interface WorkflowDetailClientProps {
 type Tab = "canvas" | "run";
 
 const WEBHOOK_BASE_URL =
-  process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "";
+  process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
+
+function cloneTriggersForDuplicate(triggers: WorkflowTrigger[]): WorkflowTrigger[] {
+  return triggers.map((trigger) => {
+    switch (trigger.kind) {
+      case "event":
+        return { ...trigger };
+      case "manual":
+        return { ...trigger };
+      case "schedule":
+        return { ...trigger };
+      case "webhook":
+        return { kind: "webhook" };
+      case "workflow":
+        return { ...trigger };
+    }
+  });
+}
+
+function workflowDownloadFilename(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 64);
+
+  return `${slug || "workflow"}.json`;
+}
 
 export function WorkflowDetailClient({
   workflowId,
+  entityId,
   initialWorkflow,
   initialRuns,
 }: WorkflowDetailClientProps) {
   const router = useRouter();
   const { data, isLoading } = useWorkflow(workflowId, initialWorkflow);
   const update = useUpdateWorkflow(workflowId);
+  const create = useCreateWorkflow();
   const remove = useDeleteWorkflow();
   const { data: allWorkflows } = useWorkflows({ status: "active", limit: 100 });
 
@@ -166,9 +194,7 @@ export function WorkflowDetailClient({
       toast.success(checked ? "Workflow active" : "Workflow disabled");
     } catch (err) {
       const message =
-        err instanceof WorkflowApiError
-          ? err.message
-          : "Failed to update status";
+        err instanceof WorkflowApiError ? err.message : "Failed to update status";
       toast.error(message);
     }
   }
@@ -183,6 +209,55 @@ export function WorkflowDetailClient({
         err instanceof WorkflowApiError ? err.message : "Failed to delete";
       toast.error(message);
     }
+  }
+
+  async function handleDuplicate() {
+    if (!workflow) return;
+    try {
+      const created = await create.mutateAsync({
+        entityId,
+        name: `${workflow.name} copy`,
+        description: workflow.description,
+        triggerEventType: workflow.triggerEventType ?? undefined,
+        triggers: cloneTriggersForDuplicate(workflow.triggers),
+        status: "draft",
+        definition: {
+          version: workflow.definition.version ?? 1,
+          steps: workflow.definition.steps,
+        },
+      });
+      toast.success("Workflow duplicated");
+      router.push(`/workflows/${created.data.id}`);
+    } catch (err) {
+      const message =
+        err instanceof WorkflowApiError ? err.message : "Failed to duplicate";
+      toast.error(message);
+    }
+  }
+
+  async function handleCopyWorkflowId() {
+    try {
+      await navigator.clipboard.writeText(workflowId);
+      toast.success("Workflow ID copied");
+    } catch {
+      toast.error("Copy failed");
+    }
+  }
+
+  function handleDownloadJson() {
+    if (!workflow) return;
+    const blob = new Blob([JSON.stringify(workflow, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = workflowDownloadFilename(workflow.name);
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    toast.success("Workflow JSON downloaded");
   }
 
   const isActive = workflow.status === "active";
@@ -217,9 +292,13 @@ export function WorkflowDetailClient({
             onSave={() => handleSave()}
             onTestRun={() => setShowTestRun(true)}
             onViewJson={() => setShowJson(true)}
+            onDownloadJson={handleDownloadJson}
+            onCopyId={handleCopyWorkflowId}
+            onDuplicate={handleDuplicate}
             onDelete={() => setShowDelete(true)}
             saveDisabled={!draftDirty || update.isPending}
             saving={update.isPending}
+            duplicating={create.isPending}
             togglePending={update.isPending}
             dirty={draftDirty}
             panningMode={panningMode}
@@ -244,15 +323,12 @@ export function WorkflowDetailClient({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this workflow?</AlertDialogTitle>
             <AlertDialogDescription>
-              All runs and timeline events for{" "}
-              <strong>{workflow.name}</strong> will also be deleted. This
-              cannot be undone.
+              All runs and timeline events for <strong>{workflow.name}</strong> will
+              also be deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={remove.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
