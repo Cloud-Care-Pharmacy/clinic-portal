@@ -2,9 +2,6 @@
 
 import { type EdgeProps } from "@xyflow/react";
 import {
-  ARC_LENGTH,
-  ARC_LEFT_UP,
-  ARC_RIGHT_UP,
   LINE_WIDTH,
   STROKE,
   STROKE_HIGHLIGHTED,
@@ -25,18 +22,12 @@ export function RouterEndEdge({
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfRouterEndEdgeData;
 
-  const dx = targetX - sourceX;
-  const goesRight = dx >= 0;
-  const arc = goesRight ? ARC_RIGHT_UP : ARC_LEFT_UP;
-  const horizontalLen = Math.max(0, Math.abs(dx) - ARC_LENGTH);
-  const horizontalSign = goesRight ? 1 : -1;
-  const verticalLen = Math.max(0, targetY - sourceY - ARC_LENGTH);
-
+  // Clean merge path from branch exit to router merge anchor. The old arc
+  // math was based on relative fragments and could stop short of the target.
   const d = [
     `M ${sourceX} ${sourceY}`,
-    `v ${verticalLen}`,
-    arc,
-    `h ${horizontalSign * horizontalLen}`,
+    `L ${sourceX} ${targetY}`,
+    `L ${targetX} ${targetY}`,
   ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;

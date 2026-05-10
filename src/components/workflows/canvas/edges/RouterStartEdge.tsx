@@ -2,9 +2,6 @@
 
 import { EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
 import {
-  ARC_LENGTH,
-  ARC_LEFT_DOWN,
-  ARC_RIGHT_DOWN,
   LABEL_HEIGHT,
   LINE_WIDTH,
   STROKE,
@@ -31,29 +28,20 @@ export function RouterStartEdge({
   const ctx = useCanvasContext();
 
   const dx = targetX - sourceX;
-  const goesRight = dx >= 0;
-  const arc = goesRight ? ARC_RIGHT_DOWN : ARC_LEFT_DOWN;
-  const horizontalLen = Math.max(0, Math.abs(dx) - ARC_LENGTH);
-  const horizontalSign = goesRight ? 1 : -1;
+  const labelLineY = sourceY + LABEL_HEIGHT;
 
-  // Path:
-  //   from source go down a tiny bit,
-  //   horizontal toward target column,
-  //   arc into vertical,
-  //   straight down to target.
-  const verticalAfterArc =
-    targetY - sourceY - LABEL_HEIGHT - ARC_LENGTH * 2;
+  // Orthogonal branch fan-out. It must end at targetX/targetY exactly;
+  // otherwise labels/buttons look aligned while the actual edge handle is not.
   const d = [
     `M ${sourceX} ${sourceY}`,
-    `v ${LABEL_HEIGHT}`,
-    `h ${horizontalSign * horizontalLen}`,
-    arc,
-    `v ${Math.max(0, verticalAfterArc)}`,
+    `L ${sourceX} ${labelLineY}`,
+    `L ${targetX} ${labelLineY}`,
+    `L ${targetX} ${targetY}`,
   ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
-  const labelX = sourceX + horizontalSign * (horizontalLen / 2);
-  const labelY = sourceY + LABEL_HEIGHT / 2;
+  const labelX = sourceX + dx / 2;
+  const labelY = labelLineY;
 
   return (
     <>

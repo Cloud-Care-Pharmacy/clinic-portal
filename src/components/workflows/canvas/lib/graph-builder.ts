@@ -141,6 +141,10 @@ export interface BoundingBox {
 interface SubGraph {
   nodes: WfNode[];
   edges: Edge[];
+  /** First node in this subgraph's flow, used by parent edges. */
+  entryId?: string;
+  /** Last node in this subgraph's flow, used by parent edges. */
+  exitId?: string;
 }
 
 const empty = (): SubGraph => ({ nodes: [], edges: [] });
@@ -152,13 +156,18 @@ function offsetGraph(g: SubGraph, dx: number, dy: number): SubGraph {
       position: { x: n.position.x + dx, y: n.position.y + dy },
     })),
     edges: g.edges,
+    entryId: g.entryId,
+    exitId: g.exitId,
   };
 }
 
 function merge(...gs: SubGraph[]): SubGraph {
+  const nonEmpty = gs.filter((g) => g.nodes.length > 0);
   return {
     nodes: gs.flatMap((g) => g.nodes),
     edges: gs.flatMap((g) => g.edges),
+    entryId: nonEmpty.find((g) => g.entryId)?.entryId,
+    exitId: nonEmpty.findLast((g) => g.exitId)?.exitId,
   };
 }
 
@@ -289,7 +298,7 @@ function buildLoopChild(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     // Empty loop body: render a BigAddButton centered under the loop.
     const big = makeBigAddButton(loop.nodeName, 0, loop.nodeName);
     big.position = { x: 0, y: 0 };
-    return { nodes: [big], edges: [] };
+    return { nodes: [big], edges: [], entryId: big.id, exitId: big.id };
   }
   return buildChainGraph(loop.firstLoopAction, opts);
 }
@@ -304,9 +313,10 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
 
   const isLoopEmpty = !loop.firstLoopAction;
   const childHeadId =
+    offsetChild.entryId ??
     offsetChild.nodes[0]?.id ??
     `${loop.nodeName}__big-add__0`;
-  const childTailId = lastStructuralNodeId(offsetChild) ?? childHeadId;
+  const childTailId = offsetChild.exitId ?? childHeadId;
 
   // Loop start edge (top → child head) and loop return edge (child tail → loop)
   const startEdge: Edge = {
@@ -341,26 +351,28 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     } as WfLoopReturnEdgeData,
   };
 
-  // Graph-end anchor below everything.
+  // Graph-end anchor below everything. Parent-chain edges must continue from
+  // this anchor, not from the loop card itself; otherwise the continuation
+  // line cuts through the loop body.
   const subEnd = makeGraphEnd(
     `${loop.nodeName}__loop-end`,
     false,
     childOffsetY + childBox.height + ARC_LENGTH + VERTICAL_SPACE_BETWEEN_STEPS,
   );
 
+  const exitEdge = makeStraightEdge(
+    loopReturnNode.id,
+    subEnd.id,
+    { drawArrowHead: false, hideAddButton: true },
+    "loop-exit",
+  );
+
   return {
     nodes: [...offsetChild.nodes, loopReturnNode, subEnd],
-    edges: [startEdge, returnEdge, ...offsetChild.edges],
+    edges: [startEdge, returnEdge, exitEdge, ...offsetChild.edges],
+    entryId: childHeadId,
+    exitId: subEnd.id,
   };
-}
-
-function lastStructuralNodeId(g: SubGraph): string | null {
-  for (let i = g.nodes.length - 1; i >= 0; i--) {
-    const n = g.nodes[i];
-    const d = n.data as WorkflowNodeData;
-    if (d.kind === "step" || d.kind === "bigAddButton") return n.id;
-  }
-  return null;
 }
 
 function buildRouterChildren(
@@ -377,7 +389,7 @@ function buildRouterChildren(
       router.nodeName,
     );
     big.position = { x: 0, y: 0 };
-    return { nodes: [big], edges: [] };
+    return { nodes: [big], edges: [], entryId: big.id, exitId: big.id };
   });
 
   const branchBoxes = branchGraphs.map(calculateBoundingBox);
@@ -420,12 +432,12 @@ function buildRouterChildren(
 
   // Router start edges: from router → first node of each branch.
   const startEdges: Edge[] = placedBranches.map((g, i) => {
-    const head = g.nodes[0];
     const branch = router.branches[i];
+    const headId = g.entryId ?? g.nodes[0]?.id;
     return {
       id: `${router.nodeName}__rs-${i}`,
       source: router.nodeName,
-      target: head.id,
+      target: headId,
       type: "routerStart",
       data: {
         branchLabel: branch.label,
@@ -452,7 +464,7 @@ function buildRouterChildren(
   // Router end edges: from each branch tail → mergeEndNode.
   const endEdges: Edge[] = placedBranches
     .map((g, i) => {
-      const tailId = lastStructuralNodeId(g);
+      const tailId = g.exitId;
       if (!tailId) return null;
       return {
         id: `${router.nodeName}__re-${i}`,
@@ -480,6 +492,7 @@ function buildRouterChildren(
       ...endEdges,
       ...placedBranches.flatMap((g) => g.edges),
     ],
+    exitId: mergeEndNode.id,
   };
 }
 
@@ -500,7 +513,12 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
     const stepNode = makeStepNode(cur, opts);
     stepNode.position = { x: 0, y: cursorY };
 
-    let stepGraph: SubGraph = { nodes: [stepNode], edges: [] };
+    let stepGraph: SubGraph = {
+      nodes: [stepNode],
+      edges: [],
+      entryId: stepNode.id,
+      exitId: stepNode.id,
+    };
 
     // For routers / loops, build child graph and merge.
     if (cur.kind === "loop") {
@@ -535,7 +553,7 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
     // Advance cursor past the entire stepGraph height.
     const box = calculateBoundingBox(stepGraph);
     cursorY = stepNode.position.y + Math.max(box.height, NODE_H) + VERTICAL_SPACE_BETWEEN_STEPS;
-    prevNodeId = stepNode.id;
+    prevNodeId = stepGraph.exitId ?? stepNode.id;
     prevFlatIndex = cur.flatIndex;
     prevParentInfo = {
       parentStepName: cur.step.parentStepName,
@@ -570,6 +588,9 @@ function buildChainGraph(head: StepTreeNode, opts: BuildOpts): SubGraph {
       ),
     );
   }
+
+  result.entryId ??= head.nodeName;
+  result.exitId = endNode.id;
 
   return result;
 }
@@ -644,13 +665,13 @@ export function buildWorkflowGraph(opts: BuildOpts): {
     );
   }
 
-  if (tree.head && chainGraph.nodes[0]) {
+  if (tree.head && chainGraph.entryId) {
     const lastTriggerId = triggerNodes[triggerNodes.length - 1]?.id;
     if (lastTriggerId) {
       result.edges.push(
         makeStraightEdge(
           lastTriggerId,
-          chainGraph.nodes[0].id,
+          chainGraph.entryId,
           {
             drawArrowHead: true,
             insertion: {

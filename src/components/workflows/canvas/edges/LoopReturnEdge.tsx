@@ -3,8 +3,6 @@
 import { type EdgeProps } from "@xyflow/react";
 import {
   ARC_LENGTH,
-  ARC_LEFT_UP,
-  ARC_RIGHT_DOWN,
   LINE_WIDTH,
   STROKE,
   STROKE_HIGHLIGHTED,
@@ -25,18 +23,15 @@ export function LoopReturnEdge({
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopReturnEdgeData;
 
-  // sourceX,sourceY = bottom of last action in loop body
-  // targetX,targetY = the loop-return anchor node (right side, near loop)
-  const goRightLen = Math.max(0, targetX - sourceX - ARC_LENGTH);
-  const goUpLen = Math.max(0, sourceY - targetY - ARC_LENGTH * 2);
-
+  // Route out to the right-side loop anchor and always terminate at the
+  // target coordinate. The previous arc fragments did not land on the target,
+  // so React Flow handles and visible strokes drifted apart.
+  const bendY = sourceY + ARC_LENGTH;
   const d = [
     `M ${sourceX} ${sourceY}`,
-    `v ${ARC_LENGTH}`,
-    ARC_RIGHT_DOWN,
-    `h ${goRightLen}`,
-    ARC_LEFT_UP,
-    `v ${-goUpLen}`,
+    `L ${sourceX} ${bendY}`,
+    `L ${targetX} ${bendY}`,
+    `L ${targetX} ${targetY}`,
   ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;

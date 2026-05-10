@@ -2,8 +2,6 @@
 
 import { type EdgeProps } from "@xyflow/react";
 import {
-  ARC_LENGTH,
-  ARC_LEFT_DOWN,
   LINE_WIDTH,
   STROKE,
   STROKE_HIGHLIGHTED,
@@ -24,18 +22,10 @@ export function LoopStartEdge({
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopStartEdgeData;
 
-  // For a non-empty loop, route through a small arc on the left side so it
-  // visually distinguishes from a straight chain edge.
-  const path = ed.isLoopEmpty
-    ? `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`
-    : [
-        `M ${sourceX} ${sourceY}`,
-        `v ${(targetY - sourceY) / 2 - ARC_LENGTH}`,
-        ARC_LEFT_DOWN,
-        `H ${targetX - ARC_LENGTH}`,
-        `v ${(targetY - sourceY) / 2 - ARC_LENGTH}`,
-        `L ${targetX} ${targetY}`,
-      ].join(" ");
+  // Keep the loop-entry line intentionally boring: the return edge carries
+  // the loop affordance. The previous decorative bend crossed the centered
+  // child path and created a visual duplicate in simple one-step loops.
+  const path = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`;
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
 
