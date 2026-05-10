@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo } from "react";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { Locate, Radio } from "lucide-react";
+import { Locate } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/shared/StatusBadge";
 import { WorkflowGraph } from "@/components/workflows/canvas/WorkflowGraph";
 import type { NodeRunStatus } from "@/components/workflows/canvas/lib/graph-builder";
 import { stepNodeName } from "@/components/workflows/canvas/lib/step-tree";
 import type {
-  WorkflowRun,
   WorkflowRunStep,
   WorkflowStep,
   WorkflowTrigger,
@@ -18,16 +16,11 @@ import type {
 interface RunCanvasProps {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
-  run: WorkflowRun;
   /**
    * Server-computed per-step projection (one entry per definition step).
-   * Drives the per-node status pills and the StatusStrip's `n/total`.
+   * Drives the per-node status pills.
    */
   runSteps: WorkflowRunStep[];
-  /** True while the SSE stream is open — drives the LIVE pill and progress sweep. */
-  isLive: boolean;
-  /** Live-elapsed for the whole run, in ms. Updated by the parent's ticker. */
-  elapsedMs: number;
   /**
    * Ticking timestamp from the parent. Drives the live-elapsed pill on the
    * currently-running node so it advances between SSE events.
@@ -41,99 +34,6 @@ interface RunCanvasProps {
   onSelectStepIndex?: (index: number | null) => void;
 }
 
-function fmtDuration(ms: number): string {
-  if (ms < 1000) return `${Math.round(ms)}ms`;
-  const s = ms / 1000;
-  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
-  const m = Math.floor(s / 60);
-  const rs = Math.round(s - m * 60);
-  return `${m}m ${rs}s`;
-}
-
-function StatusStrip({
-  run,
-  isLive,
-  elapsedMs,
-  completed,
-  total,
-  onJumpToActive,
-  hasActiveStep,
-}: {
-  run: WorkflowRun;
-  isLive: boolean;
-  elapsedMs: number;
-  completed: number;
-  total: number;
-  onJumpToActive: () => void;
-  hasActiveStep: boolean;
-}) {
-  const pct = total > 0 ? (completed / total) * 100 : 0;
-  return (
-    <div className="pointer-events-auto absolute left-3 right-3 top-3 z-10 flex items-center gap-3 rounded-xl border border-border bg-popover/95 px-3 py-2 shadow-sm backdrop-blur">
-      <StatusBadge status={run.status} dot className="capitalize" />
-      {isLive && (
-        <span
-          className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
-          aria-label="Live stream connected"
-          title="Streaming live updates"
-        >
-          <Radio
-            className="size-2.5 motion-reduce:animate-none"
-            style={{ animation: "wf-pulse 1.5s infinite" }}
-          />
-          Live
-        </span>
-      )}
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-          {completed}
-          <span className="text-muted-foreground/60"> / {total || "?"}</span>
-        </span>
-        <div
-          className="relative h-1 flex-1 min-w-12 overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={completed}
-          aria-label="Run progress"
-        >
-          <div
-            className="relative h-full bg-status-success-fg transition-[width] duration-500 ease-out"
-            style={{ width: `${pct}%` }}
-          >
-            {hasActiveStep && (
-              <span
-                aria-hidden
-                className="absolute inset-y-0 right-0 w-1/3 motion-reduce:hidden"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--status-success-fg) 65%, white) 50%, transparent)",
-                  animation: "wf-progress-indeterminate 1.4s linear infinite",
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
-        {fmtDuration(elapsedMs)}
-      </span>
-      <Button
-        type="button"
-        size="sm"
-        variant="ghost"
-        className="h-7 gap-1 px-2 text-[11px]"
-        onClick={onJumpToActive}
-        disabled={!hasActiveStep}
-        title="Center the canvas on the running step"
-      >
-        <Locate className="size-3" />
-        Jump to active
-      </Button>
-    </div>
-  );
-}
-
 /**
  * Inner body — must live underneath a `ReactFlowProvider` so it can access
  * `useReactFlow()` for the "jump to active" affordance. The outer
@@ -142,10 +42,7 @@ function StatusStrip({
 function RunCanvasBody({
   triggers,
   steps,
-  run,
   runSteps,
-  isLive,
-  elapsedMs,
   now,
   selectedStepIndex,
   onSelectStepIndex,
@@ -227,16 +124,6 @@ function RunCanvasBody({
     return () => window.clearTimeout(id);
   }, [activeStepNodeId, fitView]);
 
-  const completed = runSteps.filter(
-    (s) =>
-      s.status === "done" ||
-      s.status === "failed" ||
-      s.status === "waiting" ||
-      s.status === "skipped",
-  ).length;
-  // `run.totalSteps` is snapshotted at run start (immune to mid-run
-  // definition edits) and matches the timeline header's denominator.
-  const total = run.totalSteps;
   const hasActiveStep = Boolean(activeStepNodeId);
 
   const handleJumpToActive = () => {
@@ -266,15 +153,18 @@ function RunCanvasBody({
 
   return (
     <div className="relative h-full w-full">
-      <StatusStrip
-        run={run}
-        isLive={isLive}
-        elapsedMs={elapsedMs}
-        completed={completed}
-        total={total}
-        onJumpToActive={handleJumpToActive}
-        hasActiveStep={hasActiveStep}
-      />
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="pointer-events-auto absolute right-3 top-3 z-10 h-7 gap-1 px-2 text-[11px] shadow-sm"
+        onClick={handleJumpToActive}
+        disabled={!hasActiveStep}
+        title="Center the canvas on the running step"
+      >
+        <Locate className="size-3" />
+        Jump to active
+      </Button>
       <WorkflowGraph
         triggers={triggers}
         steps={steps}

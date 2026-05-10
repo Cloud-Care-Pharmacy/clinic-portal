@@ -12,9 +12,11 @@ import {
   CircleDashed,
   AlertTriangle,
   Filter,
+  Radio,
 } from "lucide-react";
 import { formatDistanceToNowStrict, format as formatDate } from "date-fns";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -634,31 +636,33 @@ interface StepTraceHeaderProps {
   collapsed: boolean;
   onToggle: () => void;
   isTerminal: boolean;
+  run: WorkflowRun | null;
+  isLive: boolean;
+  elapsedMs: number;
 }
 
 /**
  * Slim header bar above the Step trace panel, modelled on n8n's "Logs"
  * row. Always visible; clicking anywhere on it (or the chevron) toggles
-  * the trace open/closed.
+ * the trace open/closed.
+ *
+ * Also doubles as the run status strip — surfaces the run status badge,
+ * a Live pill while the SSE stream is open, the `n / total` step count,
+ * and the live duration counter. (The canvas no longer renders its own
+ * status bar.)
  */
 function StepTraceHeader({
   summary,
   collapsed,
   onToggle,
   isTerminal,
+  run,
+  isLive,
+  elapsedMs,
 }: StepTraceHeaderProps) {
   const total = summary?.total ?? 0;
   const completed = summary?.completed ?? 0;
   const numerator = isTerminal ? total : Math.min(completed, total);
-  const dotClass = !summary
-    ? "bg-muted-foreground"
-    : summary.hasFailed
-      ? "bg-status-danger-fg"
-      : summary.hasRunning
-        ? "bg-status-warning-fg animate-pulse motion-reduce:animate-none"
-        : completed === total && total > 0
-          ? "bg-status-success-fg"
-          : "bg-muted-foreground";
   return (
     <button
       type="button"
@@ -667,7 +671,20 @@ function StepTraceHeader({
       aria-controls="run-step-trace"
       className="flex w-full items-center gap-2.5 border-t border-border bg-card/80 px-6 py-2.5 text-left transition-colors hover:bg-muted/60"
     >
-      <span className={cn("size-1.5 rounded-full", dotClass)} aria-hidden />
+      {run && <StatusBadge status={run.status} dot className="capitalize" />}
+      {isLive && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
+          aria-label="Live stream connected"
+          title="Streaming live updates"
+        >
+          <Radio
+            className="size-2.5 motion-reduce:animate-none"
+            style={{ animation: "wf-pulse 1.5s infinite" }}
+          />
+          Live
+        </span>
+      )}
       <h3 className="text-sm font-semibold">Step trace</h3>
       {total > 0 && (
         <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
@@ -675,12 +692,19 @@ function StepTraceHeader({
           <span className="text-muted-foreground/60"> / {total}</span>
         </span>
       )}
-      <span className="ml-auto inline-flex items-center text-muted-foreground">
-        {collapsed ? (
-          <ChevronUp className="size-4" />
-        ) : (
-          <ChevronDown className="size-4" />
+      <span className="ml-auto flex items-center gap-2">
+        {run && (
+          <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+            {fmtDuration(elapsedMs)}
+          </span>
         )}
+        <span className="inline-flex items-center text-muted-foreground">
+          {collapsed ? (
+            <ChevronUp className="size-4" />
+          ) : (
+            <ChevronDown className="size-4" />
+          )}
+        </span>
       </span>
     </button>
   );
@@ -917,10 +941,7 @@ function RunPanel({ runId, triggers, steps }: RunPanelProps) {
           <RunCanvas
             triggers={triggers}
             steps={steps}
-            run={run}
             runSteps={data?.data.steps ?? []}
-            isLive={Boolean(isLive)}
-            elapsedMs={elapsedMs}
             now={now}
           />
         ) : (
@@ -935,6 +956,9 @@ function RunPanel({ runId, triggers, steps }: RunPanelProps) {
         collapsed={traceCollapsed}
         onToggle={() => setTraceCollapsed((c) => !c)}
         isTerminal={isTerminal}
+        run={run ?? null}
+        isLive={Boolean(isLive)}
+        elapsedMs={elapsedMs}
       />
       {!traceCollapsed && (
         <div
