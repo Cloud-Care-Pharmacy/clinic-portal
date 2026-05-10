@@ -117,7 +117,7 @@ export function WorkflowGraph({
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      fitView({ padding: 0.2, duration: 200 });
+      fitView({ padding: 0.2, maxZoom: 1, duration: 200 });
     }, 50);
     return () => window.clearTimeout(id);
   }, [nodes.length, edges.length, fitView]);
@@ -153,7 +153,7 @@ export function WorkflowGraph({
           selectionOnDrag={panningMode === "select"}
           zoomOnDoubleClick={false}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
           minZoom={0.4}
           maxZoom={1.5}
           proOptions={{ hideAttribution: true }}
