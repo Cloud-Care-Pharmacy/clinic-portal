@@ -14,7 +14,7 @@ import {
   Filter,
   Radio,
 } from "lucide-react";
-import { formatDistanceToNowStrict, format as formatDate } from "date-fns";
+import { format as formatDate } from "date-fns";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ import {
 import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { STEP_KIND_CONFIG } from "../canvas/lib/node-kind-config";
 import { RunCanvas } from "./RunCanvas";
+import { LogsPane } from "./logs/LogsPane";
 import type {
   WorkflowRun,
   WorkflowRunDetailResponse,
@@ -38,6 +39,9 @@ import type {
   WorkflowStepKind,
   WorkflowTrigger,
 } from "@/types";
+
+const FEATURE_RUN_LOGS_V2 =
+  process.env.NEXT_PUBLIC_FEATURE_RUN_LOGS_V2 === "true";
 
 interface RunViewProps {
   workflowId: string;
@@ -173,10 +177,6 @@ function maybeToastStepEvent(
   }
 }
 
-function shortId(id: string) {
-  return id.slice(0, 8);
-}
-
 function fmtDuration(ms: number | null | undefined): string {
   if (ms == null) return "—";
   if (ms < 1000) return `${ms}ms`;
@@ -185,16 +185,6 @@ function fmtDuration(ms: number | null | undefined): string {
   const m = Math.floor(s / 60);
   const rs = Math.round(s - m * 60);
   return `${m}m ${rs}s`;
-}
-
-function relativeTime(iso: string): string {
-  try {
-    return formatDistanceToNowStrict(new Date(iso), {
-      addSuffix: true,
-    });
-  } catch {
-    return iso;
-  }
 }
 
 /** Absolute local time, e.g. "10 May 2026, 18:11". */
@@ -237,26 +227,53 @@ function formatTimeUntil(iso: string, now: number): string {
     : `${hr}h ${rm}m`;
 }
 
-function runStatusDot(run: WorkflowRun): string {
-  switch (run.status) {
-    case "completed":
-      return "bg-status-success-fg";
-    case "running":
-      return "bg-status-warning-fg animate-pulse motion-reduce:animate-none";
-    case "waiting":
-      return "bg-status-warning-fg";
-    case "failed":
-      return "bg-status-danger-fg";
-    case "cancelled":
-      return "bg-muted-foreground";
+/** "May 9, 12:22:32" — local-time stamp shown as the rail item title. */
+function runRailStartedAt(run: WorkflowRun): string {
+  try {
+    return formatDate(new Date(run.startedAt), "MMM d, HH:mm:ss");
+  } catch {
+    return run.startedAt;
   }
 }
 
-function triggerSummaryFromContext(
-  ctx: Record<string, unknown> | undefined
-): string {
-  const event = (ctx?.event ?? {}) as { eventType?: string };
-  return event?.eventType ?? "—";
+/**
+ * Compact duration with millisecond precision under one minute, e.g.
+ * `4.837s` / `25m 4.837s` / `1h 2m`. Mirrors the rail design where the
+ * subtitle reads "Succeeded in 25m 4.837s".
+ */
+function runRailDuration(run: WorkflowRun, now: number): string {
+  const start = new Date(run.startedAt).getTime();
+  const end =
+    run.completedAt != null ? new Date(run.completedAt).getTime() : now;
+  const ms = Math.max(0, end - start);
+  const totalSec = ms / 1000;
+  if (totalSec < 60) return `${totalSec.toFixed(3)}s`;
+  const totalMin = Math.floor(totalSec / 60);
+  const rs = totalSec - totalMin * 60;
+  if (totalMin < 60) return `${totalMin}m ${rs.toFixed(3)}s`;
+  const h = Math.floor(totalMin / 60);
+  const rm = totalMin - h * 60;
+  return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
+}
+
+/**
+ * Rail subtitle, "Succeeded in …" / "Failed after …" / "Running …".
+ * Combines the past/present-tense status verb with the elapsed duration.
+ */
+function runRailSubtitle(run: WorkflowRun, now: number): string {
+  const dur = runRailDuration(run, now);
+  switch (run.status) {
+    case "completed":
+      return `Succeeded in ${dur}`;
+    case "failed":
+      return `Failed after ${dur}`;
+    case "cancelled":
+      return `Cancelled after ${dur}`;
+    case "running":
+      return `Running · ${dur}`;
+    case "waiting":
+      return `Waiting · ${dur}`;
+  }
 }
 
 interface RunListRailProps {
@@ -267,8 +284,15 @@ interface RunListRailProps {
 }
 
 function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) {
+  // Tick once per second so the elapsed duration on in-progress runs stays
+  // in sync without depending on the SSE stream — keeps the rail feeling
+  // alive even if no events fire.
+  const hasLive = runs.some(
+    (r) => r.status === "running" || r.status === "waiting"
+  );
+  const now = useNow(1000, hasLive);
   return (
-    <aside className="flex w-65 flex-col border-r border-border bg-background">
+    <aside className="flex w-72 flex-col border-r border-border bg-background">
       <header className="flex items-center justify-between px-3.5 py-3">
         <h3 className="text-sm font-semibold">Recent runs</h3>
         <Button
@@ -286,7 +310,7 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
         {loading && runs.length === 0 ? (
           <div className="space-y-2 px-2">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-md" />
+              <Skeleton key={i} className="h-14 w-full rounded-lg" />
             ))}
           </div>
         ) : runs.length === 0 ? (
@@ -297,37 +321,29 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
           <ul className="space-y-0.5">
             {runs.map((r) => {
               const active = r.id === selectedId;
+              const isFailed = r.status === "failed";
               return (
                 <li key={r.id}>
                   <button
                     type="button"
                     onClick={() => onSelect(r.id)}
                     className={cn(
-                      "flex w-full flex-col gap-1 rounded-md p-2 text-left transition-colors",
+                      "flex w-full flex-col gap-1 rounded-md px-3 py-2.5 text-left transition-colors",
                       active
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-muted"
+                        ? "bg-muted"
+                        : "hover:bg-muted/60"
                     )}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          runStatusDot(r)
-                        )}
-                        aria-hidden
-                      />
-                      <span className="font-mono text-[11px] text-muted-foreground">
-                        {shortId(r.id)}
-                      </span>
+                    <div className="text-[13px] font-semibold leading-tight text-foreground">
+                      {runRailStartedAt(r)}
                     </div>
-                    <div className="truncate text-[12px] font-semibold">
-                      {triggerSummaryFromContext(
-                        r.context as Record<string, unknown>
+                    <div
+                      className={cn(
+                        "text-[12px] leading-tight text-muted-foreground",
+                        isFailed && "text-status-danger-fg"
                       )}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {relativeTime(r.startedAt)}
+                    >
+                      {runRailSubtitle(r, now)}
                     </div>
                   </button>
                 </li>
@@ -794,6 +810,7 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
       />
       <RunPanel
         runId={selectedId}
+        workflowId={workflowId}
         triggers={triggers}
         steps={allSteps}
       />
@@ -803,6 +820,7 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
 
 interface RunPanelProps {
   runId: string | null;
+  workflowId: string;
   triggers: WorkflowTrigger[];
   /** Full flat step list (used by the canvas to render nested branches). */
   steps: WorkflowStep[];
@@ -818,7 +836,7 @@ interface RunPanelProps {
  * and one SSE stream open per selected run, even though both children render
  * the same data.
  */
-function RunPanel({ runId, triggers, steps }: RunPanelProps) {
+function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
 
@@ -970,6 +988,14 @@ function RunPanel({ runId, triggers, steps }: RunPanelProps) {
               <Skeleton className="h-40 w-full" />
               <Skeleton className="h-40 w-full" />
             </div>
+          ) : FEATURE_RUN_LOGS_V2 ? (
+            <LogsPane
+              runId={runId}
+              events={data.data.events ?? []}
+              definitionSteps={steps}
+              isLive={isInFlight}
+              workflowId={workflowId}
+            />
           ) : (
             <RunDetail
               summary={summary}
