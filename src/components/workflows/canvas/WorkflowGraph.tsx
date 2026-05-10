@@ -165,9 +165,9 @@ function GraphInner({
           proOptions={{ hideAttribution: true }}
         >
           <Background
-            gap={20}
+            gap={24}
             size={1}
-            color="var(--border)"
+            color="color-mix(in oklab, var(--muted-foreground) 18%, transparent)"
             variant={BackgroundVariant.Dots}
             style={{ background: "var(--background)" }}
           />

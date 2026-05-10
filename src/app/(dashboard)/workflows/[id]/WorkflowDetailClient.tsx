@@ -185,7 +185,7 @@ export function WorkflowDetailClient({
   const isActive = workflow.status === "active";
 
   return (
-    <div className="relative flex h-[calc(100dvh-(--spacing(16)))] flex-col">
+    <div className="relative flex h-full min-h-0 flex-col">
       {/* Body — full bleed canvas, no top header strip or tabs bar */}
       <div className="relative min-h-0 flex-1 bg-background">
         {tab === "canvas" ? (
