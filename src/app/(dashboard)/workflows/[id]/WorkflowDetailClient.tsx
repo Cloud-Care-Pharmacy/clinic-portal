@@ -208,23 +208,11 @@ export function WorkflowDetailClient({
       const run = result.data.run;
       setActiveRunId(run.id);
       setTab("run");
-      const description =
-        run.status === "waiting"
-          ? run.awaitingEventType
-            ? `Waiting for event: ${run.awaitingEventType}`
-            : "Paused on a wait step."
-          : run.status === "failed"
-            ? (run.lastError ?? "Run failed.")
-            : run.status === "completed"
-              ? "Run completed."
-              : "Run started.";
-      const toastFn =
-        run.status === "failed"
-          ? toast.error
-          : run.status === "waiting"
-            ? toast.warning
-            : toast.success;
-      toastFn(`Test run ${run.status}`, { description });
+      // The backend now returns 202 with a `running` run; the live timeline
+      // and final status come from the SSE stream opened by `RunDetail`.
+      toast.success("Test run started", {
+        description: "Live progress will stream into the run timeline.",
+      });
     } catch (err) {
       const message =
         err instanceof WorkflowApiError ? err.message : "Test run failed";

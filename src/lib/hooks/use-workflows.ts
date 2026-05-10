@@ -226,9 +226,17 @@ export function useTriggerWorkflow() {
 
 /**
  * Kick off a synthetic run for a workflow definition without publishing an
- * external event. The backend drains the run inline and returns the resulting
- * `workflow_runs` row — which may be `running`, `waiting`, `completed`, or
- * `failed` by the time the response arrives.
+ * external event.
+ *
+ * As of the async test-run rollout the backend now responds with **HTTP 202**
+ * and a freshly-created run in `status: "running"` — the actual execution
+ * happens out-of-band. Callers should subscribe to
+ * `GET /workflows/runs/{runId}/stream` (see `useWorkflowRunStream`) to render
+ * live progress, and re-fetch `GET /workflows/runs/{runId}` once the stream
+ * closes to load the final audit.
+ *
+ * Append `?sync=1` to opt back into the legacy 201-with-drained-run shape
+ * (not used here).
  *
  * Test runs execute the real flow: emails are sent, SMS messages are
  * delivered, `http_call` hits the real URL. Make sure the definition points

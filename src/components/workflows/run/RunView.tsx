@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
   ChevronRight,
@@ -16,7 +17,11 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useWorkflowRun, useWorkflowRuns } from "@/lib/hooks/use-workflow-runs";
+import {
+  useWorkflowRun,
+  useWorkflowRunStream,
+  useWorkflowRuns,
+} from "@/lib/hooks/use-workflow-runs";
 import { STEP_KIND_CONFIG } from "../canvas/lib/node-kind-config";
 import type {
   WorkflowRun,
@@ -370,7 +375,41 @@ interface RunDetailProps {
 }
 
 function RunDetail({ runId, initial }: RunDetailProps) {
-  const { data, isLoading } = useWorkflowRun(runId ?? "", initial);
+  const queryClient = useQueryClient();
+  const { data, isLoading, refetch } = useWorkflowRun(runId ?? "", initial);
+
+  // Subscribe to the SSE stream while the run is `running`. The hook handles
+  // reconnect on `max-duration`; we mirror live `run`/`step` events into the
+  // cached run detail so the timeline updates without polling.
+  const isLive = data?.data?.run?.status === "running";
+  useWorkflowRunStream(runId, Boolean(runId) && isLive, {
+    onRun: (run) => {
+      queryClient.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) =>
+          prev ? { ...prev, data: { ...prev.data, run } } : prev
+      );
+    },
+    onStep: (event) => {
+      queryClient.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) => {
+          if (!prev) return prev;
+          const events = prev.data.events;
+          if (events.some((e) => e.sequence === event.sequence)) return prev;
+          const next = [...events, event].sort(
+            (a, b) => a.sequence - b.sequence
+          );
+          return { ...prev, data: { ...prev.data, events: next } };
+        }
+      );
+    },
+    onDone: () => {
+      // Pull the canonical audit (status + full event list) once the stream
+      // closes — covers terminal runs and waiting/paused runs alike.
+      void refetch();
+    },
+  });
 
   if (!runId) {
     return (

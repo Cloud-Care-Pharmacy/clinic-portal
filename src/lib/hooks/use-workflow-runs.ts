@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type {
   WorkflowRun,
   WorkflowRunDetailResponse,
+  WorkflowRunEvent,
+  WorkflowRunStreamDonePayload,
+  WorkflowRunStreamStepPayload,
   WorkflowRunsListResponse,
 } from "@/types";
 
@@ -87,4 +91,141 @@ export function useWorkflowRun(runId: string, initialData?: WorkflowRunDetailRes
       return ACTIVE_STATUSES.has(data.data.run.status) ? 4_000 : false;
     },
   });
+}
+
+// ---- SSE stream ----
+
+export interface WorkflowRunStreamHandlers {
+  onRun?: (run: WorkflowRun) => void;
+  onStep?: (event: WorkflowRunEvent) => void;
+  onDone?: (info: WorkflowRunStreamDonePayload) => void;
+  onError?: (err: unknown) => void;
+}
+
+/**
+ * Subscribe to the live SSE stream for a workflow run.
+ *
+ * Uses `fetch` + `ReadableStream` (not `EventSource`) so we can rely on the
+ * Next.js auth proxy, which injects `X-API-Key` server-side. The stream is
+ * forwarded as `text/event-stream` by the catch-all proxy.
+ *
+ * Behaviour:
+ * - Tracks the highest `sequence` seen as a cursor.
+ * - On `event: done` with `reason: "max-duration"` automatically reconnects
+ *   with `?afterSequence=<cursor>` to keep streaming.
+ * - On any other `event: done`, terminates and fires `onDone`.
+ * - Heartbeat comment lines (`: keep-alive`) are ignored.
+ *
+ * Pass `enabled: false` (or a falsy `runId`) to keep the stream closed.
+ */
+export function useWorkflowRunStream(
+  runId: string | null | undefined,
+  enabled: boolean,
+  handlers: WorkflowRunStreamHandlers
+): void {
+  const handlersRef = useRef(handlers);
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
+
+  useEffect(() => {
+    if (!runId || !enabled) return;
+    let aborted = false;
+    const ctrl = new AbortController();
+    let cursor = 0;
+
+    async function run() {
+      while (!aborted) {
+        const qs = cursor > 0 ? `?afterSequence=${cursor}` : "";
+        const url = `/api/proxy/workflows/runs/${encodeURIComponent(runId!)}/stream${qs}`;
+        let reconnect = false;
+        try {
+          const res = await fetch(url, {
+            signal: ctrl.signal,
+            cache: "no-store",
+            headers: { Accept: "text/event-stream" },
+          });
+          if (!res.ok || !res.body) {
+            throw new Error(`Stream HTTP ${res.status}`);
+          }
+
+          const reader = res.body
+            .pipeThrough(new TextDecoderStream())
+            .getReader();
+          let buf = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += value;
+
+            let idx;
+            while ((idx = buf.indexOf("\n\n")) !== -1) {
+              const frame = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              if (!frame || frame.startsWith(":")) continue;
+
+              const lines = frame.split("\n");
+              const eventLine = lines.find((l) => l.startsWith("event: "));
+              const dataLine = lines.find((l) => l.startsWith("data: "));
+              if (!dataLine) continue;
+
+              const eventName = eventLine ? eventLine.slice(7).trim() : "message";
+              let data: unknown;
+              try {
+                data = JSON.parse(dataLine.slice(6));
+              } catch {
+                continue;
+              }
+
+              if (eventName === "run") {
+                handlersRef.current.onRun?.(data as WorkflowRun);
+              } else if (eventName === "step") {
+                const ev = data as WorkflowRunStreamStepPayload;
+                if (typeof ev.sequence === "number") {
+                  cursor = Math.max(cursor, ev.sequence);
+                }
+                // Normalize wire shape (`occurredAt`) into the existing
+                // `WorkflowRunEvent` (`createdAt`) so consumers can merge
+                // streamed events into the cached run detail.
+                const normalized: WorkflowRunEvent = {
+                  id: ev.id,
+                  runId: ev.runId,
+                  sequence: ev.sequence,
+                  stepIndex: ev.stepIndex,
+                  stepKind: ev.stepKind,
+                  eventType: ev.eventType,
+                  durationMs: ev.durationMs,
+                  detail: ev.detail,
+                  createdAt: ev.occurredAt,
+                };
+                handlersRef.current.onStep?.(normalized);
+              } else if (eventName === "done") {
+                const payload = data as WorkflowRunStreamDonePayload;
+                if (typeof payload.cursor === "number") {
+                  cursor = Math.max(cursor, payload.cursor);
+                }
+                handlersRef.current.onDone?.(payload);
+                if (payload.reason === "max-duration") reconnect = true;
+                break;
+              }
+            }
+          }
+        } catch (err) {
+          if (aborted) return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          handlersRef.current.onError?.(err);
+          return;
+        }
+
+        if (!reconnect) return;
+      }
+    }
+
+    void run();
+    return () => {
+      aborted = true;
+      ctrl.abort();
+    };
+  }, [runId, enabled]);
 }

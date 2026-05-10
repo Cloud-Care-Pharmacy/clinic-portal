@@ -2054,3 +2054,34 @@ export interface TestRunWorkflowResponse {
     run: WorkflowRun;
   };
 }
+
+// ---- Workflow run SSE stream ----
+//
+// `GET /workflows/runs/{runId}/stream` emits three named SSE events:
+//
+//   event: run   → snapshot of the WorkflowRun (status badge updates)
+//   event: step  → a WorkflowRunEvent with `occurredAt` instead of `createdAt`
+//   event: done  → terminal/paused signal, may carry `reason: "max-duration"`
+//                  with a `cursor` to resume via `?afterSequence=<cursor>`
+//
+// Heartbeat lines (`: keep-alive`) are dropped by the parser.
+
+/** Step event as it appears on the SSE wire (uses `occurredAt`). */
+export interface WorkflowRunStreamStepPayload {
+  id: string;
+  runId: string;
+  sequence: number;
+  stepIndex: number | null;
+  stepKind: string | null;
+  eventType: WorkflowRunEventType;
+  durationMs: number | null;
+  detail: Record<string, unknown> | null;
+  occurredAt: string;
+}
+
+export interface WorkflowRunStreamDonePayload {
+  runId: string;
+  status: WorkflowRunStatus;
+  cursor: number;
+  reason?: "max-duration" | string;
+}
