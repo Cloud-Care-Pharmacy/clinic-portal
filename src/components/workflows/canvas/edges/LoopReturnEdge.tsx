@@ -23,6 +23,44 @@ export function LoopReturnEdge({
   id,
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopReturnEdgeData;
+  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+
+  if (ed.isLoopEmpty) {
+    // Empty loop body: the add placeholder is both the first and last body
+    // node. Keep it centered under the loop header, draw the exit connector
+    // down the main spine, and route the loop-back arrow back into the top of
+    // that real placeholder node (never into empty space).
+    const bottomY = sourceY + ARC_LENGTH;
+    const leftX = sourceX - Math.max(ARC_LENGTH * 2, ed.horizontalSpan);
+    const exitY = sourceY + ARC_LENGTH + VERTICAL_SPACE_BETWEEN_STEPS;
+    const loopBackPath = [
+      `M ${sourceX} ${sourceY}`,
+      `L ${sourceX} ${bottomY}`,
+      `L ${leftX} ${bottomY}`,
+      `L ${leftX} ${targetY}`,
+      `L ${targetX} ${targetY}`,
+    ].join(" ");
+    const exitPath = `M ${sourceX} ${bottomY} L ${sourceX} ${exitY}`;
+
+    return (
+      <>
+        <path
+          id={id}
+          d={loopBackPath}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={LINE_WIDTH}
+          markerEnd="url(#wf-arrow)"
+        />
+        <path
+          d={exitPath}
+          fill="none"
+          stroke={stroke}
+          strokeWidth={LINE_WIDTH}
+        />
+      </>
+    );
+  }
 
   // ActivePieces-style loop return: draw the return rail and the centered
   // after-loop continuation as one edge. This keeps the End widget attached
@@ -45,8 +83,6 @@ export function LoopReturnEdge({
     `M ${centerX} ${bottomY}`,
     `L ${centerX} ${exitY}`,
   ].join(" ");
-
-  const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
 
   return (
     <>

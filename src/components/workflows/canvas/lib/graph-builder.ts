@@ -129,6 +129,7 @@ export interface WfLoopStartEdgeData extends WfEdgeBaseData {
 }
 
 export interface WfLoopReturnEdgeData extends WfEdgeBaseData {
+  isLoopEmpty: boolean;
   /** Vertical span of the loop body. */
   verticalSpan: number;
   /** Horizontal half-width to fan out from the loop. */
@@ -318,6 +319,7 @@ function buildLoopChild(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
 function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const child = buildLoopChild(loop, opts);
   const childBox = calculateBoundingBox(child);
+  const isLoopEmpty = !loop.firstLoopAction;
   // ActivePieces loop layout: keep the loop's main spine centered at
   // NODE_W / 2, place the loop body on the right rail, and place the
   // loop-return node on the left rail. The `deltaLeftX` term recenters the
@@ -333,13 +335,13 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     ) /
       2 -
     NODE_W / 2;
-  const childOffsetX =
-    deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
+  const childOffsetX = isLoopEmpty
+    ? 0
+    : deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
   const childOffsetY =
     NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
   const offsetChild = offsetGraph(child, childOffsetX, childOffsetY);
 
-  const isLoopEmpty = !loop.firstLoopAction;
   const childHeadId =
     offsetChild.entryId ??
     offsetChild.nodes[0]?.id ??
@@ -367,7 +369,7 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     id: `${loop.nodeName}__loop-return`,
     type: "loopReturn",
     position: {
-      x: deltaLeftX + NODE_W / 2,
+      x: isLoopEmpty ? -NODE_W : deltaLeftX + NODE_W / 2,
       y: childOffsetY + childBox.height / 2,
     },
     data: { kind: "loopReturn" },
@@ -377,9 +379,10 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const returnEdge: Edge = {
     id: `${loop.nodeName}__loop-return-edge`,
     source: childTailId,
-    target: loopReturnNode.id,
+    target: isLoopEmpty ? childHeadId : loopReturnNode.id,
     type: "loopReturn",
     data: {
+      isLoopEmpty,
       verticalSpan: childBox.height + VERTICAL_SPACE_BETWEEN_STEPS,
       horizontalSpan: childBox.right + ARC_LENGTH,
       drawArrowAfterEnd: true,

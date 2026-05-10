@@ -27,6 +27,20 @@ export function LoopStartEdge({
   const ed = (data ?? {}) as unknown as WfLoopStartEdgeData;
   const ctx = useCanvasContext();
 
+  if (ed.isLoopEmpty) {
+    const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
+    return (
+      <path
+        id={id}
+        d={`M ${sourceX} ${sourceY} L ${targetX} ${targetY}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={LINE_WIDTH}
+        markerEnd="url(#wf-arrow)"
+      />
+    );
+  }
+
   // ActivePieces-style loop entry: down from the loop card, rounded across to
   // the body rail, then down into the first body node / add target.
   const bendY = sourceY + Math.max(32, (targetY - sourceY) / 2 - ARC_LENGTH);
