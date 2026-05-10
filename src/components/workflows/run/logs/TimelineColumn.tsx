@@ -1,6 +1,14 @@
 "use client";
 
-import { Clock, AlertTriangle, Check, CircleDashed, Hourglass } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CircleDashed,
+  Clock,
+  Hourglass,
+  RotateCcw,
+  TimerOff,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { STEP_KIND_CONFIG } from "../../canvas/lib/node-kind-config";
@@ -21,6 +29,8 @@ const STATUS_META: Record<
   success: { label: "Success", tone: "text-status-success-fg", Icon: Check },
   error: { label: "Failed", tone: "text-status-danger-fg", Icon: AlertTriangle },
   waiting: { label: "Waiting", tone: "text-status-warning-fg", Icon: Hourglass },
+  retrying: { label: "Retrying", tone: "text-status-warning-fg", Icon: RotateCcw },
+  timed_out: { label: "Timed out", tone: "text-status-danger-fg", Icon: TimerOff },
 };
 
 function formatDuration(ms: number | null): string {
@@ -32,10 +42,30 @@ function formatDuration(ms: number | null): string {
   return `${minutes}m ${seconds}s`;
 }
 
+/** Compact human-readable delay for retry sub-lines, e.g. `2s` / `1m 30s`. */
+function formatDelay(ms: number): string {
+  if (!Number.isFinite(ms) || ms <= 0) return "soon";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const totalSec = Math.round(ms / 1000);
+  if (totalSec < 60) return `${totalSec}s`;
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  return seconds === 0 ? `${minutes}m` : `${minutes}m ${seconds}s`;
+}
+
 function subtitleFor(row: WorkflowRunTimelineRow): string {
   const meta = STATUS_META[row.status];
   if (row.status === "running") return "Running…";
   if (row.status === "waiting") return "Waiting…";
+  if (row.status === "retrying" && row.retry) {
+    const { delayMs, nextAttempt, maxAttempts } = row.retry;
+    return `Retrying in ${formatDelay(delayMs)} (attempt ${nextAttempt} of ${maxAttempts})`;
+  }
+  if (row.status === "timed_out") {
+    return row.awaitingEventType
+      ? `Timeout waiting for ${row.awaitingEventType}`
+      : "Timed out";
+  }
   const dur = formatDuration(row.durationMs);
   return dur ? `${meta.label} in ${dur}` : meta.label;
 }

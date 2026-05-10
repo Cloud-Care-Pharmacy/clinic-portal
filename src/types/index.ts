@@ -1682,6 +1682,28 @@ export interface WorkflowCondition {
  */
 export type WorkflowStepCaptureMode = "summary" | "full" | "none";
 
+/**
+ * Optional per-step retry policy honoured by the workflow engine v2.
+ * Omitted entirely when retries are disabled (the default = fail-fast).
+ *
+ * Backoff math (delay before attempt N, where N starts at 2):
+ *  - `'fixed'`:       `initialDelayMs`
+ *  - `'linear'`:      `initialDelayMs * (N - 1)`
+ *  - `'exponential'`: `initialDelayMs * 2 ^ (N - 2)`
+ *
+ * The computed delay is capped at `maxDelayMs` (default 1h server-side).
+ */
+export interface WorkflowStepRetryPolicy {
+  /** Total attempts, including the first one. Range 1–10. `1` = no retries. */
+  maxAttempts: number;
+  /** Base delay in ms before the second attempt. Range 100–3,600,000 (1h). */
+  initialDelayMs: number;
+  /** Backoff strategy. Default `'exponential'` server-side when omitted. */
+  backoff?: "fixed" | "linear" | "exponential";
+  /** Cap on computed delay in ms. Range 100–86,400,000 (24h). Default 1h. */
+  maxDelayMs?: number;
+}
+
 interface WorkflowStepBase {
   id?: string;
   /**
@@ -1707,6 +1729,12 @@ interface WorkflowStepBase {
    * Omit from serialized definition when default.
    */
   sensitive?: boolean;
+  /**
+   * Optional retry policy. When omitted the step is fail-fast. When set,
+   * a failed attempt schedules a `step_retry_scheduled` audit event and
+   * the run is parked as `waiting` until the cron sweeper retries.
+   */
+  retry?: WorkflowStepRetryPolicy;
 }
 
 /** A named branch of a router step. Each branch is a chain of child steps. */
@@ -2020,6 +2048,17 @@ export interface WorkflowRun {
   completedAt: string | null;
   createdAt?: string;
   updatedAt?: string;
+  /**
+   * Optimistic-concurrency counter; increments on every server-side update.
+   * Read-only diagnostic — do **not** echo back to the server (no
+   * client-driven CAS endpoint exists).
+   */
+  version?: number;
+  /**
+   * Attempts at the *current* step. Resets to 0 on advance. Useful for
+   * debug overlays / "attempt N" badges next to the running step.
+   */
+  stepAttempts?: number;
 }
 
 /** Per-step projection status returned by the gateway. */
@@ -2098,7 +2137,9 @@ export type WorkflowRunEventType =
   | "step_started"
   | "step_completed"
   | "step_failed"
+  | "step_retry_scheduled"
   | "wait_scheduled"
+  | "wait_for_event_timed_out"
   | "run_resumed"
   | "run_completed"
   | "run_failed";
@@ -2235,10 +2276,31 @@ export interface WorkflowRunTimelineRow {
   sequence: number;
   stepIndex: number;
   stepKind: string;
-  status: "pending" | "running" | "success" | "error" | "waiting";
+  status:
+    | "pending"
+    | "running"
+    | "success"
+    | "error"
+    | "waiting"
+    | "retrying"
+    | "timed_out";
   startedAt: string;
   completedAt: string | null;
   durationMs: number | null;
   errorMessage: string | null;
   capture: WorkflowStepCapture | null;
+  /**
+   * Populated when `status === 'retrying'`. Detail copied from the
+   * `step_retry_scheduled` audit event so the timeline can render
+   * "Retrying in Ns (attempt M of N)" without re-walking the event list.
+   */
+  retry?: {
+    attempt: number;
+    nextAttempt: number;
+    maxAttempts: number;
+    delayMs: number;
+    nextStepAt: string | null;
+  };
+  /** Populated when `status === 'timed_out'`. Source: `wait_for_event_timed_out.detail.eventType`. */
+  awaitingEventType?: string | null;
 }

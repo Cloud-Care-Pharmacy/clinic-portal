@@ -56,10 +56,25 @@ export const triggerSchema = z.discriminatedUnion("kind", [
 // minimum length via `activationIssues()` instead.
 export const triggersSchema = z.array(triggerSchema).max(20);
 
+/**
+ * Per-step retry policy. Mirrors the server-side bounds (handoff §2):
+ *  - `maxAttempts`: integer 1–10 (1 = fail-fast)
+ *  - `initialDelayMs`: integer 100–3,600,000 (100ms to 1h)
+ *  - `backoff`: `'fixed' | 'linear' | 'exponential'` (default `'exponential'`)
+ *  - `maxDelayMs`: integer 100–86,400,000 (100ms to 24h)
+ */
+export const retryPolicySchema = z.object({
+  maxAttempts: z.number().int().min(1).max(10),
+  initialDelayMs: z.number().int().min(100).max(3_600_000),
+  backoff: z.enum(["fixed", "linear", "exponential"]).optional(),
+  maxDelayMs: z.number().int().min(100).max(86_400_000).optional(),
+});
+
 const baseStep = {
   id: stepIdRefinement.optional(),
   capture: z.enum(["summary", "full", "none"]).optional(),
   sensitive: z.boolean().optional(),
+  retry: retryPolicySchema.optional(),
 };
 
 // Reserved email header names — backend rejects these in `headers`.
