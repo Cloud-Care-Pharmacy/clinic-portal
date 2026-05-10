@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import {
   useCreateWorkflow,
@@ -102,6 +103,8 @@ export function WorkflowDetailClient({
   const [showJson, setShowJson] = useState(false);
   const [showTestRun, setShowTestRun] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
   const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
 
@@ -243,6 +246,27 @@ export function WorkflowDetailClient({
     }
   }
 
+  async function handleRename() {
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      toast.error("Name is required");
+      return;
+    }
+    if (workflow && trimmed === workflow.name) {
+      setRenameOpen(false);
+      return;
+    }
+    try {
+      await update.mutateAsync({ name: trimmed });
+      toast.success("Workflow renamed");
+      setRenameOpen(false);
+    } catch (err) {
+      const message =
+        err instanceof WorkflowApiError ? err.message : "Failed to rename";
+      toast.error(message);
+    }
+  }
+
   function handleDownloadJson() {
     if (!workflow) return;
     const blob = new Blob([JSON.stringify(workflow, null, 2)], {
@@ -292,6 +316,10 @@ export function WorkflowDetailClient({
             onViewJson={() => setShowJson(true)}
             onDownloadJson={handleDownloadJson}
             onCopyId={handleCopyWorkflowId}
+            onRename={() => {
+              setRenameValue(workflow.name);
+              setRenameOpen(true);
+            }}
             onDuplicate={handleDuplicate}
             onDelete={() => setShowDelete(true)}
             saveDisabled={!draftDirty || update.isPending}
@@ -314,6 +342,39 @@ export function WorkflowDetailClient({
         workflow={workflow}
         onTriggered={() => setTab("run")}
       />
+      <AlertDialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rename workflow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Update the name shown across the dashboard and breadcrumbs.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            autoFocus
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleRename();
+              }
+            }}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={update.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleRename();
+              }}
+              disabled={update.isPending || !renameValue.trim()}
+            >
+              {update.isPending ? "Saving…" : "Save"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>

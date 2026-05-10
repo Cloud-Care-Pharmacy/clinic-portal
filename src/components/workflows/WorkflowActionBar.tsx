@@ -12,6 +12,7 @@ import {
   Minus,
   MoreHorizontal,
   MousePointer,
+  Pencil,
   Play,
   Plus,
   Save,
@@ -43,6 +44,7 @@ interface WorkflowActionBarProps {
   onViewJson: () => void;
   onDownloadJson: () => void;
   onCopyId: () => void;
+  onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
   saveDisabled: boolean;
@@ -73,6 +75,7 @@ export function WorkflowActionBar({
   onViewJson,
   onDownloadJson,
   onCopyId,
+  onRename,
   onDuplicate,
   onDelete,
   saveDisabled,
@@ -253,6 +256,10 @@ export function WorkflowActionBar({
             <DropdownMenuItem onClick={onCopyId}>
               <Copy className="mr-2 size-3.5" />
               Copy workflow ID
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onRename}>
+              <Pencil className="mr-2 size-3.5" />
+              Rename workflow
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDuplicate} disabled={duplicating}>
               <Files className="mr-2 size-3.5" />
