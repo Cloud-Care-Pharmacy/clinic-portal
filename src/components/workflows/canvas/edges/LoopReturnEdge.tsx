@@ -6,6 +6,7 @@ import {
   LINE_WIDTH,
   STROKE,
   STROKE_HIGHLIGHTED,
+  VERTICAL_SPACE_BETWEEN_STEPS,
 } from "../lib/canvas-consts";
 import type { WfLoopReturnEdgeData } from "../lib/graph-builder";
 
@@ -23,27 +24,49 @@ export function LoopReturnEdge({
 }: EdgeProps) {
   const ed = (data ?? {}) as unknown as WfLoopReturnEdgeData;
 
-  // Route out to the right-side loop anchor and always terminate at the
-  // target coordinate. The previous arc fragments did not land on the target,
-  // so React Flow handles and visible strokes drifted apart.
-  const bendY = sourceY + ARC_LENGTH;
+  // ActivePieces-style loop return: draw the return rail and the centered
+  // after-loop continuation as one edge. This keeps the End widget attached
+  // to the loop's main spine instead of creating an extra off-center edge.
+  const distance = Math.abs(sourceX - targetX);
+  const horizontalLineLength = Math.max(0, distance - 2 * ARC_LENGTH);
+  const direction = sourceX >= targetX ? -1 : 1;
+  const bottomY = sourceY + ARC_LENGTH;
+  const centerX = sourceX + direction * (horizontalLineLength / 2 + ARC_LENGTH);
+  const exitY = sourceY + ARC_LENGTH + VERTICAL_SPACE_BETWEEN_STEPS;
+  const arrowX = (targetX + centerX) / 2;
+  const arrowY = targetY;
+
   const d = [
     `M ${sourceX} ${sourceY}`,
-    `L ${sourceX} ${bendY}`,
-    `L ${targetX} ${bendY}`,
+    `L ${sourceX} ${bottomY}`,
+    `L ${targetX} ${bottomY}`,
     `L ${targetX} ${targetY}`,
+    `L ${centerX} ${targetY}`,
+    `M ${centerX} ${bottomY}`,
+    `L ${centerX} ${exitY}`,
   ].join(" ");
 
   const stroke = ed.runActive ? STROKE_HIGHLIGHTED : STROKE;
 
   return (
-    <path
-      id={id}
-      d={d}
-      fill="none"
-      stroke={stroke}
-      strokeWidth={LINE_WIDTH}
-      markerEnd={ed.drawArrowAfterEnd ? "url(#wf-arrow)" : undefined}
-    />
+    <>
+      <path
+        id={id}
+        d={d}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={LINE_WIDTH}
+      />
+      <path
+        d={`M ${arrowX - 5} ${arrowY - 5} L ${arrowX} ${arrowY} L ${
+          arrowX - 5
+        } ${arrowY + 5}`}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={LINE_WIDTH}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </>
   );
 }

@@ -395,16 +395,9 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     childOffsetY + childBox.height + ARC_LENGTH + VERTICAL_SPACE_BETWEEN_STEPS,
   );
 
-  const exitEdge = makeStraightEdge(
-    loopReturnNode.id,
-    subEnd.id,
-    { drawArrowHead: false, hideAddButton: true },
-    "loop-exit",
-  );
-
   return {
     nodes: [...offsetChild.nodes, loopReturnNode, subEnd],
-    edges: [startEdge, returnEdge, exitEdge, ...offsetChild.edges],
+    edges: [startEdge, returnEdge, ...offsetChild.edges],
     entryId: childHeadId,
     exitId: subEnd.id,
   };
