@@ -1,16 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Code2,
-  MoreHorizontal,
-  Trash2,
-  Zap,
-} from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,14 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
+import { useBreadcrumbOverrides } from "@/components/providers/BreadcrumbProvider";
 import {
   useDeleteWorkflow,
   useUpdateWorkflow,
@@ -40,8 +25,8 @@ import { WorkflowEditor } from "@/components/workflows/canvas/WorkflowEditor";
 import { RunView } from "@/components/workflows/run/RunView";
 import { ViewJsonDialog } from "@/components/workflows/ViewJsonDialog";
 import { TestRunDialog } from "@/components/workflows/TestRunDialog";
+import { WorkflowActionBar } from "@/components/workflows/WorkflowActionBar";
 import { workflowSchema } from "@/components/workflows/canvas/lib/workflow-schema";
-import { cn } from "@/lib/utils";
 import type {
   Workflow,
   WorkflowResponse,
@@ -88,6 +73,7 @@ export function WorkflowDetailClient({
   const [showJson, setShowJson] = useState(false);
   const [showTestRun, setShowTestRun] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [addSignal, setAddSignal] = useState(0);
 
   // Sync server state into draft when the workflow loads or refreshes,
   // unless the user has unsaved changes. Done during render via the
@@ -107,6 +93,16 @@ export function WorkflowDetailClient({
     () => (allWorkflows?.data ?? []).filter((w) => w.id !== workflowId),
     [allWorkflows, workflowId]
   );
+
+  // Replace the workflow id segment in the breadcrumb with its name.
+  const { setOverride, clearOverride } = useBreadcrumbOverrides();
+  const breadcrumbPath = `/workflows/${workflowId}`;
+  const workflowName = workflow?.name;
+  useEffect(() => {
+    if (!workflowName) return;
+    setOverride(breadcrumbPath, workflowName);
+    return () => clearOverride(breadcrumbPath);
+  }, [breadcrumbPath, workflowName, setOverride, clearOverride]);
 
   if (isLoading || !workflow) {
     return (
@@ -187,157 +183,11 @@ export function WorkflowDetailClient({
   }
 
   const isActive = workflow.status === "active";
-  const updatedRel = (() => {
-    try {
-      return formatDistanceToNow(new Date(workflow.updatedAt), {
-        addSuffix: true,
-      });
-    } catch {
-      return workflow.updatedAt;
-    }
-  })();
 
   return (
-    <div className="flex h-[calc(100dvh-(--spacing(16)))] flex-col">
-      {/* Workflow header strip */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-border bg-popover px-5 py-3.5">
-        <button
-          type="button"
-          onClick={() => router.push("/workflows")}
-          className="grid size-9 place-items-center rounded-lg bg-status-warning-bg text-status-warning-fg transition-opacity hover:opacity-80"
-          aria-label="Back to workflows"
-        >
-          <Zap className="size-4" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[19px] font-bold leading-tight tracking-[-0.01em]">
-            {workflow.name}
-          </h1>
-          <div className="mt-0.5 flex items-center gap-2 text-[12px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "size-1.5 rounded-full",
-                  isActive
-                    ? "bg-status-success-fg animate-pulse motion-reduce:animate-none"
-                    : "bg-muted-foreground"
-                )}
-                aria-hidden
-              />
-              {workflow.status}
-            </span>
-            <span aria-hidden>·</span>
-            <span>v{workflow.version}</span>
-            <span aria-hidden>·</span>
-            <span>edited {updatedRel}</span>
-            {draftDirty && (
-              <>
-                <span aria-hidden>·</span>
-                <span className="text-status-warning-fg">unsaved changes</span>
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-label="More actions"
-            >
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowJson(true)}>
-                <Code2 className="mr-2 size-3.5" />
-                View JSON
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => setShowDelete(true)}
-              >
-                <Trash2 className="mr-2 size-3.5" />
-                Delete workflow
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <span className="mx-1 h-5 w-px bg-border" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowJson(true)}
-          >
-            <Code2 className="size-3.5" />
-            View JSON
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleSave()}
-            disabled={!draftDirty || update.isPending}
-          >
-            {update.isPending ? "Saving…" : "Save draft"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTestRun(true)}
-          >
-            Test run
-          </Button>
-          <div className="ml-2 flex items-center gap-2 rounded-md border border-border px-2.5 py-1">
-            <span className="text-xs font-medium">Active</span>
-            <Switch
-              checked={isActive}
-              onCheckedChange={toggleActive}
-              disabled={update.isPending}
-              aria-label="Toggle workflow active"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="shrink-0 border-b border-border bg-popover px-5">
-        <div className="flex gap-1">
-          {(
-            [
-              { id: "canvas", label: "Canvas", sub: "build" },
-              { id: "run", label: "Live run", sub: "execute" },
-            ] as { id: Tab; label: string; sub: string }[]
-          ).map((t) => {
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex flex-col gap-0 px-3 py-2 -mb-px border-b-2 text-left transition-colors",
-                  active
-                    ? "border-primary"
-                    : "border-transparent hover:text-foreground"
-                )}
-              >
-                <span
-                  className={cn(
-                    "text-sm",
-                    active ? "font-semibold text-foreground" : "font-medium text-muted-foreground"
-                  )}
-                >
-                  {t.label}
-                </span>
-                <span className="text-[10px] lowercase text-muted-foreground">
-                  {t.sub}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="min-h-0 flex-1 bg-background">
+    <div className="relative flex h-[calc(100dvh-(--spacing(16)))] flex-col">
+      {/* Body — full bleed canvas, no top header strip or tabs bar */}
+      <div className="relative min-h-0 flex-1 bg-background">
         {tab === "canvas" ? (
           <WorkflowEditor
             triggers={draftTriggers}
@@ -346,10 +196,27 @@ export function WorkflowDetailClient({
             webhookBaseUrl={WEBHOOK_BASE_URL}
             otherWorkflows={subWorkflows}
             serverError={serverError}
+            openPaletteSignal={addSignal}
           />
         ) : (
           <RunView workflowId={workflowId} initialRuns={initialRuns} />
         )}
+
+        <WorkflowActionBar
+          tab={tab}
+          onTabChange={setTab}
+          isActive={isActive}
+          onToggleActive={toggleActive}
+          onAdd={() => setAddSignal((n) => n + 1)}
+          onSave={() => handleSave()}
+          onTestRun={() => setShowTestRun(true)}
+          onViewJson={() => setShowJson(true)}
+          onDelete={() => setShowDelete(true)}
+          saveDisabled={!draftDirty || update.isPending}
+          saving={update.isPending}
+          togglePending={update.isPending}
+          dirty={draftDirty}
+        />
       </div>
 
       <ViewJsonDialog open={showJson} onOpenChange={setShowJson} data={workflow} />

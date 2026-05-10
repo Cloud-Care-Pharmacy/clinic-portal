@@ -1,8 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { WorkflowGraph } from "./WorkflowGraph";
 import { EmptyCanvas } from "./EmptyCanvas";
 import { NodePalette } from "./NodePalette";
@@ -26,6 +24,11 @@ interface WorkflowEditorProps {
   webhookBaseUrl?: string;
   otherWorkflows?: Workflow[];
   serverError?: { path?: string; message: string } | null;
+  /**
+   * Increment to programmatically open the node palette. Used by parent
+   * action bars / shortcuts.
+   */
+  openPaletteSignal?: number;
 }
 
 export function WorkflowEditor({
@@ -35,6 +38,7 @@ export function WorkflowEditor({
   webhookBaseUrl,
   otherWorkflows,
   serverError,
+  openPaletteSignal,
 }: WorkflowEditorProps) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -152,24 +156,18 @@ export function WorkflowEditor({
         ? stepNodeName(steps[selection.index], selection.index)
         : null;
 
+  // Open palette in response to an external signal (e.g. bottom action bar).
+  // Uses the "store previous prop" render-time pattern
+  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders).
+  const [lastSignal, setLastSignal] = useState(openPaletteSignal ?? 0);
+  if ((openPaletteSignal ?? 0) !== lastSignal) {
+    setLastSignal(openPaletteSignal ?? 0);
+    openPalette(triggers.length === 0 ? "triggers" : "actions");
+  }
+
   return (
     <div className="flex h-full min-h-0 w-full">
       <div className="relative flex-1">
-        <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5 rounded-lg border border-border bg-popover p-1 shadow-sm">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              openPalette(triggers.length === 0 ? "triggers" : "actions")
-            }
-            className="h-7 gap-1 px-2 text-xs font-semibold"
-          >
-            <Plus className="size-3" />
-            Add
-          </Button>
-        </div>
-
         {isEmpty ? (
           <EmptyCanvas onAddTrigger={() => openPalette("triggers")} />
         ) : (
