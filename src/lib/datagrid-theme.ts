@@ -8,6 +8,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
  * If a screen genuinely needs to differ, add a documented variant here.
  */
 export const dataGridSx: SxProps<Theme> = {
+  "--unstable_DataGrid-radius": 0,
   border: "none",
   borderRadius: 0,
   overflow: "hidden",
