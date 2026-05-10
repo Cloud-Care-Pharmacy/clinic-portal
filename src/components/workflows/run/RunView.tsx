@@ -22,6 +22,7 @@ import {
   useWorkflowRunStream,
   useWorkflowRuns,
 } from "@/lib/hooks/use-workflow-runs";
+import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { STEP_KIND_CONFIG } from "../canvas/lib/node-kind-config";
 import type {
   WorkflowRun,
@@ -87,6 +88,17 @@ function shortId(id: string) {
   return id.slice(0, 8);
 }
 
+/**
+ * Parse a backend timestamp as UTC. The gateway emits some columns as
+ * `"YYYY-MM-DD HH:MM:SS"` (no timezone marker), which JS would otherwise
+ * interpret as local time and silently skew durations by the client offset.
+ */
+function parseUtcMs(ts: string): number {
+  const hasOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(ts);
+  const iso = hasOffset ? ts : `${ts.replace(" ", "T")}Z`;
+  return new Date(iso).getTime();
+}
+
 function fmtDuration(ms: number | null | undefined): string {
   if (ms == null) return "—";
   if (ms < 1000) return `${ms}ms`;
@@ -99,19 +111,18 @@ function fmtDuration(ms: number | null | undefined): string {
 
 function relativeTime(iso: string): string {
   try {
-    return formatDistanceToNow(new Date(iso), { addSuffix: true });
+    return formatDistanceToNow(new Date(parseUtcMs(iso)), { addSuffix: true });
   } catch {
     return iso;
   }
 }
 
 function runDuration(run: WorkflowRun): string {
+  const start = parseUtcMs(run.startedAt);
   if (!run.completedAt) {
-    return fmtDuration(Date.now() - new Date(run.startedAt).getTime());
+    return fmtDuration(Date.now() - start);
   }
-  return fmtDuration(
-    new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()
-  );
+  return fmtDuration(parseUtcMs(run.completedAt) - start);
 }
 
 function runStatusDot(run: WorkflowRun): string {
@@ -371,10 +382,11 @@ function JsonBlock({
 
 interface RunDetailProps {
   runId: string | null;
+  totalSteps: number;
   initial?: WorkflowRunDetailResponse;
 }
 
-function RunDetail({ runId, initial }: RunDetailProps) {
+function RunDetail({ runId, totalSteps, initial }: RunDetailProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "", initial);
 
@@ -433,37 +445,55 @@ function RunDetail({ runId, initial }: RunDetailProps) {
   }
 
   const { run, events } = data.data;
-  // Step events form the timeline. We keep started / completed / failed /
-  // wait_scheduled — collapsed per step into the latest.
-  const byStep = new Map<number, WorkflowRunEvent>();
-  for (const e of events) {
-    if (e.stepIndex == null) continue;
-    if (
-      e.eventType === "step_started" ||
-      e.eventType === "step_completed" ||
-      e.eventType === "step_failed" ||
-      e.eventType === "wait_scheduled"
-    ) {
-      byStep.set(e.stepIndex, e);
-    }
-  }
-  const stepEvents = [...byStep.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([, ev]) => ev);
-
-  function statusFor(e: WorkflowRunEvent): StepStatus {
+  // Collapse the audit trail to one row per step. We pick a *representative*
+  // event by status priority (failed > done > waiting > running) instead of
+  // last-seen, because the gateway can emit `wait_scheduled` *after* the
+  // matching `step_completed` — last-seen made completed waits render as
+  // still WAITING.
+  const STATUS_PRIORITY: Record<StepStatus, number> = {
+    failed: 4,
+    done: 3,
+    waiting: 2,
+    running: 1,
+    pending: 0,
+  };
+  function statusForEvent(e: WorkflowRunEvent): StepStatus | null {
     switch (e.eventType) {
-      case "step_completed":
-        return "done";
       case "step_failed":
         return "failed";
+      case "step_completed":
+        return "done";
       case "wait_scheduled":
         return "waiting";
       case "step_started":
-      default:
         return "running";
+      default:
+        return null;
     }
   }
+  const byStep = new Map<number, { event: WorkflowRunEvent; status: StepStatus }>();
+  for (const e of events) {
+    if (e.stepIndex == null) continue;
+    const status = statusForEvent(e);
+    if (!status) continue;
+    const prev = byStep.get(e.stepIndex);
+    if (!prev || STATUS_PRIORITY[status] >= STATUS_PRIORITY[prev.status]) {
+      byStep.set(e.stepIndex, { event: e, status });
+    }
+  }
+  const stepEntries = [...byStep.entries()].sort(([a], [b]) => a - b);
+
+  // Step counter: total comes from the workflow definition (audit events
+  // alone over- or under-count). For terminal runs we display N/N; for live
+  // runs we clamp to the known total so we never show e.g. "3 / 2".
+  const isTerminal =
+    run.status === "completed" ||
+    run.status === "failed" ||
+    run.status === "cancelled";
+  const stepDenominator = totalSteps > 0 ? totalSteps : stepEntries.length;
+  const stepNumerator = isTerminal
+    ? stepDenominator
+    : Math.min(run.currentStep + 1, stepDenominator || run.currentStep + 1);
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -474,8 +504,8 @@ function RunDetail({ runId, initial }: RunDetailProps) {
         <RunMetric label="Duration">{runDuration(run)}</RunMetric>
         <RunMetric label="Step">
           <span className="font-mono text-sm">
-            {run.currentStep + 1}
-            <span className="text-muted-foreground"> / {events.length || "?"}</span>
+            {stepNumerator}
+            <span className="text-muted-foreground"> / {stepDenominator || "?"}</span>
           </span>
         </RunMetric>
       </div>
@@ -505,21 +535,21 @@ function RunDetail({ runId, initial }: RunDetailProps) {
 
       <h3 className="mb-3 text-sm font-semibold">Step trace</h3>
 
-      {stepEvents.length === 0 ? (
+      {stepEntries.length === 0 ? (
         <EmptyState
           title="No step events yet"
           description="Steps will appear here as the run progresses."
         />
       ) : (
         <div className="flex flex-col">
-          {stepEvents.map((e, i) => (
+          {stepEntries.map(([, { event, status }], i) => (
             <RunStepCard
-              key={`${e.stepIndex}-${e.eventType}`}
-              event={e}
-              status={statusFor(e)}
-              duration={fmtDuration(e.durationMs)}
-              context={i === stepEvents.length - 1 ? run.context : null}
-              isLast={i === stepEvents.length - 1}
+              key={`${event.stepIndex}-${event.eventType}`}
+              event={event}
+              status={status}
+              duration={fmtDuration(event.durationMs)}
+              context={i === stepEntries.length - 1 ? run.context : null}
+              isLast={i === stepEntries.length - 1}
             />
           ))}
         </div>
@@ -530,6 +560,8 @@ function RunDetail({ runId, initial }: RunDetailProps) {
 
 export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps) {
   const { data, isLoading } = useWorkflowRuns(workflowId, { limit: 50 }, initialRuns);
+  const { data: workflowData } = useWorkflow(workflowId);
+  const totalSteps = workflowData?.data.definition.steps.length ?? 0;
   const runs = data?.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(
     initialRunId ?? runs[0]?.id ?? null
@@ -548,7 +580,7 @@ export function RunView({ workflowId, initialRuns, initialRunId }: RunViewProps)
         onSelect={setSelectedId}
         loading={isLoading}
       />
-      <RunDetail runId={selectedId} />
+      <RunDetail runId={selectedId} totalSteps={totalSteps} />
     </div>
   );
 }
