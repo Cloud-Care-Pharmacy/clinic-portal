@@ -45,6 +45,25 @@ interface WorkflowDetailClientProps {
 const WEBHOOK_BASE_URL =
   process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
+/**
+ * Strip default capture/sensitive fields from each step before serializing
+ * to the backend. The default `capture: 'summary'` and `sensitive: false`
+ * are inferred when missing, so we omit them to keep the stored definition
+ * (and JSON diffs) clean.
+ */
+function serializeStepsForSave(steps: WorkflowStep[]): WorkflowStep[] {
+  return steps.map((step) => {
+    const { capture, sensitive, ...rest } = step as WorkflowStep & {
+      capture?: WorkflowStep["capture"];
+      sensitive?: WorkflowStep["sensitive"];
+    };
+    const next = { ...rest } as WorkflowStep;
+    if (capture && capture !== "summary") next.capture = capture;
+    if (sensitive === true) next.sensitive = true;
+    return next;
+  });
+}
+
 function cloneTriggersForDuplicate(triggers: WorkflowTrigger[]): WorkflowTrigger[] {
   return triggers.map((trigger) => {
     switch (trigger.kind) {
@@ -150,11 +169,12 @@ export function WorkflowDetailClient({
 
   async function handleSave(opts?: { activate?: boolean }) {
     if (!workflow) return;
+    const stepsForSave = serializeStepsForSave(draftSteps);
     const parsed = workflowSchema.safeParse({
       name: workflow.name,
       description: workflow.description,
       triggers: draftTriggers,
-      definition: { version: 1, steps: draftSteps },
+      definition: { version: 1, steps: stepsForSave },
     });
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -167,7 +187,7 @@ export function WorkflowDetailClient({
     try {
       await update.mutateAsync({
         triggers: draftTriggers,
-        definition: { version: 1, steps: draftSteps },
+        definition: { version: 1, steps: stepsForSave },
         ...(opts?.activate ? { status: "active" } : {}),
       });
       setDraftDirty(false);
@@ -205,8 +225,7 @@ export function WorkflowDetailClient({
         description: "Live progress will stream into the run timeline.",
       });
     } catch (err) {
-      const message =
-        err instanceof WorkflowApiError ? err.message : "Test run failed";
+      const message = err instanceof WorkflowApiError ? err.message : "Test run failed";
       toast.error(message);
     }
   }
@@ -235,7 +254,7 @@ export function WorkflowDetailClient({
         status: "draft",
         definition: {
           version: workflow.definition.version ?? 1,
-          steps: workflow.definition.steps,
+          steps: serializeStepsForSave(workflow.definition.steps),
         },
       });
       toast.success("Workflow duplicated");

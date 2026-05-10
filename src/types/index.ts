@@ -1649,15 +1649,13 @@ export const BRANCH_OP_VALUES = BRANCH_OPS.map((o) => o.value) as unknown as rea
   ...WorkflowBranchOp[],
 ];
 
-export const BRANCH_OP_LABELS: Record<WorkflowBranchOp, string> =
-  Object.fromEntries(BRANCH_OPS.map((o) => [o.value, o.label])) as Record<
-    WorkflowBranchOp,
-    string
-  >;
+export const BRANCH_OP_LABELS: Record<WorkflowBranchOp, string> = Object.fromEntries(
+  BRANCH_OPS.map((o) => [o.value, o.label])
+) as Record<WorkflowBranchOp, string>;
 
 /** Operators that don't take a `right` operand. */
 export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set(
-  BRANCH_OPS.filter((o) => o.arity === "unary").map((o) => o.value),
+  BRANCH_OPS.filter((o) => o.arity === "unary").map((o) => o.value)
 );
 
 export function isUnaryBranchOp(op: WorkflowBranchOp): boolean {
@@ -1670,6 +1668,19 @@ export interface WorkflowCondition {
   op: WorkflowBranchOp;
   right?: string;
 }
+
+/**
+ * Per-step audit capture mode.
+ *
+ *  - `summary` (default): backend records a redacted, ≤ 2 KB snapshot of
+ *    inputs and outputs into `workflow_step_captures`.
+ *  - `full`: complete payload offloaded to R2 (≤ 256 KB), summary still
+ *    available inline.
+ *  - `none`: timing only; no input/output captured.
+ *
+ * Defaults to `'summary'` when omitted. Strip on serialize when default.
+ */
+export type WorkflowStepCaptureMode = "summary" | "full" | "none";
 
 interface WorkflowStepBase {
   id?: string;
@@ -1685,6 +1696,17 @@ interface WorkflowStepBase {
    *  - `loop_on_items` parents: always 0 (the loop body)
    */
   branchIndex?: number;
+  /**
+   * Audit capture mode for this step. Defaults to `'summary'`. Omit from
+   * serialized definition when default.
+   */
+  capture?: WorkflowStepCaptureMode;
+  /**
+   * When `true`, forces `capture` to `'none'` and hides input/output in the
+   * run logs UI. Use for steps handling secrets or PHI. Defaults to `false`.
+   * Omit from serialized definition when default.
+   */
+  sensitive?: boolean;
 }
 
 /** A named branch of a router step. Each branch is a chain of child steps. */
@@ -2142,3 +2164,54 @@ export interface WorkflowRunStreamDonePayload {
 
 /** SSE `step_state` payload — same shape as `WorkflowRunStep`. */
 export type WorkflowRunStreamStepStatePayload = WorkflowRunStep;
+
+// ---- Workflow step captures (run logs Input/Output panes) ----
+
+/**
+ * Per-step audit capture row. One per executed step that did not opt out via
+ * `capture: 'none'` or `sensitive: true`. Joined to `WorkflowRunEvent` by
+ * `sequence` (matches the `step_started` event for that step).
+ */
+export interface WorkflowStepCapture {
+  /** Joins to the `step_started` event sequence. */
+  sequence: number;
+  stepIndex: number;
+  stepKind: string;
+  captureMode: Exclude<WorkflowStepCaptureMode, "none">;
+  /** Already redacted, parsed JSON. `null` when the step had no input. */
+  inputSummary: unknown;
+  /** Already redacted, parsed JSON. `null` when the step produced no output. */
+  outputSummary: unknown;
+  inputBytes: number | null;
+  outputBytes: number | null;
+  inputSha256: string | null;
+  outputSha256: string | null;
+  outcome: "ok" | "error";
+  /** True when the summary was clipped at the 2 KB boundary. */
+  truncated: boolean;
+  occurredAt: string;
+}
+
+export interface WorkflowRunCapturesResponse {
+  success: boolean;
+  data: {
+    captures: WorkflowStepCapture[];
+  };
+}
+
+/**
+ * Joined timeline row rendered by the run logs UI. Built from
+ * `WorkflowRunEvent[]` + `WorkflowStepCapture[]`.
+ */
+export interface WorkflowRunTimelineRow {
+  /** `step_started` sequence — anchor that joins to the capture row. */
+  sequence: number;
+  stepIndex: number;
+  stepKind: string;
+  status: "pending" | "running" | "success" | "error" | "waiting";
+  startedAt: string;
+  completedAt: string | null;
+  durationMs: number | null;
+  errorMessage: string | null;
+  capture: WorkflowStepCapture | null;
+}

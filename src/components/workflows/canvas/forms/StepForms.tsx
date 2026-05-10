@@ -2,7 +2,9 @@
 
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -39,6 +41,7 @@ import type {
   WorkflowRouterBranch,
   WorkflowStep,
   WorkflowStepKind,
+  WorkflowStepCaptureMode,
 } from "@/types";
 
 type StepErrors = Record<string, string | undefined>;
@@ -223,7 +226,11 @@ function SendEmailForm(props: StepFormProps<SendEmailStep>) {
         placeholder="{{vars.patient.email}}"
         error={errors?.to}
       />
-      <Field label="From (optional)" hint="Override the configured sender address." error={errors?.from}>
+      <Field
+        label="From (optional)"
+        hint="Override the configured sender address."
+        error={errors?.from}
+      >
         <Input
           value={step.from ?? ""}
           onChange={(e) => onChange({ ...step, from: e.target.value || undefined })}
@@ -481,9 +488,7 @@ function BranchIfForm(props: StepFormProps<BranchIfStep>) {
       <Field label="Operator" error={errors?.op}>
         <Select
           value={step.op}
-          onValueChange={(v) =>
-            v && onChange({ ...step, op: v as BranchIfStep["op"] })
-          }
+          onValueChange={(v) => v && onChange({ ...step, op: v as BranchIfStep["op"] })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -754,18 +759,14 @@ function HttpCallForm(props: StepFormProps<HttpCallStep>) {
           <TemplatedField
             label="Basic — username"
             value={auth.username}
-            onChange={(v) =>
-              onChange({ ...step, auth: { ...auth, username: v } })
-            }
+            onChange={(v) => onChange({ ...step, auth: { ...auth, username: v } })}
             placeholder="{{vars.creds.user}}"
             monospace
           />
           <TemplatedField
             label="Basic — password"
             value={auth.password}
-            onChange={(v) =>
-              onChange({ ...step, auth: { ...auth, password: v } })
-            }
+            onChange={(v) => onChange({ ...step, auth: { ...auth, password: v } })}
             placeholder="{{vars.creds.password}}"
             monospace
           />
@@ -879,9 +880,7 @@ function HttpCallForm(props: StepFormProps<HttpCallStep>) {
           onChange={(e) =>
             onChange({
               ...step,
-              maxResponseBytes: e.target.value
-                ? Number(e.target.value)
-                : undefined,
+              maxResponseBytes: e.target.value ? Number(e.target.value) : undefined,
             })
           }
           placeholder="16384"
@@ -965,10 +964,8 @@ function RouterForm(props: StepFormProps<RouterStep>) {
     onChange({ ...step, branches: copy });
   };
 
-  const setCondition = (
-    idx: number,
-    next: WorkflowRouterBranch["condition"],
-  ) => updateBranch(idx, { ...branches[idx], condition: next });
+  const setCondition = (idx: number, next: WorkflowRouterBranch["condition"]) =>
+    updateBranch(idx, { ...branches[idx], condition: next });
 
   const enableCondition = (idx: number) => {
     setCondition(idx, { left: "", op: "eq", right: "" });
@@ -1013,9 +1010,7 @@ function RouterForm(props: StepFormProps<RouterStep>) {
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            Branches
-          </span>
+          <span className="text-xs font-medium text-muted-foreground">Branches</span>
           <Button
             type="button"
             size="sm"
@@ -1046,9 +1041,7 @@ function RouterForm(props: StepFormProps<RouterStep>) {
         <FallbackEditor
           fallback={fallback}
           onToggle={toggleFallback}
-          onRename={(name) =>
-            onChange({ ...step, fallback: { ...fallback, name } })
-          }
+          onRename={(name) => onChange({ ...step, fallback: { ...fallback, name } })}
         />
       </div>
 
@@ -1150,7 +1143,9 @@ function RouterBranchEditor({
             <TemplatedField
               label=""
               value={condition.left}
-              onChange={(v) => onChange({ ...branch, condition: { ...condition, left: v } })}
+              onChange={(v) =>
+                onChange({ ...branch, condition: { ...condition, left: v } })
+              }
               placeholder="{{vars.outreach.outcome}}"
             />
             <div className="flex gap-2">
@@ -1231,10 +1226,7 @@ function FallbackEditor({ fallback, onToggle, onRename }: FallbackEditorProps) {
     <div className="flex flex-col gap-2 rounded-md border border-dashed border-border/60 bg-muted/20 p-3">
       <div className="flex items-start gap-2">
         <div className="flex-1">
-          <Field
-            label="Fallback branch"
-            hint="Runs when no branch condition matches."
-          >
+          <Field label="Fallback branch" hint="Runs when no branch condition matches.">
             <Input
               value={fallback.name ?? ""}
               onChange={(e) => onRename(e.target.value)}
@@ -1311,6 +1303,15 @@ interface StepInspectorProps {
 }
 
 export function StepInspector(props: StepInspectorProps) {
+  return (
+    <>
+      <StepKindForm {...props} />
+      <CaptureSettings step={props.step} onChange={props.onChange} />
+    </>
+  );
+}
+
+function StepKindForm(props: StepInspectorProps) {
   switch (props.step.kind) {
     case "send_email":
       return <SendEmailForm {...(props as StepFormProps<SendEmailStep>)} />;
@@ -1339,6 +1340,118 @@ export function StepInspector(props: StepInspectorProps) {
     case "call_workflow":
       return <CallWorkflowForm {...(props as StepFormProps<CallWorkflowStep>)} />;
   }
+}
+
+interface CaptureSettingsProps {
+  step: WorkflowStep;
+  onChange: (next: WorkflowStep) => void;
+}
+
+const CAPTURE_OPTIONS: ReadonlyArray<{
+  value: WorkflowStepCaptureMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "summary",
+    label: "Summary",
+    description:
+      "Records a redacted, ≤ 2 KB snapshot of inputs and outputs. Recommended.",
+  },
+  {
+    value: "full",
+    label: "Full",
+    description:
+      "Stores the complete payload in object storage. Use for steps you frequently need to debug.",
+  },
+  {
+    value: "none",
+    label: "None",
+    description: "Records timing only. Use for high-frequency steps.",
+  },
+];
+
+/**
+ * Per-step audit capture controls (capture mode + sensitive flag). Renders
+ * inside `StepInspector` for every step kind. Defaults are not persisted —
+ * the save path strips `capture: 'summary'` and `sensitive: false` so the
+ * stored definition stays clean.
+ */
+function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
+  const sensitive = step.sensitive === true;
+  // When `sensitive`, capture is forced to `'none'`.
+  const captureMode: WorkflowStepCaptureMode = sensitive
+    ? "none"
+    : (step.capture ?? "summary");
+
+  function updateCapture(next: WorkflowStepCaptureMode) {
+    onChange({ ...step, capture: next });
+  }
+
+  function updateSensitive(next: boolean) {
+    if (next) {
+      onChange({ ...step, sensitive: true, capture: "none" });
+    } else {
+      onChange({ ...step, sensitive: false, capture: "summary" });
+    }
+  }
+
+  const idBase = step.id ?? step.kind;
+
+  return (
+    <fieldset className="mt-4 rounded-md border border-border/60 bg-muted/20 p-3">
+      <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Capture
+      </legend>
+      <RadioGroup
+        value={captureMode}
+        onValueChange={(v) => {
+          if (v) updateCapture(v as WorkflowStepCaptureMode);
+        }}
+        disabled={sensitive}
+        className="gap-2"
+      >
+        {CAPTURE_OPTIONS.map((opt) => {
+          const id = `capture-${idBase}-${opt.value}`;
+          return (
+            <label
+              key={opt.value}
+              htmlFor={id}
+              className="flex cursor-pointer items-start gap-2 rounded-md p-1.5 hover:bg-accent/40"
+            >
+              <RadioGroupItem
+                value={opt.value}
+                id={id}
+                className="mt-0.5"
+                disabled={sensitive}
+              />
+              <span className="flex flex-col">
+                <span className="text-sm font-medium">{opt.label}</span>
+                <span className="text-xs text-muted-foreground">{opt.description}</span>
+              </span>
+            </label>
+          );
+        })}
+      </RadioGroup>
+      <label
+        htmlFor={`capture-sensitive-${idBase}`}
+        className="mt-3 flex cursor-pointer items-start gap-2 border-t border-border/60 pt-3"
+      >
+        <Checkbox
+          id={`capture-sensitive-${idBase}`}
+          checked={sensitive}
+          onCheckedChange={(c) => updateSensitive(Boolean(c))}
+          className="mt-0.5"
+        />
+        <span className="flex flex-col">
+          <span className="text-sm font-medium">Sensitive</span>
+          <span className="text-xs text-muted-foreground">
+            Disables capture entirely. Use for steps handling secrets or PHI.
+          </span>
+        </span>
+      </label>
+    </fieldset>
+  );
 }
 
 /** Build a minimal valid (or close to valid) step for a given kind. */

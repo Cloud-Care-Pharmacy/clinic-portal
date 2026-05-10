@@ -5,12 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ChevronDown,
-  ChevronRight,
   ChevronUp,
-  Check,
-  Clock,
-  CircleDashed,
-  AlertTriangle,
   Filter,
   Radio,
 } from "lucide-react";
@@ -26,7 +21,6 @@ import {
   useWorkflowRuns,
 } from "@/lib/hooks/use-workflow-runs";
 import { useWorkflow } from "@/lib/hooks/use-workflows";
-import { STEP_KIND_CONFIG } from "../canvas/lib/node-kind-config";
 import { RunCanvas } from "./RunCanvas";
 import { LogsPane } from "./logs/LogsPane";
 import type {
@@ -40,66 +34,12 @@ import type {
   WorkflowTrigger,
 } from "@/types";
 
-const FEATURE_RUN_LOGS_V2 =
-  process.env.NEXT_PUBLIC_FEATURE_RUN_LOGS_V2 === "true";
-
 interface RunViewProps {
   workflowId: string;
   initialRuns?: WorkflowRunsListResponse;
   /** Selected run id (deep-linked or last test-run). */
   initialRunId?: string;
 }
-
-const STATUS_TONE = {
-  done: {
-    bg: "var(--status-success-bg)",
-    fg: "var(--status-success-fg)",
-    border: "var(--status-success-border)",
-    Icon: Check,
-    label: "Done",
-    pulse: false,
-  },
-  running: {
-    bg: "var(--status-warning-bg)",
-    fg: "var(--status-warning-fg)",
-    border: "var(--status-warning-border)",
-    Icon: CircleDashed,
-    label: "Running",
-    pulse: true,
-  },
-  pending: {
-    bg: "var(--status-neutral-bg)",
-    fg: "var(--status-neutral-fg)",
-    border: "var(--status-neutral-border)",
-    Icon: CircleDashed,
-    label: "Pending",
-    pulse: false,
-  },
-  failed: {
-    bg: "var(--status-danger-bg)",
-    fg: "var(--status-danger-fg)",
-    border: "var(--status-danger-border)",
-    Icon: AlertTriangle,
-    label: "Failed",
-    pulse: false,
-  },
-  waiting: {
-    bg: "var(--status-warning-bg)",
-    fg: "var(--status-warning-fg)",
-    border: "var(--status-warning-border)",
-    Icon: Clock,
-    label: "Waiting",
-    pulse: false,
-  },
-  skipped: {
-    bg: "var(--status-neutral-bg)",
-    fg: "var(--status-neutral-fg)",
-    border: "var(--status-neutral-border)",
-    Icon: CircleDashed,
-    label: "Skipped",
-    pulse: false,
-  },
-} as const;
 
 /**
  * Re-render at a fixed cadence while `enabled`. Used by the "elapsed" counter
@@ -356,188 +296,6 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
   );
 }
 
-interface RunStepCardProps {
-  /**
-   * The server-computed projection for this step. Drives kind, status,
-   * duration, error, and detail rendering.
-   */
-  step: WorkflowRunStep;
-  /**
-   * When provided overrides the step's persisted duration and re-renders on
-   * each tick — used for the currently-running step so the elapsed counter
-   * feels live.
-   */
-  liveElapsedMs?: number | null;
-  /**
-   * Optional countdown string for waiting-on-timer rows (parent-ticked).
-   * E.g. `in 57s` or `12s ago`. Falls back to `await {eventType}` when the
-   * step is waiting on an external event.
-   */
-  waitCountdown?: string | null;
-  context: Record<string, unknown> | null;
-  isLast: boolean;
-}
-
-function RunStepCard({
-  step,
-  liveElapsedMs,
-  waitCountdown,
-  context,
-  isLast,
-}: RunStepCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const status = step.status;
-  const tone = STATUS_TONE[status];
-  const ToneIcon = tone.Icon;
-  // `step.stepKind` is a string and may be `'unknown'` when the snapshot
-  // index falls outside the current definition (rare, mid-run edit).
-  // `STEP_KIND_CONFIG[...]` returns `undefined` for unknown kinds, which we
-  // already render as a generic step.
-  const cfg = STEP_KIND_CONFIG[step.stepKind as WorkflowStepKind];
-  const StepIcon = cfg?.icon;
-
-  const detail = (step.detail ?? {}) as Record<string, unknown>;
-  const error = step.lastError ?? undefined;
-
-  const isRunning = status === "running";
-  const isWaiting = status === "waiting";
-  const isPending = status === "pending";
-  const displayDuration = isWaiting
-    ? (waitCountdown ?? (step.awaitingEventType ? `await ${step.awaitingEventType}` : "—"))
-    : liveElapsedMs != null
-      ? fmtDuration(liveElapsedMs)
-      : fmtDuration(step.durationMs);
-  const stepIndex = step.stepIndex;
-
-  return (
-    <div className="relative flex gap-3">
-      <div className="flex flex-col items-center">
-        <div
-          style={{
-            background: tone.bg,
-            color: tone.fg,
-            border: `2px solid ${tone.border}`,
-            animation: tone.pulse ? "wf-pulse 1.5s infinite" : undefined,
-            boxShadow: isRunning
-              ? `0 0 0 4px color-mix(in oklab, ${tone.border} 35%, transparent)`
-              : undefined,
-          }}
-          className="z-10 grid size-7 place-items-center rounded-full motion-reduce:animate-none"
-        >
-          <ToneIcon className="size-3" />
-        </div>
-        {!isLast && <div className="w-0.5 flex-1 bg-border" />}
-      </div>
-      <div className="flex-1 pb-4">
-        <button
-          type="button"
-          onClick={() => !isPending && setExpanded((e) => !e)}
-          disabled={isPending}
-          aria-disabled={isPending}
-          style={
-            isRunning
-              ? {
-                  borderColor: tone.border,
-                  backgroundImage: `linear-gradient(110deg, transparent 30%, color-mix(in oklab, ${tone.border} 18%, transparent) 50%, transparent 70%)`,
-                  backgroundSize: "200% 100%",
-                  animation: "wf-shimmer 2s linear infinite",
-                }
-              : undefined
-          }
-          className={cn(
-            "flex w-full flex-col gap-1.5 rounded-xl border px-3.5 py-3 text-left transition-colors",
-            isRunning
-              ? "bg-popover"
-              : isPending
-                ? "border-dashed bg-card/60"
-                : "bg-card border-border hover:border-foreground/20",
-            isPending && "cursor-default opacity-70"
-          )}
-        >
-          <div className="flex items-center gap-2.5">
-            {StepIcon && cfg && (
-              <span
-                style={{
-                  background: cfg.bg,
-                  color: cfg.fg,
-                  border: `1px solid ${cfg.border}`,
-                }}
-                className={cn(
-                  "grid size-5.5 place-items-center rounded-md shrink-0",
-                  isPending && "opacity-60"
-                )}
-              >
-                <StepIcon className="size-3" />
-              </span>
-            )}
-            <div className="min-w-0 flex-1 text-sm font-semibold">
-              {cfg?.label ?? step.stepKind ?? "Step"}
-              <span className="ml-1.5 font-mono text-[11px] font-normal text-muted-foreground">
-                #{stepIndex + 1}
-              </span>
-            </div>
-            <span
-              style={{
-                background: tone.bg,
-                color: tone.fg,
-                border: `1px solid ${tone.border}`,
-              }}
-              className="inline-flex items-center rounded-full px-2 py-px text-[10px] font-semibold uppercase tracking-[0.06em]"
-            >
-              {tone.label}
-            </span>
-            <span className="min-w-14 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
-              {displayDuration}
-            </span>
-            {!isPending &&
-              (expanded ? (
-                <ChevronDown className="size-3.5 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="size-3.5 text-muted-foreground" />
-              ))}
-          </div>
-
-          {error && (
-            <div className="mt-1 ml-8 rounded-md border-l-2 border-destructive bg-destructive/10 px-2.5 py-1.5 text-[12px] text-destructive">
-              {error}
-            </div>
-          )}
-
-          {expanded && !isPending && (
-            <div className="mt-2 ml-8 flex flex-col gap-2">
-              {Object.keys(detail).length > 0 && (
-                <JsonBlock title="Detail" data={detail} />
-              )}
-              {context && Object.keys(context).length > 0 && (
-                <JsonBlock title="Run context" data={context} />
-              )}
-            </div>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function JsonBlock({
-  title,
-  data,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-}) {
-  return (
-    <div className="rounded-md border border-border bg-background p-2.5">
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-        {title}
-      </div>
-      <pre className="overflow-x-auto whitespace-pre-wrap wrap-break-word font-mono text-[11px] text-foreground">
-        {JSON.stringify(data, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
 type StepRow = {
   step: WorkflowRunStep;
 };
@@ -723,62 +481,6 @@ function StepTraceHeader({
         </span>
       </span>
     </button>
-  );
-}
-
-interface RunDetailProps {
-  /** Pre-computed step rows for the timeline. */
-  summary: RunSummary;
-  /** The run, used for live-elapsed and last-row context display. */
-  run: WorkflowRun;
-  /** True while the SSE stream is open — drives the live elapsed counter. */
-  isLive: boolean;
-  /** Ticking timestamp from the parent (only re-renders during a live run). */
-  now: number;
-}
-
-function RunDetail({ summary, run, isLive, now }: RunDetailProps) {
-  const stepRows = summary.rows;
-
-  // Compute the running step's live elapsed: time since the projection's
-  // `startedAt` was set. Used only when the run is still live.
-  const liveElapsedMsFor = (step: WorkflowRunStep): number | null => {
-    if (!isLive || step.status !== "running" || !step.startedAt) return null;
-    return Math.max(0, now - new Date(step.startedAt).getTime());
-  };
-
-  // Render a `Resumes in 12s` / `2s ago` countdown for waiting-on-timer
-  // rows. Returns null when the step is waiting on an event instead — the
-  // card falls back to `await {eventType}` in that case.
-  const waitCountdownFor = (step: WorkflowRunStep): string | null => {
-    if (step.status !== "waiting" || !step.waitUntil) return null;
-    return isOverdue(step.waitUntil)
-      ? `${formatTimeUntil(step.waitUntil, now)} ago`
-      : `in ${formatTimeUntil(step.waitUntil, now)}`;
-  };
-
-  return (
-    <div className="p-6 pt-4">
-      {stepRows.length === 0 ? (
-        <EmptyState
-          title="No step events yet"
-          description="Steps will appear here as the run progresses."
-        />
-      ) : (
-        <div className="flex flex-col">
-          {stepRows.map((row, i) => (
-            <RunStepCard
-              key={row.step.stepIndex}
-              step={row.step}
-              liveElapsedMs={liveElapsedMsFor(row.step)}
-              waitCountdown={waitCountdownFor(row.step)}
-              context={i === stepRows.length - 1 ? run.context : null}
-              isLast={i === stepRows.length - 1}
-            />
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -988,20 +690,13 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
               <Skeleton className="h-40 w-full" />
               <Skeleton className="h-40 w-full" />
             </div>
-          ) : FEATURE_RUN_LOGS_V2 ? (
+          ) : (
             <LogsPane
               runId={runId}
               events={data.data.events ?? []}
               definitionSteps={steps}
               isLive={isInFlight}
               workflowId={workflowId}
-            />
-          ) : (
-            <RunDetail
-              summary={summary}
-              run={run}
-              isLive={Boolean(isLive)}
-              now={now}
             />
           )}
         </div>

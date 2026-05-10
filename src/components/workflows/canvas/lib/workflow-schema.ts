@@ -56,7 +56,11 @@ export const triggerSchema = z.discriminatedUnion("kind", [
 // minimum length via `activationIssues()` instead.
 export const triggersSchema = z.array(triggerSchema).max(20);
 
-const baseStep = { id: stepIdRefinement.optional() };
+const baseStep = {
+  id: stepIdRefinement.optional(),
+  capture: z.enum(["summary", "full", "none"]).optional(),
+  sensitive: z.boolean().optional(),
+};
 
 // Reserved email header names — backend rejects these in `headers`.
 const RESERVED_EMAIL_HEADERS = new Set([

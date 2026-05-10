@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import type {
   WorkflowRun,
+  WorkflowRunCapturesResponse,
   WorkflowRunDetailResponse,
   WorkflowRunEvent,
   WorkflowRunStep,
@@ -156,9 +157,7 @@ export function useWorkflowRunStream(
             throw new Error(`Stream HTTP ${res.status}`);
           }
 
-          const reader = res.body
-            .pipeThrough(new TextDecoderStream())
-            .getReader();
+          const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
           let buf = "";
 
           while (true) {
@@ -237,4 +236,58 @@ export function useWorkflowRunStream(
       ctrl.abort();
     };
   }, [runId, enabled]);
+}
+
+// ---- Captures (run logs Input/Output panes) ----
+
+async function fetchRunCaptures(runId: string): Promise<WorkflowRunCapturesResponse> {
+  const res = await fetch(
+    `/api/proxy/workflows/runs/${encodeURIComponent(runId)}/captures`
+  );
+  if (!res.ok) throw new Error("Failed to load captures");
+  return res.json();
+}
+
+export function workflowRunCapturesQueryOptions(runId: string) {
+  return queryOptions({
+    queryKey: ["workflow-runs", "captures", runId],
+    queryFn: () => fetchRunCaptures(runId),
+    enabled: Boolean(runId),
+  });
+}
+
+/**
+ * Fetch per-step capture rows for a run. Mirrors the polling cadence used by
+ * `useWorkflowRun`: 4s while the run is `running`/`waiting`, otherwise idle.
+ *
+ * Pass `isLive: false` to opt out of polling regardless of cached data —
+ * useful when the SSE stream is the source of truth for live updates.
+ */
+export function useWorkflowRunCaptures(
+  runId: string,
+  opts: { enabled?: boolean; isLive?: boolean } = {}
+) {
+  const { enabled = true, isLive = true } = opts;
+  return useQuery({
+    ...workflowRunCapturesQueryOptions(runId),
+    enabled: enabled && Boolean(runId),
+    refetchInterval: isLive ? 4_000 : false,
+  });
+}
+
+/**
+ * Fetch the full payload for a single capture from R2-backed object storage.
+ * Used only when `captureMode === 'full'` and the user clicks
+ * "View full payload". Returns the parsed JSON body.
+ */
+export async function fetchCapturePayload(
+  runId: string,
+  sequence: number,
+  side: "input" | "output"
+): Promise<unknown> {
+  const res = await fetch(
+    `/api/proxy/workflows/runs/${encodeURIComponent(runId)}/captures/${sequence}/payload?side=${side}`
+  );
+  if (!res.ok) throw new Error("Failed to load full payload");
+  return res.json();
 }
