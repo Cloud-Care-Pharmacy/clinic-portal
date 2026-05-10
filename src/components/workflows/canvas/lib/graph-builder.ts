@@ -247,10 +247,7 @@ interface BuildOpts {
    * Per-step run timing, keyed by flat index. Populated by the run canvas
    * to render duration / live-elapsed pills on each node.
    */
-  stepRunMeta?: Record<
-    number,
-    { durationMs?: number; liveElapsedMs?: number }
-  >;
+  stepRunMeta?: Record<number, { durationMs?: number; liveElapsedMs?: number }>;
 }
 
 function makeStepNode(treeNode: StepTreeNode, opts: BuildOpts): WfNode {

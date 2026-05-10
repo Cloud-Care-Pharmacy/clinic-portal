@@ -7,11 +7,7 @@ import { Button } from "@/components/ui/button";
 import { WorkflowGraph } from "@/components/workflows/canvas/WorkflowGraph";
 import type { NodeRunStatus } from "@/components/workflows/canvas/lib/graph-builder";
 import { stepNodeName } from "@/components/workflows/canvas/lib/step-tree";
-import type {
-  WorkflowRunStep,
-  WorkflowStep,
-  WorkflowTrigger,
-} from "@/types";
+import type { WorkflowRunStep, WorkflowStep, WorkflowTrigger } from "@/types";
 
 interface RunCanvasProps {
   triggers: WorkflowTrigger[];
@@ -98,10 +94,7 @@ function RunCanvasBody({
   const activeStepNodeId = useMemo<string | null>(() => {
     const activeIdx = Object.keys(stepRunStatus)
       .map(Number)
-      .find(
-        (i) =>
-          stepRunStatus[i] === "running" || stepRunStatus[i] === "waiting"
-      );
+      .find((i) => stepRunStatus[i] === "running" || stepRunStatus[i] === "waiting");
     if (activeIdx == null) return null;
     const step = steps[activeIdx];
     if (!step) return null;

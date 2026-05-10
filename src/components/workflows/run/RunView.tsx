@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  ChevronDown,
-  ChevronUp,
-  Filter,
-  Radio,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Filter, Radio } from "lucide-react";
 import { format as formatDate } from "date-fns";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -60,9 +55,9 @@ function useNow(intervalMs: number, enabled: boolean): number {
  * their completion (and failure) as toasts so users get explicit feedback
  * during a test run instead of having to scan the timeline.
  */
-const HIGH_SIGNAL_STEP_KINDS: ReadonlySet<WorkflowStepKind> = new Set<
-  WorkflowStepKind
->(["send_email", "send_sms", "http_call"]);
+const HIGH_SIGNAL_STEP_KINDS: ReadonlySet<WorkflowStepKind> = new Set<WorkflowStepKind>(
+  ["send_email", "send_sms", "http_call"]
+);
 
 /** Human-readable label for the toast title. */
 function highSignalStepLabel(kind: WorkflowStepKind): string {
@@ -85,10 +80,7 @@ function highSignalStepLabel(kind: WorkflowStepKind): string {
  * so the initial SSE replay (when first connecting to a long-lived run)
  * doesn't dump a flood of stale toasts.
  */
-function maybeToastStepEvent(
-  event: WorkflowRunEvent,
-  toasted: Set<number>,
-): void {
+function maybeToastStepEvent(event: WorkflowRunEvent, toasted: Set<number>): void {
   if (toasted.has(event.sequence)) return;
   toasted.add(event.sequence);
 
@@ -156,15 +148,11 @@ function formatTimeUntil(iso: string, now: number): string {
   const min = Math.floor(absSec / 60);
   const sec = absSec % 60;
   if (min < 60) {
-    return sec === 0
-      ? `${min} minute${min === 1 ? "" : "s"}`
-      : `${min}m ${sec}s`;
+    return sec === 0 ? `${min} minute${min === 1 ? "" : "s"}` : `${min}m ${sec}s`;
   }
   const hr = Math.floor(min / 60);
   const rm = min % 60;
-  return rm === 0
-    ? `${hr} hour${hr === 1 ? "" : "s"}`
-    : `${hr}h ${rm}m`;
+  return rm === 0 ? `${hr} hour${hr === 1 ? "" : "s"}` : `${hr}h ${rm}m`;
 }
 
 /** "May 9, 12:22:32" — local-time stamp shown as the rail item title. */
@@ -183,8 +171,7 @@ function runRailStartedAt(run: WorkflowRun): string {
  */
 function runRailDuration(run: WorkflowRun, now: number): string {
   const start = new Date(run.startedAt).getTime();
-  const end =
-    run.completedAt != null ? new Date(run.completedAt).getTime() : now;
+  const end = run.completedAt != null ? new Date(run.completedAt).getTime() : now;
   const ms = Math.max(0, end - start);
   const totalSec = ms / 1000;
   if (totalSec < 60) return `${totalSec.toFixed(3)}s`;
@@ -227,9 +214,7 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
   // Tick once per second so the elapsed duration on in-progress runs stays
   // in sync without depending on the SSE stream — keeps the rail feeling
   // alive even if no events fire.
-  const hasLive = runs.some(
-    (r) => r.status === "running" || r.status === "waiting"
-  );
+  const hasLive = runs.some((r) => r.status === "running" || r.status === "waiting");
   const now = useNow(1000, hasLive);
   return (
     <aside className="flex w-72 flex-col border-r border-border bg-background">
@@ -269,9 +254,7 @@ function RunListRail({ runs, selectedId, onSelect, loading }: RunListRailProps) 
                     onClick={() => onSelect(r.id)}
                     className={cn(
                       "flex w-full flex-col gap-1 rounded-md px-3 py-2.5 text-left transition-colors",
-                      active
-                        ? "bg-muted"
-                        : "hover:bg-muted/60"
+                      active ? "bg-muted" : "hover:bg-muted/60"
                     )}
                   >
                     <div className="text-[13px] font-semibold leading-tight text-foreground">
@@ -318,10 +301,7 @@ type RunSummary = {
  * at run start), so we just pass them through; the only derived values are
  * the aggregate counts the header needs.
  */
-function buildRunSummary(
-  run: WorkflowRun,
-  steps: WorkflowRunStep[],
-): RunSummary {
+function buildRunSummary(run: WorkflowRun, steps: WorkflowRunStep[]): RunSummary {
   const rows: StepRow[] = steps.map((s) => ({ step: s }));
   let completed = 0;
   let hasRunning = false;
@@ -386,7 +366,8 @@ function RunBanners({ run, now }: RunBannersProps) {
                 </>
               )}
               <span className="text-status-warning-fg/70">
-                {" "}({absoluteTime(run.nextStepAt)})
+                {" "}
+                ({absoluteTime(run.nextStepAt)})
               </span>
             </>
           )}
@@ -547,8 +528,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
   // wait. We tick the clock for both so the Duration metric keeps counting
   // up during pauses and the "Resumes in 57 seconds" countdown advances
   // smoothly between SSE events / refetches.
-  const isInFlight =
-    isLive || data?.data?.run?.status === "waiting";
+  const isInFlight = isLive || data?.data?.run?.status === "waiting";
 
   // Tick every 500ms while in-flight so the canvas's run-elapsed counter,
   // the timeline's per-step elapsed counter, the Duration metric, and any
@@ -602,9 +582,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
           if (!prev) return prev;
           const events = prev.data.events;
           if (events.some((e) => e.sequence === event.sequence)) return prev;
-          const next = [...events, event].sort(
-            (a, b) => a.sequence - b.sequence
-          );
+          const next = [...events, event].sort((a, b) => a.sequence - b.sequence);
           return { ...prev, data: { ...prev.data, events: next } };
         }
       );
@@ -646,7 +624,9 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
   // `n / total` and a status dot without rendering the trace itself.
   const summary = run ? buildRunSummary(run, data?.data.steps ?? []) : null;
   const isTerminal = run
-    ? run.status === "completed" || run.status === "failed" || run.status === "cancelled"
+    ? run.status === "completed" ||
+      run.status === "failed" ||
+      run.status === "cancelled"
     : false;
 
   return (
@@ -654,7 +634,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
       <div
         className={cn(
           "relative border-b border-border bg-background",
-          traceCollapsed ? "min-h-0 flex-1" : "h-1/2 min-h-72",
+          traceCollapsed ? "min-h-0 flex-1" : "h-1/2 min-h-72"
         )}
       >
         {run ? (
@@ -681,10 +661,7 @@ function RunPanel({ runId, workflowId, triggers, steps }: RunPanelProps) {
         elapsedMs={elapsedMs}
       />
       {!traceCollapsed && (
-        <div
-          id="run-step-trace"
-          className="min-h-0 flex-1 overflow-y-auto"
-        >
+        <div id="run-step-trace" className="min-h-0 flex-1 overflow-y-auto">
           {isLoading || !data || !run || !summary ? (
             <div className="space-y-4 p-6">
               <Skeleton className="h-40 w-full" />
