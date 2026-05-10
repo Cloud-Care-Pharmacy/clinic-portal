@@ -11,6 +11,7 @@ import type {
   TriggerWorkflowPayload,
   TriggerWorkflowResponse,
   UpdateWorkflowPayload,
+  WorkflowActivateResponse,
   WorkflowResponse,
   WorkflowStatus,
   WorkflowsListResponse,
@@ -217,6 +218,40 @@ export function useTriggerWorkflow() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["workflow-runs"] });
+    },
+  });
+}
+
+/**
+ * Activate (or dry-run validate) a workflow definition.
+ *
+ * - `dryRun: true` → returns the structured `issues[]` without persisting.
+ *   Use this to drive an "Activate" button state.
+ * - `dryRun: false` (default) → flips `status` to `"active"`, or rejects with
+ *   a `WorkflowApiError` whose `issues` array lists the blocking problems.
+ */
+export function useActivateWorkflow(workflowId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (opts?: {
+      dryRun?: boolean;
+    }): Promise<WorkflowActivateResponse> => {
+      const qs = opts?.dryRun ? "?dryRun=1" : "";
+      const res = await fetch(
+        `/api/proxy/workflows/${encodeURIComponent(workflowId)}/activate${qs}`,
+        { method: "POST" }
+      );
+      if (!res.ok) throw await readError(res, "Failed to activate workflow");
+      return res.json();
+    },
+    onSuccess: (data, variables) => {
+      if (!variables?.dryRun) {
+        qc.setQueryData(["workflows", "detail", workflowId], {
+          success: true,
+          data: data.data.record,
+        });
+        qc.invalidateQueries({ queryKey: ["workflows", "list"] });
+      }
     },
   });
 }

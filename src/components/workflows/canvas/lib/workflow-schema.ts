@@ -51,7 +51,10 @@ export const triggerSchema = z.discriminatedUnion("kind", [
   workflowTrigger,
 ]);
 
-export const triggersSchema = z.array(triggerSchema).min(1).max(20);
+// Backend allows empty trigger lists for `status: "draft"`. The ≥1 rule is
+// only enforced when activating, so the client mirrors that and validates
+// minimum length via `activationIssues()` instead.
+export const triggersSchema = z.array(triggerSchema).max(20);
 
 const baseStep = { id: stepIdRefinement.optional() };
 
@@ -262,7 +265,9 @@ export const stepSchema = z.discriminatedUnion("kind", [
 
 export const definitionSchema = z.object({
   version: z.literal(1).optional(),
-  steps: z.array(stepSchema).min(1).max(100),
+  // Empty steps are allowed for drafts. ≥1 step is only enforced on
+  // activation — see `activationIssues()`.
+  steps: z.array(stepSchema).max(100),
 });
 
 export const workflowSchema = z.object({
@@ -272,6 +277,38 @@ export const workflowSchema = z.object({
   status: z.enum(["draft", "active", "disabled"]).optional(),
   definition: definitionSchema,
 });
+
+/**
+ * Mirror of the backend's activation-only checks. Returns an array of
+ * `{ path, message }` issues, matching the shape of the
+ * `WorkflowActivationIssue` payload returned by
+ * `POST /workflows/{id}/activate`. Empty array means the workflow is ready
+ * to activate (per these front-end checks; the backend remains the source
+ * of truth via `?dryRun=1`).
+ */
+export function activationIssues(input: {
+  triggers: unknown[];
+  triggerEventType?: string | null;
+  definition: { steps: unknown[] };
+}): { path: string; message: string }[] {
+  const issues: { path: string; message: string }[] = [];
+  const hasTrigger =
+    input.triggers.length > 0 ||
+    (typeof input.triggerEventType === "string" && input.triggerEventType.length > 0);
+  if (!hasTrigger) {
+    issues.push({
+      path: "triggers",
+      message: "active workflows require at least one trigger",
+    });
+  }
+  if (input.definition.steps.length === 0) {
+    issues.push({
+      path: "definition.steps",
+      message: "active workflows require at least one step",
+    });
+  }
+  return issues;
+}
 
 /** Validate a cron string and warn if it can't fire (minute not multiple of 5). */
 export function cronWarnings(cron: string): string[] {

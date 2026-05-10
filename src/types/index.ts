@@ -1937,9 +1937,26 @@ export interface CreateWorkflowPayload {
   name: string;
   description?: string | null;
   triggerEventType?: string;
-  triggers: WorkflowTrigger[];
+  /** Optional for `status: "draft"`; required (≥1) on activation. */
+  triggers?: WorkflowTrigger[];
   status?: WorkflowStatus;
   definition: WorkflowDefinitionBody;
+}
+
+export interface WorkflowActivationIssue {
+  /** Dotted JSON path, e.g. `triggers` or `definition.steps`. */
+  path: string;
+  message: string;
+}
+
+export interface WorkflowActivationResult {
+  record: Workflow;
+  issues: WorkflowActivationIssue[];
+}
+
+export interface WorkflowActivateResponse {
+  success: boolean;
+  data: WorkflowActivationResult;
 }
 
 export interface UpdateWorkflowPayload {

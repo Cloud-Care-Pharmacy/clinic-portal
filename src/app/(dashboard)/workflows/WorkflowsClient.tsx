@@ -323,16 +323,15 @@ export function WorkflowsClient({
       return;
     }
     try {
+      // Create a blank draft. The backend allows empty triggers/steps for
+      // `status: "draft"`; the ≥1 trigger and ≥1 step rules are only
+      // enforced on activation (see WorkflowActivationIssue / activate
+      // endpoint).
       const res = await create.mutateAsync({
         entityId,
         name: trimmed,
-        triggerEventType: "manual.run",
-        triggers: [{ kind: "manual" }],
         status: "draft",
-        definition: {
-          version: 1,
-          steps: [{ kind: "wait", seconds: 1 }],
-        },
+        definition: { version: 1, steps: [] },
       });
       setCreateOpen(false);
       setName("");
