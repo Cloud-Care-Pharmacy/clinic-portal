@@ -2,6 +2,7 @@ import type { Edge, Node } from "@xyflow/react";
 import type { WorkflowStep, WorkflowTrigger } from "@/types";
 import {
   ARC_LENGTH,
+  BIG_ADD_BUTTON_SIZE,
   HORIZONTAL_SPACE_BETWEEN_NODES,
   NODE_H,
   NODE_W,
@@ -174,9 +175,9 @@ function merge(...gs: SubGraph[]): SubGraph {
 
 /**
  * Compute the bounding box of a sub-graph relative to its origin (0,0 = top
- * of the first step). `left` and `right` are computed assuming each
- * "structural" node (step / bigAddButton / loopReturn) extends NODE_W/2 from
- * its position.x in either direction.
+ * of the first step). Mirrors ActivePieces' flow-canvas convention: React
+ * Flow node positions are top-left coordinates, while the graph spine / end
+ * anchors are centered at `NODE_W / 2`.
  */
 function calculateBoundingBox(g: SubGraph): BoundingBox {
   if (g.nodes.length === 0) {
@@ -193,12 +194,17 @@ function calculateBoundingBox(g: SubGraph): BoundingBox {
       data.kind === "trigger" ||
       data.kind === "bigAddButton" ||
       data.kind === "loopReturn";
-    const halfW = isStructural ? NODE_W / 2 : 0;
-    const halfH = isStructural ? NODE_H / 2 : 0;
-    minX = Math.min(minX, n.position.x - halfW);
-    maxX = Math.max(maxX, n.position.x + halfW);
-    minY = Math.min(minY, n.position.y - halfH);
-    maxY = Math.max(maxY, n.position.y + halfH);
+    const width = isStructural ? NODE_W : 0;
+    const height = (() => {
+      if (data.kind === "step" || data.kind === "trigger") return NODE_H;
+      if (data.kind === "bigAddButton") return BIG_ADD_BUTTON_SIZE;
+      if (data.kind === "loopReturn") return 1;
+      return 0;
+    })();
+    minX = Math.min(minX, n.position.x);
+    maxX = Math.max(maxX, n.position.x + width);
+    minY = Math.min(minY, n.position.y);
+    maxY = Math.max(maxY, n.position.y + height);
   }
   return {
     width: maxX - minX,
@@ -288,7 +294,7 @@ function makeGraphEnd(
   return {
     id,
     type: "graphEnd",
-    position: { x: 0, y },
+    position: { x: NODE_W / 2, y },
     data: { kind: "graphEnd", showWidget },
     selectable: false,
   };
