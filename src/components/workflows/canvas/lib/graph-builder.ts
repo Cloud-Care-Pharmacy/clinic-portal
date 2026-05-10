@@ -121,6 +121,11 @@ export interface WfRouterEndEdgeData extends WfEdgeBaseData {
 
 export interface WfLoopStartEdgeData extends WfEdgeBaseData {
   isLoopEmpty: boolean;
+  insertion?: {
+    afterFlatIndex: number | null;
+    parentStepName: string;
+    branchIndex: number;
+  };
 }
 
 export interface WfLoopReturnEdgeData extends WfEdgeBaseData {
@@ -313,8 +318,23 @@ function buildLoopChild(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
 function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
   const child = buildLoopChild(loop, opts);
   const childBox = calculateBoundingBox(child);
-  // Offset child below the loop step, with a vertical gap.
-  const childOffsetX = NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES;
+  // ActivePieces loop layout: keep the loop's main spine centered at
+  // NODE_W / 2, place the loop body on the right rail, and place the
+  // loop-return node on the left rail. The `deltaLeftX` term recenters the
+  // whole loop container around the parent step even when the child graph is
+  // wider than a single node.
+  const deltaLeftX =
+    -(
+      childBox.width +
+      NODE_W +
+      HORIZONTAL_SPACE_BETWEEN_NODES -
+      NODE_W / 2 -
+      childBox.right
+    ) /
+      2 -
+    NODE_W / 2;
+  const childOffsetX =
+    deltaLeftX + NODE_W + HORIZONTAL_SPACE_BETWEEN_NODES + childBox.left;
   const childOffsetY =
     NODE_H + VERTICAL_OFFSET_BETWEEN_LOOP_AND_CHILD;
   const offsetChild = offsetGraph(child, childOffsetX, childOffsetY);
@@ -332,7 +352,14 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     source: loop.nodeName,
     target: childHeadId,
     type: "loopStart",
-    data: { isLoopEmpty } as WfLoopStartEdgeData,
+    data: {
+      isLoopEmpty,
+      insertion: {
+        afterFlatIndex: null,
+        parentStepName: loop.nodeName,
+        branchIndex: 0,
+      },
+    } as WfLoopStartEdgeData,
   };
 
   // The loop-return node anchors the right-side return arc.
@@ -340,8 +367,8 @@ function buildLoopGraph(loop: StepTreeLoop, opts: BuildOpts): SubGraph {
     id: `${loop.nodeName}__loop-return`,
     type: "loopReturn",
     position: {
-      x: 0,
-      y: childOffsetY + childBox.height + ARC_LENGTH,
+      x: deltaLeftX + NODE_W / 2,
+      y: childOffsetY + childBox.height / 2,
     },
     data: { kind: "loopReturn" },
     selectable: false,
