@@ -17,6 +17,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface WorkflowActionBarProps {
   testRunPending: boolean;
   onViewJson: () => void;
   onDownloadJson: () => void;
+  onImportJson: () => void;
   onCopyId: () => void;
   onRename: () => void;
   onDuplicate: () => void;
@@ -74,6 +76,7 @@ export function WorkflowActionBar({
   testRunPending,
   onViewJson,
   onDownloadJson,
+  onImportJson,
   onCopyId,
   onRename,
   onDuplicate,
@@ -240,6 +243,10 @@ export function WorkflowActionBar({
             <DropdownMenuItem onClick={onDownloadJson}>
               <Download className="mr-2 size-3.5" />
               Download JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onImportJson}>
+              <Upload className="mr-2 size-3.5" />
+              Import JSON
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onCopyId}>
               <Copy className="mr-2 size-3.5" />

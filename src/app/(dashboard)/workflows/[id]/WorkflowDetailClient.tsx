@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ReactFlowProvider } from "@xyflow/react";
@@ -122,6 +122,7 @@ export function WorkflowDetailClient({
   const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
   const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Sync server state into draft when the workflow loads or refreshes,
   // unless the user has unsaved changes. Done during render via the
@@ -299,9 +300,71 @@ export function WorkflowDetailClient({
     }
   }
 
+  async function handleImportFile(file: File) {
+    let parsed: unknown;
+    try {
+      const text = await file.text();
+      parsed = JSON.parse(text);
+    } catch {
+      toast.error("Invalid JSON file");
+      return;
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      toast.error("File is not a JSON object");
+      return;
+    }
+
+    // Accept the slim export shape `{ triggers, steps }`, the legacy
+    // full-workflow shape `{ ..., definition: { steps } }`, and the API
+    // envelope `{ data: Workflow }`.
+    const root = parsed as Record<string, unknown>;
+    const candidate =
+      root.data && typeof root.data === "object"
+        ? (root.data as Record<string, unknown>)
+        : root;
+
+    let nextSteps: WorkflowStep[] | undefined;
+    if (Array.isArray(candidate.steps)) {
+      nextSteps = candidate.steps as WorkflowStep[];
+    } else if (
+      candidate.definition &&
+      typeof candidate.definition === "object" &&
+      Array.isArray((candidate.definition as { steps?: unknown }).steps)
+    ) {
+      nextSteps = (candidate.definition as { steps: WorkflowStep[] }).steps;
+    }
+
+    if (!nextSteps) {
+      toast.error("Missing or invalid `steps` in JSON");
+      return;
+    }
+
+    const nextTriggers = Array.isArray(candidate.triggers)
+      ? (candidate.triggers as WorkflowTrigger[])
+      : draftTriggers;
+
+    setDraftTriggers(nextTriggers);
+    setDraftSteps(nextSteps);
+    setDraftDirty(true);
+    setServerError(null);
+    toast.success(
+      `Imported ${nextSteps.length} step${nextSteps.length === 1 ? "" : "s"}`,
+      { description: "Review the canvas and click Save draft to persist." }
+    );
+  }
+
   function handleDownloadJson() {
     if (!workflow) return;
-    const blob = new Blob([JSON.stringify(workflow, null, 2)], {
+    // Slim portable shape: just the parts a user can edit/import. The id,
+    // version, timestamps, and entityId are intentionally excluded so the
+    // file can be re-imported into any workflow without colliding with the
+    // backend's `(entityId, name, version)` unique constraint.
+    const exportPayload = {
+      triggers: workflow.triggers,
+      steps: serializeStepsForSave(workflow.definition.steps),
+    };
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -343,6 +406,7 @@ export function WorkflowDetailClient({
             testRunPending={testRun.isPending}
             onViewJson={() => setShowJson(true)}
             onDownloadJson={handleDownloadJson}
+            onImportJson={() => importInputRef.current?.click()}
             onCopyId={handleCopyWorkflowId}
             onRename={() => {
               setRenameValue(workflow.name);
@@ -363,7 +427,26 @@ export function WorkflowDetailClient({
         </div>
       </ReactFlowProvider>
 
-      <ViewJsonDialog open={showJson} onOpenChange={setShowJson} data={workflow} />
+      <ViewJsonDialog
+        open={showJson}
+        onOpenChange={setShowJson}
+        data={{
+          triggers: workflow.triggers,
+          steps: serializeStepsForSave(workflow.definition.steps),
+        }}
+      />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // Reset so re-selecting the same file fires onChange again.
+          e.target.value = "";
+          if (file) void handleImportFile(file);
+        }}
+      />
       <AlertDialog open={renameOpen} onOpenChange={setRenameOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
