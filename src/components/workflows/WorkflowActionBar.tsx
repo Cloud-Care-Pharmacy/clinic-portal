@@ -197,16 +197,20 @@ export function WorkflowActionBar({
           </>
         )}
 
-        {/* Always-visible: Test run (primary CTA) */}
-        <Button
-          type="button"
-          size="sm"
-          onClick={onTestRun}
-          className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
-        >
-          <Play className="size-3.5 fill-current" />
-          Test run
-        </Button>
+        {/* Test run is only meaningful once the workflow is active — the
+            backend's dispatcher only creates a `workflow_runs` row for active
+            workflows, so showing the button on a draft would silently no-op. */}
+        {isActive && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={onTestRun}
+            className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+          >
+            <Play className="size-3.5 fill-current" />
+            Test run
+          </Button>
+        )}
 
         {/* Expanded-only: active toggle */}
         <div
