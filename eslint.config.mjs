@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "workflow-handoff/**",
   ]),
   // Ban Tailwind palette colors — use semantic design tokens instead (Non-negotiable #2)
   {

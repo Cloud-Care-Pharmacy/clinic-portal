@@ -22,7 +22,18 @@ async function handler(
   }
 
   const { path } = await params;
-  const backendPath = `/api/${path.join("/")}`;
+  // Backend has multiple top-level groups: regular `/api/...` endpoints, and
+  // the workflows/notifications/webhooks endpoints which live at the root.
+  // Skip the `/api/` prefix for those.
+  const ROOT_PREFIXES = new Set([
+    "workflows",
+    "notifications",
+    "webhooks",
+    // legacy alias kept temporarily; new code should not use this
+    "internal",
+  ]);
+  const isRootPath = ROOT_PREFIXES.has(path[0]);
+  const backendPath = isRootPath ? `/${path.join("/")}` : `/api/${path.join("/")}`;
   const url = new URL(backendPath, API_URL);
 
   // Forward query params

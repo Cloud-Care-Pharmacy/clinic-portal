@@ -1564,3 +1564,654 @@ export interface RosterMonthResponse {
   monthEnd: string;
   days: RosterMonthDay[];
 }
+
+// ============================================================================
+// Workflows
+// ============================================================================
+
+export type WorkflowStatus = "draft" | "active" | "disabled";
+
+export type WorkflowTriggerKind =
+  | "event"
+  | "manual"
+  | "schedule"
+  | "webhook"
+  | "workflow";
+
+export interface WorkflowEventTrigger {
+  kind: "event";
+  eventType: string;
+}
+
+export interface WorkflowManualTrigger {
+  kind: "manual";
+}
+
+export interface WorkflowScheduleTrigger {
+  kind: "schedule";
+  cron: string;
+}
+
+export interface WorkflowWebhookTrigger {
+  kind: "webhook";
+  /** Server-generated; absent on the create request. */
+  token?: string;
+}
+
+export interface WorkflowSubflowTrigger {
+  kind: "workflow";
+}
+
+export type WorkflowTrigger =
+  | WorkflowEventTrigger
+  | WorkflowManualTrigger
+  | WorkflowScheduleTrigger
+  | WorkflowWebhookTrigger
+  | WorkflowSubflowTrigger;
+
+export type WorkflowStepKind =
+  | "send_email"
+  | "send_sms"
+  | "wait"
+  | "branch_if"
+  | "router"
+  | "loop_on_items"
+  | "lookup_patient"
+  | "lookup_consultation"
+  | "record_activity"
+  | "http_call"
+  | "wait_for_event"
+  | "call_workflow";
+
+/**
+ * Single source of truth for branch operators. Wire `value` is what the
+ * backend accepts; `label` is the human-readable form rendered in pickers;
+ * `arity` decides whether a `right` operand is collected.
+ */
+export const BRANCH_OPS = [
+  { value: "eq", label: "equals", arity: "binary" },
+  { value: "neq", label: "not equals", arity: "binary" },
+  { value: "gt", label: "greater than", arity: "binary" },
+  { value: "lt", label: "less than", arity: "binary" },
+  { value: "contains", label: "contains", arity: "binary" },
+  { value: "starts_with", label: "starts with", arity: "binary" },
+  { value: "ends_with", label: "ends with", arity: "binary" },
+  { value: "truthy", label: "is truthy", arity: "unary" },
+  { value: "falsy", label: "is falsy", arity: "unary" },
+  { value: "exists", label: "exists", arity: "unary" },
+  { value: "not_exists", label: "does not exist", arity: "unary" },
+] as const;
+
+export type WorkflowBranchOp = (typeof BRANCH_OPS)[number]["value"];
+
+export const BRANCH_OP_VALUES = BRANCH_OPS.map((o) => o.value) as unknown as readonly [
+  WorkflowBranchOp,
+  ...WorkflowBranchOp[],
+];
+
+export const BRANCH_OP_LABELS: Record<WorkflowBranchOp, string> = Object.fromEntries(
+  BRANCH_OPS.map((o) => [o.value, o.label])
+) as Record<WorkflowBranchOp, string>;
+
+/** Operators that don't take a `right` operand. */
+export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set(
+  BRANCH_OPS.filter((o) => o.arity === "unary").map((o) => o.value)
+);
+
+export function isUnaryBranchOp(op: WorkflowBranchOp): boolean {
+  return UNARY_BRANCH_OPS.has(op);
+}
+
+/** A single condition clause used inside router branches. */
+export interface WorkflowCondition {
+  left: string;
+  op: WorkflowBranchOp;
+  right?: string;
+}
+
+/**
+ * Per-step audit capture mode.
+ *
+ *  - `summary` (default): backend records a redacted, ≤ 2 KB snapshot of
+ *    inputs and outputs into `workflow_step_captures`.
+ *  - `full`: complete payload offloaded to R2 (≤ 256 KB), summary still
+ *    available inline.
+ *  - `none`: timing only; no input/output captured.
+ *
+ * Defaults to `'summary'` when omitted. Strip on serialize when default.
+ */
+export type WorkflowStepCaptureMode = "summary" | "full" | "none";
+
+interface WorkflowStepBase {
+  id?: string;
+  /**
+   * Flat-encoded tree marker. When set, this step is a child of the named
+   * parent step (which must be a `router` or `loop_on_items`). Steps without
+   * this marker live in the top-level chain.
+   */
+  parentStepName?: string;
+  /**
+   * Index of the branch this step belongs to under its parent.
+   *  - `router` parents: 0..N-1 corresponds to `branches[i]`
+   *  - `loop_on_items` parents: always 0 (the loop body)
+   */
+  branchIndex?: number;
+  /**
+   * Audit capture mode for this step. Defaults to `'summary'`. Omit from
+   * serialized definition when default.
+   */
+  capture?: WorkflowStepCaptureMode;
+  /**
+   * When `true`, forces `capture` to `'none'` and hides input/output in the
+   * run logs UI. Use for steps handling secrets or PHI. Defaults to `false`.
+   * Omit from serialized definition when default.
+   */
+  sensitive?: boolean;
+}
+
+/** A named branch of a router step. Each branch is a chain of child steps. */
+export interface WorkflowRouterBranch {
+  name: string;
+  /**
+   * Single condition expression. The wire format is OR-of-AND
+   * `Condition[][]`; this single condition is wrapped as `[[condition]]`
+   * when serialized. A branch with no condition is treated as
+   * unconditionally matching — for an explicit "no branch matched" arm,
+   * use the router's `fallback` instead.
+   */
+  condition?: WorkflowCondition;
+}
+
+export interface RouterStep extends WorkflowStepBase {
+  kind: "router";
+  /** Branch definitions; each child step references one by `branchIndex`. */
+  branches: WorkflowRouterBranch[];
+  /**
+   * Optional fallback branch that runs only when no condition branch
+   * matches. Its body steps live in the flat array with
+   * `branchIndex = FALLBACK_BRANCH_INDEX`.
+   */
+  fallback?: { name?: string };
+  /**
+   * Whether to evaluate every branch (`all_match`) or stop at the first
+   * matching branch (`first_match`). Defaults to `first_match`.
+   */
+  executionType?: "first_match" | "all_match";
+}
+
+/** Sentinel `branchIndex` used to mark steps that belong to the router fallback. */
+export const FALLBACK_BRANCH_INDEX = -1;
+
+export interface LoopOnItemsStep extends WorkflowStepBase {
+  kind: "loop_on_items";
+  /** Template expression that resolves to an array. */
+  items: string;
+  /**
+   * Optional max iterations safeguard.
+   *
+   * Inside the loop body, use `{{loop.item}}` and `{{loop.index}}` — the
+   * variable name is no longer configurable.
+   */
+  maxIterations?: number;
+}
+
+export interface SendEmailAttachment {
+  url: string;
+  filename?: string;
+}
+
+export interface SendEmailStep extends WorkflowStepBase {
+  kind: "send_email";
+  to: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  from?: string;
+  /** Display name composed into `from` as `"Name <addr>"`. */
+  fromName?: string;
+  /** Up to 50 recipients. */
+  cc?: string[];
+  /** Up to 50 recipients. */
+  bcc?: string[];
+  replyTo?: string;
+  /**
+   * Custom `X-*` headers. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/
+   * Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date)
+   * are rejected by the backend.
+   */
+  headers?: Record<string, string>;
+  /** Up to 10 attachments. The provider downloads each `url` and attaches it. */
+  attachments?: SendEmailAttachment[];
+  idempotencyKeySuffix?: string;
+  storeAs?: string;
+}
+
+export interface SendSmsStep extends WorkflowStepBase {
+  kind: "send_sms";
+  to: string;
+  body: string;
+  from?: string;
+  idempotencyKeySuffix?: string;
+  storeAs?: string;
+}
+
+export interface WaitStep extends WorkflowStepBase {
+  kind: "wait";
+  seconds: number;
+}
+
+export interface BranchIfStep extends WorkflowStepBase {
+  kind: "branch_if";
+  left: string;
+  op: WorkflowBranchOp;
+  right?: string;
+  gotoIfTrue?: string;
+  gotoIfFalse?: string;
+}
+
+export interface LookupPatientStep extends WorkflowStepBase {
+  kind: "lookup_patient";
+  patientId: string;
+  storeAs: string;
+}
+
+export interface LookupConsultationStep extends WorkflowStepBase {
+  kind: "lookup_consultation";
+  consultationId: string;
+  storeAs: string;
+}
+
+/**
+ * Allowed `record_activity.type` values per the workflows backend handoff.
+ * Stricter than the read-side `ActivityEventType` (which includes additional
+ * activity types emitted directly by the API).
+ */
+export const RECORD_ACTIVITY_STEP_TYPES = [
+  "consultation-scheduled",
+  "consultation-completed",
+  "consultation-updated",
+  "note-added",
+  "prescription-issued",
+  "document-uploaded",
+  "document-verified",
+  "flag-raised",
+  "flag-resolved",
+  "patient-created",
+  "details-updated",
+  "task-created",
+  "task-updated",
+  "task-completed",
+] as const;
+export type RecordActivityStepType = (typeof RECORD_ACTIVITY_STEP_TYPES)[number];
+
+export const RECORD_ACTIVITY_STEP_ENTITY_TYPES = [
+  "consultation",
+  "note",
+  "prescription",
+  "document",
+  "task",
+  "patient",
+  "flag",
+  "system",
+] as const;
+export type RecordActivityStepEntityType =
+  (typeof RECORD_ACTIVITY_STEP_ENTITY_TYPES)[number];
+
+export interface RecordActivityStep extends WorkflowStepBase {
+  kind: "record_activity";
+  patientId: string;
+  type: RecordActivityStepType;
+  entityType: RecordActivityStepEntityType;
+  entityId?: string;
+  title: string;
+  description?: string;
+}
+
+export type HttpCallAuth =
+  | { type: "none" }
+  | { type: "basic"; username: string; password: string }
+  | { type: "bearer"; token: string };
+
+export interface HttpCallStep extends WorkflowStepBase {
+  kind: "http_call";
+  url: string;
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  headers?: Record<string, string>;
+  /** Templated values appended to `url` after template resolution. */
+  queryParams?: Record<string, string>;
+  auth?: HttpCallAuth;
+  body?: string | Record<string, unknown>;
+  /** 100 … 60,000 ms. Aborts via AbortController. */
+  timeoutMs?: number;
+  /** Defaults to `true`. `false` sets `redirect: 'manual'`. */
+  followRedirects?: boolean;
+  /**
+   * Defaults to `'return'` (back-compat). On non-2xx:
+   *  - `'throw'` fails the run
+   *  - `'return'` stores the response and continues
+   */
+  failureMode?: "throw" | "return";
+  storeAs?: string;
+  /** 1 … 65,536 (default 16,384). */
+  maxResponseBytes?: number;
+}
+
+export interface WaitForEventStep extends WorkflowStepBase {
+  kind: "wait_for_event";
+  eventType: string;
+  timeoutSeconds?: number;
+}
+
+export interface CallWorkflowStep extends WorkflowStepBase {
+  kind: "call_workflow";
+  workflowId: string;
+  payload?: Record<string, unknown>;
+  storeAs?: string;
+}
+
+export type WorkflowStep =
+  | SendEmailStep
+  | SendSmsStep
+  | WaitStep
+  | BranchIfStep
+  | RouterStep
+  | LoopOnItemsStep
+  | LookupPatientStep
+  | LookupConsultationStep
+  | RecordActivityStep
+  | HttpCallStep
+  | WaitForEventStep
+  | CallWorkflowStep;
+
+export interface WorkflowDefinitionBody {
+  version?: number;
+  steps: WorkflowStep[];
+}
+
+export interface Workflow {
+  id: string;
+  entityId: string;
+  name: string;
+  description: string | null;
+  triggerEventType: string | null;
+  triggers: WorkflowTrigger[];
+  status: WorkflowStatus;
+  version: number;
+  definition: WorkflowDefinitionBody;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string | null;
+  updatedBy: string | null;
+}
+
+export interface WorkflowsListResponse {
+  success: boolean;
+  data: Workflow[];
+}
+
+export interface WorkflowResponse {
+  success: boolean;
+  data: Workflow;
+}
+
+export interface CreateWorkflowPayload {
+  entityId: string;
+  name: string;
+  description?: string | null;
+  triggerEventType?: string;
+  /** Optional for `status: "draft"`; required (≥1) on activation. */
+  triggers?: WorkflowTrigger[];
+  status?: WorkflowStatus;
+  definition: WorkflowDefinitionBody;
+}
+
+export interface WorkflowActivationIssue {
+  /** Dotted JSON path, e.g. `triggers` or `definition.steps`. */
+  path: string;
+  message: string;
+}
+
+export interface WorkflowActivationResult {
+  record: Workflow;
+  issues: WorkflowActivationIssue[];
+}
+
+export interface WorkflowActivateResponse {
+  success: boolean;
+  data: WorkflowActivationResult;
+}
+
+export interface UpdateWorkflowPayload {
+  name?: string;
+  description?: string | null;
+  triggers?: WorkflowTrigger[];
+  status?: WorkflowStatus;
+  version?: number;
+  definition?: WorkflowDefinitionBody;
+}
+
+export type WorkflowRunStatus =
+  | "running"
+  | "waiting"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface WorkflowRun {
+  id: string;
+  entityId: string;
+  definitionId: string;
+  eventId: string | null;
+  status: WorkflowRunStatus;
+  /** @deprecated Alias for `nextStepIndex`. Prefer `nextStepIndex`. */
+  currentStep: number;
+  /** Index of the step the engine WILL run next. */
+  nextStepIndex: number;
+  /** Snapshot of `definition.steps.length` at run start. */
+  totalSteps: number;
+  /** Snapshot of `definition.version` at run start. */
+  definitionVersion: number;
+  context: Record<string, unknown>;
+  nextStepAt: string | null;
+  awaitingEventType: string | null;
+  lastError: string | null;
+  attempts: number;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Per-step projection status returned by the gateway. */
+export type WorkflowRunStepStatus =
+  | "pending"
+  | "running"
+  | "waiting"
+  | "done"
+  | "failed"
+  | "skipped";
+
+/**
+ * Server-computed projection of a single step within a run. The gateway
+ * returns one entry per definition step (in `data.steps[]`) and re-emits
+ * each entry on the SSE stream as `event: step_state` whenever it changes.
+ */
+export interface WorkflowRunStep {
+  /** 0-based index into the run's snapshotted definition. */
+  stepIndex: number;
+  /** Author-assigned id when present (stable React key). */
+  stepId: string | null;
+  /** Step kind, or `'unknown'` if the snapshot index is outside the current definition. */
+  stepKind: string;
+  status: WorkflowRunStepStatus;
+  /** ISO-8601 UTC; set when the step entered `running`. */
+  startedAt: string | null;
+  /** ISO-8601 UTC; set on terminal status. */
+  completedAt: string | null;
+  durationMs: number | null;
+  /** Count of `running` entries; always 1 today. */
+  attempts: number;
+  /** Populated when status === 'failed'. */
+  lastError: string | null;
+  /** ISO-8601 UTC; only when status === 'waiting' on a timer wait. */
+  waitUntil: string | null;
+  /** Only when status === 'waiting' on a wait_for_event step. */
+  awaitingEventType: string | null;
+  /** Step-kind-specific extras. */
+  detail: Record<string, unknown> | null;
+}
+
+export interface WorkflowRunsListResponse {
+  success: boolean;
+  data: WorkflowRun[];
+}
+
+export type WorkflowRunEventType =
+  | "run_started"
+  | "step_started"
+  | "step_completed"
+  | "step_failed"
+  | "wait_scheduled"
+  | "run_resumed"
+  | "run_completed"
+  | "run_failed";
+
+export interface WorkflowRunEvent {
+  id: string;
+  runId: string;
+  sequence: number;
+  stepIndex: number | null;
+  stepKind: string | null;
+  eventType: WorkflowRunEventType;
+  durationMs: number | null;
+  detail: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface WorkflowRunDetailResponse {
+  success: boolean;
+  data: {
+    run: WorkflowRun;
+    /** Server-computed per-step projection. Use this for the timeline. */
+    steps: WorkflowRunStep[];
+    /** Audit trail. Use only for the audit drawer. */
+    events: WorkflowRunEvent[];
+  };
+}
+
+export interface TriggerWorkflowPayload {
+  entityId: string;
+  eventType: string;
+  idempotencyKey: string;
+  aggregateType?: string | null;
+  aggregateId?: string | null;
+  payload?: Record<string, unknown>;
+}
+
+export interface TriggerWorkflowResponse {
+  success: boolean;
+  data: {
+    created: boolean;
+    event: Record<string, unknown> | null;
+  };
+}
+
+export interface TestRunWorkflowPayload {
+  /** Optional seed value bound to `event.payload` in step templates. */
+  payload?: Record<string, unknown>;
+}
+
+export interface TestRunWorkflowResponse {
+  success: boolean;
+  data: {
+    run: WorkflowRun;
+  };
+}
+
+// ---- Workflow run SSE stream ----
+//
+// `GET /workflows/runs/{runId}/stream` emits four named SSE events:
+//
+//   event: run        → snapshot of the WorkflowRun (status badge updates)
+//   event: step       → a WorkflowRunEvent with `occurredAt` instead of `createdAt`
+//                       (audit drawer)
+//   event: step_state → a WorkflowRunStep — the primary timeline channel.
+//                       Re-emitted for every step on (re)connect; idempotent.
+//   event: done       → terminal/paused signal, may carry `reason: "max-duration"`
+//                       with a `cursor` to resume via `?afterSequence=<cursor>`
+//
+// Heartbeat lines (`: keep-alive`) are dropped by the parser.
+
+/** Step event as it appears on the SSE wire (uses `occurredAt`). */
+export interface WorkflowRunStreamStepPayload {
+  id: string;
+  runId: string;
+  sequence: number;
+  stepIndex: number | null;
+  stepKind: string | null;
+  eventType: WorkflowRunEventType;
+  durationMs: number | null;
+  detail: Record<string, unknown> | null;
+  occurredAt: string;
+}
+
+export interface WorkflowRunStreamDonePayload {
+  runId: string;
+  status: WorkflowRunStatus;
+  cursor: number;
+  reason?: "max-duration" | string;
+}
+
+/** SSE `step_state` payload — same shape as `WorkflowRunStep`. */
+export type WorkflowRunStreamStepStatePayload = WorkflowRunStep;
+
+// ---- Workflow step captures (run logs Input/Output panes) ----
+
+/**
+ * Per-step audit capture row. One per executed step that did not opt out via
+ * `capture: 'none'` or `sensitive: true`. Joined to `WorkflowRunEvent` by
+ * `sequence` (matches the `step_started` event for that step).
+ */
+export interface WorkflowStepCapture {
+  /** Joins to the `step_started` event sequence. */
+  sequence: number;
+  stepIndex: number;
+  stepKind: string;
+  captureMode: Exclude<WorkflowStepCaptureMode, "none">;
+  /** Already redacted, parsed JSON. `null` when the step had no input. */
+  inputSummary: unknown;
+  /** Already redacted, parsed JSON. `null` when the step produced no output. */
+  outputSummary: unknown;
+  inputBytes: number | null;
+  outputBytes: number | null;
+  inputSha256: string | null;
+  outputSha256: string | null;
+  outcome: "ok" | "error";
+  /** True when the summary was clipped at the 2 KB boundary. */
+  truncated: boolean;
+  occurredAt: string;
+}
+
+export interface WorkflowRunCapturesResponse {
+  success: boolean;
+  data: {
+    captures: WorkflowStepCapture[];
+  };
+}
+
+/**
+ * Joined timeline row rendered by the run logs UI. Built from
+ * `WorkflowRunEvent[]` + `WorkflowStepCapture[]`.
+ */
+export interface WorkflowRunTimelineRow {
+  /** `step_started` sequence — anchor that joins to the capture row. */
+  sequence: number;
+  stepIndex: number;
+  stepKind: string;
+  status: "pending" | "running" | "success" | "error" | "waiting";
+  startedAt: string;
+  completedAt: string | null;
+  durationMs: number | null;
+  errorMessage: string | null;
+  capture: WorkflowStepCapture | null;
+}

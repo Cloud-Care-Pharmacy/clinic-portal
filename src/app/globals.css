@@ -321,3 +321,44 @@
     animation: none;
   }
 }
+
+/* Workflow canvas/run pulse for active/running indicators */
+@keyframes wf-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Horizontal sweep used by the live run-step card to convey activity */
+@keyframes wf-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Indeterminate sweep for the run progress bar while a step is in flight */
+@keyframes wf-progress-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* Flowing dashes along an SVG edge while data conceptually "moves" toward
+   a running step. Pairs with `stroke-dasharray` set on the path. */
+@keyframes wf-edge-flow {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -20; }
+}
+
+/* Soft pulsing ring around the node card currently executing. */
+@keyframes wf-ring {
+  0%, 100% { box-shadow: 0 0 0 0 var(--wf-ring-color, rgba(59, 130, 246, 0.45)); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="wf-pulse"],
+  [style*="wf-shimmer"],
+  [style*="wf-progress-indeterminate"],
+  [style*="wf-edge-flow"],
+  [style*="wf-ring"] {
+    animation: none !important;
+  }
+}
