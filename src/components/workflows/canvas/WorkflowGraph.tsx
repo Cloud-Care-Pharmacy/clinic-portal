@@ -19,7 +19,6 @@ import { RouterStartEdge } from "./edges/RouterStartEdge";
 import { RouterEndEdge } from "./edges/RouterEndEdge";
 import { LoopStartEdge } from "./edges/LoopStartEdge";
 import { LoopReturnEdge } from "./edges/LoopReturnEdge";
-import { CanvasMinimap } from "./CanvasMinimap";
 import {
   buildWorkflowGraph,
   type NodeRunStatus,
@@ -55,7 +54,6 @@ export interface WorkflowGraphProps {
   stepRunStatus?: Record<number, NodeRunStatus>;
   runActive?: boolean;
   panningMode: "grab" | "select";
-  showMinimap: boolean;
 }
 
 function ArrowMarker() {
@@ -88,7 +86,6 @@ export function WorkflowGraph({
   stepRunStatus,
   runActive,
   panningMode,
-  showMinimap,
 }: WorkflowGraphProps) {
   const { fitView } = useReactFlow();
 
@@ -168,7 +165,6 @@ export function WorkflowGraph({
             variant={BackgroundVariant.Dots}
             style={{ background: "var(--background)" }}
           />
-          {showMinimap && <CanvasMinimap />}
         </ReactFlow>
       </div>
     </CanvasContextProvider>

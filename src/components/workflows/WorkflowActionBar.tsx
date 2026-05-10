@@ -8,7 +8,6 @@ import {
   Files,
   Hand,
   ListTree,
-  Map as MapIcon,
   Maximize2,
   Minus,
   MoreHorizontal,
@@ -55,8 +54,6 @@ interface WorkflowActionBarProps {
   // Canvas viewport tools — rendered inside the bar when tab === "canvas".
   panningMode: "grab" | "select";
   onTogglePanningMode: () => void;
-  showMinimap: boolean;
-  onToggleMinimap: () => void;
 }
 
 /**
@@ -85,8 +82,6 @@ export function WorkflowActionBar({
   dirty,
   panningMode,
   onTogglePanningMode,
-  showMinimap,
-  onToggleMinimap,
 }: WorkflowActionBarProps) {
   const [hovered, setHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -135,12 +130,6 @@ export function WorkflowActionBar({
             <>
               <Separator orientation="vertical" className="mx-1 h-6" />
               <div className="flex items-center gap-0.5">
-                <IconButton onClick={handleZoomOut} tooltip="Zoom out">
-                  <Minus className="size-3.5" />
-                </IconButton>
-                <IconButton onClick={handleZoomIn} tooltip="Zoom in">
-                  <Plus className="size-3.5" />
-                </IconButton>
                 <IconButton onClick={handleFit} tooltip="Fit view">
                   <Maximize2 className="size-3.5" />
                 </IconButton>
@@ -158,13 +147,6 @@ export function WorkflowActionBar({
                   ) : (
                     <MousePointer className="size-3.5" />
                   )}
-                </IconButton>
-                <IconButton
-                  onClick={onToggleMinimap}
-                  tooltip={showMinimap ? "Hide minimap" : "Show minimap"}
-                  active={showMinimap}
-                >
-                  <MapIcon className="size-3.5" />
                 </IconButton>
               </div>
             </>
@@ -197,6 +179,20 @@ export function WorkflowActionBar({
             {saving ? "Saving…" : dirty ? "Save draft" : "Saved"}
           </Button>
         </div>
+
+        {showCanvasControls && (
+          <>
+            <div className="flex h-8 items-center gap-0.5 rounded-full bg-muted/70 p-0.5">
+              <IconButton onClick={handleZoomOut} tooltip="Zoom out">
+                <Minus className="size-3.5" />
+              </IconButton>
+              <IconButton onClick={handleZoomIn} tooltip="Zoom in">
+                <Plus className="size-3.5" />
+              </IconButton>
+            </div>
+            <Separator orientation="vertical" className="mx-0.5 h-6" />
+          </>
+        )}
 
         {/* Always-visible: Test run (primary CTA) */}
         <Button

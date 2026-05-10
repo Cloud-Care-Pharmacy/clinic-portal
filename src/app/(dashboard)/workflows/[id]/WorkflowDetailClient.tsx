@@ -104,7 +104,6 @@ export function WorkflowDetailClient({
   const [showDelete, setShowDelete] = useState(false);
   const [addSignal, setAddSignal] = useState(0);
   const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
-  const [showMinimap, setShowMinimap] = useState(false);
 
   // Sync server state into draft when the workflow loads or refreshes,
   // unless the user has unsaved changes. Done during render via the
@@ -277,7 +276,6 @@ export function WorkflowDetailClient({
               serverError={serverError}
               openPaletteSignal={addSignal}
               panningMode={panningMode}
-              showMinimap={showMinimap}
             />
           ) : (
             <RunView workflowId={workflowId} initialRuns={initialRuns} />
@@ -305,8 +303,6 @@ export function WorkflowDetailClient({
             onTogglePanningMode={() =>
               setPanningMode((m) => (m === "grab" ? "select" : "grab"))
             }
-            showMinimap={showMinimap}
-            onToggleMinimap={() => setShowMinimap((s) => !s)}
           />
         </div>
       </ReactFlowProvider>
