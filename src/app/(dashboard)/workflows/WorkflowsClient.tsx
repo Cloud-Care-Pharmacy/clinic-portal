@@ -1,19 +1,37 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   DataGrid,
   type GridColDef,
   type GridRowParams,
+  type GridSortModel,
 } from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
-import { Plus, Workflow as WorkflowIcon } from "lucide-react";
+import {
+  Copy,
+  Eye,
+  MoreHorizontal,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
+  Workflow as WorkflowIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,17 +43,49 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { dataGridSx } from "@/lib/datagrid-theme";
+import { matchesSearchQuery } from "@/lib/table-search";
 import {
   useCreateWorkflow,
+  useDeleteWorkflow,
   useWorkflows,
   WorkflowApiError,
 } from "@/lib/hooks/use-workflows";
-import type { Workflow, WorkflowsListResponse } from "@/types";
+import type {
+  Workflow,
+  WorkflowsListResponse,
+  WorkflowStatus,
+} from "@/types";
 
 interface WorkflowsClientProps {
   entityId: string;
   initialWorkflows?: WorkflowsListResponse;
 }
+
+const STATUS_OPTIONS: WorkflowStatus[] = ["draft", "active", "disabled"];
+
+interface ColumnVisibility {
+  name: boolean;
+  status: boolean;
+  triggers: boolean;
+  version: boolean;
+  updatedAt: boolean;
+}
+
+const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
+  name: true,
+  status: true,
+  triggers: true,
+  version: true,
+  updatedAt: true,
+};
+
+const COLUMN_LABELS: Record<keyof ColumnVisibility, string> = {
+  name: "Name",
+  status: "Status",
+  triggers: "Triggers",
+  version: "Version",
+  updatedAt: "Updated",
+};
 
 function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -65,53 +115,142 @@ function triggerSummary(w: Workflow): string {
     .join(" · ");
 }
 
+function ActionsCell({
+  onView,
+  onCopyId,
+  onDelete,
+}: {
+  onView: () => void;
+  onCopyId: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="inline-flex items-center justify-center rounded-md size-8 hover:bg-accent transition-colors"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <MoreHorizontal className="size-4 text-muted-foreground" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={4} className="w-55">
+        <DropdownMenuItem onClick={onView}>
+          <Eye />
+          View Details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onCopyId}>
+          <Copy />
+          Copy ID
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={onDelete}>
+          <Trash2 />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function WorkflowsClient({
   entityId,
   initialWorkflows,
 }: WorkflowsClientProps) {
-  const router = useRouter();
+  const { push, prefetch } = useRouter();
   const { data, isLoading } = useWorkflows({ limit: 100 }, initialWorkflows);
   const create = useCreateWorkflow();
+  const deleteMutation = useDeleteWorkflow();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [name, setName] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilters, setStatusFilters] = useState<WorkflowStatus[]>([]);
+  const [sortModel, setSortModel] = useState<GridSortModel>([
+    { field: "updatedAt", sort: "desc" },
+  ]);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
+    DEFAULT_COLUMN_VISIBILITY
+  );
+  const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
 
   const workflows = useMemo(() => data?.data ?? [], [data]);
-  const filtered = useMemo(() => {
-    if (!search.trim()) return workflows;
-    const q = search.toLowerCase();
-    return workflows.filter(
-      (w) =>
-        w.name.toLowerCase().includes(q) ||
-        (w.description ?? "").toLowerCase().includes(q)
-    );
-  }, [workflows, search]);
 
-  const columns: GridColDef<Workflow>[] = useMemo(
+  const hasActiveFilters =
+    Boolean(searchQuery.trim()) || statusFilters.length > 0;
+
+  const visibleWorkflows = useMemo(
+    () =>
+      workflows.filter((w) => {
+        if (statusFilters.length > 0 && !statusFilters.includes(w.status)) {
+          return false;
+        }
+        return matchesSearchQuery(searchQuery, [
+          w.name,
+          w.description,
+          w.status,
+          triggerSummary(w),
+          w.triggerEventType,
+        ]);
+      }),
+    [workflows, searchQuery, statusFilters]
+  );
+
+  const filterDefs: FilterDefinition[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        options: STATUS_OPTIONS as string[],
+        value: statusFilters as string[],
+        onChange: (v) => setStatusFilters(v as WorkflowStatus[]),
+        formatOption: (opt) => opt.charAt(0).toUpperCase() + opt.slice(1),
+      },
+    ],
+    [statusFilters]
+  );
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setStatusFilters([]);
+  }, []);
+
+  const handleCopyId = useCallback((id: string) => {
+    navigator.clipboard.writeText(id);
+    toast.success("Workflow ID copied");
+  }, []);
+
+  const allColumns: GridColDef<Workflow>[] = useMemo(
     () => [
       {
         field: "name",
         headerName: "Name",
         flex: 2,
-        minWidth: 220,
+        minWidth: 240,
         renderCell: (params) => (
-          <div className="flex flex-col">
-            <span className="font-medium text-foreground">{params.row.name}</span>
-            {params.row.description && (
-              <span className="text-xs text-muted-foreground line-clamp-1">
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="truncate font-medium text-foreground">
+              {params.row.name}
+            </span>
+            {params.row.description ? (
+              <span className="truncate text-xs text-muted-foreground">
                 {params.row.description}
               </span>
-            )}
+            ) : null}
           </div>
         ),
       },
       {
         field: "status",
         headerName: "Status",
-        width: 110,
+        width: 120,
+        type: "singleSelect",
+        valueOptions: STATUS_OPTIONS as string[],
         renderCell: (params) => (
-          <StatusBadge status={params.value as string} dot className="capitalize" />
+          <StatusBadge
+            status={params.value as string}
+            dot
+            className="capitalize"
+          />
         ),
       },
       {
@@ -124,24 +263,57 @@ export function WorkflowsClient({
       },
       {
         field: "version",
-        headerName: "Ver",
-        width: 70,
+        headerName: "Version",
+        width: 90,
         align: "right",
         headerAlign: "right",
-        valueGetter: (_value, row) => `v${row.version}`,
+        valueGetter: (_value, row) => row.version,
+        renderCell: (params) => (
+          <span className="tabular-nums text-muted-foreground">
+            v{params.value as number}
+          </span>
+        ),
       },
       {
         field: "updatedAt",
         headerName: "Updated",
         width: 140,
-        valueGetter: (_value, row) => relativeTime(row.updatedAt),
+        valueGetter: (_value, row) => new Date(row.updatedAt).getTime(),
+        renderCell: (params) => (
+          <span className="text-muted-foreground">
+            {relativeTime(params.row.updatedAt)}
+          </span>
+        ),
+      },
+      {
+        field: "actions",
+        headerName: "",
+        width: 60,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => (
+          <ActionsCell
+            onView={() => push(`/workflows/${params.row.id}`)}
+            onCopyId={() => handleCopyId(params.row.id)}
+            onDelete={() => setDeleteTarget(params.row)}
+          />
+        ),
       },
     ],
-    []
+    [handleCopyId, push]
   );
 
+  const visibleColumns = allColumns.filter((col) => {
+    const field = col.field;
+    if (field === "actions") return true;
+    if (field in columnVisibility) {
+      return columnVisibility[field as keyof ColumnVisibility];
+    }
+    return true;
+  });
+
   function handleRowClick(params: GridRowParams<Workflow>) {
-    router.push(`/workflows/${params.row.id}`);
+    push(`/workflows/${params.row.id}`);
   }
 
   async function handleCreate() {
@@ -165,37 +337,75 @@ export function WorkflowsClient({
       setCreateOpen(false);
       setName("");
       toast.success("Workflow created");
-      router.push(`/workflows/${res.data.id}`);
+      push(`/workflows/${res.data.id}`);
     } catch (err) {
       const message =
-        err instanceof WorkflowApiError ? err.message : "Failed to create workflow";
+        err instanceof WorkflowApiError
+          ? err.message
+          : "Failed to create workflow";
       toast.error(message);
     }
   }
+
+  const toolbar = (
+    <FilterBar
+      searchPlaceholder="Filter workflows…"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      filters={filterDefs}
+      resultCount={
+        hasActiveFilters ? visibleWorkflows.length : workflows.length
+      }
+      resultCountLoading={isLoading}
+      resultLabel="workflows"
+      trailing={
+        <>
+          <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
+            <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
+              <SlidersHorizontal className="size-4 text-muted-foreground" />
+              View
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={4} className="w-60">
+              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
+                (key) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={columnVisibility[key]}
+                    onClick={() =>
+                      setColumnVisibility((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }))
+                    }
+                  >
+                    {COLUMN_LABELS[key]}
+                  </DropdownMenuCheckboxItem>
+                )
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button size="sm" className="h-9" onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 size-4" />
+            New workflow
+          </Button>
+        </>
+      }
+    />
+  );
+
+  const showEmptyZeroState =
+    !isLoading && workflows.length === 0 && !hasActiveFilters;
+  const showEmptyFilterState =
+    !isLoading && workflows.length > 0 && visibleWorkflows.length === 0;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Workflows"
         description="Author and monitor automated flows for this clinic."
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            New workflow
-          </Button>
-        }
       />
 
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Search workflows…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
-      </div>
-
-      {!isLoading && filtered.length === 0 ? (
+      {showEmptyZeroState ? (
         <EmptyState
           icon={WorkflowIcon}
           title="No workflows yet"
@@ -205,21 +415,54 @@ export function WorkflowsClient({
           dashed
         />
       ) : (
-        <div className="rounded-xl border border-border bg-popover">
-          <DataGrid
-            rows={filtered}
-            columns={columns}
-            loading={isLoading}
-            onRowClick={handleRowClick}
-            disableColumnMenu
-            disableRowSelectionOnClick
-            pageSizeOptions={[25, 50, 100]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 25, page: 0 } },
-            }}
-            sx={dataGridSx}
-            getRowHeight={() => 64}
-          />
+        <div style={{ width: "100%" }}>
+          {toolbar}
+          {showEmptyFilterState ? (
+            <EmptyState
+              icon={WorkflowIcon}
+              title="No workflows match your filters"
+              description="Adjust or clear the search and filters to see more records."
+              actionLabel="Clear filters"
+              onAction={clearFilters}
+              dashed
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <DataGrid
+                rows={visibleWorkflows}
+                columns={visibleColumns}
+                loading={isLoading}
+                autoHeight
+                pagination
+                disableRowSelectionOnClick
+                disableColumnMenu
+                columnHeaderHeight={44}
+                rowHeight={64}
+                sortModel={sortModel}
+                onSortModelChange={setSortModel}
+                pageSizeOptions={[10, 25, 50]}
+                initialState={{
+                  pagination: { paginationModel: { pageSize: 10, page: 0 } },
+                }}
+                onRowClick={handleRowClick}
+                slotProps={{
+                  loadingOverlay: {
+                    variant: "skeleton",
+                    noRowsVariant: "skeleton",
+                  },
+                  row: {
+                    onMouseEnter: (event) => {
+                      const id = (event.currentTarget as HTMLElement).getAttribute(
+                        "data-id"
+                      );
+                      if (id) prefetch(`/workflows/${id}`);
+                    },
+                  },
+                }}
+                sx={dataGridSx}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -244,7 +487,9 @@ export function WorkflowsClient({
             }}
           />
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={create.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={create.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -253,6 +498,53 @@ export function WorkflowsClient({
               disabled={create.isPending}
             >
               {create.isPending ? "Creating…" : "Create"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete workflow?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `This will permanently delete "${deleteTarget.name}" and all its run history. This action cannot be undone.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleteTarget) return;
+                const target = deleteTarget;
+                deleteMutation.mutate(target.id, {
+                  onSuccess: () => {
+                    toast.success("Workflow deleted");
+                    setDeleteTarget(null);
+                  },
+                  onError: (err) => {
+                    toast.error(
+                      err instanceof Error
+                        ? err.message
+                        : "Failed to delete workflow"
+                    );
+                  },
+                });
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
