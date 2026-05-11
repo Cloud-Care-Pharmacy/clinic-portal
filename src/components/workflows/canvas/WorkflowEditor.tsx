@@ -7,7 +7,7 @@ import { EmptyCanvas } from "./EmptyCanvas";
 import { NodePalette } from "./NodePalette";
 import { NodeInspector, type Selection } from "./NodeInspector";
 import { blankTrigger } from "./forms/triggers";
-import { blankStep } from "./forms/StepForms";
+import { blankStep } from "./forms/steps";
 import {
   insertStep,
   removeStepAndDescendants,

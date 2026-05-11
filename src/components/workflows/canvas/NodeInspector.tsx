@@ -9,7 +9,7 @@ import {
   type NodeKindConfig,
 } from "./lib/node-kind-config";
 import { TriggerInspector, blankTrigger } from "./forms/triggers";
-import { StepInspector } from "./forms/StepForms";
+import { StepInspector } from "./forms/steps";
 import type {
   Workflow,
   WorkflowStep,
