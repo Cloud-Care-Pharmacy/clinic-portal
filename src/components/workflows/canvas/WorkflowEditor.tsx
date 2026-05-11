@@ -361,7 +361,7 @@ export function WorkflowEditor({
           lockTab={
             replaceTriggerIndex !== null || triggers.length === 0
               ? "triggers"
-              : undefined
+              : "actions"
           }
           title={replaceTriggerIndex !== null ? "Replace trigger" : "Add node"}
           onAddTrigger={addTrigger}
