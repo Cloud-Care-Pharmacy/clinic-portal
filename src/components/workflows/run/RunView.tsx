@@ -40,6 +40,7 @@ import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { RunCanvas } from "./RunCanvas";
 import { LogsPane } from "./logs/LogsPane";
 import type {
+  WorkflowNote,
   WorkflowRun,
   WorkflowRunDetailResponse,
   WorkflowRunEvent,
@@ -665,6 +666,7 @@ export function RunView({
   const { data: workflowData } = useWorkflow(workflowId);
   const triggers = workflowData?.data.triggers ?? [];
   const allSteps = workflowData?.data.definition.steps ?? [];
+  const allNotes = workflowData?.data.definition.notes ?? [];
   // Prefer the live workflow version when available; fall back to the SSR
   // value supplied by `RunsClient`.
   const currentVersion = workflowData?.data.version ?? definitionVersion;
@@ -720,6 +722,7 @@ export function RunView({
         workflowId={workflowId}
         triggers={triggers}
         steps={allSteps}
+        notes={allNotes}
         definitionVersion={currentVersion}
       />
     </div>
@@ -732,6 +735,8 @@ interface RunPanelProps {
   triggers: WorkflowTrigger[];
   /** Full flat step list (used by the canvas to render nested branches). */
   steps: WorkflowStep[];
+  /** Sticky-note annotations from the workflow definition (read-only). */
+  notes?: WorkflowNote[];
   /** Current/latest definition version — drives the run-detail version chip. */
   definitionVersion: number;
 }
@@ -751,6 +756,7 @@ function RunPanel({
   workflowId,
   triggers,
   steps,
+  notes,
   definitionVersion,
 }: RunPanelProps) {
   const queryClient = useQueryClient();
@@ -944,6 +950,7 @@ function RunPanel({
           <RunCanvas
             triggers={triggers}
             steps={steps}
+            notes={notes}
             runSteps={data?.data.steps ?? []}
             now={now}
           />

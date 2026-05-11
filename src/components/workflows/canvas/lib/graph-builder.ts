@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { WorkflowStep, WorkflowTrigger } from "@/types";
+import type { WorkflowNote, WorkflowStep, WorkflowTrigger } from "@/types";
 import {
   ARC_LENGTH,
   BIG_ADD_BUTTON_SIZE,
@@ -23,7 +23,8 @@ export type WfNodeType =
   | "addButton"
   | "bigAddButton"
   | "graphEnd"
-  | "loopReturn";
+  | "loopReturn"
+  | "note";
 
 export type WfEdgeType =
   | "straight"
@@ -77,7 +78,12 @@ export type WorkflowNodeData =
       branchIndex?: number;
     }
   | { kind: "graphEnd"; showWidget: boolean }
-  | { kind: "loopReturn" };
+  | { kind: "loopReturn" }
+  | {
+      kind: "note";
+      noteId: string;
+      note: WorkflowNote;
+    };
 
 export type WfNode = Node<WorkflowNodeData>;
 
@@ -236,6 +242,12 @@ function calculateBoundingBox(g: SubGraph): BoundingBox {
 interface BuildOpts {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
+  /**
+   * Free-floating sticky-note annotations rendered alongside the step
+   * graph. These do not affect the chain layout — they live in absolute
+   * canvas coordinates carried on each `WorkflowNote`.
+   */
+  notes?: WorkflowNote[];
   triggerLabel: (t: WorkflowTrigger, i: number) => { label: string; sub: string };
   stepLabel: (
     s: WorkflowStep,
@@ -736,6 +748,28 @@ export function buildWorkflowGraph(opts: BuildOpts): {
   );
   if (rootEnd) {
     (rootEnd.data as { kind: "graphEnd"; showWidget: boolean }).showWidget = true;
+  }
+
+  // Free-floating sticky notes — appended last so they stack above the
+  // chain by default (further controlled per-note via `style.zIndex = z`).
+  if (opts.notes && opts.notes.length) {
+    for (const note of opts.notes) {
+      result.nodes.push({
+        id: `note-${note.id}`,
+        type: "note",
+        position: { x: note.x, y: note.y },
+        data: { kind: "note", noteId: note.id, note },
+        // Notes are the only draggable nodes on the canvas (chain steps
+        // are positioned by graph-builder and locked).
+        draggable: true,
+        selectable: true,
+        style: {
+          width: note.width,
+          height: note.height,
+          zIndex: note.z,
+        },
+      });
+    }
   }
 
   return { nodes: result.nodes, edges: result.edges };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -14,6 +14,7 @@ import { WorkflowNode } from "./nodes/WorkflowNode";
 import { BigAddButtonNode } from "./nodes/BigAddButtonNode";
 import { GraphEndNode } from "./nodes/GraphEndNode";
 import { LoopReturnNode } from "./nodes/LoopReturnNode";
+import { NoteNode } from "./nodes/NoteNode";
 import { StraightLineEdge } from "./edges/StraightLineEdge";
 import { RouterStartEdge } from "./edges/RouterStartEdge";
 import { RouterEndEdge } from "./edges/RouterEndEdge";
@@ -27,7 +28,7 @@ import {
 } from "./lib/graph-builder";
 import { CanvasContextProvider, type InsertionRequest } from "./lib/canvas-context";
 import { triggerLabel, stepLabel } from "./lib/node-kind-config";
-import type { WorkflowStep, WorkflowTrigger } from "@/types";
+import type { WorkflowNote, WorkflowStep, WorkflowTrigger } from "@/types";
 
 const nodeTypes = {
   step: WorkflowNode,
@@ -35,6 +36,7 @@ const nodeTypes = {
   bigAddButton: BigAddButtonNode,
   graphEnd: GraphEndNode,
   loopReturn: LoopReturnNode,
+  note: NoteNode,
 };
 
 const edgeTypes = {
@@ -48,9 +50,23 @@ const edgeTypes = {
 export interface WorkflowGraphProps {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
+  /**
+   * Free-floating sticky-note annotations. These are non-executable canvas
+   * objects positioned via absolute `x`/`y` on each `WorkflowNote`.
+   */
+  notes?: WorkflowNote[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onRequestInsert: (req: InsertionRequest) => void;
+  /**
+   * Called when xyflow reports a position or dimensions change for a note
+   * node (drag end, resize end). Editor uses this to write back into draft
+   * note state. Omitted in read-only / run views.
+   */
+  onNoteGeometryChange?: (
+    id: string,
+    patch: { x?: number; y?: number; width?: number; height?: number },
+  ) => void;
   stepRunStatus?: Record<number, NodeRunStatus>;
   /**
    * Per-step duration / live-elapsed (ms), keyed by flat step index. The
@@ -94,9 +110,11 @@ function ArrowMarker() {
 export function WorkflowGraph({
   triggers,
   steps,
+  notes,
   selectedId,
   onSelect,
   onRequestInsert,
+  onNoteGeometryChange,
   stepRunStatus,
   stepRunMeta,
   runActive,
@@ -110,12 +128,13 @@ export function WorkflowGraph({
       buildWorkflowGraph({
         triggers,
         steps,
+        notes,
         triggerLabel,
         stepLabel,
         stepRunStatus,
         stepRunMeta,
       }),
-    [triggers, steps, stepRunStatus, stepRunMeta]
+    [triggers, steps, notes, stepRunStatus, stepRunMeta]
   );
 
   // In read-only mode (run view) we strip out the editing affordances so
@@ -123,10 +142,18 @@ export function WorkflowGraph({
   // that would have been pointing at the removed add buttons.
   const visibleNodes = useMemo<WfNode[]>(() => {
     if (!readOnly) return nodes;
-    return nodes.filter((n) => {
-      const k = (n.data as WorkflowNodeData).kind;
-      return k !== "addButton" && k !== "bigAddButton";
-    });
+    return nodes
+      .filter((n) => {
+        const k = (n.data as WorkflowNodeData).kind;
+        return k !== "addButton" && k !== "bigAddButton";
+      })
+      .map((n) => {
+        // Notes stay visible in run view but become inert (no drag, no
+        // resize handles via selection).
+        const k = (n.data as WorkflowNodeData).kind;
+        if (k === "note") return { ...n, draggable: false, selectable: false };
+        return n;
+      });
   }, [nodes, readOnly]);
 
   const visibleNodeIds = useMemo(
@@ -181,10 +208,23 @@ export function WorkflowGraph({
 
   const handleNodeClick: NodeMouseHandler = (_, node) => {
     const data = node.data as WorkflowNodeData;
-    if (data.kind === "step" || data.kind === "trigger") {
+    if (data.kind === "step" || data.kind === "trigger" || data.kind === "note") {
       onSelect(node.id);
     }
   };
+
+  const handleNodeDragStop = useCallback<NodeMouseHandler>(
+    (_, node) => {
+      if (!onNoteGeometryChange) return;
+      const data = node.data as WorkflowNodeData;
+      if (data.kind !== "note") return;
+      onNoteGeometryChange(data.noteId, {
+        x: node.position.x,
+        y: node.position.y,
+      });
+    },
+    [onNoteGeometryChange],
+  );
 
   return (
     <CanvasContextProvider
@@ -203,6 +243,7 @@ export function WorkflowGraph({
           nodesConnectable={false}
           elementsSelectable={!readOnly}
           onNodeClick={handleNodeClick}
+          onNodeDragStop={handleNodeDragStop}
           onPaneClick={() => onSelect(null)}
           panOnDrag={panningMode === "grab" ? [0, 1, 2] : [1, 2]}
           panOnScroll

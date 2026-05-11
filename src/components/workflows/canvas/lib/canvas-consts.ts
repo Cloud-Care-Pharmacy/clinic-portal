@@ -6,6 +6,8 @@
  * here is responsive — `<ReactFlow>` handles viewport zoom/pan separately.
  */
 
+import type { WorkflowNoteColor } from "@/types";
+
 export const NODE_W = 240;
 export const NODE_H = 70;
 
@@ -61,3 +63,72 @@ export const HANDLE_STYLING = {
 
 export const STROKE = "var(--input)";
 export const STROKE_HIGHLIGHTED = "var(--primary)";
+
+// ─── Notes ────────────────────────────────────────────────────────────
+//
+// Sticky-note annotations are non-executable canvas objects. They sit
+// alongside steps/triggers in the same React Flow viewport but use their
+// own dedicated node type with per-node `draggable` enabled.
+
+export const NOTE_DEFAULT_WIDTH = 240;
+export const NOTE_DEFAULT_HEIGHT = 160;
+export const NOTE_MIN_WIDTH = 140;
+export const NOTE_MIN_HEIGHT = 100;
+
+/**
+ * Color palette for sticky notes. Maps each note-color key to a pair of
+ * CSS variables from the design system's `--status-*` family (defined in
+ * `globals.css`), so notes inherit theme-aware tints without introducing
+ * new tokens or banned Tailwind palette classes. Applied via inline
+ * `style={{ background, borderColor }}` on `NoteNode`.
+ *
+ * The mapping is purely visual — note colors carry no semantic meaning
+ * (a "red" note is not a danger marker), but reusing the status tokens
+ * keeps the palette consistent with the rest of the app.
+ */
+export const NOTE_COLORS: Record<
+  WorkflowNoteColor,
+  { bg: string; border: string; label: string }
+> = {
+  yellow: {
+    bg: "var(--status-warning-bg)",
+    border: "var(--status-warning-border)",
+    label: "Yellow",
+  },
+  blue: {
+    bg: "var(--status-info-bg)",
+    border: "var(--status-info-border)",
+    label: "Blue",
+  },
+  green: {
+    bg: "var(--status-success-bg)",
+    border: "var(--status-success-border)",
+    label: "Green",
+  },
+  pink: {
+    bg: "var(--status-danger-bg)",
+    border: "var(--status-danger-border)",
+    label: "Pink",
+  },
+  purple: {
+    bg: "var(--status-accent-bg)",
+    border: "var(--status-accent-border)",
+    label: "Purple",
+  },
+  gray: {
+    bg: "var(--muted)",
+    border: "var(--border)",
+    label: "Gray",
+  },
+};
+
+export const NOTE_COLOR_KEYS: WorkflowNoteColor[] = [
+  "yellow",
+  "blue",
+  "green",
+  "pink",
+  "purple",
+  "gray",
+];
+
+export const NOTE_DEFAULT_COLOR: WorkflowNoteColor = "yellow";

@@ -282,11 +282,29 @@ export const stepSchema = z.discriminatedUnion("kind", [
   callWorkflowStep,
 ]);
 
+/**
+ * Sticky-note annotation on the workflow canvas. Notes are non-executable
+ * and ignored by the runtime; the schema mirrors the persisted
+ * `WorkflowNote` shape and exists purely for client-side validation.
+ */
+export const workflowNoteSchema = z.object({
+  id: z.string().min(1).max(64),
+  title: z.string().max(200).optional(),
+  body: z.string().max(10_000),
+  x: z.number().finite(),
+  y: z.number().finite(),
+  width: z.number().finite().min(80),
+  height: z.number().finite().min(60),
+  color: z.enum(["yellow", "blue", "green", "pink", "purple", "gray"]),
+  z: z.number().int(),
+});
+
 export const definitionSchema = z.object({
   version: z.literal(1).optional(),
   // Empty steps are allowed for drafts. ≥1 step is only enforced on
   // activation — see `activationIssues()`.
   steps: z.array(stepSchema).max(100),
+  notes: z.array(workflowNoteSchema).max(100).optional(),
 });
 
 export const workflowSchema = z.object({

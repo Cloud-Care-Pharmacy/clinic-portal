@@ -35,6 +35,7 @@ import { useWorkflowRuns } from "@/lib/hooks/use-workflow-runs";
 import { countOutdatedRuns } from "@/lib/workflow-versions";
 import type {
   Workflow,
+  WorkflowNote,
   WorkflowResponse,
   WorkflowStep,
   WorkflowTrigger,
@@ -69,6 +70,22 @@ function serializeStepsForSave(steps: WorkflowStep[]): WorkflowStep[] {
     if (retry !== undefined) next.retry = retry;
     return next;
   });
+}
+
+/**
+ * Deep-copy notes for a duplicate / import operation. Generates fresh ids
+ * so the new workflow has its own canvas-level identity for each note,
+ * while preserving position, sizing, color, and content.
+ */
+function cloneNotesForDuplicate(notes: WorkflowNote[] | undefined): WorkflowNote[] {
+  if (!notes || notes.length === 0) return [];
+  return notes.map((n) => ({
+    ...n,
+    id:
+      globalThis.crypto && "randomUUID" in globalThis.crypto
+        ? globalThis.crypto.randomUUID()
+        : Math.random().toString(36).slice(2, 10),
+  }));
 }
 
 function cloneTriggersForDuplicate(triggers: WorkflowTrigger[]): WorkflowTrigger[] {
@@ -115,6 +132,7 @@ export function WorkflowDetailClient({
 
   const [draftTriggers, setDraftTriggers] = useState<WorkflowTrigger[]>([]);
   const [draftSteps, setDraftSteps] = useState<WorkflowStep[]>([]);
+  const [draftNotes, setDraftNotes] = useState<WorkflowNote[]>([]);
   const [draftDirty, setDraftDirty] = useState(false);
   const [serverError, setServerError] = useState<{
     path?: string;
@@ -125,6 +143,7 @@ export function WorkflowDetailClient({
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [addSignal, setAddSignal] = useState(0);
+  const [addNoteSignal, setAddNoteSignal] = useState(0);
   const [panningMode, setPanningMode] = useState<"grab" | "select">("grab");
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -153,6 +172,7 @@ export function WorkflowDetailClient({
       setLastSyncedSig(signature);
       setDraftTriggers(workflow.triggers ?? []);
       setDraftSteps(workflow.definition?.steps ?? []);
+      setDraftNotes(workflow.definition?.notes ?? []);
     }
   }
 
@@ -182,9 +202,11 @@ export function WorkflowDetailClient({
   function handleDraftChange(next: {
     triggers: WorkflowTrigger[];
     steps: WorkflowStep[];
+    notes: WorkflowNote[];
   }) {
     setDraftTriggers(next.triggers);
     setDraftSteps(next.steps);
+    setDraftNotes(next.notes);
     setDraftDirty(true);
     setServerError(null);
   }
@@ -206,11 +228,16 @@ export function WorkflowDetailClient({
       return;
     }
     const stepsForSave = serializeStepsForSave(draftSteps);
+    const definitionForSave = {
+      version: 1 as const,
+      steps: stepsForSave,
+      ...(draftNotes.length > 0 ? { notes: draftNotes } : null),
+    };
     const parsed = workflowSchema.safeParse({
       name: workflow.name,
       description: workflow.description,
       triggers: draftTriggers,
-      definition: { version: 1, steps: stepsForSave },
+      definition: definitionForSave,
     });
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -223,7 +250,7 @@ export function WorkflowDetailClient({
     try {
       await update.mutateAsync({
         triggers: draftTriggers,
-        definition: { version: 1, steps: stepsForSave },
+        definition: definitionForSave,
         ...(opts?.activate ? { status: "active" } : {}),
       });
       setDraftDirty(false);
@@ -291,6 +318,9 @@ export function WorkflowDetailClient({
         definition: {
           version: workflow.definition.version ?? 1,
           steps: serializeStepsForSave(workflow.definition.steps),
+          ...(workflow.definition.notes && workflow.definition.notes.length > 0
+            ? { notes: cloneNotesForDuplicate(workflow.definition.notes) }
+            : null),
         },
       });
       toast.success("Workflow duplicated");
@@ -357,6 +387,7 @@ export function WorkflowDetailClient({
         : root;
 
     let nextSteps: WorkflowStep[] | undefined;
+    let nextNotes: WorkflowNote[] | undefined;
     if (Array.isArray(candidate.steps)) {
       nextSteps = candidate.steps as WorkflowStep[];
     } else if (
@@ -365,6 +396,17 @@ export function WorkflowDetailClient({
       Array.isArray((candidate.definition as { steps?: unknown }).steps)
     ) {
       nextSteps = (candidate.definition as { steps: WorkflowStep[] }).steps;
+    }
+    // Notes can live either at the root (slim export shape) or under
+    // `definition.notes` (full workflow shape) — accept both.
+    if (Array.isArray(candidate.notes)) {
+      nextNotes = candidate.notes as WorkflowNote[];
+    } else if (
+      candidate.definition &&
+      typeof candidate.definition === "object" &&
+      Array.isArray((candidate.definition as { notes?: unknown }).notes)
+    ) {
+      nextNotes = (candidate.definition as { notes: WorkflowNote[] }).notes;
     }
 
     if (!nextSteps) {
@@ -378,6 +420,7 @@ export function WorkflowDetailClient({
 
     setDraftTriggers(nextTriggers);
     setDraftSteps(nextSteps);
+    setDraftNotes(nextNotes ?? []);
     setDraftDirty(true);
     setServerError(null);
     toast.success(
@@ -395,6 +438,9 @@ export function WorkflowDetailClient({
     const exportPayload = {
       triggers: workflow.triggers,
       steps: serializeStepsForSave(workflow.definition.steps),
+      ...(workflow.definition.notes && workflow.definition.notes.length > 0
+        ? { notes: workflow.definition.notes }
+        : null),
     };
     const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
       type: "application/json",
@@ -424,11 +470,13 @@ export function WorkflowDetailClient({
           <WorkflowEditor
             triggers={draftTriggers}
             steps={draftSteps}
+            notes={draftNotes}
             onChange={handleDraftChange}
             webhookBaseUrl={WEBHOOK_BASE_URL}
             otherWorkflows={subWorkflows}
             serverError={serverError}
             openPaletteSignal={addSignal}
+            addNoteSignal={addNoteSignal}
             panningMode={panningMode}
           />
 
@@ -437,6 +485,7 @@ export function WorkflowDetailClient({
             isActive={isActive}
             onToggleActive={toggleActive}
             onAdd={() => setAddSignal((n) => n + 1)}
+            onAddNote={() => setAddNoteSignal((n) => n + 1)}
             onSave={() => handleSave()}
             onTestRun={() => void handleTestRun()}
             testRunPending={testRun.isPending}
@@ -469,6 +518,9 @@ export function WorkflowDetailClient({
         data={{
           triggers: workflow.triggers,
           steps: serializeStepsForSave(workflow.definition.steps),
+          ...(workflow.definition.notes && workflow.definition.notes.length > 0
+            ? { notes: workflow.definition.notes }
+            : null),
         }}
       />
       <input
