@@ -121,45 +121,34 @@ export function WebhookTriggerForm({
   function copy() {
     if (!fullUrl) return;
     void navigator.clipboard.writeText(fullUrl);
-    toast.success("URL copied");
+    toast.success("Link copied");
   }
 
   if (!trigger.token) {
     return (
       <div className="rounded-md border border-dashed border-border bg-card p-3 text-[11px] text-muted-foreground">
-        The webhook token is generated on save. Save the workflow to reveal the URL.
+        Save the workflow to generate the link.
       </div>
     );
   }
 
   return (
-    <>
-      <Field
-        label="Webhook URL"
-        hint="Removing and re-adding the trigger generates a new token."
-      >
-        <div className="flex items-center gap-1.5">
-          <Input
-            readOnly
-            value={fullUrl ?? ""}
-            className="font-mono text-[11px]"
-            onFocus={(e) => e.currentTarget.select()}
-          />
-          <Button variant="outline" size="icon" onClick={copy} type="button">
-            <Copy className="size-3.5" />
-          </Button>
-        </div>
-      </Field>
-      <p className="text-[11px] text-muted-foreground">
-        POST any JSON body. It becomes{" "}
-        <code className="rounded bg-muted px-1 py-0.5 font-mono">event.payload</code>.
-        Pass{" "}
-        <code className="rounded bg-muted px-1 py-0.5 font-mono">
-          X-Idempotency-Key
-        </code>{" "}
-        for safe retries.
-      </p>
-    </>
+    <Field
+      label="Trigger link"
+      hint="Share this link with the system that should start the workflow. Replace the trigger to generate a new link."
+    >
+      <div className="flex items-center gap-1.5">
+        <Input
+          readOnly
+          value={fullUrl ?? ""}
+          className="font-mono text-[11px]"
+          onFocus={(e) => e.currentTarget.select()}
+        />
+        <Button variant="outline" size="icon" onClick={copy} type="button">
+          <Copy className="size-3.5" />
+        </Button>
+      </div>
+    </Field>
   );
 }
 

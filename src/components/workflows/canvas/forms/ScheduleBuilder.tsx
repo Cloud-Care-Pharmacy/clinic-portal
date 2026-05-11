@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Field } from "./Field";
 import { Input } from "@/components/ui/input";
@@ -229,39 +229,34 @@ function describe(state: Decoded): string {
 }
 
 export function ScheduleBuilder({ cron, onChange, error }: ScheduleBuilderProps) {
-  const [state, setState] = useState<Decoded>(() => decodeCron(cron));
-  const [customCron, setCustomCron] = useState<string>(cron);
+  // `mode` is a user-driven UI choice that may not be perfectly inferrable from
+  // a cron string (e.g. "0 9 * * *" decodes to "daily" but the user may have
+  // selected "custom"). Track it explicitly; everything else is derived.
+  const decoded = useMemo(() => decodeCron(cron), [cron]);
+  const [explicitMode, setExplicitMode] = useState<Mode | null>(null);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
 
-  // If the parent updates cron externally (e.g. preset click elsewhere), re-decode.
-  useEffect(() => {
-    const decoded = decodeCron(cron);
-    setState(decoded);
-    if (decoded.mode === "custom") setCustomCron(cron);
-  }, [cron]);
+  const mode: Mode = explicitMode ?? decoded.mode;
+  const state: Decoded = { ...decoded, mode };
 
   function update(patch: Partial<Decoded>) {
     const next = { ...state, ...patch };
-    setState(next);
     if (next.mode !== "custom") {
       onChange(encodeCron(next));
     }
   }
 
-  function setMode(mode: Mode) {
-    if (mode === "custom") {
-      setState((s) => ({ ...s, mode }));
-      setCustomCron(cron || "*/5 * * * *");
-      onChange(cron || "*/5 * * * *");
+  function setMode(nextMode: Mode) {
+    setExplicitMode(nextMode);
+    if (nextMode === "custom") {
+      if (!cron) onChange("*/5 * * * *");
       return;
     }
-    const next = { ...state, mode };
-    setState(next);
-    onChange(encodeCron(next));
+    onChange(encodeCron({ ...state, mode: nextMode }));
   }
 
   const supportsWeekendToggle =
-    state.mode === "minutes" || state.mode === "hourly" || state.mode === "daily";
+    mode === "minutes" || mode === "hourly" || mode === "daily";
 
   const warnings = useMemo(() => (cron ? cronWarnings(cron) : []), [cron]);
 
@@ -433,11 +428,8 @@ export function ScheduleBuilder({ cron, onChange, error }: ScheduleBuilderProps)
           error={error}
         >
           <Input
-            value={customCron}
-            onChange={(e) => {
-              setCustomCron(e.target.value);
-              onChange(e.target.value);
-            }}
+            value={cron}
+            onChange={(e) => onChange(e.target.value)}
             placeholder="0 9 * * *"
             className="font-mono text-xs"
           />
