@@ -1,9 +1,8 @@
 "use client";
 
-import type { LookupConsultationStep, WorkflowStep } from "@/types";
+import type { LookupConsultationStep } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function LookupConsultationForm(
@@ -27,7 +26,6 @@ export function LookupConsultationForm(
           className="font-mono text-xs"
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

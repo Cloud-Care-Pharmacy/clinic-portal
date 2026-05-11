@@ -15,10 +15,8 @@ import type {
   RouterStep,
   WorkflowBranchOp,
   WorkflowRouterBranch,
-  WorkflowStep,
 } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function RouterForm(props: StepFormProps<RouterStep>) {
@@ -135,8 +133,6 @@ export function RouterForm(props: StepFormProps<RouterStep>) {
           onRename={(name) => onChange({ ...step, fallback: { ...fallback, name } })}
         />
       </div>
-
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

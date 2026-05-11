@@ -8,9 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BRANCH_OPS, isUnaryBranchOp } from "@/types";
-import type { BranchIfStep, WorkflowStep } from "@/types";
+import type { BranchIfStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function BranchIfForm(props: StepFormProps<BranchIfStep>) {
@@ -85,7 +84,6 @@ export function BranchIfForm(props: StepFormProps<BranchIfStep>) {
           </SelectContent>
         </Select>
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

@@ -3,6 +3,8 @@
 import { ChevronDown, ChevronUp, Repeat, Trash2 } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TRIGGER_KIND_CONFIG,
   STEP_KIND_CONFIG,
@@ -10,6 +12,9 @@ import {
 } from "./lib/node-kind-config";
 import { TriggerInspector, blankTrigger } from "./forms/triggers";
 import { StepInspector } from "./forms/steps";
+import { CaptureSettings } from "./forms/steps/CaptureSettings";
+import { RetrySettings } from "./forms/steps/RetrySettings";
+import { Field } from "./forms/Field";
 import type {
   Workflow,
   WorkflowStep,
@@ -181,44 +186,77 @@ export function NodeInspector({
         />
       )}
       {selection && step && (
-        <>
-          <div className="mb-4 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>
-              Step {selection.index + 1} of {steps.length}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                disabled={selection.index === 0}
-                onClick={() => onMoveStep(selection.index, -1)}
-                aria-label="Move up"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                disabled={selection.index === steps.length - 1}
-                onClick={() => onMoveStep(selection.index, 1)}
-                aria-label="Move down"
-              >
-                <ChevronDown className="size-3.5" />
-              </Button>
+        <Tabs defaultValue="parameters" className="gap-3">
+          <TabsList variant="line" className="-mt-1">
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="parameters" className="space-y-0">
+            <div className="mb-4 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>
+                Step {selection.index + 1} of {steps.length}
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-6"
+                  disabled={selection.index === 0}
+                  onClick={() => onMoveStep(selection.index, -1)}
+                  aria-label="Move up"
+                >
+                  <ChevronUp className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-6"
+                  disabled={selection.index === steps.length - 1}
+                  onClick={() => onMoveStep(selection.index, 1)}
+                  aria-label="Move down"
+                >
+                  <ChevronDown className="size-3.5" />
+                </Button>
+              </div>
             </div>
-          </div>
-          <StepInspector
-            step={step}
-            onChange={(next) => onChangeStep(selection.index, next)}
-            errors={stepErrors}
-            otherSteps={otherSteps}
-            otherWorkflows={otherWorkflows}
-          />
-        </>
+            <StepInspector
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+              errors={stepErrors}
+              otherSteps={otherSteps}
+              otherWorkflows={otherWorkflows}
+            />
+          </TabsContent>
+          <TabsContent value="settings">
+            <Field
+              label="Name (optional)"
+              hint="Used as a goto target from a branch step. Letters, digits, _ or -."
+              error={stepErrors.id}
+            >
+              <Input
+                value={step.id ?? ""}
+                onChange={(e) =>
+                  onChangeStep(selection.index, {
+                    ...step,
+                    id: e.target.value || undefined,
+                  } as WorkflowStep)
+                }
+                placeholder="auto"
+                className="font-mono text-xs"
+              />
+            </Field>
+            <CaptureSettings
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+            />
+            <RetrySettings
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+            />
+          </TabsContent>
+        </Tabs>
       )}
     </AppSheet>
   );

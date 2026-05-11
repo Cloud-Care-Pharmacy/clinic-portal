@@ -13,10 +13,8 @@ import {
   type RecordActivityStep,
   type RecordActivityStepEntityType,
   type RecordActivityStepType,
-  type WorkflowStep,
 } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function RecordActivityForm(props: StepFormProps<RecordActivityStep>) {
@@ -85,7 +83,6 @@ export function RecordActivityForm(props: StepFormProps<RecordActivityStep>) {
         rows={3}
         error={errors?.description}
       />
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

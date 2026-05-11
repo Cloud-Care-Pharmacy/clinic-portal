@@ -9,9 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { WaitStep, WorkflowStep } from "@/types";
+import type { WaitStep } from "@/types";
 import { Field } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 const WAIT_UNITS = [
@@ -81,7 +80,6 @@ export function WaitForm(props: StepFormProps<WaitStep>) {
       <p className="mb-4 -mt-2 text-[11px] text-muted-foreground">
         Note: The maximum duration per step is 30 days.
       </p>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

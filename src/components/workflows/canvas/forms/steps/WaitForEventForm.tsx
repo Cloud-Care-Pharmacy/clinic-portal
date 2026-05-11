@@ -1,9 +1,8 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import type { WaitForEventStep, WorkflowStep } from "@/types";
+import type { WaitForEventStep } from "@/types";
 import { Field } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function WaitForEventForm(props: StepFormProps<WaitForEventStep>) {
@@ -36,7 +35,7 @@ export function WaitForEventForm(props: StepFormProps<WaitForEventStep>) {
           }
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
+
     </>
   );
 }

@@ -8,9 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { CallWorkflowStep, WorkflowStep } from "@/types";
+import type { CallWorkflowStep } from "@/types";
 import { Field } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
@@ -46,7 +45,6 @@ export function CallWorkflowForm(props: StepFormProps<CallWorkflowStep>) {
           className="font-mono text-xs"
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

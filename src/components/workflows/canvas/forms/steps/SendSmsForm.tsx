@@ -1,8 +1,7 @@
 "use client";
 
-import type { SendSmsStep, WorkflowStep } from "@/types";
+import type { SendSmsStep } from "@/types";
 import { TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function SendSmsForm(props: StepFormProps<SendSmsStep>) {
@@ -24,7 +23,6 @@ export function SendSmsForm(props: StepFormProps<SendSmsStep>) {
         rows={4}
         error={errors?.body}
       />
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

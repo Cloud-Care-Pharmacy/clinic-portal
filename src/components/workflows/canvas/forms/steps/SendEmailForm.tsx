@@ -13,10 +13,9 @@ import {
 import type {
   SendEmailAttachment,
   SendEmailStep,
-  WorkflowStep,
 } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { KeyValueEditor, StepIdField, StringListEditor } from "./shared";
+import { KeyValueEditor, StringListEditor } from "./shared";
 import type { StepFormProps } from "./types";
 
 function SendEmailContent({
@@ -230,7 +229,6 @@ export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
           onChange={(attachments) => onChange({ ...step, attachments })}
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

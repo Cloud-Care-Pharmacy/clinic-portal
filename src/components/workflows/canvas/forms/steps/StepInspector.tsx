@@ -19,13 +19,11 @@ import type {
 } from "@/types";
 import { BranchIfForm } from "./BranchIfForm";
 import { CallWorkflowForm } from "./CallWorkflowForm";
-import { CaptureSettings } from "./CaptureSettings";
 import { HttpCallForm } from "./HttpCallForm";
 import { LookupConsultationForm } from "./LookupConsultationForm";
 import { LookupPatientForm } from "./LookupPatientForm";
 import { LoopOnItemsForm } from "./LoopOnItemsForm";
 import { RecordActivityForm } from "./RecordActivityForm";
-import { RetrySettings } from "./RetrySettings";
 import { RouterForm } from "./RouterForm";
 import { SendEmailForm } from "./SendEmailForm";
 import { SendSmsForm } from "./SendSmsForm";
@@ -41,14 +39,13 @@ interface StepInspectorProps {
   otherWorkflows?: Workflow[];
 }
 
+/**
+ * Renders the parameters form for a step (kind-specific fields only). The
+ * advanced settings (rename / capture / retry) live in `NodeInspector`'s
+ * Settings tab so the parameters surface stays focused.
+ */
 export function StepInspector(props: StepInspectorProps) {
-  return (
-    <>
-      <StepKindForm {...props} />
-      <CaptureSettings step={props.step} onChange={props.onChange} />
-      <RetrySettings step={props.step} onChange={props.onChange} />
-    </>
-  );
+  return <StepKindForm {...props} />;
 }
 
 function StepKindForm(props: StepInspectorProps) {

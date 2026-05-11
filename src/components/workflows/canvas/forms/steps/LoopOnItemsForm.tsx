@@ -1,9 +1,8 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import type { LoopOnItemsStep, WorkflowStep } from "@/types";
+import type { LoopOnItemsStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function LoopOnItemsForm(props: StepFormProps<LoopOnItemsStep>) {
@@ -46,7 +45,6 @@ export function LoopOnItemsForm(props: StepFormProps<LoopOnItemsStep>) {
           className="font-mono text-xs"
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

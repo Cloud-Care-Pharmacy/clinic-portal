@@ -8,9 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { HttpCallAuth, HttpCallStep, WorkflowStep } from "@/types";
+import type { HttpCallAuth, HttpCallStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { KeyValueEditor, StepIdField } from "./shared";
+import { KeyValueEditor } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function HttpCallForm(props: StepFormProps<HttpCallStep>) {
@@ -228,7 +228,6 @@ export function HttpCallForm(props: StepFormProps<HttpCallStep>) {
           className="font-mono text-xs"
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }

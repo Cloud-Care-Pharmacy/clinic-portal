@@ -4,9 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { WorkflowStep } from "@/types";
-import { Field } from "../Field";
-import type { StepFormProps } from "./types";
 
 export function StringListEditor({
   values,
@@ -158,28 +155,5 @@ export function KeyValueEditor({
         {addLabel}
       </Button>
     </div>
-  );
-}
-
-export function StepIdField({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<WorkflowStep>) {
-  return (
-    <Field
-      label="Step id (optional)"
-      hint="Use as a goto target from a branch step. Letters, digits, _ or -."
-      error={errors?.id}
-    >
-      <Input
-        value={step.id ?? ""}
-        onChange={(e) =>
-          onChange({ ...step, id: e.target.value || undefined } as WorkflowStep)
-        }
-        placeholder="auto"
-        className="font-mono text-xs"
-      />
-    </Field>
   );
 }

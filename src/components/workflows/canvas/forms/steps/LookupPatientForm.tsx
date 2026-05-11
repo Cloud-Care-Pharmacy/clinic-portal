@@ -1,9 +1,8 @@
 "use client";
 
-import type { LookupPatientStep, WorkflowStep } from "@/types";
+import type { LookupPatientStep } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Field, TemplatedField } from "../Field";
-import { StepIdField } from "./shared";
 import type { StepFormProps } from "./types";
 
 export function LookupPatientForm(props: StepFormProps<LookupPatientStep>) {
@@ -29,7 +28,6 @@ export function LookupPatientForm(props: StepFormProps<LookupPatientStep>) {
           className="font-mono text-xs"
         />
       </Field>
-      <StepIdField {...(props as StepFormProps<WorkflowStep>)} />
     </>
   );
 }
