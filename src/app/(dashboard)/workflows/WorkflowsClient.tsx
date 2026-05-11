@@ -228,8 +228,8 @@ export function WorkflowsClient({
         flex: 2,
         minWidth: 240,
         renderCell: (params) => (
-          <div className="flex flex-col justify-center min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-full w-full min-w-0 flex-col justify-center overflow-hidden">
+            <div className="flex min-w-0 items-center gap-2">
               <span className="truncate font-medium text-foreground">
                 {params.row.name}
               </span>
@@ -239,7 +239,7 @@ export function WorkflowsClient({
               />
             </div>
             {params.row.description ? (
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="block truncate text-xs text-muted-foreground">
                 {params.row.description}
               </span>
             ) : null}
