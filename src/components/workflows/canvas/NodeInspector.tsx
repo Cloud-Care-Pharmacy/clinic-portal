@@ -178,16 +178,41 @@ export function NodeInspector({
       footer={footer}
     >
       {selection && trigger && (
-        <TriggerInspector
-          trigger={trigger}
-          onChange={(next) => onChangeTrigger(selection.index, next)}
-          errors={triggerErrors}
-          webhookBaseUrl={webhookBaseUrl}
-        />
+        <Tabs defaultValue="parameters" className="gap-3">
+          <TabsList>
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="parameters" className="space-y-0">
+            <TriggerInspector
+              trigger={trigger}
+              onChange={(next) => onChangeTrigger(selection.index, next)}
+              errors={triggerErrors}
+              webhookBaseUrl={webhookBaseUrl}
+            />
+          </TabsContent>
+          <TabsContent value="settings">
+            <Field
+              label="Name"
+              hint="Display name shown on the canvas. Defaults to the trigger kind."
+            >
+              <Input
+                value={trigger.name ?? ""}
+                onChange={(e) =>
+                  onChangeTrigger(selection.index, {
+                    ...trigger,
+                    name: e.target.value || undefined,
+                  } as WorkflowTrigger)
+                }
+                placeholder={cfg?.label ?? ""}
+              />
+            </Field>
+          </TabsContent>
+        </Tabs>
       )}
       {selection && step && (
         <Tabs defaultValue="parameters" className="gap-3">
-          <TabsList variant="line" className="-mt-1">
+          <TabsList>
             <TabsTrigger value="parameters">Parameters</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -231,8 +256,23 @@ export function NodeInspector({
           </TabsContent>
           <TabsContent value="settings">
             <Field
-              label="Name (optional)"
-              hint="Used as a goto target from a branch step. Letters, digits, _ or -."
+              label="Name"
+              hint="Display name shown on the canvas. Defaults to the step kind."
+            >
+              <Input
+                value={step.name ?? ""}
+                onChange={(e) =>
+                  onChangeStep(selection.index, {
+                    ...step,
+                    name: e.target.value || undefined,
+                  } as WorkflowStep)
+                }
+                placeholder={cfg?.label ?? ""}
+              />
+            </Field>
+            <Field
+              label="Step id (optional)"
+              hint="Use as a goto target from a branch step. Letters, digits, _ or -."
               error={stepErrors.id}
             >
               <Input

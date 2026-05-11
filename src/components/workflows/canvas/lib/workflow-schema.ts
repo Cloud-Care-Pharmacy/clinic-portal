@@ -31,17 +31,26 @@ const cronField = z
 const eventTrigger = z.object({
   kind: z.literal("event"),
   eventType: z.string().min(1).max(255),
+  name: z.string().max(100).optional(),
 });
-const manualTrigger = z.object({ kind: z.literal("manual") });
+const manualTrigger = z.object({
+  kind: z.literal("manual"),
+  name: z.string().max(100).optional(),
+});
 const scheduleTrigger = z.object({
   kind: z.literal("schedule"),
   cron: cronField,
+  name: z.string().max(100).optional(),
 });
 const webhookTrigger = z.object({
   kind: z.literal("webhook"),
   token: z.string().min(8).max(64).optional(),
+  name: z.string().max(100).optional(),
 });
-const workflowTrigger = z.object({ kind: z.literal("workflow") });
+const workflowTrigger = z.object({
+  kind: z.literal("workflow"),
+  name: z.string().max(100).optional(),
+});
 
 export const triggerSchema = z.discriminatedUnion("kind", [
   eventTrigger,
@@ -72,6 +81,7 @@ export const retryPolicySchema = z.object({
 
 const baseStep = {
   id: stepIdRefinement.optional(),
+  name: z.string().max(100).optional(),
   capture: z.enum(["summary", "full", "none"]).optional(),
   sensitive: z.boolean().optional(),
   retry: retryPolicySchema.optional(),
