@@ -8,7 +8,7 @@ import {
   STEP_KIND_CONFIG,
   type NodeKindConfig,
 } from "./lib/node-kind-config";
-import { TriggerInspector, blankTrigger } from "./forms/TriggerForms";
+import { TriggerInspector, blankTrigger } from "./forms/triggers";
 import { StepInspector } from "./forms/StepForms";
 import type {
   Workflow,
