@@ -133,20 +133,34 @@ export function NodeInspector({
 
   const footer =
     selection && cfg ? (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-        onClick={() =>
-          isTrigger
-            ? onDeleteTrigger(selection.index)
-            : onDeleteStep(selection.index)
-        }
-      >
-        <Trash2 className="size-3.5" />
-        Delete
-      </Button>
+      <>
+        {isTrigger ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="sm:mr-auto"
+            onClick={() => onReplaceTrigger(selection.index)}
+          >
+            <Repeat className="size-3.5" />
+            Replace trigger
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() =>
+            isTrigger
+              ? onDeleteTrigger(selection.index)
+              : onDeleteStep(selection.index)
+          }
+        >
+          <Trash2 className="size-3.5" />
+          Delete
+        </Button>
+      </>
     ) : null;
 
   return (
@@ -159,26 +173,12 @@ export function NodeInspector({
       footer={footer}
     >
       {selection && trigger && (
-        <>
-          <div className="mb-4">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full justify-center gap-1.5"
-              onClick={() => onReplaceTrigger(selection.index)}
-            >
-              <Repeat className="size-3.5" />
-              Replace trigger
-            </Button>
-          </div>
-          <TriggerInspector
-            trigger={trigger}
-            onChange={(next) => onChangeTrigger(selection.index, next)}
-            errors={triggerErrors}
-            webhookBaseUrl={webhookBaseUrl}
-          />
-        </>
+        <TriggerInspector
+          trigger={trigger}
+          onChange={(next) => onChangeTrigger(selection.index, next)}
+          errors={triggerErrors}
+          webhookBaseUrl={webhookBaseUrl}
+        />
       )}
       {selection && step && (
         <>
