@@ -253,7 +253,9 @@ export function VarPickerPopover({
             )}
           >
             <div className="flex items-center gap-1.5">
-              <code className="font-mono text-[11px]">{leaf.path}</code>
+              <span className="text-sm font-semibold text-foreground">
+                {leaf.label}
+              </span>
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {leaf.type}
                 {leaf.optional ? "?" : ""}
@@ -272,10 +274,14 @@ export function VarPickerPopover({
                 </span>
               )}
             </div>
-            <div className="text-[11px] text-muted-foreground">
-              {leaf.label}
-              {leaf.description ? ` · ${leaf.description}` : ""}
-            </div>
+            <code className="font-mono text-[11px] text-muted-foreground">
+              {leaf.path}
+            </code>
+            {leaf.description && (
+              <div className="text-[11px] text-muted-foreground">
+                {leaf.description}
+              </div>
+            )}
             <div className="text-[10px] italic text-muted-foreground">
               {describeSource(leaf.source)}
             </div>
