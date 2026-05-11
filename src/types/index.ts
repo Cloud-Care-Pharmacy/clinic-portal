@@ -1951,9 +1951,47 @@ export type WorkflowStep =
   | WaitForEventStep
   | CallWorkflowStep;
 
+/**
+ * Sticky-note color presets for workflow canvas notes. Each maps to a
+ * tinted background in the editor (see `NOTE_COLORS` in canvas-consts).
+ */
+export type WorkflowNoteColor =
+  | "yellow"
+  | "blue"
+  | "green"
+  | "pink"
+  | "purple"
+  | "gray";
+
+/**
+ * Free-floating annotation rendered on the workflow canvas. Notes are
+ * non-executable — the runner ignores them entirely. Persisted alongside
+ * `steps[]` inside `WorkflowDefinitionBody.notes[]` so they round-trip via
+ * the existing PATCH `/workflows/:id` endpoint.
+ */
+export interface WorkflowNote {
+  id: string;
+  title?: string;
+  body: string;
+  /** Absolute canvas x position (xyflow flow-coords, not screen px). */
+  x: number;
+  /** Absolute canvas y position (xyflow flow-coords, not screen px). */
+  y: number;
+  width: number;
+  height: number;
+  color: WorkflowNoteColor;
+  /** Stacking order; higher = rendered on top. */
+  z: number;
+}
+
 export interface WorkflowDefinitionBody {
   version?: number;
   steps: WorkflowStep[];
+  /**
+   * Optional canvas annotations. Omitted when empty so older workflows and
+   * minimal definitions stay clean. Backend round-trips this verbatim.
+   */
+  notes?: WorkflowNote[];
 }
 
 export interface Workflow {

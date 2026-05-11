@@ -16,6 +16,7 @@ import {
   Play,
   Plus,
   Save,
+  StickyNote,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -39,6 +40,8 @@ interface WorkflowActionBarProps {
   isActive: boolean;
   onToggleActive: (checked: boolean) => void;
   onAdd: () => void;
+  /** Add a free-floating sticky note at the current viewport center. */
+  onAddNote: () => void;
   onSave: () => void;
   onTestRun: () => void;
   testRunPending: boolean;
@@ -71,6 +74,7 @@ export function WorkflowActionBar({
   isActive,
   onToggleActive,
   onAdd,
+  onAddNote,
   onSave,
   onTestRun,
   testRunPending,
@@ -141,6 +145,19 @@ export function WorkflowActionBar({
           >
             <Plus className="size-3.5" />
             Add step
+          </Button>
+
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={onAddNote}
+            className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+            aria-label="Add note"
+            title="Add a sticky note to the canvas"
+          >
+            <StickyNote className="size-3.5" />
+            Add note
           </Button>
 
           <Button

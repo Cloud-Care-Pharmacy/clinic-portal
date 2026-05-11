@@ -7,11 +7,18 @@ import { Button } from "@/components/ui/button";
 import { WorkflowGraph } from "@/components/workflows/canvas/WorkflowGraph";
 import type { NodeRunStatus } from "@/components/workflows/canvas/lib/graph-builder";
 import { stepNodeName } from "@/components/workflows/canvas/lib/step-tree";
-import type { WorkflowRunStep, WorkflowStep, WorkflowTrigger } from "@/types";
+import type {
+  WorkflowNote,
+  WorkflowRunStep,
+  WorkflowStep,
+  WorkflowTrigger,
+} from "@/types";
 
 interface RunCanvasProps {
   triggers: WorkflowTrigger[];
   steps: WorkflowStep[];
+  /** Sticky-note annotations from the workflow definition (read-only). */
+  notes?: WorkflowNote[];
   /**
    * Server-computed per-step projection (one entry per definition step).
    * Drives the per-node status pills.
@@ -38,6 +45,7 @@ interface RunCanvasProps {
 function RunCanvasBody({
   triggers,
   steps,
+  notes,
   runSteps,
   now,
   selectedStepIndex,
@@ -161,6 +169,7 @@ function RunCanvasBody({
       <WorkflowGraph
         triggers={triggers}
         steps={steps}
+        notes={notes}
         selectedId={selectedNodeId}
         onSelect={handleSelect}
         // Insertion is inert in read-only mode.

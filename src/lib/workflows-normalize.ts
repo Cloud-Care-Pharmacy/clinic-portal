@@ -29,7 +29,7 @@ export function normalizeWorkflowDefinition(
   def: WorkflowDefinitionBody | null | undefined,
 ): WorkflowDefinitionBody {
   if (!def || !Array.isArray(def.steps)) {
-    return { version: def?.version, steps: [] };
+    return { version: def?.version, steps: [], ...(def?.notes ? { notes: def.notes } : null) };
   }
   const flat: WorkflowStep[] = [];
   hoistSteps(def.steps, flat, undefined, undefined);
