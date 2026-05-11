@@ -2068,6 +2068,72 @@ export interface UpdateWorkflowPayload {
   definition?: WorkflowDefinitionBody;
 }
 
+// ---- Workflow vars catalog (template autocomplete) ----
+
+export type WorkflowVarLeafType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "enum"
+  | "array"
+  | "object"
+  | "record"
+  | "unknown";
+
+export type WorkflowVarSource =
+  | { kind: "static" }
+  | { kind: "event"; eventType: string }
+  | {
+      kind: "step";
+      /** -1 in the global catalog; otherwise the step's position. */
+      stepIndex: number;
+      stepKind: string;
+      stepId?: string;
+      storeAs?: string;
+      casing?: "snake" | "camel" | "mixed";
+    }
+  | { kind: "wait_for_event"; eventType: string; stepIndex: number }
+  | { kind: "loop"; stepIndex: number };
+
+export interface WorkflowVarLeaf {
+  /** Dotted path the author writes inside `{{ ... }}`. */
+  path: string;
+  /** Pre-humanized last segment, ready to display. */
+  label: string;
+  type: WorkflowVarLeafType;
+  optional: boolean;
+  description?: string;
+  enumValues?: string[];
+  arrayElement?: WorkflowVarLeafType;
+  /** True for record / opaque shapes — keys cannot be enumerated. */
+  dynamic?: boolean;
+  source: WorkflowVarSource;
+}
+
+export interface WorkflowVarsNamespaceCatalog {
+  /** Top-level segment, e.g. `event`, `vars`, `events`, `loop`, `test`. */
+  namespace: string;
+  description?: string;
+  leaves: WorkflowVarLeaf[];
+}
+
+export interface WorkflowVarsCatalog {
+  leaves: WorkflowVarLeaf[];
+  namespaces: WorkflowVarsNamespaceCatalog[];
+}
+
+export interface WorkflowVarsCatalogResponse {
+  success: boolean;
+  data: WorkflowVarsCatalog;
+}
+
+/** Body shape for `POST /workflows/vars-catalog/preview`. */
+export interface WorkflowVarsCatalogPreviewPayload {
+  triggers: WorkflowTrigger[];
+  definition: WorkflowDefinitionBody;
+}
+
 export type WorkflowRunStatus =
   | "running"
   | "waiting"

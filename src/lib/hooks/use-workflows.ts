@@ -60,7 +60,7 @@ export class WorkflowApiError extends Error {
   }
 }
 
-async function readError(res: Response, fallback: string) {
+export async function readError(res: Response, fallback: string) {
   let message = fallback;
   let issues: WorkflowValidationIssue[] | undefined;
   let code: string | undefined;

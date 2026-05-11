@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { VarPickerPopover } from "./VarPickerPopover";
 
 interface FieldProps {
   label: string;
@@ -39,11 +40,15 @@ interface TemplatedFieldProps {
   multiline?: boolean;
   rows?: number;
   monospace?: boolean;
+  /** Disable the {{var}} autocomplete picker. Defaults to enabled. */
+  disablePicker?: boolean;
 }
 
 /**
  * String input that supports `{{event.payload.x}}` template interpolation.
- * Renders a small hint reminding the author about the templating syntax.
+ * Renders a small hint reminding the author about the templating syntax,
+ * and mounts a `VarPickerPopover` that opens when the caret is inside an
+ * unclosed `{{`.
  */
 export function TemplatedField({
   label,
@@ -55,8 +60,10 @@ export function TemplatedField({
   multiline,
   rows = 4,
   monospace,
+  disablePicker,
 }: TemplatedFieldProps) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const Cmp = multiline ? Textarea : Input;
   return (
     <Field
@@ -66,14 +73,25 @@ export function TemplatedField({
       }
       error={error}
     >
-      <Cmp
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={multiline ? rows : undefined}
-        className={cn(monospace && "font-mono text-xs", error && "border-destructive")}
-      />
+      <div className="relative">
+        <Cmp
+          id={id}
+          ref={inputRef as React.Ref<HTMLInputElement & HTMLTextAreaElement>}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          rows={multiline ? rows : undefined}
+          className={cn(monospace && "font-mono text-xs", error && "border-destructive")}
+        />
+        {!disablePicker && (
+          <VarPickerPopover
+            inputRef={inputRef}
+            value={value}
+            onChange={(v) => onChange(v)}
+          />
+        )}
+      </div>
     </Field>
   );
 }
+

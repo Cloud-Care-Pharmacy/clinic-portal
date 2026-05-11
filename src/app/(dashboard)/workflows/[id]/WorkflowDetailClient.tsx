@@ -30,8 +30,13 @@ import { WorkflowActionBar } from "@/components/workflows/WorkflowActionBar";
 import { OutdatedRunsBanner } from "@/components/workflows/OutdatedRunsBanner";
 import { SaveNewVersionDialog } from "@/components/workflows/SaveNewVersionDialog";
 import { workflowSchema } from "@/components/workflows/canvas/lib/workflow-schema";
+import { VarsCatalogProvider } from "@/components/workflows/canvas/lib/vars-catalog-context";
 import { useTestRunWorkflow } from "@/lib/hooks/use-workflows";
 import { useWorkflowRuns } from "@/lib/hooks/use-workflow-runs";
+import {
+  useDraftVarsCatalog,
+  useWorkflowVarsCatalog,
+} from "@/lib/hooks/use-workflow-vars-catalog";
 import { countOutdatedRuns } from "@/lib/workflow-versions";
 import type {
   Workflow,
@@ -180,6 +185,32 @@ export function WorkflowDetailClient({
     () => (allWorkflows?.data ?? []).filter((w) => w.id !== workflowId),
     [allWorkflows, workflowId]
   );
+
+  // ---- Workflow vars catalog ----
+  // Saved-workflow catalog (cheap GET, refetched when the workflow record
+  // changes). Used as the picker source while the draft is clean.
+  const savedCatalogQuery = useWorkflowVarsCatalog(workflowId);
+  // Draft catalog: only POST when the user has unsaved changes. The hook
+  // debounces, dedupes by definition hash, and falls back to the previous
+  // catalog on 400 (invalid draft).
+  const draftCatalogPayload = useMemo(
+    () =>
+      draftDirty
+        ? {
+            triggers: draftTriggers,
+            definition: { version: 1 as const, steps: draftSteps },
+          }
+        : null,
+    [draftDirty, draftTriggers, draftSteps],
+  );
+  const draftCatalog = useDraftVarsCatalog(draftCatalogPayload, {
+    enabled: draftDirty,
+  });
+  const activeCatalog = draftDirty
+    ? draftCatalog.catalog ?? savedCatalogQuery.data?.data ?? null
+    : savedCatalogQuery.data?.data ?? null;
+  const catalogLoading = draftDirty ? draftCatalog.loading : savedCatalogQuery.isLoading;
+  const catalogError = (draftDirty ? draftCatalog.error : savedCatalogQuery.error) ?? null;
 
   // Replace the workflow id segment in the breadcrumb with its name.
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
@@ -467,18 +498,24 @@ export function WorkflowDetailClient({
       {/* Body — full bleed canvas, no top header strip or tabs bar */}
       <ReactFlowProvider>
         <div className="relative min-h-0 flex-1 bg-background">
-          <WorkflowEditor
-            triggers={draftTriggers}
-            steps={draftSteps}
-            notes={draftNotes}
-            onChange={handleDraftChange}
-            webhookBaseUrl={WEBHOOK_BASE_URL}
-            otherWorkflows={subWorkflows}
-            serverError={serverError}
-            openPaletteSignal={addSignal}
-            addNoteSignal={addNoteSignal}
-            panningMode={panningMode}
-          />
+          <VarsCatalogProvider
+            catalog={activeCatalog}
+            loading={catalogLoading}
+            error={catalogError}
+          >
+            <WorkflowEditor
+              triggers={draftTriggers}
+              steps={draftSteps}
+              notes={draftNotes}
+              onChange={handleDraftChange}
+              webhookBaseUrl={WEBHOOK_BASE_URL}
+              otherWorkflows={subWorkflows}
+              serverError={serverError}
+              openPaletteSignal={addSignal}
+              addNoteSignal={addNoteSignal}
+              panningMode={panningMode}
+            />
+          </VarsCatalogProvider>
 
           <WorkflowActionBar
             workflowId={workflowId}

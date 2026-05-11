@@ -15,6 +15,7 @@ import { StepInspector } from "./forms/steps";
 import { CaptureSettings } from "./forms/steps/CaptureSettings";
 import { RetrySettings } from "./forms/steps/RetrySettings";
 import { Field } from "./forms/Field";
+import { VarsCatalogStepProvider } from "./lib/vars-catalog-context";
 import type {
   Workflow,
   WorkflowStep,
@@ -215,13 +216,15 @@ export function NodeInspector({
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="parameters" className="space-y-0">
-            <StepInspector
-              step={step}
-              onChange={(next) => onChangeStep(selection.index, next)}
-              errors={stepErrors}
-              otherSteps={otherSteps}
-              otherWorkflows={otherWorkflows}
-            />
+            <VarsCatalogStepProvider stepIndex={selection.index}>
+              <StepInspector
+                step={step}
+                onChange={(next) => onChangeStep(selection.index, next)}
+                errors={stepErrors}
+                otherSteps={otherSteps}
+                otherWorkflows={otherWorkflows}
+              />
+            </VarsCatalogStepProvider>
           </TabsContent>
           <TabsContent value="settings">
             <Field
