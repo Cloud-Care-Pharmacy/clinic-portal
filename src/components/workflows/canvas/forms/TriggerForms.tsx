@@ -5,13 +5,6 @@ import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Field } from "./Field";
 import { cronWarnings } from "../lib/workflow-schema";
 import type {
@@ -278,27 +271,3 @@ export function blankTrigger(kind: WorkflowTrigger["kind"]): WorkflowTrigger {
   }
 }
 
-interface TriggerKindSelectProps {
-  value: WorkflowTrigger["kind"];
-  onChange: (kind: WorkflowTrigger["kind"]) => void;
-}
-
-export function TriggerKindSelect({ value, onChange }: TriggerKindSelectProps) {
-  return (
-    <Select
-      value={value}
-      onValueChange={(v) => v && onChange(v as WorkflowTrigger["kind"])}
-    >
-      <SelectTrigger>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="event">Event</SelectItem>
-        <SelectItem value="schedule">Schedule</SelectItem>
-        <SelectItem value="webhook">Webhook</SelectItem>
-        <SelectItem value="manual">Manual</SelectItem>
-        <SelectItem value="workflow">Sub-workflow</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-}

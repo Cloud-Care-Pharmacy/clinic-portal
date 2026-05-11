@@ -74,6 +74,14 @@ export function WorkflowEditor({
   const [pendingInsertion, setPendingInsertion] = useState<InsertionRequest | null>(
     null,
   );
+  /**
+   * When set, the palette is in "replace trigger" mode: picking a trigger
+   * kind will overwrite the trigger at this index instead of appending a new
+   * one. Reset whenever the palette closes.
+   */
+  const [replaceTriggerIndex, setReplaceTriggerIndex] = useState<number | null>(
+    null,
+  );
 
   const reactFlow = useReactFlow();
 
@@ -83,6 +91,7 @@ export function WorkflowEditor({
     setPaletteTab(tab);
     setPaletteOpen(true);
     setPendingInsertion(null);
+    setReplaceTriggerIndex(null);
     setSelection(null);
     setSelectedNoteId(null);
   }, []);
@@ -118,11 +127,30 @@ export function WorkflowEditor({
     setPendingInsertion(req);
     setPaletteTab("actions");
     setPaletteOpen(true);
+    setReplaceTriggerIndex(null);
+    setSelection(null);
+    setSelectedNoteId(null);
+  }, []);
+
+  const handleReplaceTrigger = useCallback((index: number) => {
+    setReplaceTriggerIndex(index);
+    setPaletteTab("triggers");
+    setPaletteOpen(true);
+    setPendingInsertion(null);
     setSelection(null);
     setSelectedNoteId(null);
   }, []);
 
   const addTrigger = (kind: WorkflowTriggerKind) => {
+    if (replaceTriggerIndex !== null) {
+      const next = [...triggers];
+      next[replaceTriggerIndex] = blankTrigger(kind);
+      onChange({ triggers: next, steps, notes });
+      setPaletteOpen(false);
+      setSelection({ kind: "trigger", index: replaceTriggerIndex });
+      setReplaceTriggerIndex(null);
+      return;
+    }
     const next = [...triggers, blankTrigger(kind)];
     onChange({ triggers: next, steps, notes });
     setPaletteOpen(false);
@@ -151,12 +179,6 @@ export function WorkflowEditor({
   const updateTrigger = (index: number, t: WorkflowTrigger) => {
     const next = [...triggers];
     next[index] = t;
-    onChange({ triggers: next, steps, notes });
-  };
-
-  const updateTriggerKind = (index: number, kind: WorkflowTriggerKind) => {
-    const next = [...triggers];
-    next[index] = blankTrigger(kind);
     onChange({ triggers: next, steps, notes });
   };
 
@@ -336,11 +358,18 @@ export function WorkflowEditor({
         <NodePalette
           open={paletteOpen}
           initialTab={paletteTab}
+          lockTab={
+            replaceTriggerIndex !== null || triggers.length === 0
+              ? "triggers"
+              : undefined
+          }
+          title={replaceTriggerIndex !== null ? "Replace trigger" : "Add node"}
           onAddTrigger={addTrigger}
           onAddStep={addStep}
           onClose={() => {
             setPaletteOpen(false);
             setPendingInsertion(null);
+            setReplaceTriggerIndex(null);
           }}
         />
 
@@ -351,7 +380,7 @@ export function WorkflowEditor({
           steps={steps}
           onChangeTrigger={updateTrigger}
           onChangeStep={updateStep}
-          onChangeTriggerKind={updateTriggerKind}
+          onReplaceTrigger={handleReplaceTrigger}
           onMoveStep={moveStep}
           onDeleteTrigger={deleteTrigger}
           onDeleteStep={deleteStep}

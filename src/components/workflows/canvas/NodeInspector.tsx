@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Repeat, Trash2 } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,13 +8,12 @@ import {
   STEP_KIND_CONFIG,
   type NodeKindConfig,
 } from "./lib/node-kind-config";
-import { TriggerInspector, TriggerKindSelect, blankTrigger } from "./forms/TriggerForms";
+import { TriggerInspector, blankTrigger } from "./forms/TriggerForms";
 import { StepInspector } from "./forms/StepForms";
 import type {
   Workflow,
   WorkflowStep,
   WorkflowTrigger,
-  WorkflowTriggerKind,
 } from "@/types";
 
 export type Selection =
@@ -28,7 +27,12 @@ interface NodeInspectorProps {
   steps: WorkflowStep[];
   onChangeTrigger: (index: number, next: WorkflowTrigger) => void;
   onChangeStep: (index: number, next: WorkflowStep) => void;
-  onChangeTriggerKind: (index: number, kind: WorkflowTriggerKind) => void;
+  /**
+   * Open the trigger picker to replace the trigger at `index`. The trigger
+   * kind cannot be changed in-place via a dropdown — the user must pick a
+   * new trigger from the same list shown when adding the first one.
+   */
+  onReplaceTrigger: (index: number) => void;
   onMoveStep: (index: number, dir: -1 | 1) => void;
   onDeleteTrigger: (index: number) => void;
   onDeleteStep: (index: number) => void;
@@ -62,7 +66,7 @@ export function NodeInspector({
   steps,
   onChangeTrigger,
   onChangeStep,
-  onChangeTriggerKind,
+  onReplaceTrigger,
   onMoveStep,
   onDeleteTrigger,
   onDeleteStep,
@@ -157,13 +161,16 @@ export function NodeInspector({
       {selection && trigger && (
         <>
           <div className="mb-4">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Trigger kind
-            </div>
-            <TriggerKindSelect
-              value={trigger.kind}
-              onChange={(k) => onChangeTriggerKind(selection.index, k)}
-            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-center gap-1.5"
+              onClick={() => onReplaceTrigger(selection.index)}
+            >
+              <Repeat className="size-3.5" />
+              Replace trigger
+            </Button>
           </div>
           <TriggerInspector
             trigger={trigger}
