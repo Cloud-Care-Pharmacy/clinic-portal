@@ -1,20 +1,24 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Repeat, Trash2 } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   TRIGGER_KIND_CONFIG,
   STEP_KIND_CONFIG,
   type NodeKindConfig,
 } from "./lib/node-kind-config";
-import { TriggerInspector, TriggerKindSelect, blankTrigger } from "./forms/TriggerForms";
-import { StepInspector } from "./forms/StepForms";
+import { TriggerInspector, blankTrigger } from "./forms/triggers";
+import { StepInspector } from "./forms/steps";
+import { CaptureSettings } from "./forms/steps/CaptureSettings";
+import { RetrySettings } from "./forms/steps/RetrySettings";
+import { Field } from "./forms/Field";
 import type {
   Workflow,
   WorkflowStep,
   WorkflowTrigger,
-  WorkflowTriggerKind,
 } from "@/types";
 
 export type Selection =
@@ -28,8 +32,12 @@ interface NodeInspectorProps {
   steps: WorkflowStep[];
   onChangeTrigger: (index: number, next: WorkflowTrigger) => void;
   onChangeStep: (index: number, next: WorkflowStep) => void;
-  onChangeTriggerKind: (index: number, kind: WorkflowTriggerKind) => void;
-  onMoveStep: (index: number, dir: -1 | 1) => void;
+  /**
+   * Open the trigger picker to replace the trigger at `index`. The trigger
+   * kind cannot be changed in-place via a dropdown — the user must pick a
+   * new trigger from the same list shown when adding the first one.
+   */
+  onReplaceTrigger: (index: number) => void;
   onDeleteTrigger: (index: number) => void;
   onDeleteStep: (index: number) => void;
   onClose: () => void;
@@ -62,8 +70,7 @@ export function NodeInspector({
   steps,
   onChangeTrigger,
   onChangeStep,
-  onChangeTriggerKind,
-  onMoveStep,
+  onReplaceTrigger,
   onDeleteTrigger,
   onDeleteStep,
   onClose,
@@ -129,20 +136,34 @@ export function NodeInspector({
 
   const footer =
     selection && cfg ? (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-        onClick={() =>
-          isTrigger
-            ? onDeleteTrigger(selection.index)
-            : onDeleteStep(selection.index)
-        }
-      >
-        <Trash2 className="size-3.5" />
-        Delete
-      </Button>
+      <>
+        {isTrigger ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="sm:mr-auto"
+            onClick={() => onReplaceTrigger(selection.index)}
+          >
+            <Repeat className="size-3.5" />
+            Replace trigger
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() =>
+            isTrigger
+              ? onDeleteTrigger(selection.index)
+              : onDeleteStep(selection.index)
+          }
+        >
+          <Trash2 className="size-3.5" />
+          Delete
+        </Button>
+      </>
     ) : null;
 
   return (
@@ -155,63 +176,96 @@ export function NodeInspector({
       footer={footer}
     >
       {selection && trigger && (
-        <>
-          <div className="mb-4">
-            <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-              Trigger kind
-            </div>
-            <TriggerKindSelect
-              value={trigger.kind}
-              onChange={(k) => onChangeTriggerKind(selection.index, k)}
+        <Tabs defaultValue="parameters" className="gap-3">
+          <TabsList>
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="parameters" className="space-y-0">
+            <TriggerInspector
+              trigger={trigger}
+              onChange={(next) => onChangeTrigger(selection.index, next)}
+              errors={triggerErrors}
+              webhookBaseUrl={webhookBaseUrl}
             />
-          </div>
-          <TriggerInspector
-            trigger={trigger}
-            onChange={(next) => onChangeTrigger(selection.index, next)}
-            errors={triggerErrors}
-            webhookBaseUrl={webhookBaseUrl}
-          />
-        </>
+          </TabsContent>
+          <TabsContent value="settings">
+            <Field
+              label="Name"
+              hint="Display name shown on the canvas. Defaults to the trigger kind."
+            >
+              <Input
+                value={trigger.name ?? ""}
+                onChange={(e) =>
+                  onChangeTrigger(selection.index, {
+                    ...trigger,
+                    name: e.target.value || undefined,
+                  } as WorkflowTrigger)
+                }
+                placeholder={cfg?.label ?? ""}
+              />
+            </Field>
+          </TabsContent>
+        </Tabs>
       )}
       {selection && step && (
-        <>
-          <div className="mb-4 flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>
-              Step {selection.index + 1} of {steps.length}
-            </span>
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                disabled={selection.index === 0}
-                onClick={() => onMoveStep(selection.index, -1)}
-                aria-label="Move up"
-              >
-                <ChevronUp className="size-3.5" />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-6"
-                disabled={selection.index === steps.length - 1}
-                onClick={() => onMoveStep(selection.index, 1)}
-                aria-label="Move down"
-              >
-                <ChevronDown className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-          <StepInspector
-            step={step}
-            onChange={(next) => onChangeStep(selection.index, next)}
-            errors={stepErrors}
-            otherSteps={otherSteps}
-            otherWorkflows={otherWorkflows}
-          />
-        </>
+        <Tabs defaultValue="parameters" className="gap-3">
+          <TabsList>
+            <TabsTrigger value="parameters">Parameters</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="parameters" className="space-y-0">
+            <StepInspector
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+              errors={stepErrors}
+              otherSteps={otherSteps}
+              otherWorkflows={otherWorkflows}
+            />
+          </TabsContent>
+          <TabsContent value="settings">
+            <Field
+              label="Name"
+              hint="Display name shown on the canvas. Defaults to the step kind."
+            >
+              <Input
+                value={step.name ?? ""}
+                onChange={(e) =>
+                  onChangeStep(selection.index, {
+                    ...step,
+                    name: e.target.value || undefined,
+                  } as WorkflowStep)
+                }
+                placeholder={cfg?.label ?? ""}
+              />
+            </Field>
+            <Field
+              label="Step id (optional)"
+              hint="Use as a goto target from a branch step. Letters, digits, _ or -."
+              error={stepErrors.id}
+            >
+              <Input
+                value={step.id ?? ""}
+                onChange={(e) =>
+                  onChangeStep(selection.index, {
+                    ...step,
+                    id: e.target.value || undefined,
+                  } as WorkflowStep)
+                }
+                placeholder="auto"
+                className="font-mono text-xs"
+              />
+            </Field>
+            <CaptureSettings
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+            />
+            <RetrySettings
+              step={step}
+              onChange={(next) => onChangeStep(selection.index, next)}
+            />
+          </TabsContent>
+        </Tabs>
       )}
     </AppSheet>
   );

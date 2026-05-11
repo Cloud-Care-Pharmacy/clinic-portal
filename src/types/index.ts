@@ -1581,25 +1581,35 @@ export type WorkflowTriggerKind =
 export interface WorkflowEventTrigger {
   kind: "event";
   eventType: string;
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
 }
 
 export interface WorkflowManualTrigger {
   kind: "manual";
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
 }
 
 export interface WorkflowScheduleTrigger {
   kind: "schedule";
   cron: string;
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
 }
 
 export interface WorkflowWebhookTrigger {
   kind: "webhook";
   /** Server-generated; absent on the create request. */
   token?: string;
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
 }
 
 export interface WorkflowSubflowTrigger {
   kind: "workflow";
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
 }
 
 export type WorkflowTrigger =
@@ -1706,6 +1716,8 @@ export interface WorkflowStepRetryPolicy {
 
 interface WorkflowStepBase {
   id?: string;
+  /** Optional user-facing display name shown on the canvas node. */
+  name?: string;
   /**
    * Flat-encoded tree marker. When set, this step is a child of the named
    * parent step (which must be a `router` or `loop_on_items`). Steps without

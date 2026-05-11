@@ -18,6 +18,14 @@ type Tab = "triggers" | "actions";
 interface NodePaletteProps {
   open: boolean;
   initialTab?: Tab;
+  /**
+   * When set, the palette is locked to a single tab and the tab switcher is
+   * hidden. Used when (a) the canvas has no trigger yet — the first node must
+   * be a trigger — and (b) when replacing an existing trigger.
+   */
+  lockTab?: Tab;
+  /** Title shown at the top of the palette sheet. */
+  title?: string;
   onAddTrigger: (kind: WorkflowTriggerKind) => void;
   onAddStep: (kind: WorkflowStepKind) => void;
   onClose: () => void;
@@ -26,19 +34,22 @@ interface NodePaletteProps {
 export function NodePalette({
   open,
   initialTab = "actions",
+  lockTab,
+  title = "Add node",
   onAddTrigger,
   onAddStep,
   onClose,
 }: NodePaletteProps) {
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const effectiveInitial = lockTab ?? initialTab;
+  const [tab, setTab] = useState<Tab>(effectiveInitial);
   const [q, setQ] = useState("");
 
-  // Sync tab to initialTab when the palette is reopened.
+  // Sync tab to initialTab/lockTab when the palette is reopened.
   // (Render-time prev-prop pattern.)
-  const [lastInitial, setLastInitial] = useState(initialTab);
-  if (initialTab !== lastInitial) {
-    setLastInitial(initialTab);
-    setTab(initialTab);
+  const [lastInitial, setLastInitial] = useState(effectiveInitial);
+  if (effectiveInitial !== lastInitial) {
+    setLastInitial(effectiveInitial);
+    setTab(effectiveInitial);
   }
 
   const items = useMemo(() => {
@@ -70,7 +81,7 @@ export function NodePalette({
       onOpenChange={(o) => {
         if (!o) onClose();
       }}
-      title="Add node"
+      title={title}
       bodyClassName="px-0 py-0"
     >
       <div className="flex h-full min-h-0 flex-col">
@@ -85,26 +96,28 @@ export function NodePalette({
             />
           </div>
         </div>
-        <div className="flex gap-1 border-b border-border px-3">
-          {(["triggers", "actions"] as Tab[]).map((t) => {
-            const active = tab === t;
-            return (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={cn(
-                  "h-8 flex-1 -mb-px border-b-2 text-sm capitalize transition-colors",
-                  active
-                    ? "border-primary font-semibold text-foreground"
-                    : "border-transparent font-medium text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t}
-              </button>
-            );
-          })}
-        </div>
+        {!lockTab && (
+          <div className="flex gap-1 border-b border-border px-3">
+            {(["triggers", "actions"] as Tab[]).map((t) => {
+              const active = tab === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={cn(
+                    "h-8 flex-1 -mb-px border-b-2 text-sm capitalize transition-colors",
+                    active
+                      ? "border-primary font-semibold text-foreground"
+                      : "border-transparent font-medium text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        )}
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2.5">
           <ul className="flex flex-col gap-1">
             {filtered.map((it) => {

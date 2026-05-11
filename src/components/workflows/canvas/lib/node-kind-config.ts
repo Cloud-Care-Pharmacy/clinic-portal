@@ -87,31 +87,31 @@ export const TRIGGER_KIND_CONFIG: Record<WorkflowTriggerKind, NodeKindConfig> = 
   event: fam("trigger", {
     label: "Event trigger",
     shortLabel: "Event",
-    description: "Fires when a domain event matches",
+    description: "Run when something happens in the system",
     icon: Zap,
   }),
   manual: fam("trigger", {
     label: "Manual trigger",
     shortLabel: "Manual",
-    description: "Triggered from the Test run button",
+    description: "Start the workflow by hand for testing",
     icon: Hand,
   }),
   schedule: fam("trigger", {
     label: "Schedule",
     shortLabel: "Schedule",
-    description: "Cron schedule (5-minute granularity, UTC)",
+    description: "Run automatically on a recurring schedule",
     icon: Clock,
   }),
   webhook: fam("trigger", {
     label: "Webhook",
     shortLabel: "Webhook",
-    description: "HTTP POST to a generated URL",
+    description: "Run when an external service calls a unique URL",
     icon: Webhook,
   }),
   workflow: fam("trigger", {
     label: "Sub-workflow trigger",
     shortLabel: "Sub-workflow",
-    description: "Called from another workflow",
+    description: "Run when another workflow calls this one",
     icon: GitMerge,
   }),
 };
@@ -120,73 +120,73 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
   send_email: fam("tool", {
     label: "Send email",
     shortLabel: "Email",
-    description: "Send transactional email via Resend",
+    description: "Send an email to one or more recipients",
     icon: Mail,
   }),
   send_sms: fam("tool", {
     label: "Send SMS",
     shortLabel: "SMS",
-    description: "Send SMS via Twilio",
+    description: "Send a text message to a phone number",
     icon: MessageSquare,
   }),
   http_call: fam("tool", {
     label: "HTTP call",
     shortLabel: "HTTP",
-    description: "Outbound HTTP request",
+    description: "Call an external service over the web",
     icon: Globe,
   }),
   record_activity: fam("tool", {
     label: "Record activity",
     shortLabel: "Activity",
-    description: "Append a patient activity event",
+    description: "Add an entry to a patient's activity timeline",
     icon: Activity,
   }),
   lookup_patient: fam("tool", {
     label: "Lookup patient",
     shortLabel: "Patient",
-    description: "Load a patient into context",
+    description: "Find a patient to use later in the workflow",
     icon: UserSearch,
   }),
   lookup_consultation: fam("tool", {
     label: "Lookup consultation",
     shortLabel: "Consultation",
-    description: "Load a consultation into context",
+    description: "Find a consultation to use later in the workflow",
     icon: CalendarSearch,
   }),
   wait: fam("human", {
     label: "Wait",
     shortLabel: "Wait",
-    description: "Durable timer pause",
+    description: "Pause for a set amount of time",
     icon: Hourglass,
   }),
   wait_for_event: fam("human", {
     label: "Wait for event",
     shortLabel: "Wait event",
-    description: "Pause until a matching domain event arrives",
+    description: "Pause until something specific happens",
     icon: Hourglass,
   }),
   branch_if: fam("branch", {
     label: "Branch (if/else)",
     shortLabel: "Branch",
-    description: "Legacy conditional jump — use Router for new flows",
+    description: "Older two-way choice — use Router for new flows",
     icon: GitBranch,
   }),
   router: fam("branch", {
     label: "Router",
     shortLabel: "Router",
-    description: "Fan out into named branches with conditions",
+    description: "Send the workflow down different paths based on rules",
     icon: GitFork,
   }),
   loop_on_items: fam("branch", {
     label: "Loop on items",
     shortLabel: "Loop",
-    description: "Iterate a sub-flow over each item in a list",
+    description: "Repeat steps once for each item in a list",
     icon: Repeat,
   }),
   call_workflow: fam("agent", {
     label: "Call workflow",
     shortLabel: "Sub-flow",
-    description: "Invoke another workflow as a sub-flow",
+    description: "Run another workflow as part of this one",
     icon: PhoneOutgoing,
   }),
 };
@@ -227,23 +227,24 @@ export function stepConfig(kind: WorkflowStepKind): NodeKindConfig {
  * the visible name/sub-label on each step or trigger card.
  */
 export function triggerLabel(t: WorkflowTrigger): { label: string; sub: string } {
+  const named = t.name?.trim();
   switch (t.kind) {
     case "event":
-      return { label: "Event", sub: t.eventType || "—" };
+      return { label: named || "Event", sub: t.eventType || "—" };
     case "manual":
-      return { label: "Manual", sub: "Test run / API" };
+      return { label: named || "Manual", sub: "Test run / API" };
     case "schedule":
-      return { label: "Schedule", sub: t.cron || "—" };
+      return { label: named || "Schedule", sub: t.cron || "—" };
     case "webhook":
       return {
-        label: "Webhook",
+        label: named || "Webhook",
         sub: t.token ? "/" + t.token.slice(0, 10) + "…" : "(saves on create)",
       };
     case "workflow":
-      return { label: "Sub-workflow", sub: "Called by another flow" };
+      return { label: named || "Sub-workflow", sub: "Called by another flow" };
     default:
       return {
-        label: "Trigger",
+        label: named || "Trigger",
         sub: (t as { kind?: string })?.kind ?? "unknown",
       };
   }
@@ -254,40 +255,41 @@ export function stepLabel(
   flatIndex: number,
 ): { label: string; sub: string } {
   const fallback = s.id ?? `step_${flatIndex + 1}`;
+  const named = s.name?.trim();
   switch (s.kind) {
     case "send_email":
-      return { label: "Send email", sub: s.subject || s.to || fallback };
+      return { label: named || "Send email", sub: s.subject || s.to || fallback };
     case "send_sms":
-      return { label: "Send SMS", sub: s.to || fallback };
+      return { label: named || "Send SMS", sub: s.to || fallback };
     case "wait":
-      return { label: "Wait", sub: `${s.seconds ?? 0}s` };
+      return { label: named || "Wait", sub: `${s.seconds ?? 0}s` };
     case "wait_for_event":
-      return { label: "Wait for event", sub: s.eventType || fallback };
+      return { label: named || "Wait for event", sub: s.eventType || fallback };
     case "branch_if":
       return {
-        label: "Branch",
+        label: named || "Branch",
         sub: `${s.left ?? "?"} ${s.op ?? "?"} ${s.right ?? ""}`.trim(),
       };
     case "router":
       return {
-        label: "Router",
+        label: named || "Router",
         sub: `${s.branches.length} branch${s.branches.length === 1 ? "" : "es"}`,
       };
     case "loop_on_items":
-      return { label: "Loop", sub: s.items || fallback };
+      return { label: named || "Loop", sub: s.items || fallback };
     case "lookup_patient":
-      return { label: "Lookup patient", sub: s.storeAs || fallback };
+      return { label: named || "Lookup patient", sub: s.storeAs || fallback };
     case "lookup_consultation":
-      return { label: "Lookup consultation", sub: s.storeAs || fallback };
+      return { label: named || "Lookup consultation", sub: s.storeAs || fallback };
     case "record_activity":
-      return { label: "Record activity", sub: s.title || fallback };
+      return { label: named || "Record activity", sub: s.title || fallback };
     case "http_call":
-      return { label: "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
+      return { label: named || "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
     case "call_workflow":
-      return { label: "Call workflow", sub: s.workflowId || fallback };
+      return { label: named || "Call workflow", sub: s.workflowId || fallback };
     default:
       return {
-        label: (s as { kind?: string })?.kind ?? "Step",
+        label: named || ((s as { kind?: string })?.kind ?? "Step"),
         sub: fallback,
       };
   }
