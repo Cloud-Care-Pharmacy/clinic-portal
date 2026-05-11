@@ -241,6 +241,11 @@ export function triggerLabel(t: WorkflowTrigger): { label: string; sub: string }
       };
     case "workflow":
       return { label: "Sub-workflow", sub: "Called by another flow" };
+    default:
+      return {
+        label: "Trigger",
+        sub: (t as { kind?: string })?.kind ?? "unknown",
+      };
   }
 }
 
@@ -280,5 +285,10 @@ export function stepLabel(
       return { label: "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
     case "call_workflow":
       return { label: "Call workflow", sub: s.workflowId || fallback };
+    default:
+      return {
+        label: (s as { kind?: string })?.kind ?? "Step",
+        sub: fallback,
+      };
   }
 }
