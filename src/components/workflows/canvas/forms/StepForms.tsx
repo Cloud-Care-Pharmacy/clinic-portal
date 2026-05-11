@@ -703,6 +703,7 @@ function HttpCallForm(props: StepFormProps<HttpCallStep>) {
         value={step.url ?? ""}
         onChange={(v) => onChange({ ...step, url: v })}
         placeholder="https://example.com/hook"
+        hint="Only public https:// URLs are allowed. Cloud metadata and private IP ranges (e.g. 169.254.169.254, 10.0.0.0/8) are blocked."
         monospace
         error={errors?.url}
       />
