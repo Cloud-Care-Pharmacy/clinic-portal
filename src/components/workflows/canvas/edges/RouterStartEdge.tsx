@@ -29,7 +29,9 @@ export function RouterStartEdge({
   const ed = (data ?? {}) as unknown as WfRouterStartEdgeData;
 
   const labelLineY = sourceY + LABEL_HEIGHT;
-  const branchLabelY = labelLineY + 18;
+  // Sit the branch label midway down the final vertical descent so it
+  // floats above the branch head rather than hugging the horizontal jog.
+  const branchLabelY = (labelLineY + targetY) / 2;
 
   // Orthogonal branch fan-out with quarter-circle rounded corners. The path
   // must end exactly at targetX/targetY; otherwise labels/buttons look
