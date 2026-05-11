@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -133,29 +134,44 @@ function KeyValueEditor({
   valuePlaceholder?: string;
   addLabel: string;
 }) {
-  const entries = Object.entries(values ?? {});
-  function update(next: [string, string][]) {
-    if (next.length === 0) {
-      onChange(undefined);
-      return;
-    }
+  // Local row state so users can add empty rows and type keys/values
+  // before they are propagated upward. The parent only ever sees rows
+  // with non-empty keys, but the editor preserves all rows visually.
+  const [rows, setRows] = useState<[string, string][]>(() =>
+    Object.entries(values ?? {})
+  );
+  // Sync from upstream when the canonical object changes from outside
+  // (e.g. switching nodes). We compare a normalized projection of local
+  // rows to the incoming values to avoid clobbering in-progress edits.
+  const lastSyncedRef = useRef<string>(JSON.stringify(values ?? {}));
+  useEffect(() => {
+    const incoming = JSON.stringify(values ?? {});
+    if (incoming === lastSyncedRef.current) return;
+    lastSyncedRef.current = incoming;
+    setRows(Object.entries(values ?? {}));
+  }, [values]);
+
+  function commit(next: [string, string][]) {
+    setRows(next);
     const obj: Record<string, string> = {};
     for (const [k, v] of next) {
       if (k) obj[k] = v;
     }
-    onChange(Object.keys(obj).length ? obj : undefined);
+    const out = Object.keys(obj).length ? obj : undefined;
+    lastSyncedRef.current = JSON.stringify(out ?? {});
+    onChange(out);
   }
   return (
     <div className="flex flex-col gap-1.5">
-      {entries.map(([k, v], i) => (
+      {rows.map(([k, v], i) => (
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={k}
             onChange={(e) => {
-              const next: [string, string][] = entries.map((p, j) =>
+              const next: [string, string][] = rows.map((p, j) =>
                 j === i ? [e.target.value, p[1]] : p
               );
-              update(next);
+              commit(next);
             }}
             placeholder={keyPlaceholder ?? "key"}
             className="font-mono text-xs"
@@ -163,10 +179,10 @@ function KeyValueEditor({
           <Input
             value={v}
             onChange={(e) => {
-              const next: [string, string][] = entries.map((p, j) =>
+              const next: [string, string][] = rows.map((p, j) =>
                 j === i ? [p[0], e.target.value] : p
               );
-              update(next);
+              commit(next);
             }}
             placeholder={valuePlaceholder ?? "value"}
             className="font-mono text-xs"
@@ -176,7 +192,7 @@ function KeyValueEditor({
             variant="ghost"
             size="icon"
             className="size-7 shrink-0"
-            onClick={() => update(entries.filter((_, j) => j !== i))}
+            onClick={() => commit(rows.filter((_, j) => j !== i))}
             aria-label="Remove"
           >
             <Trash2 className="size-3.5" />
@@ -188,7 +204,7 @@ function KeyValueEditor({
         variant="ghost"
         size="sm"
         className="w-fit gap-1 text-xs"
-        onClick={() => update([...entries, ["", ""]])}
+        onClick={() => setRows([...rows, ["", ""]])}
       >
         <Plus className="size-3.5" />
         {addLabel}
