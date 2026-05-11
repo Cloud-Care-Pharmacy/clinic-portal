@@ -18,6 +18,7 @@ import type {
   WorkflowStatus,
   WorkflowsListResponse,
 } from "@/types";
+import { normalizeWorkflow } from "@/lib/workflows-normalize";
 
 // ---- Errors ----
 
@@ -103,13 +104,15 @@ async function fetchWorkflows(opts: ListOpts): Promise<WorkflowsListResponse> {
   const qs = params.toString() ? `?${params.toString()}` : "";
   const res = await fetch(`/api/proxy/workflows${qs}`);
   if (!res.ok) throw await readError(res, "Failed to load workflows");
-  return res.json();
+  const body = (await res.json()) as WorkflowsListResponse;
+  return { ...body, data: (body.data ?? []).map(normalizeWorkflow) };
 }
 
 async function fetchWorkflow(workflowId: string): Promise<WorkflowResponse> {
   const res = await fetch(`/api/proxy/workflows/${encodeURIComponent(workflowId)}`);
   if (!res.ok) throw await readError(res, "Failed to load workflow");
-  return res.json();
+  const body = (await res.json()) as WorkflowResponse;
+  return { ...body, data: normalizeWorkflow(body.data) };
 }
 
 // ---- Query options ----
