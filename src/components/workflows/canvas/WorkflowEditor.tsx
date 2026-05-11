@@ -199,16 +199,6 @@ export function WorkflowEditor({
     onChange({ triggers, steps: next, notes });
   };
 
-  const moveStep = (index: number, dir: -1 | 1) => {
-    const target = index + dir;
-    if (target < 0 || target >= steps.length) return;
-    const next = [...steps];
-    const [removed] = next.splice(index, 1);
-    next.splice(target, 0, removed);
-    onChange({ triggers, steps: next, notes });
-    setSelection({ kind: "step", index: target });
-  };
-
   const deleteTrigger = (index: number) => {
     const next = triggers.filter((_, i) => i !== index);
     onChange({ triggers: next, steps, notes });
@@ -381,7 +371,6 @@ export function WorkflowEditor({
           onChangeTrigger={updateTrigger}
           onChangeStep={updateStep}
           onReplaceTrigger={handleReplaceTrigger}
-          onMoveStep={moveStep}
           onDeleteTrigger={deleteTrigger}
           onDeleteStep={deleteStep}
           onClose={() => setSelection(null)}

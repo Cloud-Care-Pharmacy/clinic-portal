@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Repeat, Trash2 } from "lucide-react";
+import { Repeat, Trash2 } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,6 @@ interface NodeInspectorProps {
    * new trigger from the same list shown when adding the first one.
    */
   onReplaceTrigger: (index: number) => void;
-  onMoveStep: (index: number, dir: -1 | 1) => void;
   onDeleteTrigger: (index: number) => void;
   onDeleteStep: (index: number) => void;
   onClose: () => void;
@@ -72,7 +71,6 @@ export function NodeInspector({
   onChangeTrigger,
   onChangeStep,
   onReplaceTrigger,
-  onMoveStep,
   onDeleteTrigger,
   onDeleteStep,
   onClose,
@@ -217,35 +215,6 @@ export function NodeInspector({
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="parameters" className="space-y-0">
-            <div className="mb-4 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>
-                Step {selection.index + 1} of {steps.length}
-              </span>
-              <div className="flex gap-1">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-6"
-                  disabled={selection.index === 0}
-                  onClick={() => onMoveStep(selection.index, -1)}
-                  aria-label="Move up"
-                >
-                  <ChevronUp className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="size-6"
-                  disabled={selection.index === steps.length - 1}
-                  onClick={() => onMoveStep(selection.index, 1)}
-                  aria-label="Move down"
-                >
-                  <ChevronDown className="size-3.5" />
-                </Button>
-              </div>
-            </div>
             <StepInspector
               step={step}
               onChange={(next) => onChangeStep(selection.index, next)}
