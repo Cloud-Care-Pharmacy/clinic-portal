@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "./Field";
-import { cronWarnings } from "../lib/workflow-schema";
+import { ScheduleBuilder } from "./ScheduleBuilder";
 import type {
   WorkflowEventTrigger,
   WorkflowScheduleTrigger,
@@ -31,13 +30,6 @@ const COMMON_EVENT_TYPES = [
   "system.tick.daily",
 ];
 
-const CRON_PRESETS: { label: string; cron: string }[] = [
-  { label: "Every 5 minutes", cron: "*/5 * * * *" },
-  { label: "Top of every hour", cron: "0 * * * *" },
-  { label: "9:00 AM UTC daily", cron: "0 9 * * *" },
-  { label: "Weekdays at 9:00 AM UTC", cron: "0 9 * * 1-5" },
-  { label: "1st of every month, 9:30 AM UTC", cron: "30 9 1 * *" },
-];
 
 export function EventTriggerForm({
   trigger,
@@ -105,50 +97,12 @@ export function ScheduleTriggerForm({
   onChange,
   errors,
 }: TriggerFormProps<WorkflowScheduleTrigger>) {
-  const warnings = useMemo(
-    () => (trigger.cron ? cronWarnings(trigger.cron) : []),
-    [trigger.cron]
-  );
-
   return (
-    <>
-      <Field
-        label="Cron (UTC)"
-        hint="Standard 5-field cron. The evaluator runs every 5 minutes."
-        error={errors?.cron}
-      >
-        <Input
-          value={trigger.cron}
-          onChange={(e) => onChange({ ...trigger, cron: e.target.value })}
-          placeholder="0 9 * * *"
-          className="font-mono text-xs"
-        />
-      </Field>
-      {warnings.length > 0 && (
-        <div className="-mt-2 mb-4 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2 text-[11px] text-status-warning-fg">
-          {warnings.map((w) => (
-            <p key={w}>{w}</p>
-          ))}
-        </div>
-      )}
-      <Field label="Presets">
-        <div className="flex flex-col gap-1">
-          {CRON_PRESETS.map((p) => (
-            <button
-              key={p.cron}
-              type="button"
-              onClick={() => onChange({ ...trigger, cron: p.cron })}
-              className="flex items-center justify-between rounded-md border border-border bg-card px-2.5 py-1.5 text-left text-xs transition-colors hover:border-primary"
-            >
-              <span>{p.label}</span>
-              <code className="font-mono text-[11px] text-muted-foreground">
-                {p.cron}
-              </code>
-            </button>
-          ))}
-        </div>
-      </Field>
-    </>
+    <ScheduleBuilder
+      cron={trigger.cron}
+      onChange={(cron) => onChange({ ...trigger, cron })}
+      error={errors?.cron}
+    />
   );
 }
 
