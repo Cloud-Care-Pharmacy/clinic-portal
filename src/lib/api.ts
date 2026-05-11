@@ -1,3 +1,4 @@
+import { normalizeWorkflow } from "@/lib/workflows-normalize";
 import type {
   PatientMapping,
   PatientsListResponse,
@@ -786,11 +787,15 @@ class ApiClient {
     if (opts?.triggerEventType) params.set("triggerEventType", opts.triggerEventType);
     if (opts?.limit) params.set("limit", String(opts.limit));
     const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(`/workflows${qs}`);
+    const body = await this.request<WorkflowsListResponse>(`/workflows${qs}`);
+    return { ...body, data: (body.data ?? []).map(normalizeWorkflow) };
   }
 
   async getWorkflow(workflowId: string): Promise<WorkflowResponse> {
-    return this.request(`/workflows/${encodeURIComponent(workflowId)}`);
+    const body = await this.request<WorkflowResponse>(
+      `/workflows/${encodeURIComponent(workflowId)}`
+    );
+    return { ...body, data: normalizeWorkflow(body.data) };
   }
 
   async listWorkflowRuns(
