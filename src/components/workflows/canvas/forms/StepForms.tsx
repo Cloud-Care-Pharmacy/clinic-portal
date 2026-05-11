@@ -216,6 +216,61 @@ function StepIdField({ step, onChange, errors }: StepFormProps<WorkflowStep>) {
   );
 }
 
+function SendEmailContent({
+  step,
+  onChange,
+  errors,
+}: StepFormProps<SendEmailStep>) {
+  // Derive content type from existing data: any html value (even empty string)
+  // means HTML mode; otherwise text mode.
+  const contentType: "text" | "html" = step.html !== undefined ? "html" : "text";
+  return (
+    <>
+      <Field label="Content type">
+        <Select
+          value={contentType}
+          onValueChange={(v) => {
+            if (!v) return;
+            if (v === "html") {
+              onChange({ ...step, text: undefined, html: step.html ?? "" });
+            } else {
+              onChange({ ...step, html: undefined, text: step.text ?? "" });
+            }
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="text">Plain text</SelectItem>
+            <SelectItem value="html">HTML</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {contentType === "html" ? (
+        <TemplatedField
+          label="HTML body"
+          value={step.html ?? ""}
+          onChange={(v) => onChange({ ...step, html: v })}
+          multiline
+          rows={5}
+          monospace
+          error={errors?.html}
+        />
+      ) : (
+        <TemplatedField
+          label="Text body"
+          value={step.text ?? ""}
+          onChange={(v) => onChange({ ...step, text: v })}
+          multiline
+          rows={5}
+          error={errors?.text}
+        />
+      )}
+    </>
+  );
+}
+
 function SendEmailForm(props: StepFormProps<SendEmailStep>) {
   const { step, onChange, errors } = props;
   return (
@@ -285,23 +340,7 @@ function SendEmailForm(props: StepFormProps<SendEmailStep>) {
         placeholder="Reminder: your appointment tomorrow"
         error={errors?.subject}
       />
-      <TemplatedField
-        label="Text body"
-        value={step.text ?? ""}
-        onChange={(v) => onChange({ ...step, text: v })}
-        multiline
-        rows={5}
-        error={errors?.text}
-      />
-      <TemplatedField
-        label="HTML body (optional)"
-        value={step.html ?? ""}
-        onChange={(v) => onChange({ ...step, html: v })}
-        multiline
-        rows={4}
-        monospace
-        error={errors?.html}
-      />
+      <SendEmailContent step={step} onChange={onChange} errors={errors} />
       <Field
         label="Custom headers (optional)"
         hint="X-* headers only. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date) are rejected."
