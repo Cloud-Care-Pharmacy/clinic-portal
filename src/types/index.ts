@@ -2142,7 +2142,8 @@ export type WorkflowRunEventType =
   | "wait_for_event_timed_out"
   | "run_resumed"
   | "run_completed"
-  | "run_failed";
+  | "run_failed"
+  | "run_cancelled";
 
 export interface WorkflowRunEvent {
   id: string;

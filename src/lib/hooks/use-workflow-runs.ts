@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type {
   WorkflowRun,
   WorkflowRunCapturesResponse,
@@ -12,6 +17,17 @@ import type {
   WorkflowRunStreamStepPayload,
   WorkflowRunsListResponse,
 } from "@/types";
+
+export class WorkflowRunCancelError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  constructor(status: number, message: string, code?: string) {
+    super(message);
+    this.name = "WorkflowRunCancelError";
+    this.status = status;
+    this.code = code;
+  }
+}
 
 async function fetchRuns(
   workflowId: string,
@@ -290,4 +306,81 @@ export async function fetchCapturePayload(
   );
   if (!res.ok) throw new Error("Failed to load full payload");
   return res.json();
+}
+
+// ---- Cancel run ----
+
+export interface CancelWorkflowRunPayload {
+  /** Optional, ≤500 chars. Surfaced as `detail.reason` on the audit event. */
+  reason?: string;
+}
+
+export interface CancelWorkflowRunResponse {
+  success: true;
+  data: {
+    run: WorkflowRun;
+    /** True when the run was already terminal — row is unchanged. */
+    alreadyTerminal: boolean;
+  };
+}
+
+/**
+ * Request cancellation of an in-flight workflow run. Only meaningful when
+ * `run.status` is `running` or `waiting`; the backend treats already-terminal
+ * runs as a no-op (`alreadyTerminal: true`).
+ *
+ * Error mapping:
+ *  - `404` → `WorkflowRunCancelError(404, ...)`
+ *  - `409` → `WorkflowRunCancelError(409, ..., "CONFLICT")` — concurrent
+ *    update raced; refetch the run and let the user retry.
+ */
+export function useCancelWorkflowRun(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      payload?: CancelWorkflowRunPayload
+    ): Promise<CancelWorkflowRunResponse> => {
+      const hasBody = Boolean(payload?.reason);
+      const res = await fetch(
+        `/api/proxy/workflows/runs/${encodeURIComponent(runId)}/cancel`,
+        {
+          method: "POST",
+          ...(hasBody
+            ? {
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: payload!.reason }),
+              }
+            : {}),
+        }
+      );
+      if (!res.ok) {
+        let message = `Failed to cancel run (HTTP ${res.status})`;
+        let code: string | undefined;
+        try {
+          const body = await res.json();
+          if (body && typeof body === "object") {
+            if (typeof body.error === "string") message = body.error;
+            if (typeof body.code === "string") code = body.code;
+          }
+        } catch {
+          // ignore — fall back to default message
+        }
+        throw new WorkflowRunCancelError(res.status, message, code);
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Patch the cached detail with the latest run snapshot. The audit
+      // event for `run_cancelled` will arrive on the SSE stream (or via
+      // the next refetch) — no need to write it here.
+      qc.setQueryData<WorkflowRunDetailResponse>(
+        ["workflow-runs", "detail", runId],
+        (prev) =>
+          prev
+            ? { ...prev, data: { ...prev.data, run: data.data.run } }
+            : prev
+      );
+      qc.invalidateQueries({ queryKey: ["workflow-runs", "list"] });
+    },
+  });
 }

@@ -3,11 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp, Radio } from "lucide-react";
+import { ChevronDown, ChevronUp, Radio, XCircle } from "lucide-react";
 import { format as formatDate } from "date-fns";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +30,11 @@ import {
 import { cn } from "@/lib/utils";
 import { isRunOutdated } from "@/lib/workflow-versions";
 import {
+  useCancelWorkflowRun,
   useWorkflowRun,
   useWorkflowRunStream,
   useWorkflowRuns,
+  WorkflowRunCancelError,
 } from "@/lib/hooks/use-workflow-runs";
 import { useWorkflow } from "@/lib/hooks/use-workflows";
 import { RunCanvas } from "./RunCanvas";
@@ -464,23 +478,37 @@ function buildRunSummary(run: WorkflowRun, steps: WorkflowRunStep[]): RunSummary
 interface RunBannersProps {
   run: WorkflowRun;
   now: number;
+  /** Reason from the `run_cancelled` audit event, when present. */
+  cancelReason?: string | null;
 }
 
 /**
- * Run-level banners (last error, waiting countdown). Rendered above the
- * collapsible Step trace so they remain visible when the trace is minimised.
+ * Run-level banners (last error, waiting countdown, cancellation reason).
+ * Rendered above the collapsible Step trace so they remain visible when the
+ * trace is minimised.
  */
-function RunBanners({ run, now }: RunBannersProps) {
+function RunBanners({ run, now, cancelReason }: RunBannersProps) {
   const showError = Boolean(run.lastError);
   const showWaiting =
     run.status === "waiting" && (run.nextStepAt || run.awaitingEventType);
-  if (!showError && !showWaiting) return null;
+  const showCancelled = run.status === "cancelled";
+  if (!showError && !showWaiting && !showCancelled) return null;
   return (
     <div className="flex flex-col gap-2 px-6 py-3">
       {showError && (
         <div className="rounded-xl border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <div className="font-semibold">Last error</div>
           <div className="mt-1 font-mono text-xs">{run.lastError}</div>
+        </div>
+      )}
+      {showCancelled && !showError && (
+        <div className="rounded-xl border-l-4 border-status-neutral-border bg-status-neutral-bg px-4 py-3 text-sm text-status-neutral-fg">
+          <div className="font-semibold">Run cancelled</div>
+          <div className="mt-1 text-xs">
+            {cancelReason
+              ? cancelReason
+              : "Cancellation requested via the run detail page."}
+          </div>
         </div>
       )}
       {showWaiting && (
@@ -727,6 +755,7 @@ function RunPanel({
 }: RunPanelProps) {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch } = useWorkflowRun(runId ?? "");
+  const cancelRun = useCancelWorkflowRun(runId ?? "");
 
   const isLive = data?.data?.run?.status === "running";
   // The run is "in flight" while it's actively executing OR parked in a
@@ -810,6 +839,35 @@ function RunPanel({
     },
   });
 
+  // Cancel-run dialog state. Reset whenever the selected run changes by
+  // tracking `runId` across renders (avoids an effect-driven cascade).
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReasonInput, setCancelReasonInput] = useState("");
+  const [lastCancelRunId, setLastCancelRunId] = useState<string | null>(
+    runId ?? null
+  );
+  if (lastCancelRunId !== (runId ?? null)) {
+    setLastCancelRunId(runId ?? null);
+    setCancelOpen(false);
+    setCancelReasonInput("");
+  }
+
+  // Pull the cancellation reason out of the audit trail so the banner can
+  // explain *why* the run was cancelled. The backend writes it into
+  // `detail.reason` on the `run_cancelled` event. Computed before the
+  // early return so the hook order stays stable across renders.
+  const cancelReason = useMemo<string | null>(() => {
+    if (data?.data?.run?.status !== "cancelled") return null;
+    const evts = data.data.events ?? [];
+    const ev = [...evts]
+      .reverse()
+      .find((e) => e.eventType === "run_cancelled");
+    const detail = (ev?.detail ?? {}) as Record<string, unknown>;
+    return typeof detail.reason === "string" && detail.reason.trim()
+      ? detail.reason
+      : null;
+  }, [data]);
+
   if (!runId) {
     return (
       <div className="flex flex-1 items-center justify-center p-6">
@@ -838,6 +896,41 @@ function RunPanel({
       run.status === "failed" ||
       run.status === "cancelled"
     : false;
+  const canCancel =
+    run?.status === "running" || run?.status === "waiting";
+
+  async function handleCancel() {
+    if (!runId) return;
+    try {
+      const reason = cancelReasonInput.trim();
+      const result = await cancelRun.mutateAsync(
+        reason ? { reason } : undefined
+      );
+      setCancelOpen(false);
+      setCancelReasonInput("");
+      if (result.data.alreadyTerminal) {
+        toast.info("Run already finished", {
+          description: "No changes — the run had already reached a terminal state.",
+        });
+      } else {
+        toast.success("Cancellation requested", {
+          description: "The run will stop after the current step.",
+        });
+      }
+    } catch (err) {
+      if (err instanceof WorkflowRunCancelError && err.code === "CONFLICT") {
+        // Concurrent modification — refresh and let the user retry.
+        void refetch();
+        toast.error("Run was modified concurrently", {
+          description: "Refreshed the latest state — please try again.",
+        });
+      } else {
+        const message =
+          err instanceof Error ? err.message : "Failed to cancel run";
+        toast.error("Cancel failed", { description: message });
+      }
+    }
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
@@ -859,8 +952,23 @@ function RunPanel({
             <Skeleton className="h-40 w-full max-w-md" />
           </div>
         )}
+        {canCancel && (
+          <div className="pointer-events-none absolute top-3 right-3 z-10">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="pointer-events-auto gap-1.5 bg-background/90 shadow-sm backdrop-blur"
+              onClick={() => setCancelOpen(true)}
+              disabled={cancelRun.isPending}
+            >
+              <XCircle className="size-3.5" />
+              Cancel run
+            </Button>
+          </div>
+        )}
       </div>
-      {run && <RunBanners run={run} now={now} />}
+      {run && <RunBanners run={run} now={now} cancelReason={cancelReason} />}
       <StepTraceHeader
         summary={summary}
         collapsed={traceCollapsed}
@@ -890,6 +998,51 @@ function RunPanel({
           )}
         </div>
       )}
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this run?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The run will stop after its current step. In-flight HTTP calls,
+              emails, and SMS messages already dispatched cannot be unsent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="cancel-reason"
+              className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground"
+            >
+              Reason (optional)
+            </label>
+            <Textarea
+              id="cancel-reason"
+              value={cancelReasonInput}
+              onChange={(e) => setCancelReasonInput(e.target.value.slice(0, 500))}
+              placeholder="e.g. Customer requested withdrawal"
+              rows={3}
+              maxLength={500}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Saved on the audit trail. Max 500 characters.
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelRun.isPending}>
+              Keep running
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleCancel();
+              }}
+              disabled={cancelRun.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelRun.isPending ? "Cancelling…" : "Cancel run"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
