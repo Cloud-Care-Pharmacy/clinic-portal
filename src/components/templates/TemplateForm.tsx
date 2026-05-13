@@ -191,7 +191,6 @@ export function TemplateForm({
     template ? stateFromTemplate(template) : blankState(initialType)
   );
   // Read indirectly via the `err()` helper from JSX field bindings.
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [errors, setErrors] = useState<Record<string, string>>({});
   const editorRef = useRef<TemplateBodyEditorHandle | null>(null);
 
@@ -203,7 +202,6 @@ export function TemplateForm({
   // Derived-state pattern (read during render) avoids setState-in-effect.
   const trackerKey = `${template?.id ?? "new"}|${defaultType}`;
   // Read at the equality check below as part of derived-state pattern.
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [trackedKey, setTrackedKey] = useState<string>(trackerKey);
   if (trackedKey !== trackerKey) {
     setTrackedKey(trackerKey);

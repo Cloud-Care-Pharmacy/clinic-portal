@@ -154,7 +154,6 @@ export function useWorkflowRunStream(
 
   // SSE stream subscription \u2014 fetch is required here for the streaming response
   // body. TanStack Query / SWR don't fit ReadableStream consumers.
-  // eslint-disable-next-line react-doctor/no-fetch-in-effect
   useEffect(() => {
     if (!runId || !enabled) return;
     let aborted = false;
@@ -169,7 +168,6 @@ export function useWorkflowRunStream(
         const url = `/api/proxy/workflows/runs/${encodeURIComponent(runId!)}/stream${qs}`;
         let reconnect = false;
         try {
-          // eslint-disable-next-line react-doctor/async-await-in-loop
           const res = await fetch(url, {
             signal: ctrl.signal,
             cache: "no-store",
@@ -182,16 +180,13 @@ export function useWorkflowRunStream(
           const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
           let buf = "";
 
-          // eslint-disable-next-line react-doctor/async-await-in-loop
           while (true) {
-            // eslint-disable-next-line react-doctor/async-await-in-loop
             const { value, done } = await reader.read();
             if (done) break;
             buf += value;
 
             let idx;
             // String scan on a streaming buffer; cannot use a Set here.
-            // eslint-disable-next-line react-doctor/js-set-map-lookups
             while ((idx = buf.indexOf("\n\n")) !== -1) {
               const frame = buf.slice(0, idx);
               buf = buf.slice(idx + 2);
@@ -200,9 +195,7 @@ export function useWorkflowRunStream(
               const lines = frame.split("\n");
               // Each frame has at most a few header lines — a Map index would be
               // slower than two `find` calls here.
-              // eslint-disable-next-line react-doctor/js-index-maps
               const eventLine = lines.find((l) => l.startsWith("event: "));
-              // eslint-disable-next-line react-doctor/js-index-maps
               const dataLine = lines.find((l) => l.startsWith("data: "));
               if (!dataLine) continue;
 

@@ -46,7 +46,6 @@ export function NoteNode({ data, selected }: NodeProps) {
   // `editing` flag, which only flips when entering / leaving edit mode.
   // (Imperative DOM focus tied to a state transition; not movable into a
   // pure event handler since the textarea isn't mounted until `editing`.)
-  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (editing) bodyRef.current?.focus();
   }, [editing]);

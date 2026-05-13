@@ -12,7 +12,6 @@ export default async function WorkflowRunsPage({ params, searchParams }: PagePro
   // Both API calls below depend on `id` from `params`, so the params/searchParams
   // resolution must happen first. The two batches cannot be flattened into one.
   const [{ id }, { runId }] = await Promise.all([params, searchParams]);
-  // eslint-disable-next-line react-doctor/server-sequential-independent-await
   const [workflow, runs] = await Promise.all([
     api.getWorkflow(id).catch((e) => {
       if (e instanceof ApiError && e.status === 404) return null;

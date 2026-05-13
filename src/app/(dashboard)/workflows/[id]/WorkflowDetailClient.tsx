@@ -170,7 +170,6 @@ export function WorkflowDetailClient({
   // unless the user has unsaved changes. Done during render via the
   // "store previous value" pattern (https://react.dev/reference/react/useState#storing-information-from-previous-renders)
   // to avoid effect-triggered cascading renders.
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastSyncedSig, setLastSyncedSig] = useState<string | null>(null);
   if (workflow && !draftDirty) {
     const signature = `${workflow.id}:${workflow.version}:${workflow.updatedAt}`;

@@ -47,7 +47,6 @@ export function EditUserSheet({ open, onOpenChange, user }: EditUserSheetProps) 
 
   // Re-seed RHF defaults when the sheet opens for a different user.
   // External-state sync, not an event handler.
-  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (open) form.reset(toFormData(user));
   }, [open, user, form]);

@@ -76,7 +76,6 @@ export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopover
   // the "store previous value during render" pattern to avoid a setState-in-
   // effect cascade. https://react.dev/reference/react/useState#storing-information-from-previous-renders
   // (Read during render at the `if (lastFilterKey !== filterKey)` check below.)
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastFilterKey, setLastFilterKey] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -113,7 +112,6 @@ export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopover
       el.removeEventListener("focus", handler);
       el.removeEventListener("blur", handler);
     };
-    // eslint-disable-next-line react-doctor/prefer-use-effect-event
   }, [inputRef, updateCaret]);
 
   const info = useMemo<CaretInfo | null>(
@@ -169,7 +167,6 @@ export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopover
 
   // Keyboard nav while popover is open. setState calls are inside an event
   // handler attached to the input, not a render-driven cascade.
-  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!open) return;
     const el = inputRef.current;

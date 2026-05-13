@@ -201,7 +201,6 @@ export function PatientCommandPalette({
 
   // Reset palette state on close after the close animation. setState calls
   // run inside a setTimeout callback, not a render-driven cascade.
-  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (open) return;
 

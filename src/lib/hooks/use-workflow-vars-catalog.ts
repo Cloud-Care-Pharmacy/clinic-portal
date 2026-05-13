@@ -125,7 +125,6 @@ export function useDraftVarsCatalog(
 
   // Debounced async preview fetch — setState calls run inside a setTimeout
   // callback (loading → success/error), not a render-driven cascade.
-  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!enabled || !draft || !hash) return;
     if (hash === lastSuccessHashRef.current) return;

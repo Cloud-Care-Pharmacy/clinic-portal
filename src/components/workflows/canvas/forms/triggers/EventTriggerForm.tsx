@@ -27,7 +27,6 @@ export function EventTriggerForm({
   // If the value is non-empty and not in the catalog, default to the custom
   // input so the existing free-text value remains editable.
   // (Read at the `if (mode === "custom")` early-return below.)
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [mode, setMode] = useState<Mode>(
     trigger.eventType && !matched ? "custom" : "pick"
   );

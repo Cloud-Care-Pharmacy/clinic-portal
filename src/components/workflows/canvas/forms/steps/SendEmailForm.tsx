@@ -82,7 +82,6 @@ function AttachmentsEditor({
       {list.map((a, i) => (
         // Append/remove-from-end editor; stable ids would require restructuring
         // the SendEmailAttachment[] controlled-component API.
-        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={a.url}

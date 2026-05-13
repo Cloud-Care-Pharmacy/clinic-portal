@@ -45,7 +45,6 @@ export function DocumentPreviewDialog({
   // and revoke generated object URLs to avoid leaking blob memory.
   // Cleanup resets multiple state slots back to their initial values; this
   // is intentional teardown, not a render-driven cascade.
-  // eslint-disable-next-line react-doctor/no-fetch-in-effect, react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!open || !document) return;
 

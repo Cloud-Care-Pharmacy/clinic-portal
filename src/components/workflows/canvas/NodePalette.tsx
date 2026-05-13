@@ -46,7 +46,6 @@ export function NodePalette({
 
   // Sync tab to initialTab/lockTab when the palette is reopened.
   // (Render-time prev-prop pattern.)
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastInitial, setLastInitial] = useState(effectiveInitial);
   if (effectiveInitial !== lastInitial) {
     setLastInitial(effectiveInitial);

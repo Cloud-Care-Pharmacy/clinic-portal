@@ -842,7 +842,6 @@ function RunPanel({
   const [cancelReasonInput, setCancelReasonInput] = useState("");
   // "Store previous value during render" pattern; read at the equality check
   // below to detect runId changes without a setState-in-effect cascade.
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastCancelRunId, setLastCancelRunId] = useState<string | null>(runId ?? null);
   if (lastCancelRunId !== (runId ?? null)) {
     setLastCancelRunId(runId ?? null);

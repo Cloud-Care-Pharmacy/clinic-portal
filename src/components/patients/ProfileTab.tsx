@@ -275,7 +275,6 @@ export function PatientEditSheet({
   // Sync RHF form values when the patient prop changes (e.g. profile sheet
   // reopens for a different patient). Not an event handler — it's external
   // state synchronisation.
-  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (patient) {
       form.reset(patientToFormDefaults(patient));

@@ -42,7 +42,6 @@ export function SendTestDialog({ open, onOpenChange, template }: SendTestDialogP
   // Derived-state reset when the (open, template) tuple changes.
   const trackerKey = `${open ? "o" : "c"}|${template?.id ?? ""}`;
   // Read at the equality check below as part of derived-state pattern.
-  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [trackedKey, setTrackedKey] = useState<string>("");
   if (open && template && trackedKey !== trackerKey) {
     setTrackedKey(trackerKey);

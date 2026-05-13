@@ -29,7 +29,6 @@ export function StringListEditor({
       {list.map((v, i) => (
         // Append/remove-from-end editor; stable ids would require restructuring
         // the string[] controlled-component API.
-        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={v}
@@ -114,7 +113,6 @@ export function KeyValueEditor({
       {rows.map(([k, v], i) => (
         // Append/remove-from-end editor; stable ids would require restructuring
         // the [key, value][] tuple state.
-        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={k}

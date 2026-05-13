@@ -112,7 +112,6 @@ export function RouterForm(props: StepFormProps<RouterStep>) {
           // WorkflowRouterBranch has no stable id; branches are addressed by
           // index throughout the editor (move/remove/condition handlers).
           <RouterBranchEditor
-            // eslint-disable-next-line react-doctor/no-array-index-as-key
             key={idx}
             index={idx}
             total={branches.length}
