@@ -27,6 +27,9 @@ export function StringListEditor({
   return (
     <div className="flex flex-col gap-1.5">
       {list.map((v, i) => (
+        // Append/remove-from-end editor; stable ids would require restructuring
+        // the string[] controlled-component API.
+        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={v}
@@ -109,6 +112,9 @@ export function KeyValueEditor({
   return (
     <div className="flex flex-col gap-1.5">
       {rows.map(([k, v], i) => (
+        // Append/remove-from-end editor; stable ids would require restructuring
+        // the [key, value][] tuple state.
+        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={k}
@@ -149,7 +155,7 @@ export function KeyValueEditor({
         variant="ghost"
         size="sm"
         className="w-fit gap-1 text-xs"
-        onClick={() => setRows([...rows, ["", ""]])}
+        onClick={() => setRows((prev) => [...prev, ["", ""]])}
       >
         <Plus className="size-3.5" />
         {addLabel}

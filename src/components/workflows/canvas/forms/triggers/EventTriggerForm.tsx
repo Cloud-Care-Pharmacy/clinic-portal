@@ -26,11 +26,13 @@ export function EventTriggerForm({
 
   // If the value is non-empty and not in the catalog, default to the custom
   // input so the existing free-text value remains editable.
+  // (Read at the `if (mode === "custom")` early-return below.)
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [mode, setMode] = useState<Mode>(
-    trigger.eventType && !matched ? "custom" : "pick",
+    trigger.eventType && !matched ? "custom" : "pick"
   );
   const [selectedEntity, setSelectedEntity] = useState<EventEntity | null>(
-    initialEntity,
+    initialEntity
   );
 
   // ----- Custom (free-text) mode ---------------------------------------------
@@ -70,16 +72,14 @@ export function EventTriggerForm({
       <Field label="Event" error={errors?.eventType}>
         <div className="rounded-md border border-border bg-card p-3">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-              <EntityIcon className="h-4 w-4 text-muted-foreground" />
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+              <EntityIcon className="size-4 text-muted-foreground" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 {matched.entity.label}
               </div>
-              <div className="text-sm font-medium text-foreground">
-                {matched.label}
-              </div>
+              <div className="text-sm font-medium text-foreground">{matched.label}</div>
               <div className="mt-0.5 text-xs text-muted-foreground">
                 {matched.description}
               </div>
@@ -101,7 +101,7 @@ export function EventTriggerForm({
               onClick={() => setMode("custom")}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
             >
-              <Pencil className="h-3 w-3" />
+              <Pencil className="size-3" />
               Use custom event type
             </button>
           </div>
@@ -121,11 +121,11 @@ export function EventTriggerForm({
             onClick={() => setSelectedEntity(null)}
             className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="size-3" />
             All entities
           </button>
           <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground">
-            <EntityIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <EntityIcon className="size-3.5 text-muted-foreground" />
             {selectedEntity.label}
           </div>
         </div>
@@ -138,12 +138,10 @@ export function EventTriggerForm({
                 onClick={() => onChange({ ...trigger, eventType: event.eventType })}
                 className={cn(
                   "rounded-md border border-border bg-card px-3 py-2 text-left transition-colors",
-                  "hover:border-primary hover:bg-accent",
+                  "hover:border-primary hover:bg-accent"
                 )}
               >
-                <div className="text-sm font-medium text-foreground">
-                  {event.label}
-                </div>
+                <div className="text-sm font-medium text-foreground">{event.label}</div>
                 <div className="mt-0.5 text-xs text-muted-foreground">
                   {event.description}
                 </div>
@@ -156,7 +154,7 @@ export function EventTriggerForm({
           onClick={() => setMode("custom")}
           className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
         >
-          <Pencil className="h-3 w-3" />
+          <Pencil className="size-3" />
           Use a custom event type
         </button>
       </>
@@ -181,11 +179,11 @@ export function EventTriggerForm({
                 onClick={() => setSelectedEntity(entity)}
                 className={cn(
                   "flex flex-col items-start gap-1 rounded-md border border-border bg-card px-3 py-2.5 text-left transition-colors",
-                  "hover:border-primary hover:bg-accent",
+                  "hover:border-primary hover:bg-accent"
                 )}
               >
                 <div className="flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Icon className="size-3.5 text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">
                     {entity.label}
                   </span>
@@ -204,7 +202,7 @@ export function EventTriggerForm({
         onClick={() => setMode("custom")}
         className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
       >
-        <Pencil className="h-3 w-3" />
+        <Pencil className="size-3" />
         Use a custom event type
       </button>
     </>

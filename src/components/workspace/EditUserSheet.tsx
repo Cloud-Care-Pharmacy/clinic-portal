@@ -18,12 +18,7 @@ import type { WorkspaceUser } from "@/types";
 const schema = z.object({
   firstName: z.string().trim().max(100, "Too long").optional().or(z.literal("")),
   lastName: z.string().trim().max(100, "Too long").optional().or(z.literal("")),
-  email: z
-    .string()
-    .trim()
-    .email("Enter a valid email")
-    .optional()
-    .or(z.literal("")),
+  email: z.string().trim().email("Enter a valid email").optional().or(z.literal("")),
   phone: z.string().trim().max(40, "Too long").optional().or(z.literal("")),
 });
 
@@ -50,6 +45,9 @@ export function EditUserSheet({ open, onOpenChange, user }: EditUserSheetProps) 
   const form = useForm<FormData>({ defaultValues: toFormData(user) });
   const isDirty = form.formState.isDirty;
 
+  // Re-seed RHF defaults when the sheet opens for a different user.
+  // External-state sync, not an event handler.
+  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (open) form.reset(toFormData(user));
   }, [open, user, form]);
@@ -126,11 +124,7 @@ export function EditUserSheet({ open, onOpenChange, user }: EditUserSheetProps) 
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            form={formId}
-            disabled={updateUser.isPending || !user}
-          >
+          <Button type="submit" form={formId} disabled={updateUser.isPending || !user}>
             {updateUser.isPending ? "Saving…" : "Save changes"}
           </Button>
         </>

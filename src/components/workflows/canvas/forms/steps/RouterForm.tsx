@@ -11,11 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BRANCH_OPS, isUnaryBranchOp } from "@/types";
-import type {
-  RouterStep,
-  WorkflowBranchOp,
-  WorkflowRouterBranch,
-} from "@/types";
+import type { RouterStep, WorkflowBranchOp, WorkflowRouterBranch } from "@/types";
 import { Field, TemplatedField } from "../Field";
 import type { StepFormProps } from "./types";
 
@@ -107,13 +103,16 @@ export function RouterForm(props: StepFormProps<RouterStep>) {
             onClick={addBranch}
             className="h-7 gap-1 px-2 text-xs"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="size-3.5" />
             Add branch
           </Button>
         </div>
 
         {branches.map((branch, idx) => (
+          // WorkflowRouterBranch has no stable id; branches are addressed by
+          // index throughout the editor (move/remove/condition handlers).
           <RouterBranchEditor
+            // eslint-disable-next-line react-doctor/no-array-index-as-key
             key={idx}
             index={idx}
             total={branches.length}
@@ -185,7 +184,7 @@ function RouterBranchEditor({
             onClick={() => onMove(-1)}
             aria-label="Move branch up"
           >
-            <ChevronUp className="h-3.5 w-3.5" />
+            <ChevronUp className="size-3.5" />
           </Button>
           <Button
             type="button"
@@ -196,7 +195,7 @@ function RouterBranchEditor({
             onClick={() => onMove(1)}
             aria-label="Move branch down"
           >
-            <ChevronDown className="h-3.5 w-3.5" />
+            <ChevronDown className="size-3.5" />
           </Button>
           {total > 1 && (
             <Button
@@ -207,7 +206,7 @@ function RouterBranchEditor({
               onClick={onRemove}
               aria-label="Remove branch"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="size-3.5" />
             </Button>
           )}
         </div>
@@ -221,7 +220,7 @@ function RouterBranchEditor({
           className="h-7 w-fit gap-1 px-2 text-xs"
           onClick={onEnableCondition}
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="size-3.5" />
           Add condition
         </Button>
       ) : (
@@ -278,7 +277,7 @@ function RouterBranchEditor({
               className="h-6 w-fit gap-1 px-2 text-[11px] text-muted-foreground"
               onClick={onDisableCondition}
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="size-3" />
               Remove condition
             </Button>
           </div>
@@ -304,7 +303,7 @@ function FallbackEditor({ fallback, onToggle, onRename }: FallbackEditorProps) {
         className="h-7 w-fit gap-1 px-2 text-xs"
         onClick={() => onToggle(true)}
       >
-        <Plus className="h-3.5 w-3.5" />
+        <Plus className="size-3.5" />
         Add fallback branch
       </Button>
     );
@@ -329,7 +328,7 @@ function FallbackEditor({ fallback, onToggle, onRename }: FallbackEditorProps) {
           onClick={() => onToggle(false)}
           aria-label="Remove fallback branch"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="size-3.5" />
         </Button>
       </div>
     </div>

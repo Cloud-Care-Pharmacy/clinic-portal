@@ -1665,7 +1665,7 @@ export const BRANCH_OP_LABELS: Record<WorkflowBranchOp, string> = Object.fromEnt
 
 /** Operators that don't take a `right` operand. */
 export const UNARY_BRANCH_OPS: ReadonlySet<WorkflowBranchOp> = new Set(
-  BRANCH_OPS.filter((o) => o.arity === "unary").map((o) => o.value)
+  BRANCH_OPS.flatMap((o) => (o.arity === "unary" ? [o.value] : []))
 );
 
 export function isUnaryBranchOp(op: WorkflowBranchOp): boolean {

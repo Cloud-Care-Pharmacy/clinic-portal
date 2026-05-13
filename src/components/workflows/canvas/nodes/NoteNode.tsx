@@ -44,6 +44,9 @@ export function NoteNode({ data, selected }: NodeProps) {
 
   // Focus the body textarea when entering edit mode. The dependency is the
   // `editing` flag, which only flips when entering / leaving edit mode.
+  // (Imperative DOM focus tied to a state transition; not movable into a
+  // pure event handler since the textarea isn't mounted until `editing`.)
+  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (editing) bodyRef.current?.focus();
   }, [editing]);
@@ -103,7 +106,7 @@ export function NoteNode({ data, selected }: NodeProps) {
                 "size-4 rounded-full border transition-all",
                 color === note.color
                   ? "ring-2 ring-primary ring-offset-1 ring-offset-popover"
-                  : "hover:scale-110",
+                  : "hover:scale-110"
               )}
             />
           ))}
@@ -147,7 +150,7 @@ export function NoteNode({ data, selected }: NodeProps) {
           "flex h-full w-full flex-col overflow-hidden rounded-lg border p-3 shadow-sm",
           selected && "ring-2 ring-primary/50",
           // Sticky-note-style cursor; xyflow handles the actual drag.
-          editing ? "cursor-text" : "cursor-grab active:cursor-grabbing",
+          editing ? "cursor-text" : "cursor-grab active:cursor-grabbing"
         )}
       >
         {draft ? (
@@ -155,7 +158,10 @@ export function NoteNode({ data, selected }: NodeProps) {
             <input
               type="text"
               value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDraft((prev) => (prev ? { ...prev, title: next } : prev));
+              }}
               placeholder="Title"
               className="bg-transparent text-sm font-semibold text-foreground placeholder:text-foreground/40 focus:outline-none"
               // Block xyflow keyboard handlers (delete, etc.) while editing.
@@ -164,7 +170,10 @@ export function NoteNode({ data, selected }: NodeProps) {
             <textarea
               ref={bodyRef}
               value={draft.body}
-              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDraft((prev) => (prev ? { ...prev, body: next } : prev));
+              }}
               onBlur={() => commit(draft)}
               onKeyDown={(e) => {
                 e.stopPropagation();
@@ -184,15 +193,13 @@ export function NoteNode({ data, selected }: NodeProps) {
         ) : (
           <>
             {note.title ? (
-              <div className="text-sm font-semibold text-foreground">
-                {note.title}
-              </div>
+              <div className="text-sm font-semibold text-foreground">{note.title}</div>
             ) : null}
             <div
               className={cn(
                 "flex-1 overflow-hidden text-xs leading-relaxed whitespace-pre-wrap text-foreground",
                 note.title ? "mt-1" : "",
-                !note.body && "text-foreground/40 italic",
+                !note.body && "text-foreground/40 italic"
               )}
             >
               {note.body || "Double-click to edit"}

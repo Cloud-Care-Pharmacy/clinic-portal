@@ -46,6 +46,7 @@ export function NodePalette({
 
   // Sync tab to initialTab/lockTab when the palette is reopened.
   // (Render-time prev-prop pattern.)
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastInitial, setLastInitial] = useState(effectiveInitial);
   if (effectiveInitial !== lastInitial) {
     setLastInitial(effectiveInitial);
@@ -71,7 +72,7 @@ export function NodePalette({
     ? items.filter(
         (it) =>
           it.cfg.label.toLowerCase().includes(q.toLowerCase()) ||
-          it.cfg.description.toLowerCase().includes(q.toLowerCase()),
+          it.cfg.description.toLowerCase().includes(q.toLowerCase())
       )
     : items;
 
@@ -109,7 +110,7 @@ export function NodePalette({
                     "h-8 flex-1 -mb-px border-b-2 text-sm capitalize transition-colors",
                     active
                       ? "border-primary font-semibold text-foreground"
-                      : "border-transparent font-medium text-muted-foreground hover:text-foreground",
+                      : "border-transparent font-medium text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {t}

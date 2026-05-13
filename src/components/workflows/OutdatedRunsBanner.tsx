@@ -42,10 +42,12 @@ export function OutdatedRunsBanner({
   // surviving run) so the copy stays accurate.
   const outdatedVersions = Array.from(
     new Set(
-      runs
-        .filter((r) => r.status === "running" || r.status === "waiting")
-        .filter((r) => r.definitionVersion < definitionVersion)
-        .map((r) => r.definitionVersion)
+      runs.flatMap((r) =>
+        (r.status === "running" || r.status === "waiting") &&
+        r.definitionVersion < definitionVersion
+          ? [r.definitionVersion]
+          : []
+      )
     )
   ).sort((a, b) => a - b);
   const versionLabel =
@@ -63,8 +65,8 @@ export function OutdatedRunsBanner({
           {count} {noun} still executing on {versionLabel}.
         </strong>{" "}
         <span className="opacity-80">
-          Current version is v{definitionVersion}. Existing runs will keep
-          using their pinned version until they finish.
+          Current version is v{definitionVersion}. Existing runs will keep using their
+          pinned version until they finish.
         </span>
       </div>
       <Link

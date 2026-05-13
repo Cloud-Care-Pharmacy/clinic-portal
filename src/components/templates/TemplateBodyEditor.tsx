@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
+import { useImperativeHandle, useRef, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -58,13 +58,16 @@ function ToolbarButton({
   );
 }
 
-export const TemplateBodyEditor = forwardRef<
-  TemplateBodyEditorHandle,
-  TemplateBodyEditorProps
->(function TemplateBodyEditor(
-  { type, value, onChange, placeholder, minHeight = 160 },
-  ref
-) {
+export function TemplateBodyEditor({
+  type,
+  value,
+  onChange,
+  placeholder,
+  minHeight = 160,
+  ref,
+}: TemplateBodyEditorProps & {
+  ref?: React.Ref<TemplateBodyEditorHandle>;
+}) {
   if (type === "email") {
     return (
       <EmailEditor
@@ -84,7 +87,7 @@ export const TemplateBodyEditor = forwardRef<
       minHeight={minHeight}
     />
   );
-});
+}
 
 // --------------------------------------------------------------------------
 // Email — TipTap
@@ -98,7 +101,7 @@ function EmailEditor({
   value: string;
   onChange: (next: string) => void;
   placeholder?: string;
-  editorRef: React.Ref<TemplateBodyEditorHandle>;
+  editorRef?: React.Ref<TemplateBodyEditorHandle>;
 }) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -215,7 +218,7 @@ function PlainEditor({
   value: string;
   onChange: (next: string) => void;
   placeholder?: string;
-  editorRef: React.Ref<TemplateBodyEditorHandle>;
+  editorRef?: React.Ref<TemplateBodyEditorHandle>;
   minHeight: number;
 }) {
   const taRef = useRef<HTMLTextAreaElement | null>(null);

@@ -24,7 +24,11 @@ import {
   smsTemplateSchema,
   notificationTemplateSchema,
 } from "./zod-schemas";
-import { useCreateTemplate, useUpdateTemplate, TemplatesApiError } from "@/lib/hooks/use-templates";
+import {
+  useCreateTemplate,
+  useUpdateTemplate,
+  TemplatesApiError,
+} from "@/lib/hooks/use-templates";
 import { htmlToText } from "@/lib/templates/html-to-text";
 import { segmentInfo } from "@/lib/templates/sms-utils";
 import { cn } from "@/lib/utils";
@@ -186,6 +190,8 @@ export function TemplateForm({
   const [form, setForm] = useState<FormState>(() =>
     template ? stateFromTemplate(template) : blankState(initialType)
   );
+  // Read indirectly via the `err()` helper from JSX field bindings.
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [errors, setErrors] = useState<Record<string, string>>({});
   const editorRef = useRef<TemplateBodyEditorHandle | null>(null);
 
@@ -196,6 +202,8 @@ export function TemplateForm({
   // Reset form when the target changes (e.g. edit-sheet reopens with new id).
   // Derived-state pattern (read during render) avoids setState-in-effect.
   const trackerKey = `${template?.id ?? "new"}|${defaultType}`;
+  // Read at the equality check below as part of derived-state pattern.
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [trackedKey, setTrackedKey] = useState<string>(trackerKey);
   if (trackedKey !== trackerKey) {
     setTrackedKey(trackerKey);
@@ -341,44 +349,44 @@ export function TemplateForm({
 
       {/* Common fields */}
       {showDetails && (
-      <section className="space-y-3">
-        <Field label="Name" error={err("name")} required>
-          <Input
-            value={form.name}
-            onChange={(e) => update("name", e.target.value)}
-            placeholder="e.g. Welcome — new patient"
-            aria-invalid={!!err("name")}
-          />
-        </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Category" error={err("category")}>
+        <section className="space-y-3">
+          <Field label="Name" error={err("name")} required>
             <Input
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
-              placeholder="e.g. Onboarding"
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              placeholder="e.g. Welcome — new patient"
+              aria-invalid={!!err("name")}
             />
           </Field>
-          <Field label="Status">
-            <div className="flex h-10 items-center gap-2 rounded-lg border border-input px-3">
-              <Switch
-                checked={form.active}
-                onCheckedChange={(c) => update("active", !!c)}
-                aria-label="Active"
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Category" error={err("category")}>
+              <Input
+                value={form.category}
+                onChange={(e) => update("category", e.target.value)}
+                placeholder="e.g. Onboarding"
               />
-              <span className="text-sm text-muted-foreground">
-                {form.active ? "Active" : "Inactive"}
-              </span>
-            </div>
+            </Field>
+            <Field label="Status">
+              <div className="flex h-10 items-center gap-2 rounded-lg border border-input px-3">
+                <Switch
+                  checked={form.active}
+                  onCheckedChange={(c) => update("active", !!c)}
+                  aria-label="Active"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {form.active ? "Active" : "Inactive"}
+                </span>
+              </div>
+            </Field>
+          </div>
+          <Field label="Description" error={err("description")}>
+            <Input
+              value={form.description}
+              onChange={(e) => update("description", e.target.value)}
+              placeholder="Internal note about when this is used"
+            />
           </Field>
-        </div>
-        <Field label="Description" error={err("description")}>
-          <Input
-            value={form.description}
-            onChange={(e) => update("description", e.target.value)}
-            placeholder="Internal note about when this is used"
-          />
-        </Field>
-      </section>
+        </section>
       )}
 
       {/* Type-specific fields */}
@@ -447,7 +455,7 @@ export function TemplateForm({
             <div>
               <p className="text-sm font-medium">Allow attachments</p>
               <p className="text-xs text-muted-foreground">
-                Informational — flag for downstream sender configuration.
+                Informational flag for downstream sender configuration.
               </p>
             </div>
             <Switch
@@ -621,49 +629,55 @@ export function TemplateForm({
 
       {/* Body */}
       {showContent && (
-      <section className="space-y-2">
-        <Label>Body{form.type !== "email" ? " (plain text)" : ""}</Label>
-        <TemplateBodyEditor
-          ref={editorRef}
-          type={form.type}
-          value={form.body}
-          onChange={(next) => update("body", next)}
-          placeholder={
-            form.type === "email" ? "Write your email body…" : "Write your message…"
-          }
-        />
-        {err("body") ? <p className="text-xs text-destructive">{err("body")}</p> : null}
-        {form.type === "sms" && segInfo ? (
-          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span>
-              <span className="font-medium text-foreground tabular-nums">
-                {segInfo.length}
-              </span>{" "}
-              chars · {segInfo.unicode ? "UCS-2" : "GSM-7"}
-            </span>
-            <span>
-              <span className="font-medium text-foreground tabular-nums">
-                {segInfo.segments}
-              </span>{" "}
-              segment{segInfo.segments === 1 ? "" : "s"} ({segInfo.perSegment}/seg)
-            </span>
-            {form.maxSegments && segInfo.segments > Number(form.maxSegments) && (
-              <span className="text-destructive">Exceeds max ({form.maxSegments})</span>
-            )}
-          </div>
-        ) : null}
-      </section>
+        <section className="space-y-2">
+          <Label>Body{form.type !== "email" ? " (plain text)" : ""}</Label>
+          <TemplateBodyEditor
+            ref={editorRef}
+            type={form.type}
+            value={form.body}
+            onChange={(next) => update("body", next)}
+            placeholder={
+              form.type === "email" ? "Write your email body…" : "Write your message…"
+            }
+          />
+          {err("body") ? (
+            <p className="text-xs text-destructive">{err("body")}</p>
+          ) : null}
+          {form.type === "sms" && segInfo ? (
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <span>
+                <span className="font-medium text-foreground tabular-nums">
+                  {segInfo.length}
+                </span>{" "}
+                chars · {segInfo.unicode ? "UCS-2" : "GSM-7"}
+              </span>
+              <span>
+                <span className="font-medium text-foreground tabular-nums">
+                  {segInfo.segments}
+                </span>{" "}
+                segment{segInfo.segments === 1 ? "" : "s"} ({segInfo.perSegment}/seg)
+              </span>
+              {form.maxSegments && segInfo.segments > Number(form.maxSegments) && (
+                <span className="text-destructive">
+                  Exceeds max ({form.maxSegments})
+                </span>
+              )}
+            </div>
+          ) : null}
+        </section>
       )}
 
       {/* Variables */}
       {showContent && (
-      <section className="space-y-2">
-        <Label>Insert variable</Label>
-        <p className="text-xs text-muted-foreground">
-          Click a variable to insert it at the cursor.
-        </p>
-        <VariablePicker onInsert={(path) => editorRef.current?.insertVariable(path)} />
-      </section>
+        <section className="space-y-2">
+          <Label>Insert variable</Label>
+          <p className="text-xs text-muted-foreground">
+            Click a variable to insert it at the cursor.
+          </p>
+          <VariablePicker
+            onInsert={(path) => editorRef.current?.insertVariable(path)}
+          />
+        </section>
       )}
 
       {/* Plain-text fallback (email only) */}
@@ -749,9 +763,7 @@ type Parsed = ParsedEmail | ParsedSms | ParsedNotification;
  * `createdBy`, `updatedBy`, and (for email) `plainTextFallback`. We only send
  * author-controlled fields. The hook input types reject the rest.
  */
-type CreatePayload = Parameters<
-  ReturnType<typeof useCreateTemplate>["mutateAsync"]
->[0];
+type CreatePayload = Parameters<ReturnType<typeof useCreateTemplate>["mutateAsync"]>[0];
 type PatchPayload = Parameters<
   ReturnType<typeof useUpdateTemplate>["mutateAsync"]
 >[0]["patch"];

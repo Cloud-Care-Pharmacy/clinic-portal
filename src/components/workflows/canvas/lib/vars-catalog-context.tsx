@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, use, useMemo, type ReactNode } from "react";
 import type { WorkflowVarLeaf, WorkflowVarsCatalog } from "@/types";
 
 interface VarsCatalogContextValue {
@@ -36,12 +36,10 @@ export function VarsCatalogProvider({
 }: VarsCatalogProviderProps) {
   const value = useMemo<VarsCatalogContextValue>(
     () => ({ catalog, loading, error, stepIndex }),
-    [catalog, loading, error, stepIndex],
+    [catalog, loading, error, stepIndex]
   );
   return (
-    <VarsCatalogContext.Provider value={value}>
-      {children}
-    </VarsCatalogContext.Provider>
+    <VarsCatalogContext.Provider value={value}>{children}</VarsCatalogContext.Provider>
   );
 }
 
@@ -59,17 +57,15 @@ export function VarsCatalogStepProvider({
   const parent = useVarsCatalog();
   const value = useMemo<VarsCatalogContextValue>(
     () => ({ ...parent, stepIndex }),
-    [parent, stepIndex],
+    [parent, stepIndex]
   );
   return (
-    <VarsCatalogContext.Provider value={value}>
-      {children}
-    </VarsCatalogContext.Provider>
+    <VarsCatalogContext.Provider value={value}>{children}</VarsCatalogContext.Provider>
   );
 }
 
 export function useVarsCatalog(): VarsCatalogContextValue {
-  return useContext(VarsCatalogContext);
+  return use(VarsCatalogContext);
 }
 
 /**
@@ -80,7 +76,7 @@ export function useVarsCatalog(): VarsCatalogContextValue {
  */
 export function isLeafAvailableAtStep(
   leaf: WorkflowVarLeaf,
-  stepIndex: number | undefined,
+  stepIndex: number | undefined
 ): boolean {
   if (stepIndex === undefined) return true;
   const src = leaf.source;

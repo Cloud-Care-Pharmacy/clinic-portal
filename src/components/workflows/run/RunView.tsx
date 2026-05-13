@@ -329,13 +329,9 @@ function RunListRail({
           <DropdownMenuContent align="end" sideOffset={4} className="w-44">
             <DropdownMenuRadioGroup
               value={versionFilter}
-              onValueChange={(v) =>
-                onVersionFilterChange(v as VersionFilter)
-              }
+              onValueChange={(v) => onVersionFilterChange(v as VersionFilter)}
             >
-              <DropdownMenuRadioItem value="all">
-                All versions
-              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="all">All versions</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="current">
                 Current only (v{definitionVersion})
               </DropdownMenuRadioItem>
@@ -349,8 +345,8 @@ function RunListRail({
       <div className="flex-1 overflow-y-auto px-2 pb-3">
         {loading && runs.length === 0 ? (
           <div className="space-y-2 px-2">
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-lg" />
+            {["a", "b", "c"].map((slot) => (
+              <Skeleton key={slot} className="h-14 w-full rounded-lg" />
             ))}
           </div>
         ) : runs.length === 0 ? (
@@ -365,8 +361,7 @@ function RunListRail({
               const active = r.id === selectedId;
               const isFailed = r.status === "failed";
               const outdated =
-                definitionVersion > 0 &&
-                r.definitionVersion < definitionVersion;
+                definitionVersion > 0 && r.definitionVersion < definitionVersion;
               const unknownVersion = r.definitionVersion > definitionVersion;
               return (
                 <li key={r.id}>
@@ -497,13 +492,13 @@ function RunBanners({ run, now, cancelReason }: RunBannersProps) {
   return (
     <div className="flex flex-col gap-2 px-6 py-3">
       {showError && (
-        <div className="rounded-xl border-l-4 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <div className="font-semibold">Last error</div>
           <div className="mt-1 font-mono text-xs">{run.lastError}</div>
         </div>
       )}
       {showCancelled && !showError && (
-        <div className="rounded-xl border-l-4 border-status-neutral-border bg-status-neutral-bg px-4 py-3 text-sm text-status-neutral-fg">
+        <div className="rounded-xl border border-status-neutral-border bg-status-neutral-bg px-4 py-3 text-sm text-status-neutral-fg">
           <div className="font-semibold">Run cancelled</div>
           <div className="mt-1 text-xs">
             {cancelReason
@@ -585,10 +580,8 @@ function StepTraceHeader({
   // definition. A `definitionDeleted` chip variant covers the edge case
   // where the workflow row vanished but its runs persist (definitionVersion
   // is still meaningful, but the current version is unknowable).
-  const showVersionChip =
-    run != null && run.definitionVersion < definitionVersion;
-  const unknownVersion =
-    run != null && run.definitionVersion > definitionVersion;
+  const showVersionChip = run != null && run.definitionVersion < definitionVersion;
+  const unknownVersion = run != null && run.definitionVersion > definitionVersion;
   return (
     <button
       type="button"
@@ -611,7 +604,7 @@ function StepTraceHeader({
           className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-destructive"
           title={`Run reports v${run!.definitionVersion} but current is only v${definitionVersion}. Possible definition rollback or stale cache.`}
         >
-          v? (unknown — current is v{definitionVersion})
+          v? (unknown, current is v{definitionVersion})
         </span>
       )}
       {isLive && (
@@ -622,7 +615,7 @@ function StepTraceHeader({
         >
           <Radio
             className="size-2.5 motion-reduce:animate-none"
-            style={{ animation: "wf-pulse 1.5s infinite" }}
+            style={{ animation: "wf-pulse 900ms infinite" }}
           />
           Live
         </span>
@@ -682,9 +675,7 @@ export function RunView({
   const visibleRuns = useMemo(() => {
     if (versionFilter === "all") return allRuns;
     if (versionFilter === "outdated") {
-      return allRuns.filter((r) =>
-        isRunOutdated(r, { version: currentVersion })
-      );
+      return allRuns.filter((r) => isRunOutdated(r, { version: currentVersion }));
     }
     return allRuns.filter((r) => r.definitionVersion === currentVersion);
   }, [allRuns, versionFilter, currentVersion]);
@@ -849,9 +840,10 @@ function RunPanel({
   // tracking `runId` across renders (avoids an effect-driven cascade).
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReasonInput, setCancelReasonInput] = useState("");
-  const [lastCancelRunId, setLastCancelRunId] = useState<string | null>(
-    runId ?? null
-  );
+  // "Store previous value during render" pattern; read at the equality check
+  // below to detect runId changes without a setState-in-effect cascade.
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
+  const [lastCancelRunId, setLastCancelRunId] = useState<string | null>(runId ?? null);
   if (lastCancelRunId !== (runId ?? null)) {
     setLastCancelRunId(runId ?? null);
     setCancelOpen(false);
@@ -865,9 +857,7 @@ function RunPanel({
   const cancelReason = useMemo<string | null>(() => {
     if (data?.data?.run?.status !== "cancelled") return null;
     const evts = data.data.events ?? [];
-    const ev = [...evts]
-      .reverse()
-      .find((e) => e.eventType === "run_cancelled");
+    const ev = [...evts].reverse().find((e) => e.eventType === "run_cancelled");
     const detail = (ev?.detail ?? {}) as Record<string, unknown>;
     return typeof detail.reason === "string" && detail.reason.trim()
       ? detail.reason
@@ -902,16 +892,13 @@ function RunPanel({
       run.status === "failed" ||
       run.status === "cancelled"
     : false;
-  const canCancel =
-    run?.status === "running" || run?.status === "waiting";
+  const canCancel = run?.status === "running" || run?.status === "waiting";
 
   async function handleCancel() {
     if (!runId) return;
     try {
       const reason = cancelReasonInput.trim();
-      const result = await cancelRun.mutateAsync(
-        reason ? { reason } : undefined
-      );
+      const result = await cancelRun.mutateAsync(reason ? { reason } : undefined);
       setCancelOpen(false);
       setCancelReasonInput("");
       if (result.data.alreadyTerminal) {
@@ -931,8 +918,7 @@ function RunPanel({
           description: "Refreshed the latest state — please try again.",
         });
       } else {
-        const message =
-          err instanceof Error ? err.message : "Failed to cancel run";
+        const message = err instanceof Error ? err.message : "Failed to cancel run";
         toast.error("Cancel failed", { description: message });
       }
     }
@@ -1010,8 +996,8 @@ function RunPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Cancel this run?</AlertDialogTitle>
             <AlertDialogDescription>
-              The run will stop after its current step. In-flight HTTP calls,
-              emails, and SMS messages already dispatched cannot be unsent.
+              The run will stop after its current step. In-flight HTTP calls, emails,
+              and SMS messages already dispatched cannot be unsent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">

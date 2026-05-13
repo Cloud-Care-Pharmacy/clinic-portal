@@ -272,6 +272,10 @@ export function PatientEditSheet({
     defaultValues: patient ? patientToFormDefaults(patient) : {},
   });
 
+  // Sync RHF form values when the patient prop changes (e.g. profile sheet
+  // reopens for a different patient). Not an event handler — it's external
+  // state synchronisation.
+  // eslint-disable-next-line react-doctor/no-effect-event-handler
   useEffect(() => {
     if (patient) {
       form.reset(patientToFormDefaults(patient));
@@ -314,13 +318,11 @@ export function PatientEditSheet({
     if (dirty.state) payload.state = validated.state ?? "";
     if (dirty.postcode) payload.postcode = validated.postcode;
     if (dirty.country) payload.country = validated.country ?? "";
-    if (dirty.medicareNumber)
-      payload.medicareNumber = validated.medicareNumber ?? "";
+    if (dirty.medicareNumber) payload.medicareNumber = validated.medicareNumber ?? "";
     if (dirty.medicareIrn) payload.medicareIrn = validated.medicareIrn ?? "";
     if (dirty.medicareExpiry)
       payload.medicareExpiry = nullableOptional(validated.medicareExpiry);
-    if (dirty.forwardEmail)
-      payload.forwardEmail = validated.forwardEmail ?? "";
+    if (dirty.forwardEmail) payload.forwardEmail = validated.forwardEmail ?? "";
 
     // DOB is split into three inputs in the form but sent as a single
     // `dateOfBirth: 'YYYY-MM-DD'` string to the PATCH endpoint.
@@ -471,7 +473,11 @@ export function PatientEditSheet({
           </div>
           <div className="space-y-2">
             <Label htmlFor="medicareExpiry">Medicare Expiry</Label>
-            <Input id="medicareExpiry" type="month" {...form.register("medicareExpiry")} />
+            <Input
+              id="medicareExpiry"
+              type="month"
+              {...form.register("medicareExpiry")}
+            />
             {form.formState.errors.medicareExpiry && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.medicareExpiry.message}

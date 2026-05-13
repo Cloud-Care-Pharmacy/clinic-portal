@@ -30,26 +30,41 @@ export function buildTimeline(
   const byCaptureSeq = new Map<number, WorkflowStepCapture>(
     captures.map((c) => [c.sequence, c])
   );
+
+  // Pre-index events by stepIndex so finding a step's terminator is O(k)
+  // (k = events for that step) instead of O(n) per step_started.
+  const TERMINATOR_TYPES = new Set<string>([
+    "step_completed",
+    "step_failed",
+    "step_retry_scheduled",
+    "wait_scheduled",
+    "wait_for_event_timed_out",
+  ]);
+  const eventsByStepIndex = new Map<number, { idx: number; ev: WorkflowRunEvent }[]>();
+  for (let i = 0; i < events.length; i += 1) {
+    const ev = events[i]!;
+    if (ev.stepIndex === null) continue;
+    const list = eventsByStepIndex.get(ev.stepIndex);
+    if (list) list.push({ idx: i, ev });
+    else eventsByStepIndex.set(ev.stepIndex, [{ idx: i, ev }]);
+  }
+
   const rows: WorkflowRunTimelineRow[] = [];
 
   for (let i = 0; i < events.length; i += 1) {
     const e = events[i]!;
     if (e.eventType !== "step_started") continue;
+    if (e.stepIndex === null) continue;
 
-    // Find the first event after `step_started` that targets the same
-    // `stepIndex` and is one of the recognised terminators. A
-    // `step_failed` followed by a `step_retry_scheduled` for the same step
-    // is treated as transient — the retry event becomes the terminator and
-    // the failure is folded into the `retrying` row.
-    const term = events.slice(i + 1).find(
-      (x) =>
-        x.stepIndex === e.stepIndex &&
-        (x.eventType === "step_completed" ||
-          x.eventType === "step_failed" ||
-          x.eventType === "step_retry_scheduled" ||
-          x.eventType === "wait_scheduled" ||
-          x.eventType === "wait_for_event_timed_out")
-    );
+    // Find the first terminator after `step_started` for the same step.
+    const candidates = eventsByStepIndex.get(e.stepIndex) ?? [];
+    let term: WorkflowRunEvent | undefined;
+    for (const c of candidates) {
+      if (c.idx > i && TERMINATOR_TYPES.has(c.ev.eventType)) {
+        term = c.ev;
+        break;
+      }
+    }
 
     let status: WorkflowRunTimelineRow["status"] = "running";
     let errorMessage: string | null = null;

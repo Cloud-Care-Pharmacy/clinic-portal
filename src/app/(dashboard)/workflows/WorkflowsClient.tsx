@@ -51,11 +51,7 @@ import {
   useWorkflows,
   WorkflowApiError,
 } from "@/lib/hooks/use-workflows";
-import type {
-  Workflow,
-  WorkflowsListResponse,
-  WorkflowStatus,
-} from "@/types";
+import type { Workflow, WorkflowsListResponse, WorkflowStatus } from "@/types";
 
 interface WorkflowsClientProps {
   entityId: string;
@@ -152,10 +148,7 @@ function ActionsCell({
   );
 }
 
-export function WorkflowsClient({
-  entityId,
-  initialWorkflows,
-}: WorkflowsClientProps) {
+export function WorkflowsClient({ entityId, initialWorkflows }: WorkflowsClientProps) {
   const { push, prefetch } = useRouter();
   const { data, isLoading } = useWorkflows({ limit: 100 }, initialWorkflows);
   const create = useCreateWorkflow();
@@ -176,8 +169,7 @@ export function WorkflowsClient({
 
   const workflows = useMemo(() => data?.data ?? [], [data]);
 
-  const hasActiveFilters =
-    Boolean(searchQuery.trim()) || statusFilters.length > 0;
+  const hasActiveFilters = Boolean(searchQuery.trim()) || statusFilters.length > 0;
 
   const visibleWorkflows = useMemo(
     () =>
@@ -253,11 +245,7 @@ export function WorkflowsClient({
         type: "singleSelect",
         valueOptions: STATUS_OPTIONS as string[],
         renderCell: (params) => (
-          <StatusBadge
-            status={params.value as string}
-            dot
-            className="capitalize"
-          />
+          <StatusBadge status={params.value as string} dot className="capitalize" />
         ),
       },
       {
@@ -346,9 +334,7 @@ export function WorkflowsClient({
       push(`/workflows/${res.data.id}`);
     } catch (err) {
       const message =
-        err instanceof WorkflowApiError
-          ? err.message
-          : "Failed to create workflow";
+        err instanceof WorkflowApiError ? err.message : "Failed to create workflow";
       toast.error(message);
     }
   }
@@ -359,9 +345,7 @@ export function WorkflowsClient({
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       filters={filterDefs}
-      resultCount={
-        hasActiveFilters ? visibleWorkflows.length : workflows.length
-      }
+      resultCount={hasActiveFilters ? visibleWorkflows.length : workflows.length}
       resultCountLoading={isLoading}
       resultLabel="workflows"
       trailing={
@@ -372,22 +356,20 @@ export function WorkflowsClient({
               View
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={4} className="w-60">
-              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map(
-                (key) => (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={columnVisibility[key]}
-                    onClick={() =>
-                      setColumnVisibility((prev) => ({
-                        ...prev,
-                        [key]: !prev[key],
-                      }))
-                    }
-                  >
-                    {COLUMN_LABELS[key]}
-                  </DropdownMenuCheckboxItem>
-                )
-              )}
+              {(Object.keys(COLUMN_LABELS) as (keyof ColumnVisibility)[]).map((key) => (
+                <DropdownMenuCheckboxItem
+                  key={key}
+                  checked={columnVisibility[key]}
+                  onClick={() =>
+                    setColumnVisibility((prev) => ({
+                      ...prev,
+                      [key]: !prev[key],
+                    }))
+                  }
+                >
+                  {COLUMN_LABELS[key]}
+                </DropdownMenuCheckboxItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button size="sm" className="h-9" onClick={() => setCreateOpen(true)}>
@@ -399,8 +381,7 @@ export function WorkflowsClient({
     />
   );
 
-  const showEmptyZeroState =
-    !isLoading && workflows.length === 0 && !hasActiveFilters;
+  const showEmptyZeroState = !isLoading && workflows.length === 0 && !hasActiveFilters;
   const showEmptyFilterState =
     !isLoading && workflows.length > 0 && visibleWorkflows.length === 0;
 
@@ -481,7 +462,9 @@ export function WorkflowsClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
-            autoFocus
+            ref={(node) => {
+              node?.focus();
+            }}
             placeholder="e.g. Appointment reminder (24h)"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -493,9 +476,7 @@ export function WorkflowsClient({
             }}
           />
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={create.isPending}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={create.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -541,9 +522,7 @@ export function WorkflowsClient({
                   },
                   onError: (err) => {
                     toast.error(
-                      err instanceof Error
-                        ? err.message
-                        : "Failed to delete workflow"
+                      err instanceof Error ? err.message : "Failed to delete workflow"
                     );
                   },
                 });

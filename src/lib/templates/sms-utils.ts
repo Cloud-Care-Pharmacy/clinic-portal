@@ -10,7 +10,7 @@
 const GSM7_RE =
   /^[\u0000-\u007F@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#%&'()*+,\-./0-9:;<=>?A-Z\[\\\]\^_`a-z{|}~€]*$/;
 
-const GSM7_EXT_CHARS = "^{}\\[~]|€";
+const GSM7_EXT_CHARS = new Set("^{}\\[~]|€");
 
 export function isUnicode(text: string): boolean {
   return !GSM7_RE.test(text);
@@ -19,7 +19,7 @@ export function isUnicode(text: string): boolean {
 function gsm7Length(text: string): number {
   let n = 0;
   for (const ch of text) {
-    n += GSM7_EXT_CHARS.includes(ch) ? 2 : 1;
+    n += GSM7_EXT_CHARS.has(ch) ? 2 : 1;
   }
   return n;
 }

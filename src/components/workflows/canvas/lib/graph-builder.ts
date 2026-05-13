@@ -1,8 +1,8 @@
 import type { Edge, Node } from "@xyflow/react";
 import type { WorkflowNote, WorkflowStep, WorkflowTrigger } from "@/types";
 import {
+  ADD_BUTTON_SIZE,
   ARC_LENGTH,
-  BIG_ADD_BUTTON_SIZE,
   HORIZONTAL_SPACE_BETWEEN_NODES,
   NODE_H,
   NODE_W,
@@ -222,7 +222,7 @@ function calculateBoundingBox(g: SubGraph): BoundingBox {
     const width = isStructural ? NODE_W : 0;
     const height = (() => {
       if (data.kind === "step" || data.kind === "trigger") return NODE_H;
-      if (data.kind === "bigAddButton") return BIG_ADD_BUTTON_SIZE;
+      if (data.kind === "bigAddButton") return ADD_BUTTON_SIZE;
       if (data.kind === "loopReturn") return 1;
       return 0;
     })();
@@ -513,11 +513,11 @@ function buildRouterChildren(router: StepTreeRouter, opts: BuildOpts): SubGraph 
   const mergeEndNode = makeGraphEnd(`${router.nodeName}__router-merge`, false, mergeY);
 
   // Router end edges: from each branch tail → mergeEndNode.
-  const endEdges: Edge[] = placedBranches
-    .map((g, i) => {
-      const tailId = g.exitId;
-      if (!tailId) return null;
-      return {
+  const endEdges: Edge[] = placedBranches.flatMap((g, i) => {
+    const tailId = g.exitId;
+    if (!tailId) return [];
+    return [
+      {
         id: `${router.nodeName}__re-${i}`,
         source: tailId,
         target: mergeEndNode.id,
@@ -529,9 +529,9 @@ function buildRouterChildren(router: StepTreeRouter, opts: BuildOpts): SubGraph 
           isLastBranch: i === placedBranches.length - 1,
           drawArrowAtEnd: i === arrowBranchIdx,
         } as WfRouterEndEdgeData,
-      } as Edge;
-    })
-    .filter(Boolean) as Edge[];
+      } as Edge,
+    ];
+  });
 
   return {
     nodes: [...placedBranches.flatMap((g) => g.nodes), mergeEndNode],

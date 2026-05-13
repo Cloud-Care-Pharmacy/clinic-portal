@@ -15,10 +15,16 @@ const csvOrArray = z
   .transform((v) => {
     if (!v) return undefined;
     if (Array.isArray(v)) {
-      const cleaned = v.map(trimmed).filter(Boolean);
+      const cleaned = v.flatMap((s) => {
+        const t = trimmed(s);
+        return t ? [t] : [];
+      });
       return cleaned.length ? cleaned : undefined;
     }
-    const cleaned = v.split(",").map(trimmed).filter(Boolean);
+    const cleaned = v.split(",").flatMap((s) => {
+      const t = trimmed(s);
+      return t ? [t] : [];
+    });
     return cleaned.length ? cleaned : undefined;
   });
 

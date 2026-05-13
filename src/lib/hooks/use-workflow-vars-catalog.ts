@@ -20,17 +20,17 @@ async function fetchGlobalCatalog(): Promise<WorkflowVarsCatalogResponse> {
 }
 
 async function fetchWorkflowCatalog(
-  workflowId: string,
+  workflowId: string
 ): Promise<WorkflowVarsCatalogResponse> {
   const res = await fetch(
-    `/api/proxy/workflows/${encodeURIComponent(workflowId)}/vars-catalog`,
+    `/api/proxy/workflows/${encodeURIComponent(workflowId)}/vars-catalog`
   );
   if (!res.ok) throw await readError(res, "Failed to load workflow vars catalog");
   return res.json();
 }
 
 async function previewCatalog(
-  payload: WorkflowVarsCatalogPreviewPayload,
+  payload: WorkflowVarsCatalogPreviewPayload
 ): Promise<WorkflowVarsCatalogResponse> {
   const res = await fetch(`/api/proxy/workflows/vars-catalog/preview`, {
     method: "POST",
@@ -110,7 +110,7 @@ interface DraftVarsCatalogState {
  */
 export function useDraftVarsCatalog(
   draft: WorkflowVarsCatalogPreviewPayload | null,
-  opts: { enabled?: boolean } = {},
+  opts: { enabled?: boolean } = {}
 ): DraftVarsCatalogState {
   const enabled = opts.enabled ?? true;
   const hash = useMemo(() => (draft ? stableHash(draft) : null), [draft]);
@@ -123,6 +123,9 @@ export function useDraftVarsCatalog(
   const lastSuccessHashRef = useRef<string | null>(null);
   const inFlightHashRef = useRef<string | null>(null);
 
+  // Debounced async preview fetch — setState calls run inside a setTimeout
+  // callback (loading → success/error), not a render-driven cascade.
+  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!enabled || !draft || !hash) return;
     if (hash === lastSuccessHashRef.current) return;
