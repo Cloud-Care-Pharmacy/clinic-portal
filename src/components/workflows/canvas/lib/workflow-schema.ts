@@ -28,28 +28,33 @@ const cronField = z
     "Cron must be 5 whitespace-separated fields"
   );
 
+// Optional user-facing display name. The API rejects empty strings and
+// caps the length at 120 chars — forms must omit `name` (rather than
+// sending `""`) when the user clears the field.
+const displayName = z.string().min(1).max(120).optional();
+
 const eventTrigger = z.object({
   kind: z.literal("event"),
   eventType: z.string().min(1).max(255),
-  name: z.string().max(100).optional(),
+  name: displayName,
 });
 const manualTrigger = z.object({
   kind: z.literal("manual"),
-  name: z.string().max(100).optional(),
+  name: displayName,
 });
 const scheduleTrigger = z.object({
   kind: z.literal("schedule"),
   cron: cronField,
-  name: z.string().max(100).optional(),
+  name: displayName,
 });
 const webhookTrigger = z.object({
   kind: z.literal("webhook"),
   token: z.string().min(8).max(64).optional(),
-  name: z.string().max(100).optional(),
+  name: displayName,
 });
 const workflowTrigger = z.object({
   kind: z.literal("workflow"),
-  name: z.string().max(100).optional(),
+  name: displayName,
 });
 
 export const triggerSchema = z.discriminatedUnion("kind", [
@@ -81,7 +86,7 @@ export const retryPolicySchema = z.object({
 
 const baseStep = {
   id: stepIdRefinement.optional(),
-  name: z.string().max(100).optional(),
+  name: displayName,
   capture: z.enum(["summary", "full", "none"]).optional(),
   sensitive: z.boolean().optional(),
   retry: retryPolicySchema.optional(),

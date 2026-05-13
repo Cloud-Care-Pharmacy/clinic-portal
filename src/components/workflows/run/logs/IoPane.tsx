@@ -106,7 +106,8 @@ export function IoPane({
 
   const config = STEP_KIND_CONFIG[row.stepKind as WorkflowStepKind];
   const Icon = config?.icon ?? Clock;
-  const label = config?.label ?? row.stepKind;
+  const customName = definitionStep?.name?.trim();
+  const label = customName || config?.label || row.stepKind;
   const status = STATUS_META[row.status];
   const dur = formatDuration(row.durationMs);
   // Capture is disabled by definition (`capture: 'none'` or `sensitive: true`)
