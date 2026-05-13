@@ -25,10 +25,9 @@ import {
   smsTemplateSchema,
   notificationTemplateSchema,
 } from "./zod-schemas";
-import { useCreateTemplate, useUpdateTemplate } from "@/lib/hooks/use-templates";
+import { useCreateTemplate, useUpdateTemplate, TemplatesApiError } from "@/lib/hooks/use-templates";
 import { htmlToText } from "@/lib/templates/html-to-text";
 import { segmentInfo } from "@/lib/templates/sms-utils";
-import { extractVariablePaths } from "@/lib/templates/variables";
 import { cn } from "@/lib/utils";
 import { Mail, MessageSquare, Bell, type LucideIcon } from "lucide-react";
 import type {
@@ -290,22 +289,13 @@ export function TemplateForm({
     const parsed = result.data;
     const authorName =
       user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Unknown";
-    const variables = extractVariablePaths(
-      parsed.type === "notification"
-        ? `${parsed.title}\n${parsed.body}`
-        : parsed.type === "email"
-          ? `${parsed.subject}\n${parsed.body}`
-          : parsed.body
-    );
 
     try {
       if (isEdit && template) {
         const patch = buildPatch(parsed) as Partial<Template> & {
           updatedBy: string;
-          variables: string[];
         };
         patch.updatedBy = authorName;
-        patch.variables = variables;
         const next = await updateMutation.mutateAsync({
           id: template.id,
           patch,
@@ -313,12 +303,17 @@ export function TemplateForm({
         toast.success("Template updated");
         onSaved?.(next);
       } else {
-        const draft = buildCreate(parsed, authorName, variables);
+        const draft = buildCreate(parsed, authorName);
         const next = await createMutation.mutateAsync(draft);
         toast.success("Template created");
         onSaved?.(next);
       }
     } catch (e) {
+      if (e instanceof TemplatesApiError && e.fieldErrors) {
+        setErrors(e.fieldErrors);
+        toast.error(e.message || "Please fix the highlighted fields");
+        return;
+      }
       toast.error(e instanceof Error ? e.message : "Failed to save template");
     }
   }
@@ -761,8 +756,7 @@ type Parsed = ParsedEmail | ParsedSms | ParsedNotification;
 
 function buildCreate(
   parsed: Parsed,
-  author: string,
-  variables: string[]
+  author: string
 ): Omit<Template, "id" | "createdAt" | "updatedAt"> {
   if (parsed.type === "email") {
     const next: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt"> = {
@@ -771,14 +765,18 @@ function buildCreate(
       description: parsed.description,
       category: parsed.category,
       active: parsed.active,
-      variables,
+      variables: [],
       fromName: parsed.fromName,
       fromEmail: parsed.fromEmail,
       replyTo: parsed.replyTo,
       subject: parsed.subject,
       preheader: parsed.preheader,
       body: parsed.body,
-      plainTextFallback: parsed.plainTextFallback || htmlToText(parsed.body),
+      // Only send when the author explicitly typed an override; otherwise the
+      // server derives it from `body`.
+      ...(parsed.plainTextFallback
+        ? { plainTextFallback: parsed.plainTextFallback }
+        : {}),
       cc: parsed.cc,
       bcc: parsed.bcc,
       attachmentsAllowed: parsed.attachmentsAllowed,
@@ -794,7 +792,7 @@ function buildCreate(
       description: parsed.description,
       category: parsed.category,
       active: parsed.active,
-      variables,
+      variables: [],
       senderId: parsed.senderId,
       body: parsed.body,
       includeOptOutFooter: parsed.includeOptOutFooter,
@@ -810,7 +808,7 @@ function buildCreate(
     description: parsed.description,
     category: parsed.category,
     active: parsed.active,
-    variables,
+    variables: [],
     title: parsed.title,
     body: parsed.body,
     severity: parsed.severity,
@@ -839,7 +837,9 @@ function buildPatch(parsed: Parsed): Partial<Template> {
       subject: parsed.subject,
       preheader: parsed.preheader,
       body: parsed.body,
-      plainTextFallback: parsed.plainTextFallback || htmlToText(parsed.body),
+      ...(parsed.plainTextFallback
+        ? { plainTextFallback: parsed.plainTextFallback }
+        : {}),
       cc: parsed.cc,
       bcc: parsed.bcc,
       attachmentsAllowed: parsed.attachmentsAllowed,
