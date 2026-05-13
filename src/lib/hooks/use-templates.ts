@@ -156,7 +156,22 @@ export function useTemplate(id: string | undefined) {
 // Mutations
 // ---------------------------------------------------------------------------
 
-type CreateInput = Omit<Template, "id" | "createdAt" | "updatedAt">;
+/**
+ * Fields the server manages on every write. The FE must not send any of
+ * these on POST or PATCH — the response carries the populated row.
+ */
+type ServerManaged =
+  | "id"
+  | "variables"
+  | "createdAt"
+  | "updatedAt"
+  | "createdBy"
+  | "updatedBy";
+
+// Distributive Omit so the per-variant discriminator + fields survive.
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
+
+type CreateInput = DistributiveOmit<Template, ServerManaged>;
 
 export function useCreateTemplate() {
   const qc = useQueryClient();
@@ -177,7 +192,7 @@ export function useCreateTemplate() {
 
 type UpdateInput = {
   id: string;
-  patch: Partial<Omit<Template, "id" | "type" | "createdAt" | "createdBy">>;
+  patch: Partial<DistributiveOmit<Template, ServerManaged | "type">>;
 };
 
 export function useUpdateTemplate() {

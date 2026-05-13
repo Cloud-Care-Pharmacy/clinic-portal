@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,6 @@ import { segmentInfo } from "@/lib/templates/sms-utils";
 import { cn } from "@/lib/utils";
 import { Mail, MessageSquare, Bell, type LucideIcon } from "lucide-react";
 import type {
-  EmailTemplate,
-  NotificationTemplate,
-  SmsTemplate,
   Template,
   TemplateAudience,
   TemplateSeverity,
@@ -193,7 +189,6 @@ export function TemplateForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const editorRef = useRef<TemplateBodyEditorHandle | null>(null);
 
-  const { user } = useUser();
   const createMutation = useCreateTemplate();
   const updateMutation = useUpdateTemplate();
   const pending = createMutation.isPending || updateMutation.isPending;
@@ -287,15 +282,10 @@ export function TemplateForm({
     }
 
     const parsed = result.data;
-    const authorName =
-      user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? "Unknown";
 
     try {
       if (isEdit && template) {
-        const patch = buildPatch(parsed) as Partial<Template> & {
-          updatedBy: string;
-        };
-        patch.updatedBy = authorName;
+        const patch = buildPatch(parsed);
         const next = await updateMutation.mutateAsync({
           id: template.id,
           patch,
@@ -303,7 +293,7 @@ export function TemplateForm({
         toast.success("Template updated");
         onSaved?.(next);
       } else {
-        const draft = buildCreate(parsed, authorName);
+        const draft = buildCreate(parsed);
         const next = await createMutation.mutateAsync(draft);
         toast.success("Template created");
         onSaved?.(next);
@@ -754,61 +744,56 @@ type ParsedSms = z.output<typeof smsTemplateSchema>;
 type ParsedNotification = z.output<typeof notificationTemplateSchema>;
 type Parsed = ParsedEmail | ParsedSms | ParsedNotification;
 
-function buildCreate(
-  parsed: Parsed,
-  author: string
-): Omit<Template, "id" | "createdAt" | "updatedAt"> {
+/**
+ * The server manages `id`, `variables`, `createdAt`, `updatedAt`,
+ * `createdBy`, `updatedBy`, and (for email) `plainTextFallback`. We only send
+ * author-controlled fields. The hook input types reject the rest.
+ */
+type CreatePayload = Parameters<
+  ReturnType<typeof useCreateTemplate>["mutateAsync"]
+>[0];
+type PatchPayload = Parameters<
+  ReturnType<typeof useUpdateTemplate>["mutateAsync"]
+>[0]["patch"];
+
+function buildCreate(parsed: Parsed): CreatePayload {
   if (parsed.type === "email") {
-    const next: Omit<EmailTemplate, "id" | "createdAt" | "updatedAt"> = {
+    return {
       type: "email",
       name: parsed.name,
       description: parsed.description,
       category: parsed.category,
       active: parsed.active,
-      variables: [],
       fromName: parsed.fromName,
       fromEmail: parsed.fromEmail,
       replyTo: parsed.replyTo,
       subject: parsed.subject,
       preheader: parsed.preheader,
       body: parsed.body,
-      // Only send when the author explicitly typed an override; otherwise the
-      // server derives it from `body`.
-      ...(parsed.plainTextFallback
-        ? { plainTextFallback: parsed.plainTextFallback }
-        : {}),
       cc: parsed.cc,
       bcc: parsed.bcc,
       attachmentsAllowed: parsed.attachmentsAllowed,
-      createdBy: author,
-      updatedBy: author,
     };
-    return next;
   }
   if (parsed.type === "sms") {
-    const next: Omit<SmsTemplate, "id" | "createdAt" | "updatedAt"> = {
+    return {
       type: "sms",
       name: parsed.name,
       description: parsed.description,
       category: parsed.category,
       active: parsed.active,
-      variables: [],
       senderId: parsed.senderId,
       body: parsed.body,
       includeOptOutFooter: parsed.includeOptOutFooter,
       maxSegments: parsed.maxSegments,
-      createdBy: author,
-      updatedBy: author,
     };
-    return next;
   }
-  const next: Omit<NotificationTemplate, "id" | "createdAt" | "updatedAt"> = {
+  return {
     type: "notification",
     name: parsed.name,
     description: parsed.description,
     category: parsed.category,
     active: parsed.active,
-    variables: [],
     title: parsed.title,
     body: parsed.body,
     severity: parsed.severity,
@@ -818,15 +803,12 @@ function buildCreate(
     audienceRole: parsed.audienceRole,
     autoDismissSeconds: parsed.autoDismissSeconds,
     persistInBell: parsed.persistInBell,
-    createdBy: author,
-    updatedBy: author,
   };
-  return next;
 }
 
-function buildPatch(parsed: Parsed): Partial<Template> {
+function buildPatch(parsed: Parsed): PatchPayload {
   if (parsed.type === "email") {
-    const patch: Partial<EmailTemplate> = {
+    return {
       name: parsed.name,
       description: parsed.description,
       category: parsed.category,
@@ -837,17 +819,13 @@ function buildPatch(parsed: Parsed): Partial<Template> {
       subject: parsed.subject,
       preheader: parsed.preheader,
       body: parsed.body,
-      ...(parsed.plainTextFallback
-        ? { plainTextFallback: parsed.plainTextFallback }
-        : {}),
       cc: parsed.cc,
       bcc: parsed.bcc,
       attachmentsAllowed: parsed.attachmentsAllowed,
     };
-    return patch as Partial<Template>;
   }
   if (parsed.type === "sms") {
-    const patch: Partial<SmsTemplate> = {
+    return {
       name: parsed.name,
       description: parsed.description,
       category: parsed.category,
@@ -857,9 +835,8 @@ function buildPatch(parsed: Parsed): Partial<Template> {
       includeOptOutFooter: parsed.includeOptOutFooter,
       maxSegments: parsed.maxSegments,
     };
-    return patch as Partial<Template>;
   }
-  const patch: Partial<NotificationTemplate> = {
+  return {
     name: parsed.name,
     description: parsed.description,
     category: parsed.category,
@@ -874,5 +851,4 @@ function buildPatch(parsed: Parsed): Partial<Template> {
     autoDismissSeconds: parsed.autoDismissSeconds,
     persistInBell: parsed.persistInBell,
   };
-  return patch as Partial<Template>;
 }
