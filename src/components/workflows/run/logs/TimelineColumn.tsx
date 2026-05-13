@@ -12,12 +12,22 @@ import {
 
 import { cn } from "@/lib/utils";
 import { STEP_KIND_CONFIG } from "../../canvas/lib/node-kind-config";
-import type { WorkflowRunTimelineRow, WorkflowStepKind } from "@/types";
+import type {
+  WorkflowRunTimelineRow,
+  WorkflowStep,
+  WorkflowStepKind,
+} from "@/types";
 
 export interface TimelineColumnProps {
   rows: WorkflowRunTimelineRow[];
   selectedSequence: number | null;
   onSelect: (sequence: number) => void;
+  /**
+   * Workflow definition steps (flat) indexed by `stepIndex`. When the
+   * matching step has a custom `name`, it overrides the kind label so the
+   * timeline shows the same display label as the canvas.
+   */
+  definitionSteps?: WorkflowStep[];
 }
 
 const STATUS_META: Record<
@@ -74,6 +84,7 @@ export function TimelineColumn({
   rows,
   selectedSequence,
   onSelect,
+  definitionSteps,
 }: TimelineColumnProps) {
   if (rows.length === 0) {
     return (
@@ -88,7 +99,8 @@ export function TimelineColumn({
       {rows.map((row) => {
         const config = STEP_KIND_CONFIG[row.stepKind as WorkflowStepKind];
         const Icon = config?.icon ?? Clock;
-        const label = config?.label ?? row.stepKind;
+        const customName = definitionSteps?.[row.stepIndex]?.name?.trim();
+        const label = customName || config?.label || row.stepKind;
         const status = STATUS_META[row.status];
         const isSelected = selectedSequence === row.sequence;
         return (

@@ -197,12 +197,14 @@ export function NodeInspector({
             >
               <Input
                 value={trigger.name ?? ""}
-                onChange={(e) =>
+                maxLength={120}
+                onChange={(e) => {
+                  const next = e.target.value;
                   onChangeTrigger(selection.index, {
                     ...trigger,
-                    name: e.target.value || undefined,
-                  } as WorkflowTrigger)
-                }
+                    name: next.trim() ? next : undefined,
+                  } as WorkflowTrigger);
+                }}
                 placeholder={cfg?.label ?? ""}
               />
             </Field>
@@ -233,12 +235,14 @@ export function NodeInspector({
             >
               <Input
                 value={step.name ?? ""}
-                onChange={(e) =>
+                maxLength={120}
+                onChange={(e) => {
+                  const next = e.target.value;
                   onChangeStep(selection.index, {
                     ...step,
-                    name: e.target.value || undefined,
-                  } as WorkflowStep)
-                }
+                    name: next.trim() ? next : undefined,
+                  } as WorkflowStep);
+                }}
                 placeholder={cfg?.label ?? ""}
               />
             </Field>

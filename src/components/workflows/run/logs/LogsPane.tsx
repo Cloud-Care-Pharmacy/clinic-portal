@@ -72,6 +72,7 @@ export function LogsPane({
           rows={rows}
           selectedSequence={effectiveSequence}
           onSelect={setPickedSequence}
+          definitionSteps={definitionSteps}
         />
       </aside>
       <div className="min-h-0 min-w-0">
