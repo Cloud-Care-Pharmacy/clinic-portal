@@ -12,12 +12,14 @@
 
 import {
   User,
+  Users,
   Calendar,
   Pill,
   CheckSquare,
   FileText,
   StickyNote,
-  Flag,
+  Stethoscope,
+  Building2,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -56,6 +58,31 @@ export const EVENT_ENTITIES: EventEntity[] = [
         label: "Patient details updated",
         description: "Demographic or contact details are edited.",
       },
+      {
+        eventType: "patient.archived",
+        label: "Patient archived",
+        description: "A patient record is archived.",
+      },
+      {
+        eventType: "patient.unarchived",
+        label: "Patient unarchived",
+        description: "A previously archived patient is restored.",
+      },
+      {
+        eventType: "patient.deleted",
+        label: "Patient deleted",
+        description: "A patient record is permanently removed.",
+      },
+      {
+        eventType: "patient.intake.submitted",
+        label: "Intake submitted",
+        description: "A patient submits their intake form.",
+      },
+      {
+        eventType: "clinical_data.approved",
+        label: "Clinical data approved",
+        description: "A clinician approves submitted clinical data.",
+      },
     ],
   },
   {
@@ -72,53 +99,32 @@ export const EVENT_ENTITIES: EventEntity[] = [
       {
         eventType: "consultation.updated",
         label: "Consultation updated",
-        description: "An existing consultation is rescheduled or edited.",
+        description: "An existing consultation is edited.",
       },
       {
         eventType: "consultation.completed",
         label: "Consultation completed",
         description: "A doctor marks a consultation as complete.",
       },
-    ],
-  },
-  {
-    id: "prescription",
-    label: "Prescription",
-    description: "Prescriptions issued by clinicians",
-    icon: Pill,
-    events: [
       {
-        eventType: "prescription.created",
-        label: "Prescription created",
-        description: "A prescription record is created.",
+        eventType: "consultation.cancelled",
+        label: "Consultation cancelled",
+        description: "A consultation is cancelled before it occurs.",
       },
       {
-        eventType: "prescription.issued",
-        label: "Prescription issued",
-        description: "A prescription is sent to the patient or pharmacy.",
-      },
-    ],
-  },
-  {
-    id: "task",
-    label: "Task",
-    description: "Internal workflow tasks",
-    icon: CheckSquare,
-    events: [
-      {
-        eventType: "task.created",
-        label: "Task created",
-        description: "A new task is assigned to a user or queue.",
+        eventType: "consultation.no_show",
+        label: "Consultation no-show",
+        description: "A patient fails to attend a scheduled consultation.",
       },
       {
-        eventType: "task.updated",
-        label: "Task updated",
-        description: "A task's status, assignee, or details change.",
+        eventType: "consultation.rescheduled",
+        label: "Consultation rescheduled",
+        description: "A consultation is moved to a new time.",
       },
       {
-        eventType: "task.completed",
-        label: "Task completed",
-        description: "A task is marked as done.",
+        eventType: "consultation.deleted",
+        label: "Consultation deleted",
+        description: "A consultation record is removed.",
       },
     ],
   },
@@ -142,6 +148,11 @@ export const EVENT_ENTITIES: EventEntity[] = [
         eventType: "document.rejected",
         label: "Document rejected",
         description: "A document is reviewed and rejected.",
+      },
+      {
+        eventType: "document.deleted",
+        label: "Document deleted",
+        description: "A document is removed from the record.",
       },
     ],
   },
@@ -169,29 +180,196 @@ export const EVENT_ENTITIES: EventEntity[] = [
     ],
   },
   {
-    id: "flag",
-    label: "Red flag",
-    description: "Clinical red flags raised on patients",
-    icon: Flag,
+    id: "task",
+    label: "Task",
+    description: "Internal workflow tasks",
+    icon: CheckSquare,
     events: [
       {
-        eventType: "flag.raised",
-        label: "Red flag raised",
-        description: "A red flag is raised on a patient record.",
+        eventType: "task.created",
+        label: "Task created",
+        description: "A new task is assigned to a user or queue.",
       },
       {
-        eventType: "flag.resolved",
-        label: "Red flag resolved",
-        description: "A red flag is cleared.",
+        eventType: "task.updated",
+        label: "Task updated",
+        description: "A task's status, priority, or details change.",
+      },
+      {
+        eventType: "task.completed",
+        label: "Task completed",
+        description: "A task is marked as done.",
+      },
+      {
+        eventType: "task.cancelled",
+        label: "Task cancelled",
+        description: "A task is cancelled before completion.",
+      },
+      {
+        eventType: "task.assigned",
+        label: "Task assigned",
+        description: "A task is assigned to a user or queue.",
+      },
+      {
+        eventType: "task.unassigned",
+        label: "Task unassigned",
+        description: "A task's assignee is cleared.",
+      },
+      {
+        eventType: "task.deleted",
+        label: "Task deleted",
+        description: "A task is removed from the system.",
+      },
+      {
+        eventType: "task.due_soon",
+        label: "Task due soon",
+        description: "A task is approaching its due date.",
+      },
+      {
+        eventType: "task.overdue",
+        label: "Task overdue",
+        description: "A task has passed its due date without completion.",
+      },
+    ],
+  },
+  {
+    id: "prescription",
+    label: "Prescription",
+    description: "Prescriptions issued by clinicians",
+    icon: Pill,
+    events: [
+      {
+        eventType: "prescription.issued",
+        label: "Prescription issued",
+        description: "A prescription is sent to the patient or pharmacy.",
+      },
+      {
+        eventType: "prescription.status_changed",
+        label: "Prescription status changed",
+        description: "A prescription's status transitions to a new state.",
+      },
+      {
+        eventType: "prescription.expiring",
+        label: "Prescription expiring",
+        description: "A prescription is approaching its expiry date.",
+      },
+      {
+        eventType: "prescription.deleted",
+        label: "Prescription deleted",
+        description: "A prescription record is removed.",
+      },
+    ],
+  },
+  {
+    id: "practitioner",
+    label: "Practitioner",
+    description: "Practitioner profile and availability",
+    icon: Stethoscope,
+    events: [
+      {
+        eventType: "practitioner.profile_updated",
+        label: "Profile updated",
+        description: "A practitioner updates their profile details.",
+      },
+      {
+        eventType: "practitioner.business_details_updated",
+        label: "Business details updated",
+        description: "A practitioner's business details are changed.",
+      },
+      {
+        eventType: "practitioner.availability_updated",
+        label: "Availability updated",
+        description: "A practitioner's availability schedule is updated.",
+      },
+      {
+        eventType: "practitioner.leave.created",
+        label: "Leave created",
+        description: "A practitioner records a new period of leave.",
+      },
+      {
+        eventType: "practitioner.leave.deleted",
+        label: "Leave deleted",
+        description: "A previously recorded period of leave is removed.",
+      },
+    ],
+  },
+  {
+    id: "user",
+    label: "User & invitation",
+    description: "User accounts and invitations",
+    icon: Users,
+    events: [
+      {
+        eventType: "user.created",
+        label: "User created",
+        description: "A new user account is created.",
+      },
+      {
+        eventType: "user.role_changed",
+        label: "User role changed",
+        description: "A user's role is updated.",
+      },
+      {
+        eventType: "user.deactivated",
+        label: "User deactivated",
+        description: "A user account is deactivated.",
+      },
+      {
+        eventType: "user.reactivated",
+        label: "User reactivated",
+        description: "A previously deactivated user is restored.",
+      },
+      {
+        eventType: "invitation.sent",
+        label: "Invitation sent",
+        description: "An invitation to join is sent to a new user.",
+      },
+      {
+        eventType: "invitation.revoked",
+        label: "Invitation revoked",
+        description: "A pending invitation is revoked.",
+      },
+    ],
+  },
+  {
+    id: "entity",
+    label: "Entity",
+    description: "Organisation-level configuration",
+    icon: Building2,
+    events: [
+      {
+        eventType: "entity.settings_updated",
+        label: "Entity settings updated",
+        description: "Entity-wide settings are changed.",
       },
     ],
   },
   {
     id: "system",
-    label: "System",
-    description: "Platform-wide scheduled events",
+    label: "Email, PMS & system",
+    description: "Inbound email, PMS sync, and scheduled ticks",
     icon: Settings,
     events: [
+      {
+        eventType: "email.received",
+        label: "Email received",
+        description: "An inbound email is received by the platform.",
+      },
+      {
+        eventType: "pms.prescription_synced",
+        label: "PMS prescription synced",
+        description: "A prescription is synced from the connected PMS.",
+      },
+      {
+        eventType: "system.tick.minutely",
+        label: "Minutely system tick",
+        description: "Fires once per minute for high-frequency flows.",
+      },
+      {
+        eventType: "system.tick.hourly",
+        label: "Hourly system tick",
+        description: "Fires once per hour for scheduled flows.",
+      },
       {
         eventType: "system.tick.daily",
         label: "Daily system tick",
