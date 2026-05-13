@@ -125,7 +125,7 @@ export function WorkflowDetailClient({
   entityId,
   initialWorkflow,
 }: WorkflowDetailClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const { data, isLoading } = useWorkflow(workflowId, initialWorkflow);
   const update = useUpdateWorkflow(workflowId);
   const create = useCreateWorkflow();
@@ -170,6 +170,7 @@ export function WorkflowDetailClient({
   // unless the user has unsaved changes. Done during render via the
   // "store previous value" pattern (https://react.dev/reference/react/useState#storing-information-from-previous-renders)
   // to avoid effect-triggered cascading renders.
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastSyncedSig, setLastSyncedSig] = useState<string | null>(null);
   if (workflow && !draftDirty) {
     const signature = `${workflow.id}:${workflow.version}:${workflow.updatedAt}`;
@@ -201,16 +202,19 @@ export function WorkflowDetailClient({
             definition: { version: 1 as const, steps: draftSteps },
           }
         : null,
-    [draftDirty, draftTriggers, draftSteps],
+    [draftDirty, draftTriggers, draftSteps]
   );
   const draftCatalog = useDraftVarsCatalog(draftCatalogPayload, {
     enabled: draftDirty,
   });
   const activeCatalog = draftDirty
-    ? draftCatalog.catalog ?? savedCatalogQuery.data?.data ?? null
-    : savedCatalogQuery.data?.data ?? null;
-  const catalogLoading = draftDirty ? draftCatalog.loading : savedCatalogQuery.isLoading;
-  const catalogError = (draftDirty ? draftCatalog.error : savedCatalogQuery.error) ?? null;
+    ? (draftCatalog.catalog ?? savedCatalogQuery.data?.data ?? null)
+    : (savedCatalogQuery.data?.data ?? null);
+  const catalogLoading = draftDirty
+    ? draftCatalog.loading
+    : savedCatalogQuery.isLoading;
+  const catalogError =
+    (draftDirty ? draftCatalog.error : savedCatalogQuery.error) ?? null;
 
   // Replace the workflow id segment in the breadcrumb with its name.
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
@@ -249,12 +253,7 @@ export function WorkflowDetailClient({
     // happens when the definition actually changes — which the editor
     // tracks via `draftDirty` — so non-definition edits (rename,
     // status-only) skip the modal automatically.
-    if (
-      !opts?.force &&
-      !opts?.activate &&
-      draftDirty &&
-      inflightOutdatedCount > 0
-    ) {
+    if (!opts?.force && !opts?.activate && draftDirty && inflightOutdatedCount > 0) {
       setConfirmSaveOpen(true);
       return;
     }
@@ -314,7 +313,7 @@ export function WorkflowDetailClient({
       const run = result.data.run;
       // The backend returns 202 with a `running` run; navigate to the
       // dedicated runs page so the live timeline and SSE stream take over.
-      router.push(`/workflows/${workflowId}/runs?runId=${run.id}`);
+      push(`/workflows/${workflowId}/runs?runId=${run.id}`);
       toast.success("Test run started", {
         description: "Live progress will stream into the run timeline.",
       });
@@ -328,7 +327,7 @@ export function WorkflowDetailClient({
     try {
       await remove.mutateAsync(workflowId);
       toast.success("Workflow deleted");
-      router.push("/workflows");
+      push("/workflows");
     } catch (err) {
       const message =
         err instanceof WorkflowApiError ? err.message : "Failed to delete";
@@ -355,7 +354,7 @@ export function WorkflowDetailClient({
         },
       });
       toast.success("Workflow duplicated");
-      router.push(`/workflows/${created.data.id}`);
+      push(`/workflows/${created.data.id}`);
     } catch (err) {
       const message =
         err instanceof WorkflowApiError ? err.message : "Failed to duplicate";
@@ -581,7 +580,9 @@ export function WorkflowDetailClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input
-            autoFocus
+            ref={(node) => {
+              node?.focus();
+            }}
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
             onKeyDown={(e) => {

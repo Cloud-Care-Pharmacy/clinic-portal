@@ -43,7 +43,9 @@ export function DocumentPreviewDialog({
   // Authenticated document previews require a user-triggered blob URL fetch.
   // Keep the fetch local to the open dialog, abort in-flight requests on cleanup,
   // and revoke generated object URLs to avoid leaking blob memory.
-  // oxlint-disable-next-line react-doctor/no-fetch-in-effect
+  // Cleanup resets multiple state slots back to their initial values; this
+  // is intentional teardown, not a render-driven cascade.
+  // eslint-disable-next-line react-doctor/no-fetch-in-effect, react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!open || !document) return;
 

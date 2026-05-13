@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, use, type ReactNode } from "react";
 import type { WorkflowNote } from "@/types";
 
 /**
@@ -41,5 +41,5 @@ export function NoteCallbacksProvider({
 }
 
 export function useNoteCallbacks(): NoteCallbacks {
-  return useContext(NoteCallbacksContext);
+  return use(NoteCallbacksContext);
 }

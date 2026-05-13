@@ -33,10 +33,9 @@ interface EditTemplateClientProps {
 }
 
 export function EditTemplateClient({ id }: EditTemplateClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const { data: template, isLoading } = useTemplate(id);
-  const [activeSection, setActiveSection] =
-    useState<TemplateFormSection>("details");
+  const [activeSection, setActiveSection] = useState<TemplateFormSection>("details");
 
   if (isLoading) {
     return (
@@ -65,7 +64,7 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
           title="We couldn't find that template"
           description="It may have been deleted. Return to the templates list to pick another."
           actionLabel="Back to templates"
-          onAction={() => router.push("/templates")}
+          onAction={() => push("/templates")}
         />
       </div>
     );
@@ -119,8 +118,8 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
           template={template}
           surface="page"
           activeSection={activeSection}
-          onCancel={() => router.push("/templates")}
-          onSaved={() => router.push("/templates")}
+          onCancel={() => push("/templates")}
+          onSaved={() => push("/templates")}
         />
       </div>
     </div>

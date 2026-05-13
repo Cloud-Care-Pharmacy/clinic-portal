@@ -10,19 +10,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type {
-  SendEmailAttachment,
-  SendEmailStep,
-} from "@/types";
+import type { SendEmailAttachment, SendEmailStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
 import { KeyValueEditor, StringListEditor } from "./shared";
 import type { StepFormProps } from "./types";
 
-function SendEmailContent({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<SendEmailStep>) {
+function SendEmailContent({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
   // Derive content type from existing data: any html value (even empty string)
   // means HTML mode; otherwise text mode.
   const contentType: "text" | "html" = step.html !== undefined ? "html" : "text";
@@ -87,6 +80,9 @@ function AttachmentsEditor({
   return (
     <div className="flex flex-col gap-1.5">
       {list.map((a, i) => (
+        // Append/remove-from-end editor; stable ids would require restructuring
+        // the SendEmailAttachment[] controlled-component API.
+        // eslint-disable-next-line react-doctor/no-array-index-as-key
         <div key={i} className="flex items-center gap-1.5">
           <Input
             value={a.url}

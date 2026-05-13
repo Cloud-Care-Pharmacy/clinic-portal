@@ -313,8 +313,8 @@ function DetailGrid({ template }: { template: Template }) {
 
   return (
     <dl className="grid grid-cols-[120px_1fr] gap-x-3 gap-y-2 text-sm">
-      {rows.map(([label, value], i) => (
-        <div key={i} className="contents">
+      {rows.map(([label, value]) => (
+        <div key={label} className="contents">
           <dt className="text-muted-foreground">{label}</dt>
           <dd className="min-w-0 break-words text-foreground">{value}</dd>
         </div>
@@ -351,6 +351,10 @@ function EmailPreview({
       </div>
       <div
         className="prose prose-sm max-w-none p-4 [&_p]:my-1"
+        // Template HTML is authored by internal staff (admin/doctor/staff) via
+        // the in-portal editor and rendered back to those same authors for
+        // preview. Not user-generated content from external sources.
+        // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: bodyHtml }}
       />
     </div>

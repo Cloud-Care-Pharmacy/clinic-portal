@@ -25,8 +25,12 @@ export function RunsClient({
   const definitionVersion = data?.data.version ?? 1;
 
   // Read the `?outdated=1` deep-link from the definition-detail banner so
-  // the rail boots into the "Outdated only" view.
+  // the rail boots into the "Outdated only" view. Parent page wraps this
+  // component in <Suspense>. We can't destructure `.get` from URLSearchParams
+  // — it relies on `this`.
+  // eslint-disable-next-line react-doctor/nextjs-no-use-search-params-without-suspense
   const searchParams = useSearchParams();
+  // eslint-disable-next-line react-doctor/react-compiler-destructure-method
   const initialOutdatedOnly = searchParams.get("outdated") === "1";
 
   // Replace the workflow id segment in the breadcrumb with its name so the

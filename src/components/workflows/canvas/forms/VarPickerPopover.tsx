@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useVarsCatalog, isLeafAvailableAtStep } from "../lib/vars-catalog-context";
 import type { WorkflowVarLeaf, WorkflowVarSource } from "@/types";
@@ -23,10 +17,7 @@ interface CaretInfo {
   needsClose: boolean;
 }
 
-function detectOpenTemplate(
-  value: string,
-  caret: number,
-): CaretInfo | null {
+function detectOpenTemplate(value: string, caret: number): CaretInfo | null {
   const before = value.slice(0, caret);
   const match = OPEN_TEMPLATE_RE.exec(before);
   if (!match) return null;
@@ -41,9 +32,7 @@ function detectOpenTemplate(
 function fuzzyMatches(leaf: WorkflowVarLeaf, query: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
-  return (
-    leaf.path.toLowerCase().includes(q) || leaf.label.toLowerCase().includes(q)
-  );
+  return leaf.path.toLowerCase().includes(q) || leaf.label.toLowerCase().includes(q);
 }
 
 function describeSource(source: WorkflowVarSource): string {
@@ -79,17 +68,15 @@ interface VarPickerPopoverProps {
  * - Synthetic display-only paths from the global catalog (those containing
  *   `[ ]`) are shown but cannot be inserted.
  */
-export function VarPickerPopover({
-  inputRef,
-  value,
-  onChange,
-}: VarPickerPopoverProps) {
+export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopoverProps) {
   const { catalog, stepIndex } = useVarsCatalog();
   const [caret, setCaret] = useState<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   // Reset the highlighted row whenever the filter set changes. Tracked via
   // the "store previous value during render" pattern to avoid a setState-in-
   // effect cascade. https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  // (Read during render at the `if (lastFilterKey !== filterKey)` check below.)
+  // eslint-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [lastFilterKey, setLastFilterKey] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -107,6 +94,9 @@ export function VarPickerPopover({
     setCaret(el.selectionStart ?? null);
   }, [inputRef]);
 
+  // `updateCaret` is already memoized with useCallback, so the effect only
+  // resubscribes when `inputRef` changes (effectively never). useEffectEvent
+  // is still experimental in React 19; revisit once stable.
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -123,11 +113,12 @@ export function VarPickerPopover({
       el.removeEventListener("focus", handler);
       el.removeEventListener("blur", handler);
     };
+    // eslint-disable-next-line react-doctor/prefer-use-effect-event
   }, [inputRef, updateCaret]);
 
   const info = useMemo<CaretInfo | null>(
     () => (caret == null ? null : detectOpenTemplate(value, caret)),
-    [value, caret],
+    [value, caret]
   );
 
   const open = info != null && catalog != null && catalog.leaves.length > 0;
@@ -173,10 +164,12 @@ export function VarPickerPopover({
       // Silence unused-var lint for `next` (kept for readability).
       void next;
     },
-    [info, inputRef, onChange, value],
+    [info, inputRef, onChange, value]
   );
 
-  // Keyboard nav while popover is open.
+  // Keyboard nav while popover is open. setState calls are inside an event
+  // handler attached to the input, not a render-driven cascade.
+  // eslint-disable-next-line react-doctor/no-cascading-set-state
   useEffect(() => {
     if (!open) return;
     const el = inputRef.current;
@@ -208,7 +201,7 @@ export function VarPickerPopover({
   useEffect(() => {
     if (!open) return;
     const node = listRef.current?.querySelector<HTMLElement>(
-      `[data-row-index="${activeIndex}"]`,
+      `[data-row-index="${activeIndex}"]`
     );
     node?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, open]);
@@ -232,24 +225,29 @@ export function VarPickerPopover({
       {filtered.map((leaf, i) => {
         const synthetic = /[\[\]]/.test(leaf.path);
         const dimmed =
-          synthetic ||
-          leaf.dynamic ||
-          !isLeafAvailableAtStep(leaf, stepIndex);
+          synthetic || leaf.dynamic || !isLeafAvailableAtStep(leaf, stepIndex);
         return (
           <div
             key={leaf.path}
             data-row-index={i}
             role="option"
+            tabIndex={-1}
             aria-selected={i === activeIndex}
             onClick={() => {
               if (synthetic || leaf.dynamic) return;
+              insertLeaf(leaf);
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              if (synthetic || leaf.dynamic) return;
+              e.preventDefault();
               insertLeaf(leaf);
             }}
             className={cn(
               "flex cursor-pointer flex-col gap-0.5 rounded-md px-2 py-1.5",
               i === activeIndex && "bg-muted",
               dimmed && "opacity-60",
-              (synthetic || leaf.dynamic) && "cursor-not-allowed",
+              (synthetic || leaf.dynamic) && "cursor-not-allowed"
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -270,7 +268,7 @@ export function VarPickerPopover({
               )}
               {leaf.dynamic && (
                 <span className="rounded bg-muted px-1 text-[10px] text-muted-foreground">
-                  any key — autocomplete unavailable
+                  any key: autocomplete unavailable
                 </span>
               )}
             </div>

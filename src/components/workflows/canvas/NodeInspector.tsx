@@ -16,11 +16,7 @@ import { CaptureSettings } from "./forms/steps/CaptureSettings";
 import { RetrySettings } from "./forms/steps/RetrySettings";
 import { Field } from "./forms/Field";
 import { VarsCatalogStepProvider } from "./lib/vars-catalog-context";
-import type {
-  Workflow,
-  WorkflowStep,
-  WorkflowTrigger,
-} from "@/types";
+import type { Workflow, WorkflowStep, WorkflowTrigger } from "@/types";
 
 export type Selection =
   | { kind: "trigger"; index: number }
@@ -80,8 +76,7 @@ export function NodeInspector({
   serverError,
 }: NodeInspectorProps) {
   const isTrigger = selection?.kind === "trigger";
-  const trigger =
-    selection?.kind === "trigger" ? triggers[selection.index] : undefined;
+  const trigger = selection?.kind === "trigger" ? triggers[selection.index] : undefined;
   const step = selection?.kind === "step" ? steps[selection.index] : undefined;
   const cfg: NodeKindConfig | null = trigger
     ? TRIGGER_KIND_CONFIG[trigger.kind]
@@ -103,18 +98,17 @@ export function NodeInspector({
   const stepErrors =
     step && selection
       ? fieldErrors(
-          new RegExp(`^definition\\.steps\\[${selection.index}\\]\\.([\\w]+)$`),
+          new RegExp(`^definition\\.steps\\[${selection.index}\\]\\.([\\w]+)$`)
         )
       : {};
 
   const otherSteps =
     selection?.kind === "step"
-      ? steps
-          .map((s, i) => ({
-            id: s.id ?? `step_${i + 1}`,
-            label: `${i + 1}. ${s.id ?? s.kind}`,
-          }))
-          .filter((_, i) => i !== selection.index)
+      ? steps.flatMap((s, i) =>
+          i === selection.index
+            ? []
+            : [{ id: s.id ?? `step_${i + 1}`, label: `${i + 1}. ${s.id ?? s.kind}` }]
+        )
       : [];
 
   const title =
@@ -156,9 +150,7 @@ export function NodeInspector({
           size="sm"
           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() =>
-            isTrigger
-              ? onDeleteTrigger(selection.index)
-              : onDeleteStep(selection.index)
+            isTrigger ? onDeleteTrigger(selection.index) : onDeleteStep(selection.index)
           }
         >
           <Trash2 className="size-3.5" />

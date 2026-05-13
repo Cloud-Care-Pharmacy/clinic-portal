@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 
 /**
  * Lightweight context that lets edge components dispatch "open the node
@@ -21,7 +21,7 @@ const CanvasContext = createContext<CanvasContextValue | null>(null);
 export const CanvasContextProvider = CanvasContext.Provider;
 
 export function useCanvasContext(): CanvasContextValue {
-  const ctx = useContext(CanvasContext);
+  const ctx = use(CanvasContext);
   if (!ctx) {
     throw new Error("useCanvasContext must be used inside <CanvasContextProvider>");
   }

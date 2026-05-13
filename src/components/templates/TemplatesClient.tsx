@@ -54,7 +54,7 @@ function relativeTime(iso: string): string {
 }
 
 export function TemplatesClient() {
-  const router = useRouter();
+  const { push } = useRouter();
   const [tab, setTab] = useState<TemplateType>("email");
   const [createOpen, setCreateOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<Template | null>(null);
@@ -109,7 +109,7 @@ export function TemplatesClient() {
         template={detailTarget}
         onEdit={(t) => {
           setDetailTarget(null);
-          router.push(`/templates/${t.id}`);
+          push(`/templates/${t.id}`);
         }}
       />
     </div>
@@ -164,7 +164,7 @@ function TemplateTypePanel({
           params.row.category ? (
             <span className="text-muted-foreground">{params.row.category}</span>
           ) : (
-            <span className="text-muted-foreground/60">—</span>
+            <span className="text-muted-foreground/60">–</span>
           ),
       },
       {

@@ -65,17 +65,14 @@ export interface WorkflowGraphProps {
    */
   onNoteGeometryChange?: (
     id: string,
-    patch: { x?: number; y?: number; width?: number; height?: number },
+    patch: { x?: number; y?: number; width?: number; height?: number }
   ) => void;
   stepRunStatus?: Record<number, NodeRunStatus>;
   /**
    * Per-step duration / live-elapsed (ms), keyed by flat step index. The
    * run canvas passes this so each node can render a tiny duration pill.
    */
-  stepRunMeta?: Record<
-    number,
-    { durationMs?: number; liveElapsedMs?: number }
-  >;
+  stepRunMeta?: Record<number, { durationMs?: number; liveElapsedMs?: number }>;
   runActive?: boolean;
   panningMode: "grab" | "select";
   /**
@@ -142,18 +139,14 @@ export function WorkflowGraph({
   // that would have been pointing at the removed add buttons.
   const visibleNodes = useMemo<WfNode[]>(() => {
     if (!readOnly) return nodes;
-    return nodes
-      .filter((n) => {
-        const k = (n.data as WorkflowNodeData).kind;
-        return k !== "addButton" && k !== "bigAddButton";
-      })
-      .map((n) => {
-        // Notes stay visible in run view but become inert (no drag, no
-        // resize handles via selection).
-        const k = (n.data as WorkflowNodeData).kind;
-        if (k === "note") return { ...n, draggable: false, selectable: false };
-        return n;
-      });
+    return nodes.flatMap((n) => {
+      const k = (n.data as WorkflowNodeData).kind;
+      if (k === "addButton" || k === "bigAddButton") return [];
+      // Notes stay visible in run view but become inert (no drag, no
+      // resize handles via selection).
+      if (k === "note") return [{ ...n, draggable: false, selectable: false }];
+      return [n];
+    });
   }, [nodes, readOnly]);
 
   const visibleNodeIds = useMemo(
@@ -182,11 +175,13 @@ export function WorkflowGraph({
 
   const themedEdges = useMemo(
     () =>
-      edges
-        .filter((e) => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target))
-        .map((e) => {
-          const targetStatus = runStatusByNodeId[e.target];
-          return {
+      edges.flatMap((e) => {
+        if (!visibleNodeIds.has(e.source) || !visibleNodeIds.has(e.target)) {
+          return [];
+        }
+        const targetStatus = runStatusByNodeId[e.target];
+        return [
+          {
             ...e,
             data: {
               ...(e.data ?? {}),
@@ -194,8 +189,9 @@ export function WorkflowGraph({
               runStatus: targetStatus,
               ...(readOnly ? { hideAddButton: true } : null),
             } as Record<string, unknown>,
-          };
-        }),
+          },
+        ];
+      }),
     [edges, visibleNodeIds, runActive, runStatusByNodeId, readOnly]
   );
 
@@ -223,7 +219,7 @@ export function WorkflowGraph({
         y: node.position.y,
       });
     },
-    [onNoteGeometryChange],
+    [onNoteGeometryChange]
   );
 
   return (

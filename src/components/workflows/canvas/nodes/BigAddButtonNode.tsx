@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { BIG_ADD_BUTTON_SIZE, HANDLE_STYLING, NODE_W } from "../lib/canvas-consts";
+import { ADD_BUTTON_SIZE, HANDLE_STYLING, NODE_W } from "../lib/canvas-consts";
 import { useCanvasContext } from "../lib/canvas-context";
 import type { WorkflowNodeData } from "../lib/graph-builder";
 
@@ -16,7 +16,7 @@ export function BigAddButtonNode({ data, id }: NodeProps) {
 
   return (
     <div
-      style={{ width: NODE_W, height: BIG_ADD_BUTTON_SIZE }}
+      style={{ width: NODE_W, height: ADD_BUTTON_SIZE }}
       className="grid place-items-center"
     >
       <Handle type="target" position={Position.Top} style={HANDLE_STYLING} />
@@ -34,7 +34,7 @@ export function BigAddButtonNode({ data, id }: NodeProps) {
           );
         }}
         onMouseDown={(e) => e.stopPropagation()}
-        style={{ width: BIG_ADD_BUTTON_SIZE, height: BIG_ADD_BUTTON_SIZE }}
+        style={{ width: ADD_BUTTON_SIZE, height: ADD_BUTTON_SIZE }}
         className="pointer-events-auto grid place-items-center rounded-md border border-border bg-popover text-muted-foreground shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
         aria-label="Add step here"
       >
