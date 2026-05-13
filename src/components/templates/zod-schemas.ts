@@ -18,10 +18,7 @@ const csvOrArray = z
       const cleaned = v.map(trimmed).filter(Boolean);
       return cleaned.length ? cleaned : undefined;
     }
-    const cleaned = v
-      .split(",")
-      .map(trimmed)
-      .filter(Boolean);
+    const cleaned = v.split(",").map(trimmed).filter(Boolean);
     return cleaned.length ? cleaned : undefined;
   });
 
@@ -48,7 +45,11 @@ export const emailTemplateSchema = z.object({
   fromEmail: emailField,
   replyTo: optionalEmailField,
   subject: z.string().min(1, "Subject is required").max(200, "Subject is too long"),
-  preheader: z.string().max(200, "Preheader is too long").optional().transform(trimmedOpt),
+  preheader: z
+    .string()
+    .max(200, "Preheader is too long")
+    .optional()
+    .transform(trimmedOpt),
   body: z
     .string()
     .min(1, "Body is required")

@@ -15,12 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,10 +30,7 @@ import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { SendTestDialog } from "./SendTestDialog";
 import { useDeleteTemplate } from "@/lib/hooks/use-templates";
-import {
-  getSampleValues,
-  renderTemplate,
-} from "@/lib/templates/variables";
+import { getSampleValues, renderTemplate } from "@/lib/templates/variables";
 import { segmentInfo } from "@/lib/templates/sms-utils";
 import { cn } from "@/lib/utils";
 import type { Template, TemplateSeverity } from "@/types";
@@ -68,10 +60,8 @@ const SEVERITY_ICON: Record<
 
 const SEVERITY_TONE: Record<TemplateSeverity, string> = {
   info: "border-status-info-border bg-status-info-bg text-status-info-fg",
-  success:
-    "border-status-success-border bg-status-success-bg text-status-success-fg",
-  warning:
-    "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
+  success: "border-status-success-border bg-status-success-bg text-status-success-fg",
+  warning: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
   error: "border-status-danger-border bg-status-danger-bg text-status-danger-fg",
 };
 
@@ -101,9 +91,7 @@ export function TemplateDetailSheet({
   const renderedSubject =
     template.type === "email" ? renderTemplate(template.subject, sample) : "";
   const renderedTitle =
-    template.type === "notification"
-      ? renderTemplate(template.title, sample)
-      : "";
+    template.type === "notification" ? renderTemplate(template.title, sample) : "";
   const renderedBody = renderTemplate(template.body, sample);
 
   function handleDelete() {
@@ -133,19 +121,11 @@ export function TemplateDetailSheet({
         description={template.description}
         footer={
           <>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setDeleteOpen(true)}
-            >
+            <Button type="button" variant="ghost" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="size-4" />
               Delete
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setTestOpen(true)}
-            >
+            <Button type="button" variant="outline" onClick={() => setTestOpen(true)}>
               <Send className="size-4" />
               Send test
             </Button>
@@ -219,19 +199,15 @@ export function TemplateDetailSheet({
         </div>
       </AppSheet>
 
-      <SendTestDialog
-        open={testOpen}
-        onOpenChange={setTestOpen}
-        template={template}
-      />
+      <SendTestDialog open={testOpen} onOpenChange={setTestOpen} template={template} />
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete template?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &ldquo;{template.name}&rdquo;. This
-              action cannot be undone.
+              This will permanently delete &ldquo;{template.name}&rdquo;. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -259,19 +235,27 @@ export function TemplateDetailSheet({
 
 function DetailGrid({ template }: { template: Template }) {
   const rows: Array<[string, React.ReactNode]> = [
-    ["Type", <span key="t" className="capitalize">{template.type}</span>],
+    [
+      "Type",
+      <span key="t" className="capitalize">
+        {template.type}
+      </span>,
+    ],
     ["Category", template.category || "—"],
     ["Status", template.active ? "Active" : "Inactive"],
-    ["Variables", template.variables.length
-      ? template.variables.map((v) => (
-          <code
-            key={v}
-            className="mr-1 rounded bg-muted px-1 py-0.5 text-[11px] font-mono"
-          >
-            {`{{${v}}}`}
-          </code>
-        ))
-      : "—"],
+    [
+      "Variables",
+      template.variables.length
+        ? template.variables.map((v) => (
+            <code
+              key={v}
+              className="mr-1 rounded bg-muted px-1 py-0.5 text-[11px] font-mono"
+            >
+              {`{{${v}}}`}
+            </code>
+          ))
+        : "—",
+    ],
     ["Created", `${formatDate(template.createdAt)} by ${template.createdBy}`],
     ["Updated", `${formatDate(template.updatedAt)} by ${template.updatedBy}`],
   ];
@@ -302,12 +286,16 @@ function DetailGrid({ template }: { template: Template }) {
     rows.push(["Title", template.title]);
     rows.push([
       "Severity",
-      <span key="s" className="capitalize">{template.severity}</span>,
+      <span key="s" className="capitalize">
+        {template.severity}
+      </span>,
     ]);
     if (template.icon) rows.push(["Icon", template.icon]);
     rows.push([
       "Audience",
-      <span key="a" className="capitalize">{template.audienceRole}</span>,
+      <span key="a" className="capitalize">
+        {template.audienceRole}
+      </span>,
     ]);
     if (template.actionLabel || template.actionUrl) {
       rows.push([
@@ -372,9 +360,7 @@ function EmailPreview({
 function SmsPreview({ senderId, body }: { senderId: string; body: string }) {
   return (
     <div className="max-w-xs rounded-md border border-border bg-muted/40 p-3">
-      <div className="mb-1 text-xs font-medium text-muted-foreground">
-        {senderId}
-      </div>
+      <div className="mb-1 text-xs font-medium text-muted-foreground">{senderId}</div>
       <div className="whitespace-pre-wrap rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground">
         {body}
       </div>

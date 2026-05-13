@@ -36,11 +36,7 @@ function defaultRecipient(
   return user?.fullName ?? "Me";
 }
 
-export function SendTestDialog({
-  open,
-  onOpenChange,
-  template,
-}: SendTestDialogProps) {
+export function SendTestDialog({ open, onOpenChange, template }: SendTestDialogProps) {
   const { user } = useUser();
   const [recipient, setRecipient] = useState("");
   // Derived-state reset when the (open, template) tuple changes.

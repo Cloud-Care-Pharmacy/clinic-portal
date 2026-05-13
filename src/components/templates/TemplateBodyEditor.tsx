@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useEffect,
-} from "react";
+import { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -182,9 +177,7 @@ function EmailEditor({
         <div className="mx-1 h-4 w-px bg-border" />
         <ToolbarButton
           active={editor.isActive("heading", { level: 2 })}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 2 }).run()
-          }
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           title="Heading"
         >
           <Heading2 className="size-3.5" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DataGrid,
   type GridColDef,
@@ -12,12 +13,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { TemplateSheet } from "./TemplateSheet";
 import { TemplateDetailSheet } from "./TemplateDetailSheet";
@@ -58,9 +54,9 @@ function relativeTime(iso: string): string {
 }
 
 export function TemplatesClient() {
+  const router = useRouter();
   const [tab, setTab] = useState<TemplateType>("email");
   const [createOpen, setCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Template | null>(null);
   const [detailTarget, setDetailTarget] = useState<Template | null>(null);
 
   return (
@@ -104,19 +100,7 @@ export function TemplatesClient() {
         ))}
       </Tabs>
 
-      <TemplateSheet
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        defaultType={tab}
-      />
-      <TemplateSheet
-        open={!!editTarget}
-        onOpenChange={(open) => {
-          if (!open) setEditTarget(null);
-        }}
-        template={editTarget ?? undefined}
-        onSaved={() => setEditTarget(null)}
-      />
+      <TemplateSheet open={createOpen} onOpenChange={setCreateOpen} defaultType={tab} />
       <TemplateDetailSheet
         open={!!detailTarget}
         onOpenChange={(open) => {
@@ -125,7 +109,7 @@ export function TemplatesClient() {
         template={detailTarget}
         onEdit={(t) => {
           setDetailTarget(null);
-          setEditTarget(t);
+          router.push(`/templates/${t.id}`);
         }}
       />
     </div>
