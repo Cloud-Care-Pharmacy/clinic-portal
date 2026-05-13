@@ -19,6 +19,7 @@ import {
   Package,
   ShoppingCart,
   Workflow,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -75,6 +76,11 @@ const operationsNav: NavItem[] = [
     label: "Workflows",
     href: "/workflows",
     icon: <Workflow className="size-5 " />,
+  },
+  {
+    label: "Templates",
+    href: "/templates",
+    icon: <Mail className="size-5 " />,
   },
 ];
 
