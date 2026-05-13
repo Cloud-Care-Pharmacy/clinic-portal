@@ -2421,3 +2421,76 @@ export interface WorkflowRunTimelineRow {
   /** Populated when `status === 'timed_out'`. Source: `wait_for_event_timed_out.detail.eventType`. */
   awaitingEventType?: string | null;
 }
+
+// ============================================
+// Templates (frontend-only, localStorage-backed)
+// ============================================
+
+export type TemplateType = "email" | "sms" | "notification";
+
+export type TemplateSeverity = "info" | "success" | "warning" | "error";
+
+export type TemplateAudience = "all" | "admin" | "doctor" | "staff";
+
+/** Common fields shared by every template type. */
+export interface BaseTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  active: boolean;
+  /** Variables referenced by this template (paths from VARIABLE_CATALOG). */
+  variables: string[];
+  createdBy: string;
+  updatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmailTemplate extends BaseTemplate {
+  type: "email";
+  fromName: string;
+  fromEmail: string;
+  replyTo?: string;
+  subject: string;
+  preheader?: string;
+  /** HTML body produced by TipTap. */
+  body: string;
+  /** Plain-text fallback. Auto-derived from `body` on save when blank. */
+  plainTextFallback?: string;
+  cc?: string[];
+  bcc?: string[];
+  attachmentsAllowed: boolean;
+}
+
+export interface SmsTemplate extends BaseTemplate {
+  type: "sms";
+  /** Alphanumeric sender ID, 3–11 chars. */
+  senderId: string;
+  /** Plain-text body. */
+  body: string;
+  includeOptOutFooter: boolean;
+  /** Optional cap on derived segment count; warns on save when exceeded. */
+  maxSegments?: number;
+}
+
+export interface NotificationTemplate extends BaseTemplate {
+  type: "notification";
+  /** Short title (≤80 chars). */
+  title: string;
+  /** Plain-text body. */
+  body: string;
+  severity: TemplateSeverity;
+  /** Optional Lucide icon name overriding the severity default. */
+  icon?: string;
+  actionLabel?: string;
+  /** Internal route; must start with `/`. */
+  actionUrl?: string;
+  audienceRole: TemplateAudience;
+  /** 0/undefined = sticky. */
+  autoDismissSeconds?: number;
+  /** When true, the notification is persisted in NotificationsBell feed. */
+  persistInBell: boolean;
+}
+
+export type Template = EmailTemplate | SmsTemplate | NotificationTemplate;
