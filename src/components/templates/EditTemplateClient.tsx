@@ -1,12 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, MessageSquare, Bell, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { TemplateForm } from "./TemplateForm";
+import { TemplateForm, type TemplateFormSection } from "./TemplateForm";
 import { useTemplate } from "@/lib/hooks/use-templates";
+import { cn } from "@/lib/utils";
 import type { TemplateType } from "@/types";
+
+const TABS: { value: TemplateFormSection; label: string }[] = [
+  { value: "details", label: "Details" },
+  { value: "settings", label: "Settings" },
+  { value: "content", label: "Content" },
+];
 
 const TYPE_ICON: Record<TemplateType, LucideIcon> = {
   email: Mail,
@@ -27,6 +35,8 @@ interface EditTemplateClientProps {
 export function EditTemplateClient({ id }: EditTemplateClientProps) {
   const router = useRouter();
   const { data: template, isLoading } = useTemplate(id);
+  const [activeSection, setActiveSection] =
+    useState<TemplateFormSection>("details");
 
   if (isLoading) {
     return (
@@ -81,10 +91,34 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
         }
       />
 
+      {/* Pill-style tab navigation */}
+      <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+        {TABS.map((tab) => {
+          const isActive = activeSection === tab.value;
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveSection(tab.value)}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                isActive
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </nav>
+
       <div className="rounded-lg border border-border bg-card p-4">
         <TemplateForm
           template={template}
           surface="page"
+          activeSection={activeSection}
           onCancel={() => router.push("/templates")}
           onSaved={() => router.push("/templates")}
         />

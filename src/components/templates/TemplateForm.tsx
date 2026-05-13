@@ -41,6 +41,8 @@ import type {
   TemplateType,
 } from "@/types";
 
+export type TemplateFormSection = "details" | "settings" | "content";
+
 interface TemplateFormProps {
   /** When provided, the form is in edit mode. */
   template?: Template;
@@ -55,6 +57,12 @@ interface TemplateFormProps {
    * or on a page (sticky bar uses page background).
    */
   surface?: "sheet" | "page";
+  /**
+   * When set, only the matching section is rendered. The form state and
+   * submit handler still cover all fields, so cross-section validation works.
+   * When unset (sheet/create mode), every section is rendered.
+   */
+  activeSection?: TemplateFormSection;
 }
 
 type FormState = {
@@ -172,7 +180,11 @@ export function TemplateForm({
   onSaved,
   onCancel,
   surface = "page",
+  activeSection,
 }: TemplateFormProps) {
+  const showDetails = !activeSection || activeSection === "details";
+  const showSettings = !activeSection || activeSection === "settings";
+  const showContent = !activeSection || activeSection === "content";
   const isEdit = !!template;
   const initialType = template?.type ?? defaultType;
 
@@ -314,7 +326,7 @@ export function TemplateForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Type selector — only in create mode */}
-      {!isEdit && (
+      {!isEdit && showDetails && (
         <div className="space-y-1.5">
           <Label>Type</Label>
           <div className="grid grid-cols-3 gap-2">
@@ -343,6 +355,7 @@ export function TemplateForm({
       )}
 
       {/* Common fields */}
+      {showDetails && (
       <section className="space-y-3">
         <Field label="Name" error={err("name")} required>
           <Input
@@ -381,9 +394,10 @@ export function TemplateForm({
           />
         </Field>
       </section>
+      )}
 
       {/* Type-specific fields */}
-      {form.type === "email" && (
+      {showSettings && form.type === "email" && (
         <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Email settings
@@ -459,7 +473,7 @@ export function TemplateForm({
         </section>
       )}
 
-      {form.type === "sms" && (
+      {showSettings && form.type === "sms" && (
         <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             SMS settings
@@ -504,7 +518,7 @@ export function TemplateForm({
         </section>
       )}
 
-      {form.type === "notification" && (
+      {showSettings && form.type === "notification" && (
         <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Notification settings
@@ -621,6 +635,7 @@ export function TemplateForm({
       )}
 
       {/* Body */}
+      {showContent && (
       <section className="space-y-2">
         <Label>Body{form.type !== "email" ? " (plain text)" : ""}</Label>
         <TemplateBodyEditor
@@ -653,8 +668,10 @@ export function TemplateForm({
           </div>
         ) : null}
       </section>
+      )}
 
       {/* Variables */}
+      {showContent && (
       <section className="space-y-2">
         <Label>Insert variable</Label>
         <p className="text-xs text-muted-foreground">
@@ -662,9 +679,10 @@ export function TemplateForm({
         </p>
         <VariablePicker onInsert={(path) => editorRef.current?.insertVariable(path)} />
       </section>
+      )}
 
       {/* Plain-text fallback (email only) */}
-      {form.type === "email" && (
+      {showContent && form.type === "email" && (
         <section className="space-y-2">
           <Label>Plain-text fallback (optional)</Label>
           <p className="text-xs text-muted-foreground">
