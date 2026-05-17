@@ -33,7 +33,7 @@ import {
 import type { PatientMapping } from "@/types";
 import { NewConsultationSheet } from "@/components/consultations/NewConsultationSheet";
 import { NewTaskSheet } from "@/components/tasks/NewTaskSheet";
-import { WritePrescriptionDialog } from "@/components/prescriptions/WritePrescriptionDialog";
+import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
 import { PatientEditSheet } from "@/components/patients/ProfileTab";
 import { ExpandableIconButton } from "@/components/shared/ExpandableIconButton";
 import {
@@ -100,7 +100,7 @@ export const PatientHeader = memo(
     const [newTaskOpen, setNewTaskOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [deleteOpen, setDeleteOpen] = useState(false);
-    const [newRxOpen, setNewRxOpen] = useState(false);
+    const [parchmentOpen, setParchmentOpen] = useState(false);
     const deleteMutation = useDeletePatient();
     const age = getAge(patient?.dateOfBirth ?? null);
     const gender = patient?.gender ?? "";
@@ -208,7 +208,7 @@ export const PatientHeader = memo(
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       disabled={actionsDisabled}
-                      onClick={() => setNewRxOpen(true)}
+                      onClick={() => setParchmentOpen(true)}
                     >
                       <Pill className="mr-2 size-4" />
                       New prescription
@@ -300,13 +300,12 @@ export const PatientHeader = memo(
           defaultPatientName={displayName === "Loading…" ? "" : displayName}
         />
 
-        {patientId ? (
-          <WritePrescriptionDialog
-            open={newRxOpen}
-            onOpenChange={setNewRxOpen}
-            patientId={patientId}
-          />
-        ) : null}
+        <ParchmentRedirectDialog
+          open={parchmentOpen}
+          onOpenChange={setParchmentOpen}
+          patientId={patientId}
+          patientName={displayName === "Loading…" ? "" : displayName}
+        />
 
         <PatientEditSheet
           patient={patient}

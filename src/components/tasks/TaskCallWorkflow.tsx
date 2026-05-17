@@ -11,6 +11,7 @@ import {
   Eye,
   ExternalLink,
   FileText,
+  Link2,
   Pill,
   SquareArrowOutUpRight,
   Sparkles,
@@ -37,6 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
 import {
   ManualRxComposer,
   areAllValid as areAllRxValid,
@@ -85,7 +87,7 @@ export interface TaskCallData {
 
 export type TaskOutcomeMode = "hangup" | "manual";
 
-export type PrescriptionChoice = "internal" | "none";
+export type PrescriptionChoice = "erx" | "internal" | "none";
 
 export type ClinicalDecision = "approve" | "reject";
 
@@ -851,11 +853,12 @@ export function TaskOutcomeDialog({
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
   const [prescriptionChoice, setPrescriptionChoice] =
-    useState<PrescriptionChoice>("internal");
+    useState<PrescriptionChoice>("erx");
   const [rxMeds, setRxMeds] = useState<Medication[]>([]);
   const [clinicalDecision, setClinicalDecision] = useState<
     ClinicalDecision | undefined
   >(undefined);
+  const [parchmentOpen, setParchmentOpen] = useState(false);
   const [confirmFinaliseOpen, setConfirmFinaliseOpen] = useState(false);
   const manualNotesId = useId();
   const manualDurationId = useId();
@@ -1177,7 +1180,7 @@ export function TaskOutcomeDialog({
                         onChange={setPrescriptionChoice}
                         disabledValues={
                           clinicalDecision === "reject"
-                            ? ["internal"]
+                            ? ["erx", "internal"]
                             : undefined
                         }
                       />
@@ -1189,7 +1192,10 @@ export function TaskOutcomeDialog({
                         allValid={areAllRxValid(rxMeds)}
                       />
                     ) : (
-                      <PrescriptionActionCard choice={prescriptionChoice} />
+                      <PrescriptionActionCard
+                        choice={prescriptionChoice}
+                        onOpenParchment={() => setParchmentOpen(true)}
+                      />
                     )}
                   </StepBlock>
                 </>
@@ -1257,6 +1263,13 @@ export function TaskOutcomeDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ParchmentRedirectDialog
+        open={parchmentOpen}
+        onOpenChange={setParchmentOpen}
+        patientId={task.patientId}
+        patientName={patientName}
+      />
 
       <AlertDialog open={confirmFinaliseOpen} onOpenChange={setConfirmFinaliseOpen}>
         <AlertDialogContent>
@@ -1340,7 +1353,9 @@ function DecisionRadioPill({
 const PRESCRIPTION_SEGMENTS: ReadonlyArray<{
   value: PrescriptionChoice;
   label: string;
+  icon?: typeof Link2;
 }> = [
+  { value: "erx", label: "ERX", icon: Link2 },
   { value: "internal", label: "Internal" },
   { value: "none", label: "None" },
 ];
@@ -1366,6 +1381,7 @@ function PrescriptionSegmentedToggle({
       )}
     >
       {PRESCRIPTION_SEGMENTS.map((segment) => {
+        const Icon = segment.icon;
         const active = value === segment.value;
         const segmentDisabled =
           disabled || (disabledValues?.includes(segment.value) ?? false);
@@ -1384,6 +1400,7 @@ function PrescriptionSegmentedToggle({
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
+            {Icon && <Icon className="size-3.5" />}
             {segment.label}
           </button>
         );
@@ -1428,11 +1445,35 @@ function InternalRxSummaryCard({
 
 function PrescriptionActionCard({
   choice,
+  disabled,
+  onOpenParchment,
 }: {
   choice: Exclude<PrescriptionChoice, "internal">;
+  disabled?: boolean;
+  onOpenParchment: () => void;
 }) {
   const config = (() => {
     switch (choice) {
+      case "erx":
+        return {
+          Icon: Link2,
+          iconTone: "bg-primary/10 text-primary",
+          title: "Send via Parchment",
+          body: "Opens in a new tab. The script returns to us manually - you can still finalise here.",
+          action: (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-md px-3 text-sm"
+              onClick={onOpenParchment}
+              disabled={disabled}
+            >
+              Open Parchment
+              <ExternalLink className="size-3.5" />
+            </Button>
+          ),
+        };
       case "none":
       default:
         return {

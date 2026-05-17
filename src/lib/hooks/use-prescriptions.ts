@@ -12,6 +12,56 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+// ---- Parchment (ERX) redirect ----
+
+export interface ParchmentPrescriptionLinkResponse {
+  success: boolean;
+  data: {
+    patientId: string;
+    parchmentPatientId: string;
+    created: boolean;
+  };
+}
+
+const PARCHMENT_PATIENT_URL_BASE = process.env.NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE;
+
+export function buildParchmentPatientUrl(parchmentPatientId: string): string {
+  if (!PARCHMENT_PATIENT_URL_BASE) {
+    throw new Error("Missing NEXT_PUBLIC_PARCHMENT_PATIENT_URL_BASE");
+  }
+  return `${PARCHMENT_PATIENT_URL_BASE}/${encodeURIComponent(parchmentPatientId)}`;
+}
+
+async function createParchmentPrescriptionLink(patientId: string) {
+  const res = await fetch(`/api/proxy/parchment/patients`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ patientId }),
+  });
+  const payload = await res
+    .json()
+    .catch(() => ({ error: "Failed to create Parchment patient" }));
+  if (!res.ok) {
+    const message =
+      (payload as { error?: string }).error ??
+      (res.status === 400
+        ? "Patient is missing required details for Parchment (name, DOB, gender, address, mobile)."
+        : res.status === 404
+          ? "Patient not found."
+          : "Failed to create Parchment patient");
+    throw new Error(message);
+  }
+  return payload as ParchmentPrescriptionLinkResponse;
+}
+
+export function useCreateParchmentPrescriptionLink() {
+  return useMutation({
+    mutationFn: (patientId: string) => createParchmentPrescriptionLink(patientId),
+  });
+}
+
+// ---- Native prescriptions ----
+
 interface ListPrescriptionsOpts {
   status?: string;
   limit?: number;
