@@ -154,7 +154,7 @@ export function ProfileClient({
               </h2>
               <Badge
                 variant="outline"
-                className={`${ROLE_COLORS[role]} px-2.5 py-1 text-sm font-medium`}
+                className={`${ROLE_COLORS[role]} h-9 rounded-full px-4 text-sm font-medium`}
               >
                 {ROLE_LABELS[role]}
               </Badge>
