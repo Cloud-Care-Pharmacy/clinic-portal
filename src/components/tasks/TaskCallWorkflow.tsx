@@ -12,7 +12,6 @@ import {
   Link2,
   Pill,
   Sparkles,
-  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,6 +41,8 @@ import {
   areAllValid as areAllRxValid,
   type Medication,
 } from "@/components/prescriptions/manual-rx";
+import { DocumentPreviewDialog } from "@/components/patients/DocumentPreviewDialog";
+import { medicalConditionLabel } from "@/components/patients/clinical-labels";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import {
@@ -58,8 +59,9 @@ import {
   useLatestClinicalData,
   usePatient,
 } from "@/lib/hooks/use-patients";
+import { usePatientDocuments } from "@/lib/hooks/use-documents";
 import { cn } from "@/lib/utils";
-import type { PatientMapping, Task, TaskStatus } from "@/types";
+import type { PatientDocument, PatientMapping, Task, TaskStatus } from "@/types";
 
 export interface TaskCallData {
   durationSeconds: number;
@@ -167,20 +169,6 @@ function taskInitials(task: Task) {
       .map((part) => part[0]?.toUpperCase())
       .join("") || "-"
   );
-}
-
-function taskMetadataList(task: Task, keys: string[]) {
-  const metadata = task.metadata;
-  if (!metadata) return [];
-
-  for (const key of keys) {
-    const value = metadata[key];
-    if (Array.isArray(value))
-      return value.filter((item): item is string => typeof item === "string");
-    if (typeof value === "string" && value.trim()) return [value];
-  }
-
-  return [];
 }
 
 function taskMetadataString(task: Task, keys: string[]) {
@@ -296,10 +284,8 @@ export function TaskCallDialog({
 }) {
   const [seconds, setSeconds] = useState(() => initialCallData?.durationSeconds ?? 0);
   const [notes, setNotes] = useState(() => initialCallData?.notes ?? "");
-  const [detailsOpen, setDetailsOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const [discardNotesOpen, setDiscardNotesOpen] = useState(false);
-  const [prescriptionOpen, setPrescriptionOpen] = useState(false);
   const patientQuery = usePatient(task?.patientId);
   const hasUnsavedNotes = notes.trim().length > 0;
 
@@ -385,10 +371,7 @@ export function TaskCallDialog({
       >
         <DialogContent
           showCloseButton={false}
-          className={cn(
-            "max-h-[calc(100vh-3rem)] gap-0 overflow-hidden border border-border p-0 shadow-xl sm:max-w-135",
-            detailsOpen && "sm:max-w-215"
-          )}
+          className="max-h-[calc(100vh-3rem)] gap-0 overflow-hidden border border-border p-0 shadow-xl sm:max-w-215"
         >
           <div className="flex min-h-0">
             <div className="flex min-w-0 flex-1 flex-col">
@@ -480,51 +463,29 @@ export function TaskCallDialog({
                 </div>
               </div>
 
-              <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row">
+              <DialogFooter className="mx-0 mb-0 items-center justify-end gap-2 rounded-none bg-card px-5 py-3 sm:flex-row">
                 <Button
                   variant="outline"
                   className="h-9 rounded-xl px-4 text-sm"
-                  onClick={() => setDetailsOpen((value) => !value)}
+                  onClick={requestCancel}
                 >
-                  <UserRound className="size-4" />
-                  {detailsOpen ? "Hide patient details" : "Open patient details"}
+                  Cancel call
                 </Button>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    className="h-9 rounded-xl px-4 text-sm"
-                    onClick={requestCancel}
-                  >
-                    Cancel call
-                  </Button>
-                  <Button
-                    className="h-9 rounded-xl px-4 text-sm"
-                    onClick={() =>
-                      hangUpAction({ durationSeconds: seconds, durationLabel, notes })
-                    }
-                  >
-                    I&apos;ve hung up, finalise
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </div>
+                <Button
+                  className="h-9 rounded-xl px-4 text-sm"
+                  onClick={() =>
+                    hangUpAction({ durationSeconds: seconds, durationLabel, notes })
+                  }
+                >
+                  I&apos;ve hung up, finalise
+                  <ArrowRight className="size-4" />
+                </Button>
               </DialogFooter>
             </div>
-            {detailsOpen && (
-              <TaskPatientDetails
-                task={task}
-                openPrescriptionAction={() => setPrescriptionOpen(true)}
-              />
-            )}
+            <TaskPatientDetails task={task} />
           </div>
         </DialogContent>
       </Dialog>
-
-      <ParchmentRedirectDialog
-        open={prescriptionOpen}
-        onOpenChange={setPrescriptionOpen}
-        patientId={task.patientId}
-        patientName={patientName}
-      />
 
       <AlertDialog open={discardNotesOpen} onOpenChange={setDiscardNotesOpen}>
         <AlertDialogContent>
@@ -547,39 +508,66 @@ export function TaskCallDialog({
   );
 }
 
-function TaskPatientDetails({
-  task,
-  openPrescriptionAction,
-}: {
-  task: Task;
-  openPrescriptionAction: () => void;
-}) {
-  const conditions = taskMetadataList(task, ["conditions", "medicalConditions"]);
+function TaskPatientDetails({ task }: { task: Task }) {
+  const clinicalQuery = useLatestClinicalData(task.patientId);
+  const documentsQuery = usePatientDocuments(task.patientId, {
+    limit: 1,
+    sort: "createdAt",
+    order: "desc",
+  });
+
+  const clinicalRecord = clinicalQuery.data?.data?.clinicalData;
+  const conditionLabels = (clinicalRecord?.medicalConditions ?? [])
+    .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
+    .map(medicalConditionLabel);
+  const otherCondition = clinicalRecord?.medicalConditionsOther?.trim();
+  const conditions = otherCondition
+    ? [...conditionLabels, otherCondition]
+    : conditionLabels;
+
+  const latestDocument = documentsQuery.data?.data?.documents?.[0] ?? null;
+
+  const dueLabel = formatTaskDate(task.dueAt);
+  const dueRelative = formatTaskDueRelative(task.dueAt, task.status);
+  const overdue =
+    isTaskOverdue(task) && !["completed", "cancelled"].includes(task.status);
 
   return (
     <aside className="w-80 shrink-0 overflow-y-auto border-l border-border bg-card">
       <section className="border-b border-border p-4">
-        <p className={OVERLINE_CLASS}>Task context</p>
-        <p className="mt-2 text-sm font-semibold">
-          {getTaskDisplayTitle(task.taskType, task.title)}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {TASK_TYPE_LABELS[task.taskType]} · {TASK_STATUS_LABELS[task.status]}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className={OVERLINE_CLASS}>Task context</p>
+            <p className="mt-2 text-sm font-semibold">
+              {getTaskDisplayTitle(task.taskType, task.title)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {TASK_TYPE_LABELS[task.taskType]} · {TASK_STATUS_LABELS[task.status]}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className={OVERLINE_CLASS}>Due</p>
+            <p className="mt-2 text-sm font-medium">{dueLabel}</p>
+            <p
+              className={cn(
+                "mt-1 text-xs text-muted-foreground",
+                overdue && "font-medium text-(--feedback-danger)"
+              )}
+            >
+              {dueRelative}
+            </p>
+          </div>
+        </div>
       </section>
-      <DetailSection
-        title="Active conditions"
-        items={conditions}
-        empty="None recorded"
+      <ActiveConditionsSection
+        loading={clinicalQuery.isLoading}
+        conditions={conditions}
       />
-      <PrescriptionActionSection onNewPrescription={openPrescriptionAction} />
-      <section className="border-b border-border p-4">
-        <p className={OVERLINE_CLASS}>Due</p>
-        <p className="mt-2 text-sm font-medium">{formatTaskDate(task.dueAt)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {formatTaskDueRelative(task.dueAt, task.status)}
-        </p>
-      </section>
+      <LatestDocumentSection
+        patientId={task.patientId}
+        loading={documentsQuery.isLoading}
+        document={latestDocument}
+      />
       <section className="p-4">
         <p className={OVERLINE_CLASS}>Notes</p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -590,54 +578,77 @@ function TaskPatientDetails({
   );
 }
 
-function PrescriptionActionSection({
-  onNewPrescription,
+function ActiveConditionsSection({
+  loading,
+  conditions,
 }: {
-  onNewPrescription: () => void;
+  loading: boolean;
+  conditions: string[];
 }) {
   return (
     <section className="border-b border-border p-4">
+      <p className={OVERLINE_CLASS}>Active conditions</p>
+      {loading ? (
+        <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
+      ) : conditions.length > 0 ? (
+        <>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {conditions.length} on file
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {conditions.map((item) => (
+              <StatusBadge key={item} variant="neutral">
+                {item}
+              </StatusBadge>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">None recorded</p>
+      )}
+    </section>
+  );
+}
+
+function LatestDocumentSection({
+  patientId,
+  loading,
+  document: latestDocument,
+}: {
+  patientId: string;
+  loading: boolean;
+  document: PatientDocument | null;
+}) {
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const description = loading
+    ? "Loading the latest uploaded document…"
+    : latestDocument
+      ? latestDocument.filename
+      : "No documents have been uploaded for this patient yet.";
+
+  return (
+    <section className="border-b border-border p-4">
       <p className={OVERLINE_CLASS}>Prescriptions</p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Start a new Parchment prescribing session for this patient.
+      <p className="mt-2 truncate text-sm text-muted-foreground" title={description}>
+        {description}
       </p>
       <Button
         type="button"
         variant="outline"
         className="mt-3 h-9 w-full justify-start rounded-xl px-3 text-sm"
-        onClick={onNewPrescription}
+        disabled={loading || !latestDocument}
+        onClick={() => setPreviewOpen(true)}
       >
-        <Pill className="size-4" />
-        New prescription
-        <ExternalLink className="ml-auto size-3.5 text-muted-foreground" />
+        <FileText className="size-4" />
+        View document
       </Button>
-    </section>
-  );
-}
-
-function DetailSection({
-  title,
-  items,
-  empty,
-}: {
-  title: string;
-  items: string[];
-  empty: string;
-}) {
-  return (
-    <section className="border-b border-border p-4">
-      <p className={OVERLINE_CLASS}>{title}</p>
-      {items.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {items.map((item) => (
-            <StatusBadge key={item} variant="neutral">
-              {item}
-            </StatusBadge>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-muted-foreground">{empty}</p>
-      )}
+      <DocumentPreviewDialog
+        patientId={patientId}
+        document={latestDocument}
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+      />
     </section>
   );
 }
