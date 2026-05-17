@@ -879,7 +879,7 @@ export function TaskOutcomeDialog({
             className={cn(
               "grid min-h-0 grid-cols-1",
               selected === "reached" && prescriptionChoice === "internal"
-                ? "md:grid-cols-[16rem_minmax(0,1fr)_22rem]"
+                ? "md:grid-cols-[16rem_minmax(0,1fr)_26rem]"
                 : "md:grid-cols-[18rem_1fr]"
             )}
           >
