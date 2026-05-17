@@ -10,9 +10,11 @@ import {
   ChevronDown,
   ExternalLink,
   FileText,
+  Loader2,
   Pill,
   UserRound,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +36,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
@@ -46,7 +55,12 @@ import {
   TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
 } from "@/components/tasks/task-format";
-import { useLatestClinicalData, usePatient } from "@/lib/hooks/use-patients";
+import {
+  useApproveClinicalRecord,
+  useLatestClinicalData,
+  usePatient,
+  useUpdatePatient,
+} from "@/lib/hooks/use-patients";
 import { cn } from "@/lib/utils";
 import type { PatientMapping, Task, TaskStatus } from "@/types";
 
@@ -686,6 +700,8 @@ export function TaskOutcomeDialog({
 
   const patientQuery = usePatient(task?.patientId);
   const clinicalQuery = useLatestClinicalData(task?.patientId);
+  const updatePatientMutation = useUpdatePatient(task?.patientId ?? "");
+  const approveClinicalMutation = useApproveClinicalRecord(task?.patientId ?? "");
 
   if (!open || !task) return null;
 
@@ -865,6 +881,39 @@ export function TaskOutcomeDialog({
                 patient={patient}
                 clinicalRecord={clinicalRecord}
                 loading={readinessLoading}
+                onPatientStatusChange={(next) => {
+                  updatePatientMutation.mutate(
+                    { patientStatus: next },
+                    {
+                      onSuccess: () =>
+                        toast.success(`Patient status set to ${next}.`),
+                      onError: (err) =>
+                        toast.error(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to update patient status."
+                        ),
+                    }
+                  );
+                }}
+                patientStatusSaving={updatePatientMutation.isPending}
+                onApproveClinical={() => {
+                  if (!clinicalRecord?.id) return;
+                  approveClinicalMutation.mutate(
+                    { recordId: clinicalRecord.id },
+                    {
+                      onSuccess: () =>
+                        toast.success("Clinical record approved."),
+                      onError: (err) =>
+                        toast.error(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to approve clinical record."
+                        ),
+                    }
+                  );
+                }}
+                approvingClinical={approveClinicalMutation.isPending}
               />
 
               {finaliseBlocked && (
@@ -1041,22 +1090,47 @@ export function TaskOutcomeDialog({
   );
 }
 
+const PATIENT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "pending", label: "Pending" },
+  { value: "current", label: "Current" },
+  { value: "approved", label: "Approved" },
+  { value: "inactive", label: "Inactive" },
+];
+
+function patientStatusVariantFor(
+  value: string | undefined
+): "success" | "warning" | "neutral" {
+  const lower = value?.toLowerCase();
+  if (lower === "approved") return "success";
+  if (lower === "pending" || lower === "review") return "warning";
+  return "neutral";
+}
+
 function ReadinessPanel({
   task,
   patient,
   clinicalRecord,
   loading,
+  onPatientStatusChange,
+  patientStatusSaving,
+  onApproveClinical,
+  approvingClinical,
 }: {
   task: Task;
   patient: PatientMapping | undefined;
   clinicalRecord:
     | {
+        id?: string;
         reviewStatus?: "pending" | "approved";
         reviewedBy?: string | null;
         reviewedAt?: string | null;
       }
     | undefined;
   loading: boolean;
+  onPatientStatusChange: (next: string) => void;
+  patientStatusSaving: boolean;
+  onApproveClinical: () => void;
+  approvingClinical: boolean;
 }) {
   const patientName = patient
     ? [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
@@ -1066,17 +1140,16 @@ function ReadinessPanel({
 
   const rawStatus = patient?.patientStatus?.trim();
   const statusLower = rawStatus?.toLowerCase();
-  const patientStatusLabel = rawStatus
-    ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
-    : loading
-      ? "Loading…"
-      : "Unknown";
-  const patientStatusVariant: "success" | "warning" | "neutral" =
-    statusLower === "approved"
-      ? "success"
-      : statusLower === "pending" || statusLower === "review"
-        ? "warning"
-        : "neutral";
+  // Normalise to a known option when possible so the Select shows a value.
+  const matchedOption = PATIENT_STATUS_OPTIONS.find((opt) => opt.value === statusLower);
+  const selectValue = matchedOption?.value ?? statusLower ?? "";
+  const patientStatusVariant = patientStatusVariantFor(statusLower);
+  const patientStatusLabel = matchedOption?.label
+    ?? (rawStatus
+      ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
+      : loading
+        ? "Loading…"
+        : "Unknown");
 
   const clinicalReview = clinicalRecord?.reviewStatus;
   const clinicalLabel =
@@ -1097,6 +1170,8 @@ function ReadinessPanel({
     ? formatTaskDate(clinicalRecord.reviewedAt)
     : undefined;
   const clinicalReviewedBy = clinicalRecord?.reviewedBy || undefined;
+  const canApproveClinical =
+    !!clinicalRecord?.id && clinicalReview === "pending";
 
   const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
   const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
@@ -1105,7 +1180,7 @@ function ReadinessPanel({
     <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
       <section>
         <p className={OVERLINE_CLASS}>Patient</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <p className="text-sm font-semibold">{patientName}</p>
           <a
             href={profileHref}
@@ -1117,7 +1192,35 @@ function ReadinessPanel({
           >
             <ExternalLink className="size-3.5" />
           </a>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Select
+            value={selectValue || undefined}
+            onValueChange={(v) => {
+              if (!v || v === selectValue) return;
+              onPatientStatusChange(v);
+            }}
+            disabled={loading || patientStatusSaving}
+          >
+            <SelectTrigger
+              size="sm"
+              className="h-8 w-40 bg-background text-xs"
+              aria-label="Patient status"
+            >
+              <SelectValue placeholder={loading ? "Loading…" : "Set status"} />
+            </SelectTrigger>
+            <SelectContent>
+              {PATIENT_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <StatusBadge variant={patientStatusVariant}>{patientStatusLabel}</StatusBadge>
+          {patientStatusSaving && (
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+          )}
         </div>
       </section>
 
@@ -1135,7 +1238,7 @@ function ReadinessPanel({
             <ExternalLink className="size-3" />
           </a>
         </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
           {(clinicalReviewedAt || clinicalReviewedBy) && (
             <span className="text-xs text-muted-foreground">
@@ -1143,6 +1246,23 @@ function ReadinessPanel({
               {clinicalReviewedAt && clinicalReviewedBy ? " · " : ""}
               {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
             </span>
+          )}
+          {canApproveClinical && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-auto h-7 rounded-md px-2.5 text-xs"
+              onClick={onApproveClinical}
+              disabled={approvingClinical}
+            >
+              {approvingClinical ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Check className="size-3.5" />
+              )}
+              Approve
+            </Button>
           )}
         </div>
       </section>
