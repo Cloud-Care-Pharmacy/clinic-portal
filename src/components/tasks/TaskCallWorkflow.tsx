@@ -1133,7 +1133,7 @@ function PrescriptionSegmentedToggle({
       role="radiogroup"
       aria-label="Prescription delivery"
       className={cn(
-        "inline-flex items-center rounded-md bg-muted p-0.5 text-xs font-medium",
+        "inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted p-1 text-xs font-medium",
         disabled && "opacity-60"
       )}
     >
@@ -1149,9 +1149,9 @@ function PrescriptionSegmentedToggle({
             disabled={disabled}
             onClick={() => onChange(segment.value)}
             className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-[5px] px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
+              "inline-flex h-7 items-center gap-1.5 rounded-md px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
               active
-                ? "bg-background text-foreground shadow-sm"
+                ? "bg-background text-foreground shadow-xs ring-1 ring-border/60"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
