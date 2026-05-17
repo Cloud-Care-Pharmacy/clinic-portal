@@ -1973,7 +1973,26 @@ export interface SendEmailAttachment {
 export interface SendEmailStep extends WorkflowStepBase {
   kind: "send_email";
   to: string;
-  subject: string;
+  /**
+   * Required when `templateId` is not set. When `templateId` is set, an
+   * inline `subject` overrides the template's stored subject; omit to use
+   * the template's value.
+   */
+  subject?: string;
+  /**
+   * Optional v4 UUID of an active template (`type: "email"`). When set,
+   * the template's subject/html/text are used unless explicitly overridden
+   * on this step. `variables` may only be provided when `templateId` is
+   * set — the server rejects `variables` otherwise.
+   */
+  templateId?: string;
+  /**
+   * Per-step variable bindings, only allowed when `templateId` is set.
+   * Keys may use dot notation (`patient.firstName` → `{ patient: { firstName } }`)
+   * and values are template strings interpolated against the workflow
+   * context before substitution into the email body.
+   */
+  variables?: Record<string, string>;
   text?: string;
   html?: string;
   from?: string;
@@ -1999,7 +2018,30 @@ export interface SendEmailStep extends WorkflowStepBase {
 export interface SendSmsStep extends WorkflowStepBase {
   kind: "send_sms";
   to: string;
-  body: string;
+  /**
+   * Required when `templateId` is not set. When `templateId` is set, an
+   * inline `body` overrides the template's stored body; omit to use the
+   * template's value.
+   */
+  body?: string;
+  /**
+   * Optional v4 UUID of an active template (`type: "sms"`). When set, the
+   * template's body is used unless `body` is also provided. `variables`
+   * may only be supplied alongside `templateId` — the server rejects them
+   * otherwise.
+   */
+  templateId?: string;
+  /**
+   * Per-step variable bindings, only allowed when `templateId` is set.
+   * Keys may use dot notation (`patient.firstName` → `{ patient: { firstName } }`)
+   * and values are template strings interpolated against the workflow
+   * context before substitution into the template body.
+   */
+  variables?: Record<string, string>;
+  /**
+   * Resolution order: inline `from` → template's `senderId` → provider
+   * default.
+   */
   from?: string;
   idempotencyKeySuffix?: string;
   storeAs?: string;

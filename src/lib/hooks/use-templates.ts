@@ -122,13 +122,21 @@ async function request<T>(
 // Queries
 // ---------------------------------------------------------------------------
 
-export function useTemplates(type?: TemplateType) {
+export function useTemplates(
+  type?: TemplateType,
+  opts?: { active?: boolean },
+) {
+  const active = opts?.active;
   const query = useQuery({
-    queryKey: type ? [...QUERY_KEY, { type }] : QUERY_KEY,
+    queryKey: type
+      ? ([...QUERY_KEY, { type, active }] as const)
+      : active !== undefined
+        ? ([...QUERY_KEY, { active }] as const)
+        : QUERY_KEY,
     queryFn: async () => {
       const json = await request<ListResponse>(BASE, {
         method: "GET",
-        query: { type, limit: 500 },
+        query: { type, active, limit: 500 },
       });
       return json.data.templates;
     },

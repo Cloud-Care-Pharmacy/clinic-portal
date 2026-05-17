@@ -124,33 +124,115 @@ const emailAttachmentSchema = z.object({
   filename: z.string().max(255).optional(),
 });
 
-const sendEmailStep = z.object({
-  ...baseStep,
-  kind: z.literal("send_email"),
-  to: templateString,
-  subject: templateString,
-  text: z.string().max(8192).optional(),
-  html: z.string().max(8192).optional(),
-  from: z.string().max(8192).optional(),
-  fromName: z.string().max(255).optional(),
-  cc: z.array(templateString).max(50).optional(),
-  bcc: z.array(templateString).max(50).optional(),
-  replyTo: z.string().max(8192).optional(),
-  headers: emailHeadersSchema,
-  attachments: z.array(emailAttachmentSchema).max(10).optional(),
-  idempotencyKeySuffix: z.string().max(255).optional(),
-  storeAs: z.string().max(64).optional(),
-});
+const sendEmailStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("send_email"),
+    to: templateString,
+    /**
+     * v4 UUID of an active `type: "email"` template. The full
+     * existence/type/active check happens server-side; this only
+     * guards against obvious shape errors.
+     */
+    templateId: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        "Must be a v4 UUID",
+      )
+      .optional(),
+    /**
+     * Required unless `templateId` is provided (the template's stored
+     * subject is then used). Enforced by the schema-level `superRefine`.
+     */
+    subject: templateString.optional(),
+    /**
+     * Per-step bindings interpolated against the workflow context and
+     * fed into the template body. Only permitted when `templateId` is
+     * set — enforced server-side and mirrored here.
+     */
+    variables: z
+      .record(z.string().min(1).max(255), z.string().max(8192))
+      .optional(),
+    text: z.string().max(8192).optional(),
+    html: z.string().max(8192).optional(),
+    from: z.string().max(8192).optional(),
+    fromName: z.string().max(255).optional(),
+    cc: z.array(templateString).max(50).optional(),
+    bcc: z.array(templateString).max(50).optional(),
+    replyTo: z.string().max(8192).optional(),
+    headers: emailHeadersSchema,
+    attachments: z.array(emailAttachmentSchema).max(10).optional(),
+    idempotencyKeySuffix: z.string().max(255).optional(),
+    storeAs: z.string().max(64).optional(),
+  })
+  .superRefine((step, ctx) => {
+    if (!step.templateId && !step.subject) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["subject"],
+        message: "subject is required when templateId is not provided",
+      });
+    }
+    if (step.variables && !step.templateId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["variables"],
+        message: "variables may only be set when templateId is provided",
+      });
+    }
+  });
 
-const sendSmsStep = z.object({
-  ...baseStep,
-  kind: z.literal("send_sms"),
-  to: templateString,
-  body: templateString,
-  from: z.string().max(8192).optional(),
-  idempotencyKeySuffix: z.string().max(255).optional(),
-  storeAs: z.string().max(64).optional(),
-});
+const sendSmsStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("send_sms"),
+    to: templateString,
+    /**
+     * v4 UUID of an active `type: "sms"` template. Existence/type/active
+     * checks happen server-side; this only guards against obvious shape
+     * errors.
+     */
+    templateId: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        "Must be a v4 UUID",
+      )
+      .optional(),
+    /**
+     * Required unless `templateId` is provided (the template's stored body
+     * is then used). Capped at 1600 chars to match the provider limit.
+     */
+    body: templateString.max(1600).optional(),
+    /**
+     * Per-step bindings interpolated against the workflow context and
+     * fed into the template body. Only permitted when `templateId` is
+     * set — enforced server-side and mirrored here.
+     */
+    variables: z
+      .record(z.string().min(1).max(255), z.string().max(8192))
+      .optional(),
+    from: z.string().max(8192).optional(),
+    idempotencyKeySuffix: z.string().max(255).optional(),
+    storeAs: z.string().max(64).optional(),
+  })
+  .superRefine((step, ctx) => {
+    if (!step.templateId && !step.body) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["body"],
+        message: "body is required when templateId is not provided",
+      });
+    }
+    if (step.variables && !step.templateId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["variables"],
+        message: "variables may only be set when templateId is provided",
+      });
+    }
+  });
 
 const waitStep = z.object({
   ...baseStep,

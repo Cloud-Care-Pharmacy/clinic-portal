@@ -10,9 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SendEmailAttachment, SendEmailStep } from "@/types";
+import { useTemplate, useTemplates } from "@/lib/hooks/use-templates";
+import type { EmailTemplate, SendEmailAttachment, SendEmailStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
-import { KeyValueEditor, StringListEditor } from "./shared";
+import {
+  Collapsible,
+  KeyValueEditor,
+  StringListEditor,
+  VariablesEditor,
+} from "./shared";
 import type { StepFormProps } from "./types";
 
 function SendEmailContent({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
@@ -133,8 +139,45 @@ function AttachmentsEditor({
 
 export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
   const { step, onChange, errors } = props;
+  const mode: "template" | "inline" = step.templateId ? "template" : "inline";
   return (
     <>
+      <Field label="Source">
+        <Select
+          value={mode}
+          onValueChange={(v) => {
+            if (!v) return;
+            if (v === "template") {
+              // Switching to template mode: clear inline subject/html/text so
+              // the template's stored values apply by default.
+              onChange({
+                ...step,
+                templateId: step.templateId ?? "",
+                subject: undefined,
+                html: undefined,
+                text: undefined,
+              });
+            } else {
+              // Switching to inline mode: drop templateId + variables (server
+              // rejects `variables` without `templateId`).
+              onChange({
+                ...step,
+                templateId: undefined,
+                variables: undefined,
+              });
+            }
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="template">Use template</SelectItem>
+            <SelectItem value="inline">Compose inline</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+
       <TemplatedField
         label="To"
         value={step.to ?? ""}
@@ -142,6 +185,128 @@ export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
         placeholder="{{vars.patient.email}}"
         error={errors?.to}
       />
+
+      {mode === "template" ? (
+        <TemplateModeFields step={step} onChange={onChange} errors={errors} />
+      ) : (
+        <InlineModeFields step={step} onChange={onChange} errors={errors} />
+      )}
+    </>
+  );
+}
+
+function TemplateModeFields({
+  step,
+  onChange,
+  errors,
+}: StepFormProps<SendEmailStep>) {
+  const { data: templates, isLoading } = useTemplates("email", { active: true });
+  // Selected template details give us its declared variable bindings.
+  const selectedId = step.templateId || undefined;
+  const { data: selected } = useTemplate(selectedId);
+  return (
+    <>
+      <Field
+        label="Template"
+        hint="Active email templates. The template's subject/body apply unless overridden below."
+        error={errors?.templateId}
+      >
+        <Select
+          value={step.templateId || undefined}
+          onValueChange={(v) => {
+            if (!v) return;
+            onChange({ ...step, templateId: v });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue
+              placeholder={isLoading ? "Loading…" : "Select a template"}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {templates
+              .filter((t): t is EmailTemplate => t.type === "email" && t.active)
+              .map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      {selectedId ? (
+        <VariablesEditor
+          declared={
+            selected && selected.type === "email" ? selected.variables : undefined
+          }
+          values={step.variables}
+          onChange={(variables) => onChange({ ...step, variables })}
+          error={errors?.variables}
+        />
+      ) : null}
+
+      <Collapsible label="Overrides (optional)">
+        <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
+          Inline subject/body/from/replyTo replace the template values. Cc and
+          Bcc lists merge with the template (de-duped). Reserved headers
+          (to/from/cc/bcc/subject/reply-to/authorization/idempotency-key/etc.)
+          cannot be set via custom headers.
+        </p>
+        <SubjectField step={step} onChange={onChange} errors={errors} />
+        <SendEmailContent step={step} onChange={onChange} errors={errors} />
+        <SenderFields step={step} onChange={onChange} errors={errors} />
+        <RecipientFields step={step} onChange={onChange} errors={errors} />
+        <HeadersField step={step} onChange={onChange} errors={errors} />
+        <AttachmentsField step={step} onChange={onChange} errors={errors} />
+      </Collapsible>
+    </>
+  );
+}
+
+function InlineModeFields({
+  step,
+  onChange,
+  errors,
+}: StepFormProps<SendEmailStep>) {
+  return (
+    <>
+      <SubjectField step={step} onChange={onChange} errors={errors} required />
+      <SendEmailContent step={step} onChange={onChange} errors={errors} />
+      <SenderFields step={step} onChange={onChange} errors={errors} />
+      <RecipientFields step={step} onChange={onChange} errors={errors} />
+      <HeadersField step={step} onChange={onChange} errors={errors} />
+      <AttachmentsField step={step} onChange={onChange} errors={errors} />
+    </>
+  );
+}
+
+function SubjectField({
+  step,
+  onChange,
+  errors,
+  required,
+}: StepFormProps<SendEmailStep> & { required?: boolean }) {
+  return (
+    <TemplatedField
+      label={required ? "Subject" : "Subject (override)"}
+      value={step.subject ?? ""}
+      onChange={(v) =>
+        onChange({ ...step, subject: v === "" && !required ? undefined : v })
+      }
+      placeholder={
+        required
+          ? "Reminder: your appointment tomorrow"
+          : "Leave blank to use the template's subject"
+      }
+      error={errors?.subject}
+    />
+  );
+}
+
+function SenderFields({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
+  return (
+    <>
       <Field
         label="From (optional)"
         hint="Override the configured sender address."
@@ -161,18 +326,29 @@ export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
       >
         <Input
           value={step.fromName ?? ""}
-          onChange={(e) => onChange({ ...step, fromName: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...step, fromName: e.target.value || undefined })
+          }
           placeholder="Cloud Care Pharmacy"
         />
       </Field>
       <Field label="Reply-To (optional)" error={errors?.replyTo}>
         <Input
           value={step.replyTo ?? ""}
-          onChange={(e) => onChange({ ...step, replyTo: e.target.value || undefined })}
+          onChange={(e) =>
+            onChange({ ...step, replyTo: e.target.value || undefined })
+          }
           placeholder="reply@cloudcare.example"
           className="font-mono text-xs"
         />
       </Field>
+    </>
+  );
+}
+
+function RecipientFields({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
+  return (
+    <>
       <Field label="Cc (optional)" hint="Up to 50 recipients." error={errors?.cc}>
         <StringListEditor
           values={step.cc}
@@ -193,37 +369,40 @@ export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
           max={50}
         />
       </Field>
-      <TemplatedField
-        label="Subject"
-        value={step.subject ?? ""}
-        onChange={(v) => onChange({ ...step, subject: v })}
-        placeholder="Reminder: your appointment tomorrow"
-        error={errors?.subject}
-      />
-      <SendEmailContent step={step} onChange={onChange} errors={errors} />
-      <Field
-        label="Custom headers (optional)"
-        hint="X-* headers only. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date) are rejected."
-        error={errors?.headers}
-      >
-        <KeyValueEditor
-          values={step.headers}
-          onChange={(headers) => onChange({ ...step, headers })}
-          keyPlaceholder="X-Tenant-Id"
-          valuePlaceholder="{{vars.tenant.id}}"
-          addLabel="Add header"
-        />
-      </Field>
-      <Field
-        label="Attachments (optional)"
-        hint="Up to 10 URL-referenced attachments. The provider downloads each URL."
-        error={errors?.attachments}
-      >
-        <AttachmentsEditor
-          values={step.attachments}
-          onChange={(attachments) => onChange({ ...step, attachments })}
-        />
-      </Field>
     </>
   );
 }
+
+function HeadersField({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
+  return (
+    <Field
+      label="Custom headers (optional)"
+      hint="X-* headers only. Reserved names (To/From/Cc/Bcc/Reply-To/Subject/Authorization/Idempotency-Key/Content-Type/MIME-Version/Message-ID/Date) are rejected."
+      error={errors?.headers}
+    >
+      <KeyValueEditor
+        values={step.headers}
+        onChange={(headers) => onChange({ ...step, headers })}
+        keyPlaceholder="X-Tenant-Id"
+        valuePlaceholder="{{vars.tenant.id}}"
+        addLabel="Add header"
+      />
+    </Field>
+  );
+}
+
+function AttachmentsField({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
+  return (
+    <Field
+      label="Attachments (optional)"
+      hint="Up to 10 URL-referenced attachments. The provider downloads each URL."
+      error={errors?.attachments}
+    >
+      <AttachmentsEditor
+        values={step.attachments}
+        onChange={(attachments) => onChange({ ...step, attachments })}
+      />
+    </Field>
+  );
+}
+
