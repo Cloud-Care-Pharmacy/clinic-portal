@@ -45,7 +45,10 @@ import {
   type Medication,
 } from "@/components/prescriptions/manual-rx";
 import { DocumentPreviewDialog } from "@/components/patients/DocumentPreviewDialog";
-import { medicalConditionLabel } from "@/components/patients/clinical-labels";
+import {
+  highRiskMedLabel,
+  medicalConditionLabel,
+} from "@/components/patients/clinical-labels";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import {
@@ -64,7 +67,13 @@ import {
 } from "@/lib/hooks/use-patients";
 import { usePatientDocuments } from "@/lib/hooks/use-documents";
 import { cn } from "@/lib/utils";
-import type { PatientDocument, PatientMapping, Task, TaskStatus } from "@/types";
+import type {
+  ClinicalDataRecord,
+  PatientDocument,
+  PatientMapping,
+  Task,
+  TaskStatus,
+} from "@/types";
 
 export interface TaskCallData {
   durationSeconds: number;
@@ -508,6 +517,42 @@ export function TaskCallDialog({
   );
 }
 
+/**
+ * Collapses a clinical-data record into a chip list for the call dialog's
+ * "Active conditions" section: medical conditions, free-text "other", high-
+ * risk meds, cardiovascular, pregnancy, and a generic "Takes medication" chip
+ * when nothing more specific is recorded.
+ */
+function extractClinicalChips(record: ClinicalDataRecord): string[] {
+  const chips: string[] = [];
+
+  if (record.hasMedicalConditions === "yes") {
+    for (const slug of record.medicalConditions ?? []) {
+      if (typeof slug === "string" && slug.trim()) chips.push(medicalConditionLabel(slug));
+    }
+    const other = record.medicalConditionsOther?.trim();
+    if (other) chips.push(other);
+  }
+
+  for (const slug of record.highRiskMedications ?? []) {
+    if (typeof slug === "string" && slug.trim()) chips.push(highRiskMedLabel(slug));
+  }
+
+  if (
+    record.takesMedication === "yes" &&
+    !(record.highRiskMedications && record.highRiskMedications.length > 0)
+  ) {
+    const list = record.medicationsList?.trim();
+    chips.push(list ? `Medications: ${list}` : "Takes medication");
+  }
+
+  if (record.cardiovascular === "yes") chips.push("Cardiovascular");
+  if (record.pregnancy === "yes") chips.push("Pregnancy");
+
+  // De-duplicate while preserving insertion order.
+  return Array.from(new Set(chips.filter(Boolean)));
+}
+
 function TaskPatientDetails({ task }: { task: Task }) {
   const clinicalQuery = useLatestClinicalData(task.patientId);
   const documentsQuery = usePatientDocuments(task.patientId, {
@@ -517,13 +562,7 @@ function TaskPatientDetails({ task }: { task: Task }) {
   });
 
   const clinicalRecord = clinicalQuery.data?.data?.clinicalData;
-  const conditionLabels = (clinicalRecord?.medicalConditions ?? [])
-    .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
-    .map(medicalConditionLabel);
-  const otherCondition = clinicalRecord?.medicalConditionsOther?.trim();
-  const conditions = otherCondition
-    ? [...conditionLabels, otherCondition]
-    : conditionLabels;
+  const conditions = clinicalRecord ? extractClinicalChips(clinicalRecord) : [];
 
   const latestDocument = documentsQuery.data?.data?.documents?.[0] ?? null;
 
