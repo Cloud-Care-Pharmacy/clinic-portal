@@ -6,7 +6,6 @@ import { z } from "zod";
 import { toast } from "sonner";
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -446,7 +445,9 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
             Pick a day on the left to edit its time ranges on the right. Toggles disable
             a day without losing its slots.
           </CardDescription>
-          <CardAction>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-end justify-end gap-2">
             <div className="w-full space-y-2 sm:w-56">
               <label
                 className="text-xs font-medium text-muted-foreground"
@@ -456,9 +457,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
               </label>
               <Input id="timezone" className="h-9" {...form.register("timezone")} />
             </div>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </div>
           <div className="grid grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[240px_1fr]">
             {/* Day list */}
             <div className="bg-card md:border-r">
