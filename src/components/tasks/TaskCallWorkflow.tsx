@@ -69,15 +69,15 @@ export interface TaskCallData {
 
 export type TaskOutcomeMode = "hangup" | "manual";
 
-export type PrescriptionChoice = "parchment" | "manual" | "none";
+export type PrescriptionChoice = "erx" | "internal" | "none";
 
 export type ClinicalDecision = "approve" | "reject";
 
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
   /**
-   * How the doctor issued the prescription — via Parchment (script returns
-   * to us asynchronously) or manually (handwritten/external). Only meaningful
+   * How the doctor issued the prescription — via ERX (electronic
+   * prescription) or internally (composed in this dialog). Only meaningful
    * when the outcome creates a consultation (i.e. `reached`).
    */
   prescriptionChoice?: PrescriptionChoice;
@@ -89,7 +89,7 @@ export interface TaskOutcomeSubmission {
   clinicalDecision?: ClinicalDecision;
   /**
    * Manual-script line items composed in the wrap-up dialog. Populated only
-   * when `prescriptionChoice === "manual"`. Persistence is handled downstream.
+   * when `prescriptionChoice === "internal"`. Persistence is handled downstream.
    */
   prescriptionMeds?: Medication[];
   status: TaskStatus;
@@ -294,9 +294,7 @@ export function TaskCallDialog({
   cancelAction: () => void;
   hangUpAction: (callData: TaskCallData) => void;
 }) {
-  const [seconds, setSeconds] = useState(
-    () => initialCallData?.durationSeconds ?? 0
-  );
+  const [seconds, setSeconds] = useState(() => initialCallData?.durationSeconds ?? 0);
   const [notes, setNotes] = useState(() => initialCallData?.notes ?? "");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -675,7 +673,7 @@ export function TaskOutcomeDialog({
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
   const [prescriptionChoice, setPrescriptionChoice] =
-    useState<PrescriptionChoice>("parchment");
+    useState<PrescriptionChoice>("erx");
   const [rxMeds, setRxMeds] = useState<Medication[]>([]);
   const [clinicalDecision, setClinicalDecision] = useState<
     ClinicalDecision | undefined
@@ -701,7 +699,7 @@ export function TaskOutcomeDialog({
   // Manual script must have at least one fully-valid medication card before we
   // let the doctor finalise. Other prescription choices skip this gate.
   const requiresValidRxMeds =
-    selected === "reached" && prescriptionChoice === "manual";
+    selected === "reached" && prescriptionChoice === "internal";
   const isInvalid =
     (requiresReason && !followupNote.trim()) ||
     (requiresManualNotes && !manualNotes.trim()) ||
@@ -719,9 +717,7 @@ export function TaskOutcomeDialog({
   const effectiveClinicalApproved =
     clinicalAlreadyApproved || clinicalDecision === "approve";
   const finaliseBlocked =
-    willCreateConsultation &&
-    !readinessLoading &&
-    !effectiveClinicalApproved;
+    willCreateConsultation && !readinessLoading && !effectiveClinicalApproved;
 
   // Rejecting the clinical record auto-selects "None" for prescription
   // (you can't prescribe against a rejected record). Step 3 stays
@@ -740,11 +736,10 @@ export function TaskOutcomeDialog({
   function buildSubmission(): TaskOutcomeSubmission {
     return {
       outcomeId: selected,
-      prescriptionChoice:
-        selected === "reached" ? prescriptionChoice : undefined,
+      prescriptionChoice: selected === "reached" ? prescriptionChoice : undefined,
       clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
       prescriptionMeds:
-        selected === "reached" && prescriptionChoice === "manual"
+        selected === "reached" && prescriptionChoice === "internal"
           ? rxMeds
           : undefined,
       status: effectiveStatus,
@@ -789,9 +784,7 @@ export function TaskOutcomeDialog({
         toast.success("Clinical record approved.");
       } catch (err) {
         toast.error(
-          err instanceof Error
-            ? err.message
-            : "Failed to approve clinical record."
+          err instanceof Error ? err.message : "Failed to approve clinical record."
         );
         return;
       }
@@ -829,7 +822,12 @@ export function TaskOutcomeDialog({
         <DialogContent
           showCloseButton={false}
           overlayClassName="bg-foreground/40"
-          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl"
+          className={cn(
+            "max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 transition-[max-width] duration-200",
+            selected === "reached" && prescriptionChoice === "internal"
+              ? "sm:max-w-6xl"
+              : "sm:max-w-4xl"
+          )}
         >
           <DialogHeader className="gap-0 border-b border-border px-5 py-3">
             <div className="flex items-center gap-2.5">
@@ -877,7 +875,14 @@ export function TaskOutcomeDialog({
             </div>
           </DialogHeader>
 
-          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[18rem_1fr]">
+          <div
+            className={cn(
+              "grid min-h-0 grid-cols-1",
+              selected === "reached" && prescriptionChoice === "internal"
+                ? "md:grid-cols-[16rem_minmax(0,1fr)_22rem]"
+                : "md:grid-cols-[18rem_1fr]"
+            )}
+          >
             {/* LEFT — outcome picker */}
             <div className="border-b border-border px-3.5 py-3.5 md:border-r md:border-b-0">
               <p className={OVERLINE_CLASS}>Outcome</p>
@@ -925,9 +930,7 @@ export function TaskOutcomeDialog({
                               {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
                             </StatusBadge>
                           </span>
-                          <span
-                            className="mt-1 block text-xs leading-snug text-muted-foreground"
-                          >
+                          <span className="mt-1 block text-xs leading-snug text-muted-foreground">
                             {item.description}
                           </span>
                         </span>
@@ -961,18 +964,13 @@ export function TaskOutcomeDialog({
                     )}
                     {isManual && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <label
-                          htmlFor={manualDurationId}
-                          className={OVERLINE_CLASS}
-                        >
+                        <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
                           Duration
                         </label>
                         <Input
                           id={manualDurationId}
                           value={manualDuration}
-                          onChange={(event) =>
-                            setManualDuration(event.target.value)
-                          }
+                          onChange={(event) => setManualDuration(event.target.value)}
                           placeholder="e.g. 4 min"
                           className="h-8 w-28 bg-background text-sm"
                         />
@@ -1003,10 +1001,10 @@ export function TaskOutcomeDialog({
                       />
                     }
                   >
-                    {prescriptionChoice === "manual" ? (
-                      <ManualRxComposer
-                        value={rxMeds}
-                        onChange={setRxMeds}
+                    {prescriptionChoice === "internal" ? (
+                      <InternalRxSummaryCard
+                        count={rxMeds.length}
+                        allValid={areAllRxValid(rxMeds)}
                       />
                     ) : (
                       <PrescriptionActionCard
@@ -1019,9 +1017,7 @@ export function TaskOutcomeDialog({
               ) : (
                 <div>
                   <label className={OVERLINE_CLASS}>
-                    {selected === "abandoned"
-                      ? "Reason required"
-                      : "Follow-up note"}
+                    {selected === "abandoned" ? "Reason required" : "Follow-up note"}
                   </label>
                   <Textarea
                     value={followupNote}
@@ -1036,6 +1032,24 @@ export function TaskOutcomeDialog({
                 </div>
               )}
             </div>
+
+            {/* RIGHT — manual rx composer side panel (only when internal selected) */}
+            {selected === "reached" && prescriptionChoice === "internal" && (
+              <aside className="hidden min-w-0 max-h-[min(78vh,38rem)] flex-col overflow-hidden border-t border-border bg-muted/30 md:flex md:border-t-0 md:border-l">
+                <header className="flex items-center justify-between gap-2 border-b border-border bg-card/60 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">Internal prescription</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Compose medications for this consultation.
+                    </p>
+                  </div>
+                  <Pill className="size-4 shrink-0 text-muted-foreground" />
+                </header>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                  <ManualRxComposer value={rxMeds} onChange={setRxMeds} />
+                </div>
+              </aside>
+            )}
           </div>
 
           <DialogFooter className="mx-0 mb-0 items-center justify-end gap-2 rounded-none border-t border-border bg-card px-5 py-2.5 sm:flex-row sm:justify-end">
@@ -1080,8 +1094,8 @@ export function TaskOutcomeDialog({
               {clinicalDecision === "reject"
                 ? "You rejected the clinical record. "
                 : "The clinical record has not been approved. "}
-              You can still create the consultation, but it will be flagged for
-              review. Continue?
+              You can still create the consultation, but it will be flagged for review.
+              Continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1156,8 +1170,8 @@ const PRESCRIPTION_SEGMENTS: ReadonlyArray<{
   label: string;
   icon?: typeof Link2;
 }> = [
-  { value: "parchment", label: "Parchment", icon: Link2 },
-  { value: "manual", label: "Manual" },
+  { value: "erx", label: "ERX", icon: Link2 },
+  { value: "internal", label: "Internal" },
   { value: "none", label: "None" },
 ];
 
@@ -1206,24 +1220,57 @@ function PrescriptionSegmentedToggle({
   );
 }
 
+function InternalRxSummaryCard({
+  count,
+  allValid,
+}: {
+  count: number;
+  allValid: boolean;
+}) {
+  const empty = count === 0;
+  const incomplete = !empty && !allValid;
+  const body = empty
+    ? "Use the panel on the right to add medications."
+    : incomplete
+      ? `${count} medication${count === 1 ? "" : "s"} added · finish required fields in the side panel.`
+      : `${count} medication${count === 1 ? "" : "s"} ready to save with this consultation.`;
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-md",
+          empty || incomplete
+            ? "bg-muted text-muted-foreground"
+            : "bg-primary/10 text-primary"
+        )}
+      >
+        <Pill className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">Internal prescription</p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{body}</p>
+      </div>
+    </div>
+  );
+}
+
 function PrescriptionActionCard({
   choice,
   disabled,
   onOpenParchment,
 }: {
-  choice: Exclude<PrescriptionChoice, "manual">;
+  choice: Exclude<PrescriptionChoice, "internal">;
   disabled?: boolean;
   onOpenParchment: () => void;
 }) {
   const config = (() => {
     switch (choice) {
-      case "parchment":
+      case "erx":
         return {
           Icon: Link2,
           iconTone: "bg-primary/10 text-primary",
-          title: "Send via Parchment",
-          body:
-            "Opens in a new tab. The script returns to us manually - you can still finalise here.",
+          title: "Send via ERX",
+          body: "Opens in a new tab. The script returns to us manually - you can still finalise here.",
           action: (
             <Button
               type="button"
@@ -1233,7 +1280,7 @@ function PrescriptionActionCard({
               onClick={onOpenParchment}
               disabled={disabled}
             >
-              Open Parchment
+              Open ERX
               <ExternalLink className="size-3.5" />
             </Button>
           ),
@@ -1263,9 +1310,7 @@ function PrescriptionActionCard({
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-          {body}
-        </p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{body}</p>
       </div>
       {action && <div className="ml-2 shrink-0 self-center">{action}</div>}
     </div>
@@ -1310,10 +1355,7 @@ function StepBlock({
         >
           {title}
           {required && (
-            <span
-              aria-hidden="true"
-              className="ml-1 text-status-danger-fg"
-            >
+            <span aria-hidden="true" className="ml-1 text-status-danger-fg">
               *
             </span>
           )}
