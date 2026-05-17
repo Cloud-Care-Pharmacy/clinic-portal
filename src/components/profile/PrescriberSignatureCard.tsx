@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import SignaturePad from "signature_pad";
 import { toast } from "sonner";
 import { Loader2, Eraser, Upload, Pencil, Trash2 } from "lucide-react";
@@ -30,17 +29,53 @@ import {
   useUpdatePractitionerSignature,
   useDeletePractitionerSignature,
 } from "@/lib/hooks/use-practitioner";
-import type {
-  PractitionerSignature,
-  SignatureCaptureMethod,
-} from "@/types";
+import type { PractitionerSignature, SignatureMimeType } from "@/types";
 
 // Visual canvas dimensions (CSS px). Internal bitmap is scaled by DPR for
 // crispness, then exported back at this logical size.
 const PAD_WIDTH = 600;
 const PAD_HEIGHT = 200;
 const MAX_UPLOAD_BYTES = 1 * 1024 * 1024; // 1 MB
-const ACCEPTED_MIMES = ["image/png", "image/svg+xml"];
+const ACCEPTED_MIMES: SignatureMimeType[] = [
+  "image/png",
+  "image/jpeg",
+  "image/svg+xml",
+];
+
+interface PendingPreview {
+  /** Preview-only data URL for the local <img>. */
+  dataUrl: string;
+  /** Raw base64 payload sent to the backend (no `data:...;base64,` prefix). */
+  data: string;
+  mimeType: SignatureMimeType;
+  width: number;
+  height: number;
+}
+
+/**
+ * The backend `assetUrl` is `/api/practitioners/{id}/signature` and requires
+ * an API key, so the browser must fetch it through our auth proxy. Translate
+ * `/api/...` → `/api/proxy/...` whenever we render it.
+ */
+function toProxyUrl(assetUrl: string): string {
+  if (assetUrl.startsWith("/api/proxy/")) return assetUrl;
+  if (assetUrl.startsWith("/api/")) {
+    return `/api/proxy/${assetUrl.slice("/api/".length)}`;
+  }
+  return assetUrl;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+/** Strip a `data:<mime>;base64,` prefix and return the raw base64 payload. */
+function stripDataUrlPrefix(dataUrl: string): string {
+  const comma = dataUrl.indexOf(",");
+  return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+}
 
 interface PrescriberSignatureCardProps {
   signature: PractitionerSignature | null;
@@ -50,13 +85,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const padRef = useRef<SignaturePad | null>(null);
   const [mode, setMode] = useState<"draw" | "upload">("draw");
-  const [pendingPreview, setPendingPreview] = useState<{
-    dataUrl: string;
-    mimeType: string;
-    width: number;
-    height: number;
-    method: SignatureCaptureMethod;
-  } | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<PendingPreview | null>(null);
   const [isPadEmpty, setIsPadEmpty] = useState(true);
 
   const updateSignature = useUpdatePractitionerSignature();
@@ -107,22 +136,23 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
     const dataUrl = pad.toDataURL("image/png");
     setPendingPreview({
       dataUrl,
+      data: stripDataUrlPrefix(dataUrl),
       mimeType: "image/png",
       width: PAD_WIDTH,
       height: PAD_HEIGHT,
-      method: "drawn",
     });
   }
 
   function handleFile(file: File) {
-    if (!ACCEPTED_MIMES.includes(file.type)) {
-      toast.error("Use a PNG or SVG image");
+    if (!ACCEPTED_MIMES.includes(file.type as SignatureMimeType)) {
+      toast.error("Use a PNG, JPEG, or SVG image");
       return;
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       toast.error("File must be 1 MB or smaller");
       return;
     }
+    const mime = file.type as SignatureMimeType;
     const reader = new FileReader();
     reader.onerror = () => toast.error("Could not read file");
     reader.onload = () => {
@@ -131,16 +161,17 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
         toast.error("Invalid image file");
         return;
       }
-      // For PNG, measure intrinsic size; SVG renders at the displayed box.
-      if (file.type === "image/png") {
+      const data = stripDataUrlPrefix(dataUrl);
+      // For raster, measure intrinsic size; SVG renders at the displayed box.
+      if (mime === "image/png" || mime === "image/jpeg") {
         const img = new window.Image();
         img.onload = () => {
           setPendingPreview({
             dataUrl,
-            mimeType: file.type,
+            data,
+            mimeType: mime,
             width: img.naturalWidth,
             height: img.naturalHeight,
-            method: "uploaded",
           });
         };
         img.onerror = () => toast.error("Could not parse image");
@@ -148,10 +179,10 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
       } else {
         setPendingPreview({
           dataUrl,
-          mimeType: file.type,
+          data,
+          mimeType: mime,
           width: PAD_WIDTH,
           height: PAD_HEIGHT,
-          method: "uploaded",
         });
       }
     };
@@ -160,15 +191,23 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
 
   function handleSave() {
     if (!pendingPreview) return;
-    updateSignature.mutate(pendingPreview, {
-      onSuccess: () => {
-        toast.success("Signature saved");
-        setPendingPreview(null);
-        padRef.current?.clear();
-        setIsPadEmpty(true);
+    updateSignature.mutate(
+      {
+        mimeType: pendingPreview.mimeType,
+        data: pendingPreview.data,
+        width: pendingPreview.width,
+        height: pendingPreview.height,
       },
-      onError: (err) => toast.error(err.message),
-    });
+      {
+        onSuccess: () => {
+          toast.success("Signature saved");
+          setPendingPreview(null);
+          padRef.current?.clear();
+          setIsPadEmpty(true);
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
   }
 
   function handleDelete() {
@@ -250,19 +289,16 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
           <div className="space-y-2">
             <p className="text-sm font-medium">Current signature</p>
             <div className="inline-flex items-center justify-center rounded-md border bg-muted/40 p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element -- signed signature URL, not optimisable */}
-              <Image
-                src={signature.assetUrl}
+              {/* eslint-disable-next-line @next/next/no-img-element -- auth-gated signature stream */}
+              <img
+                src={toProxyUrl(signature.assetUrl)}
                 alt="Saved prescriber signature"
-                width={signature.width}
-                height={signature.height}
                 className="max-h-32 w-auto"
-                unoptimized
               />
             </div>
             <p className="text-xs text-muted-foreground">
               Captured {new Date(signature.capturedAt).toLocaleString("en-AU")} ·{" "}
-              {signature.method}
+              {formatBytes(signature.sizeBytes)} · {signature.mimeType}
             </p>
           </div>
         )}
@@ -321,7 +357,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
               <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-muted/30 px-4 py-8 text-center hover:bg-muted/50">
                 <Upload className="size-5 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  Upload a PNG or SVG (transparent background recommended)
+                  Upload a PNG, JPEG, or SVG (transparent background recommended)
                 </span>
                 <span className="text-xs text-muted-foreground">
                   Max 1 MB

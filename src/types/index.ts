@@ -290,6 +290,24 @@ export interface PatientPrescription {
   updatedBy: string | null;
   /** Only present on detail responses when `source = 'internal'`. */
   medications?: PrescriptionMedication[];
+  /**
+   * Point-in-time snapshot of the prescriber's signature at issuance. Frozen
+   * for audit: a later rotation or deletion of the prescriber's signature
+   * does NOT alter this field. `null` if the prescriber had no signature on
+   * file when the prescription was issued.
+   */
+  prescriberSignature?: PrescriptionSignatureSnapshot | null;
+}
+
+/**
+ * Frozen prescriber-signature snapshot stamped onto a prescription at issuance.
+ * `assetUrl` is the stable backend route at time-of-issue (still resolves
+ * because the route doesn't change across rotations).
+ */
+export interface PrescriptionSignatureSnapshot {
+  assetUrl: string;
+  sha256: string;
+  capturedAt: string;
 }
 
 /** Result of a sync from Parchment → local index. */
@@ -1492,20 +1510,25 @@ export interface PractitionerProfile {
   updatedAt: string;
 }
 
-export type SignatureCaptureMethod = "drawn" | "uploaded" | "typed";
+export type SignatureMimeType =
+  | "image/png"
+  | "image/jpeg"
+  | "image/svg+xml";
 
 /**
- * Stored signature asset metadata. `assetUrl` is a short-lived, signed URL the
- * frontend can use to render the image — never a public link.
+ * Stored prescriber signature metadata returned on PractitionerProfile.
+ * `assetUrl` is a stable backend route (`/api/practitioners/{id}/signature`)
+ * that streams the binary — it does NOT change across rotations, and the
+ * route requires auth, so the frontend must request it via the proxy.
  */
 export interface PractitionerSignature {
+  /** `/api/practitioners/{id}/signature` — fetch via `/api/proxy/...`. */
   assetUrl: string;
-  mimeType: string;
-  width: number;
-  height: number;
-  method: SignatureCaptureMethod;
+  mimeType: SignatureMimeType;
+  sizeBytes: number;
+  sha256: string;
   capturedAt: string;
-  sha256?: string;
+  updatedAt: string;
 }
 
 export interface PractitionerProfileResponse {
@@ -1550,18 +1573,17 @@ export interface UpdatePractitionerAvailabilityPayload {
 }
 
 /**
- * Payload for PUT /api/practitioners/me/signature. The frontend uploads the
- * captured image inline as a base64 data URL — the backend persists the asset
- * (e.g. R2) and returns the updated `PractitionerProfile`. Sending `null` (via
- * DELETE) revokes the current signature.
+ * Payload for PUT /api/practitioners/me/signature. Send the raw base64
+ * payload in `data` (no `data:...;base64,` prefix — backend tolerates it but
+ * we strip it client-side). `width` / `height` are optional hints; the
+ * backend doesn't store them. DELETE the same path to revoke.
  */
 export interface UpdatePractitionerSignaturePayload {
-  /** `data:image/png;base64,...` (PNG strongly preferred; SVG accepted). */
-  dataUrl: string;
-  mimeType: string;
-  width: number;
-  height: number;
-  method: SignatureCaptureMethod;
+  mimeType: SignatureMimeType;
+  /** Raw base64 (no data URL prefix). */
+  data: string;
+  width?: number;
+  height?: number;
 }
 
 // ============================================
