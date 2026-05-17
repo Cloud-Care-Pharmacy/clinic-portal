@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  ChevronRight,
   ExternalLink,
   FileText,
   Link2,
@@ -38,6 +37,11 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
+import {
+  ManualRxComposer,
+  areAllValid as areAllRxValid,
+  type Medication,
+} from "@/components/prescriptions/manual-rx";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
 import {
@@ -83,6 +87,11 @@ export interface TaskOutcomeSubmission {
    * audit note only (there is no backend reject endpoint).
    */
   clinicalDecision?: ClinicalDecision;
+  /**
+   * Manual-script line items composed in the wrap-up dialog. Populated only
+   * when `prescriptionChoice === "manual"`. Persistence is handled downstream.
+   */
+  prescriptionMeds?: Medication[];
   status: TaskStatus;
   notes?: string;
   followupNote?: string;
@@ -667,6 +676,7 @@ export function TaskOutcomeDialog({
   const [manualDuration, setManualDuration] = useState("");
   const [prescriptionChoice, setPrescriptionChoice] =
     useState<PrescriptionChoice>("parchment");
+  const [rxMeds, setRxMeds] = useState<Medication[]>([]);
   const [clinicalDecision, setClinicalDecision] = useState<
     ClinicalDecision | undefined
   >(undefined);
@@ -688,9 +698,14 @@ export function TaskOutcomeDialog({
   const requiresReason = selected === "abandoned";
   // Manual mode requires the doctor to type notes when they reached the patient.
   const requiresManualNotes = isManual && selected === "reached";
+  // Manual script must have at least one fully-valid medication card before we
+  // let the doctor finalise. Other prescription choices skip this gate.
+  const requiresValidRxMeds =
+    selected === "reached" && prescriptionChoice === "manual";
   const isInvalid =
     (requiresReason && !followupNote.trim()) ||
-    (requiresManualNotes && !manualNotes.trim());
+    (requiresManualNotes && !manualNotes.trim()) ||
+    (requiresValidRxMeds && !areAllRxValid(rxMeds));
 
   // Readiness checks: latest clinical record review only. Patient status is
   // no longer edited from this dialog.
@@ -728,6 +743,10 @@ export function TaskOutcomeDialog({
       prescriptionChoice:
         selected === "reached" ? prescriptionChoice : undefined,
       clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
+      prescriptionMeds:
+        selected === "reached" && prescriptionChoice === "manual"
+          ? rxMeds
+          : undefined,
       status: effectiveStatus,
       // Step 1's textarea is the single source of truth for the note (seeded
       // from callData.notes on mount, edited freely afterwards).
@@ -970,13 +989,17 @@ export function TaskOutcomeDialog({
                       />
                     }
                   >
-                    <PrescriptionActionCard
-                      choice={prescriptionChoice}
-                      onOpenParchment={() => setParchmentOpen(true)}
-                      onComposeManual={() =>
-                        toast.info("Manual script editor coming soon.")
-                      }
-                    />
+                    {prescriptionChoice === "manual" ? (
+                      <ManualRxComposer
+                        value={rxMeds}
+                        onChange={setRxMeds}
+                      />
+                    ) : (
+                      <PrescriptionActionCard
+                        choice={prescriptionChoice}
+                        onOpenParchment={() => setParchmentOpen(true)}
+                      />
+                    )}
                   </StepBlock>
                 </>
               ) : (
@@ -1178,12 +1201,10 @@ function PrescriptionActionCard({
   choice,
   disabled,
   onOpenParchment,
-  onComposeManual,
 }: {
-  choice: PrescriptionChoice;
+  choice: Exclude<PrescriptionChoice, "manual">;
   disabled?: boolean;
   onOpenParchment: () => void;
-  onComposeManual: () => void;
 }) {
   const config = (() => {
     switch (choice) {
@@ -1205,26 +1226,6 @@ function PrescriptionActionCard({
             >
               Open Parchment
               <ExternalLink className="size-3.5" />
-            </Button>
-          ),
-        };
-      case "manual":
-        return {
-          Icon: FileText,
-          iconTone: "bg-primary/10 text-primary",
-          title: "Write manual script",
-          body: "Compose the script directly. Stored against this consultation.",
-          action: (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-md px-3 text-sm"
-              onClick={onComposeManual}
-              disabled={disabled}
-            >
-              Compose
-              <ChevronRight className="size-3.5" />
             </Button>
           ),
         };
