@@ -921,9 +921,8 @@ export function TaskOutcomeDialog({
                       <p className="mt-2 flex items-start gap-1.5 text-xs leading-snug text-muted-foreground">
                         <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
                         <span>
-                          The call recording is saved to this patient&apos;s
-                          profile. An AI-generated summary will appear here
-                          shortly after the call ends.
+                          The call recording will be saved to this patient&apos;s
+                          profile shortly after the call ends.
                         </span>
                       </p>
                     )}
