@@ -835,7 +835,7 @@ export function TaskOutcomeDialog({
             <div className="flex items-center gap-2.5">
               <span
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-full border",
+                  "flex size-7 shrink-0 items-center justify-center rounded-full border",
                   isManual
                     ? "border-status-info-border bg-status-info-bg text-status-info-fg"
                     : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
@@ -847,16 +847,27 @@ export function TaskOutcomeDialog({
                   <AlertCircle className="size-4" />
                 )}
               </span>
-              <DialogTitle className="text-base font-semibold">
-                {isManual
-                  ? `How did the call with ${patientFirstName} go?`
-                  : `How did the call with ${patientFirstName} end?`}
-              </DialogTitle>
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="text-base font-semibold">
+                  {isManual
+                    ? `How did the call with ${patientFirstName} go?`
+                    : `How did the call with ${patientFirstName} end?`}
+                </DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                  {isManual
+                    ? "Record a call you've already made (in person, by phone, or outside Aircall)."
+                    : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
+                        callData?.notes
+                          ? `${callData.notes.length} chars of notes`
+                          : "no notes yet"
+                      }`}
+                </DialogDescription>
+              </div>
               <a
                 href={profileHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label="Open patient profile in new tab"
                 title="Open patient profile"
               >
@@ -864,15 +875,6 @@ export function TaskOutcomeDialog({
                 <ExternalLink className="size-3.5" />
               </a>
             </div>
-            <DialogDescription className="mt-1 text-xs text-muted-foreground">
-              {isManual
-                ? "Record a call you've already made (in person, by phone, or outside Aircall)."
-                : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
-                    callData?.notes
-                      ? `${callData.notes.length} chars of notes`
-                      : "no notes yet"
-                  }`}
-            </DialogDescription>
           </DialogHeader>
 
           <div className="grid min-h-0 grid-cols-1 md:grid-cols-[18rem_1fr]">
