@@ -387,16 +387,22 @@ export function TaskDetailSheet({
                   <Button
                     onClick={handleClaimAndStart}
                     disabled={isPending || !currentInternalUserId}
-                    className="gap-1.5 rounded-r-none border-r border-primary-foreground/20"
+                    className="gap-1.5 rounded-r-none"
                   >
                     <Play className="size-4 " />
                     {updateTask.isPending ? "Claiming…" : "Claim & start"}
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      className="inline-flex h-8 w-7 items-center justify-center rounded-r-sm bg-primary text-primary-foreground transition-colors hover:bg-primary/90 aria-expanded:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                      disabled={isPending || !currentInternalUserId}
-                      aria-label="More claim actions"
+                      render={
+                        <Button
+                          variant="default"
+                          size="icon"
+                          aria-label="More claim actions"
+                          className="w-7 rounded-l-none border-l border-primary-foreground/20"
+                          disabled={isPending || !currentInternalUserId}
+                        />
+                      }
                     >
                       <ChevronDown className="size-4" />
                     </DropdownMenuTrigger>
@@ -425,16 +431,22 @@ export function TaskDetailSheet({
                   <Button
                     onClick={() => onCallTask?.(activeTask)}
                     disabled={isPending}
-                    className="gap-1.5 rounded-r-none border-r border-primary-foreground/20"
+                    className="gap-1.5 rounded-r-none"
                   >
                     <Phone className="size-4 " />
                     Call
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      className="inline-flex h-8 w-7 items-center justify-center rounded-r-sm bg-primary text-primary-foreground transition-colors hover:bg-primary/90 aria-expanded:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                      disabled={isPending}
-                      aria-label="More call actions"
+                      render={
+                        <Button
+                          variant="default"
+                          size="icon"
+                          aria-label="More call actions"
+                          className="w-7 rounded-l-none border-l border-primary-foreground/20"
+                          disabled={isPending}
+                        />
+                      }
                     >
                       <ChevronDown className="size-4" />
                     </DropdownMenuTrigger>
