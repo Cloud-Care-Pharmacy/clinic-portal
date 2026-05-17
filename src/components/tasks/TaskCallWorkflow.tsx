@@ -4,12 +4,13 @@
 import { useEffect, useId, useState } from "react";
 import {
   AlertCircle,
-  AlertTriangle,
   ArrowRight,
   Check,
   ChevronDown,
+  ChevronRight,
   ExternalLink,
   FileText,
+  Link2,
   Pill,
   UserRound,
 } from "lucide-react";
@@ -63,7 +64,7 @@ export interface TaskCallData {
 
 export type TaskOutcomeMode = "hangup" | "manual";
 
-export type PrescriptionChoice = "parchment" | "manual";
+export type PrescriptionChoice = "parchment" | "manual" | "none";
 
 export type ClinicalDecision = "approve" | "reject";
 
@@ -663,9 +664,8 @@ export function TaskOutcomeDialog({
   const [manualNotes, setManualNotes] = useState(() => callData?.notes ?? "");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
-  const [prescriptionChoice, setPrescriptionChoice] = useState<
-    PrescriptionChoice | undefined
-  >(undefined);
+  const [prescriptionChoice, setPrescriptionChoice] =
+    useState<PrescriptionChoice>("parchment");
   const [clinicalDecision, setClinicalDecision] = useState<
     ClinicalDecision | undefined
   >(undefined);
@@ -906,16 +906,12 @@ export function TaskOutcomeDialog({
             <div className="min-w-0 max-h-[min(78vh,38rem)] space-y-3.5 overflow-y-auto px-5 py-4">
               {selected === "reached" ? (
                 <>
-                  <StepBlock number={1} title="Consultation note">
+                  <StepBlock number={1} title="Consultation note" required>
                     <Textarea
                       id={manualNotesId}
                       value={manualNotes}
                       onChange={(event) => setManualNotes(event.target.value)}
-                      placeholder={
-                        isManual
-                          ? "What was discussed, decided, plan, next steps…"
-                          : "Add or refine notes for the consultation…"
-                      }
+                      placeholder="Summary, BP / pulse, adherence, next steps…"
                       className="min-h-24 bg-background text-sm leading-relaxed"
                     />
                     {isManual && (
@@ -942,7 +938,7 @@ export function TaskOutcomeDialog({
                     )}
                   </StepBlock>
 
-                  <StepBlock number={2} title="Clinical status">
+                  <StepBlock number={2} title="Clinical decision">
                     <ClinicalStatusRow
                       task={task}
                       clinicalRecord={clinicalRecord}
@@ -961,42 +957,22 @@ export function TaskOutcomeDialog({
                         ? "Unavailable — clinical record rejected"
                         : undefined
                     }
+                    headerRight={
+                      <PrescriptionSegmentedToggle
+                        value={effectivePrescriptionChoice ?? "parchment"}
+                        onChange={setPrescriptionChoice}
+                        disabled={prescriptionDisabled}
+                      />
+                    }
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <PrescriptionChoiceButton
-                        active={effectivePrescriptionChoice === "parchment"}
-                        onClick={() => setPrescriptionChoice("parchment")}
-                        label="Parchment"
-                        disabled={prescriptionDisabled}
-                      />
-                      <PrescriptionChoiceButton
-                        active={effectivePrescriptionChoice === "manual"}
-                        onClick={() => setPrescriptionChoice("manual")}
-                        label="Manual"
-                        disabled={prescriptionDisabled}
-                      />
-                      {!prescriptionDisabled &&
-                        effectivePrescriptionChoice === "parchment" && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="ml-auto h-8 rounded-md px-3 text-sm"
-                            onClick={() => setParchmentOpen(true)}
-                          >
-                            <Pill className="size-4" />
-                            Open Parchment
-                            <ExternalLink className="size-3.5" />
-                          </Button>
-                        )}
-                    </div>
-                    {!prescriptionDisabled &&
-                      effectivePrescriptionChoice === "parchment" && (
-                        <p className="mt-2 text-xs leading-snug text-muted-foreground">
-                          Parchment opens in a new tab. The script returns to us
-                          manually — you can still finalise the consultation here.
-                        </p>
-                      )}
+                    <PrescriptionActionCard
+                      choice={effectivePrescriptionChoice ?? "parchment"}
+                      disabled={prescriptionDisabled}
+                      onOpenParchment={() => setParchmentOpen(true)}
+                      onComposeManual={() =>
+                        toast.info("Manual script editor coming soon.")
+                      }
+                    />
                   </StepBlock>
                 </>
               ) : (
@@ -1084,43 +1060,201 @@ export function TaskOutcomeDialog({
   );
 }
 
-function PrescriptionChoiceButton({
+function DecisionRadioPill({
   active,
   onClick,
   label,
+  tone,
   disabled,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
+  tone: "primary" | "neutral";
   disabled?: boolean;
 }) {
+  const activeTone =
+    tone === "primary"
+      ? "border-primary bg-primary/10 text-primary"
+      : "border-foreground/40 bg-background text-foreground";
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
         active
-          ? "border-primary bg-primary/10 text-foreground"
+          ? activeTone
           : "border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
-      aria-pressed={active}
     >
       <span
         className={cn(
-          "flex size-3 items-center justify-center rounded-full border",
-          active ? "border-primary bg-primary" : "border-input bg-background"
+          "flex size-4 items-center justify-center rounded-full border",
+          active
+            ? tone === "primary"
+              ? "border-primary"
+              : "border-foreground"
+            : "border-input bg-background"
         )}
         aria-hidden="true"
       >
         {active && (
-          <span className="size-1 rounded-full bg-primary-foreground" />
+          <span
+            className={cn(
+              "size-2 rounded-full",
+              tone === "primary" ? "bg-primary" : "bg-foreground"
+            )}
+          />
         )}
       </span>
       {label}
     </button>
+  );
+}
+
+const PRESCRIPTION_SEGMENTS: ReadonlyArray<{
+  value: PrescriptionChoice;
+  label: string;
+  icon?: typeof Link2;
+}> = [
+  { value: "parchment", label: "Parchment", icon: Link2 },
+  { value: "manual", label: "Manual" },
+  { value: "none", label: "None" },
+];
+
+function PrescriptionSegmentedToggle({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: PrescriptionChoice;
+  onChange: (next: PrescriptionChoice) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Prescription delivery"
+      className={cn(
+        "inline-flex items-center rounded-md bg-muted p-0.5 text-xs font-medium",
+        disabled && "opacity-60"
+      )}
+    >
+      {PRESCRIPTION_SEGMENTS.map((segment) => {
+        const Icon = segment.icon;
+        const active = value === segment.value;
+        return (
+          <button
+            key={segment.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={disabled}
+            onClick={() => onChange(segment.value)}
+            className={cn(
+              "inline-flex h-7 items-center gap-1.5 rounded-[5px] px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
+              active
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {Icon && <Icon className="size-3.5" />}
+            {segment.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PrescriptionActionCard({
+  choice,
+  disabled,
+  onOpenParchment,
+  onComposeManual,
+}: {
+  choice: PrescriptionChoice;
+  disabled?: boolean;
+  onOpenParchment: () => void;
+  onComposeManual: () => void;
+}) {
+  const config = (() => {
+    switch (choice) {
+      case "parchment":
+        return {
+          Icon: Link2,
+          iconTone: "bg-primary/10 text-primary",
+          title: "Send via Parchment",
+          body:
+            "Opens in a new tab. The script returns to us manually — you can still finalise here.",
+          action: (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-md px-3 text-sm"
+              onClick={onOpenParchment}
+              disabled={disabled}
+            >
+              Open Parchment
+              <ExternalLink className="size-3.5" />
+            </Button>
+          ),
+        };
+      case "manual":
+        return {
+          Icon: FileText,
+          iconTone: "bg-primary/10 text-primary",
+          title: "Write manual script",
+          body: "Compose the script directly. Stored against this consultation.",
+          action: (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-md px-3 text-sm"
+              onClick={onComposeManual}
+              disabled={disabled}
+            >
+              Compose
+              <ChevronRight className="size-3.5" />
+            </Button>
+          ),
+        };
+      case "none":
+      default:
+        return {
+          Icon: Check,
+          iconTone: "bg-muted text-muted-foreground",
+          title: "No script this consultation",
+          body: "Consultation finalises as a check-in only.",
+          action: null as React.ReactNode,
+        };
+    }
+  })();
+
+  const { Icon, iconTone, title, body, action } = config;
+  return (
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-md",
+          iconTone
+        )}
+      >
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-foreground">{title}</p>
+        <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          {body}
+        </p>
+      </div>
+      {action && <div className="ml-2 shrink-0 self-center">{action}</div>}
+    </div>
   );
 }
 
@@ -1130,12 +1264,16 @@ function StepBlock({
   children,
   disabled,
   disabledHint,
+  required,
+  headerRight,
 }: {
   number: number;
   title: string;
   children: React.ReactNode;
   disabled?: boolean;
   disabledHint?: string;
+  required?: boolean;
+  headerRight?: React.ReactNode;
 }) {
   return (
     <section className={cn(disabled && "opacity-60")}>
@@ -1157,12 +1295,21 @@ function StepBlock({
           )}
         >
           {title}
+          {required && (
+            <span
+              aria-hidden="true"
+              className="ml-1 text-status-danger-fg"
+            >
+              *
+            </span>
+          )}
         </h3>
         {disabled && disabledHint && (
           <span className="text-xs font-normal text-muted-foreground">
             {disabledHint}
           </span>
         )}
+        {headerRight && <div className="ml-auto">{headerRight}</div>}
       </header>
       <div className={cn(disabled && "pointer-events-none select-none")}>
         {children}
@@ -1215,14 +1362,19 @@ function ClinicalStatusRow({
   const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
+        {!alreadyApproved && canDecide && (
+          <span className="text-xs text-muted-foreground">
+            Applied when you finalise — nothing changes server-side until then.
+          </span>
+        )}
         <a
           href={clinicalHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex items-center gap-1 rounded text-xs font-medium text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label="Open clinical record in new tab"
           title="Open clinical record"
         >
@@ -1243,33 +1395,20 @@ function ClinicalStatusRow({
           Already approved — no action needed.
         </p>
       ) : canDecide ? (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <PrescriptionChoiceButton
-              active={decision === "approve"}
-              onClick={() => onDecisionChange("approve")}
-              label="Approve"
-            />
-            <PrescriptionChoiceButton
-              active={decision === "reject"}
-              onClick={() => onDecisionChange("reject")}
-              label="Reject"
-            />
-          </div>
-          <p className="text-xs leading-snug text-muted-foreground">
-            Your decision is applied when you finalise the consultation —
-            nothing changes server-side until then.
-          </p>
-          {decision !== "approve" && (
-            <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2 text-status-warning-fg">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              <p className="text-xs leading-snug">
-                Clinical record will not be approved. You can still finalise —
-                you&apos;ll be asked to confirm.
-              </p>
-            </div>
-          )}
-        </>
+        <div className="flex flex-wrap items-center gap-2">
+          <DecisionRadioPill
+            active={decision === "approve"}
+            onClick={() => onDecisionChange("approve")}
+            label="Approve"
+            tone="primary"
+          />
+          <DecisionRadioPill
+            active={decision === "reject"}
+            onClick={() => onDecisionChange("reject")}
+            label="Reject"
+            tone="neutral"
+          />
+        </div>
       ) : (
         <p className="text-xs leading-snug text-muted-foreground">
           No clinical record to review.
