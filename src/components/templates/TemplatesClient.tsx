@@ -147,7 +147,7 @@ function TemplateTypePanel({
               {params.row.name}
             </span>
             {params.row.description ? (
-              <span className="block truncate text-xs text-muted-foreground">
+              <span className="block truncate text-xs leading-5 text-muted-foreground">
                 {params.row.description}
               </span>
             ) : null}
