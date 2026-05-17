@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
@@ -201,6 +201,38 @@ interface ProductFormProps {
   onValidSubmit: (input: ProductInput) => void;
 }
 
+// Pill tabs mirror the product detail view so add/edit feel consistent.
+const FORM_TABS = [
+  { id: "details", label: "Details" },
+  { id: "stock", label: "Stock" },
+  { id: "pricing", label: "Pricing" },
+  { id: "status", label: "Status" },
+] as const;
+
+type FormTabId = (typeof FORM_TABS)[number]["id"];
+
+const TAB_FIELDS: Record<FormTabId, (keyof ProductFormData)[]> = {
+  details: [
+    "name",
+    "brand",
+    "genericName",
+    "sku",
+    "barcode",
+    "category",
+    "form",
+    "strength",
+    "packSize",
+    "activeIngredient",
+    "schedule",
+    "requiresPrescription",
+    "artgNumber",
+    "pbsCode",
+  ],
+  stock: ["stock", "reorderLevel", "supplier", "storage", "earliestExpiry"],
+  pricing: ["costPrice", "price", "gstApplicable"],
+  status: ["status", "description"],
+};
+
 function Section({
   title,
   description,
@@ -230,6 +262,22 @@ function FieldError({ message }: { message?: string }) {
 
 export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
   const errors = form.formState.errors;
+  const [activeTab, setActiveTab] = useState<FormTabId>("details");
+
+  const tabErrorCounts = useMemo(() => {
+    const counts: Record<FormTabId, number> = {
+      details: 0,
+      stock: 0,
+      pricing: 0,
+      status: 0,
+    };
+    for (const tab of FORM_TABS) {
+      for (const field of TAB_FIELDS[tab.id]) {
+        if (errors[field]) counts[tab.id] += 1;
+      }
+    }
+    return counts;
+  }, [errors]);
 
   const scheduleValue = useWatch({ control: form.control, name: "schedule" });
   const categoryValue = useWatch({ control: form.control, name: "category" });
@@ -283,10 +331,17 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
   function handleSubmit(data: ProductFormData) {
     const result = productFormSchema.safeParse(data);
     if (!result.success) {
+      const erroredFields = new Set<keyof ProductFormData>();
       for (const issue of result.error.issues) {
         const field = issue.path[0] as keyof ProductFormData;
         form.setError(field, { message: issue.message });
+        erroredFields.add(field);
       }
+      // Jump to the first tab containing an error so the user can see it.
+      const firstErroredTab = FORM_TABS.find((tab) =>
+        TAB_FIELDS[tab.id].some((f) => erroredFields.has(f))
+      );
+      if (firstErroredTab) setActiveTab(firstErroredTab.id);
       return;
     }
     onValidSubmit(formDataToProductInput(result.data));
@@ -298,6 +353,37 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
       onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-5"
     >
+      {/* Pill-style tab navigation — mirrors the product detail view */}
+      <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+        {FORM_TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          const errorCount = tabErrorCounts[tab.id];
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                isActive
+                  ? "bg-card text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+              {errorCount > 0 && (
+                <span className="inline-flex items-center justify-center rounded-full px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-destructive text-destructive-foreground">
+                  {errorCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Details tab: identification + pharmaceutical + regulatory ----- */}
+      <div hidden={activeTab !== "details"} className="space-y-5">
       {/* Identification ------------------------------------------------- */}
       <Section title="Identification">
         <div className="space-y-2">
@@ -511,7 +597,10 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
           </div>
         </div>
       </Section>
+      </div>
 
+      {/* Stock tab: inventory & storage -------------------------------- */}
+      <div hidden={activeTab !== "stock"} className="space-y-5">
       {/* Inventory & storage ------------------------------------------- */}
       <Section title="Inventory & storage">
         <div className="grid grid-cols-2 gap-3">
@@ -589,7 +678,10 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
           </p>
         </div>
       </Section>
+      </div>
 
+      {/* Pricing tab --------------------------------------------------- */}
+      <div hidden={activeTab !== "pricing"} className="space-y-5">
       {/* Pricing -------------------------------------------------------- */}
       <Section title="Pricing">
         <div className="grid grid-cols-2 gap-3">
@@ -643,7 +735,10 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
           </span>
         </label>
       </Section>
+      </div>
 
+      {/* Status tab ---------------------------------------------------- */}
+      <div hidden={activeTab !== "status"} className="space-y-5">
       {/* Status & notes ------------------------------------------------- */}
       <Section title="Status & notes">
         <div className="space-y-2">
@@ -678,6 +773,7 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
           />
         </div>
       </Section>
+      </div>
     </form>
   );
 }
