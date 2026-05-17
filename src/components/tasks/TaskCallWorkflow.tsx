@@ -138,7 +138,7 @@ const OUTCOMES: Array<{
 ];
 
 const OVERLINE_CLASS =
-  "text-[0.6875rem] leading-[1.2] font-medium uppercase tracking-[0.08em] text-[color-mix(in_srgb,var(--sidebar-foreground)_40%,transparent)]";
+  "text-xs leading-[1.2] font-medium uppercase tracking-[0.08em] text-[color-mix(in_srgb,var(--sidebar-foreground)_40%,transparent)]";
 
 function formatDuration(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -729,25 +729,25 @@ export function TaskOutcomeDialog({
         <DialogContent
           showCloseButton={false}
           overlayClassName="bg-foreground/40"
-          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-225"
+          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-3xl"
         >
-          <DialogHeader className="gap-0 border-b border-border px-4 py-2.5">
-            <div className="flex items-center gap-2">
+          <DialogHeader className="gap-0 border-b border-border px-5 py-3">
+            <div className="flex items-center gap-2.5">
               <span
                 className={cn(
-                  "flex size-6 items-center justify-center rounded-full border",
+                  "flex size-7 items-center justify-center rounded-full border",
                   isManual
                     ? "border-status-info-border bg-status-info-bg text-status-info-fg"
                     : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
                 )}
               >
                 {isManual ? (
-                  <FileText className="size-3.5" />
+                  <FileText className="size-4" />
                 ) : (
-                  <AlertCircle className="size-3.5" />
+                  <AlertCircle className="size-4" />
                 )}
               </span>
-              <DialogTitle className="text-sm font-semibold">
+              <DialogTitle className="text-base font-semibold">
                 {isManual
                   ? `Log call outcome — ${patientName}`
                   : `Call ended — ${patientName}`}
@@ -764,11 +764,11 @@ export function TaskOutcomeDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[15rem_1fr]">
+          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[18rem_1fr]">
             {/* LEFT — outcome picker */}
-            <div className="border-b border-border px-3 py-3 md:border-r md:border-b-0">
+            <div className="border-b border-border px-3.5 py-3.5 md:border-r md:border-b-0">
               <p className={OVERLINE_CLASS}>Outcome</p>
-              <div className="mt-2 space-y-1">
+              <div className="mt-2.5 space-y-1.5">
                 {OUTCOMES.map((item) => {
                   const active = selected === item.id;
                   return (
@@ -777,7 +777,7 @@ export function TaskOutcomeDialog({
                       type="button"
                       onClick={() => setSelected(item.id)}
                       className={cn(
-                        "flex w-full items-start gap-2 rounded-md border px-2 py-1.5 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                        "flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                         active
                           ? "border-primary bg-card"
                           : "border-transparent hover:bg-muted"
@@ -785,7 +785,7 @@ export function TaskOutcomeDialog({
                     >
                       <span
                         className={cn(
-                          "mt-1 flex size-3.5 shrink-0 items-center justify-center rounded-full border",
+                          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
                           active
                             ? "border-primary bg-primary"
                             : "border-input bg-background"
@@ -797,13 +797,13 @@ export function TaskOutcomeDialog({
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold leading-tight">
+                        <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold leading-tight">
                           {item.title}
                           <StatusBadge variant={item.variant}>
                             {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
                           </StatusBadge>
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
+                        <span className="mt-1 block text-xs leading-snug text-muted-foreground">
                           {item.description}
                         </span>
                       </span>
@@ -813,12 +813,11 @@ export function TaskOutcomeDialog({
               </div>
             </div>
 
-            {/* RIGHT — readiness, prescription, notes */}
-            <div className="min-w-0 max-h-[min(75vh,34rem)] space-y-3 overflow-y-auto px-4 py-3">
-              <ReadinessPanel
+            {/* RIGHT — numbered steps */}
+            <div className="min-w-0 max-h-[min(78vh,38rem)] space-y-3.5 overflow-y-auto px-5 py-4">
+              <PatientContextRow
                 task={task}
                 patient={patient}
-                clinicalRecord={clinicalRecord}
                 loading={readinessLoading}
                 onPatientStatusChange={(next) => {
                   updatePatientMutation.mutate(
@@ -836,52 +835,23 @@ export function TaskOutcomeDialog({
                   );
                 }}
                 patientStatusSaving={updatePatientMutation.isPending}
-                onApproveClinical={() => {
-                  if (!clinicalRecord?.id) return;
-                  approveClinicalMutation.mutate(
-                    { recordId: clinicalRecord.id },
-                    {
-                      onSuccess: () => toast.success("Clinical record approved."),
-                      onError: (err) =>
-                        toast.error(
-                          err instanceof Error
-                            ? err.message
-                            : "Failed to approve clinical record."
-                        ),
-                    }
-                  );
-                }}
-                approvingClinical={approveClinicalMutation.isPending}
               />
 
-              {finaliseBlocked && (
-                <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-2.5 py-2 text-status-warning-fg">
-                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                  <p className="text-[11px] leading-snug">
-                    {!patientApproved && !clinicalApproved
-                      ? "Patient and clinical record are not yet approved."
-                      : !patientApproved
-                        ? "Patient status is not yet approved."
-                        : "Clinical record is not yet approved."}{" "}
-                    You can still finalise — you&apos;ll be asked to confirm.
-                  </p>
-                </div>
-              )}
-
-              {selected === "reached" && (
+              {selected === "reached" ? (
                 <>
-                  {isManual && (
-                    <div>
-                      <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
-                        Consultation outcome
-                      </label>
-                      <Textarea
-                        id={manualNotesId}
-                        value={manualNotes}
-                        onChange={(event) => setManualNotes(event.target.value)}
-                        placeholder="What was discussed, decided, plan, next steps…"
-                        className="mt-1.5 min-h-20 bg-background text-xs leading-relaxed"
-                      />
+                  <StepBlock number={1} title="Consultation note">
+                    <Textarea
+                      id={manualNotesId}
+                      value={manualNotes}
+                      onChange={(event) => setManualNotes(event.target.value)}
+                      placeholder={
+                        isManual
+                          ? "What was discussed, decided, plan, next steps…"
+                          : "Add or refine notes for the consultation…"
+                      }
+                      className="min-h-24 bg-background text-sm leading-relaxed"
+                    />
+                    {isManual && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <label
                           htmlFor={manualDurationId}
@@ -896,18 +866,42 @@ export function TaskOutcomeDialog({
                             setManualDuration(event.target.value)
                           }
                           placeholder="e.g. 4 min"
-                          className="h-7 w-28 bg-background text-xs"
+                          className="h-8 w-28 bg-background text-sm"
                         />
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           (optional)
                         </span>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </StepBlock>
 
-                  <div>
-                    <p className={OVERLINE_CLASS}>Prescription</p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <StepBlock number={2} title="Clinical status">
+                    <ClinicalStatusRow
+                      task={task}
+                      clinicalRecord={clinicalRecord}
+                      loading={readinessLoading}
+                      onApproveClinical={() => {
+                        if (!clinicalRecord?.id) return;
+                        approveClinicalMutation.mutate(
+                          { recordId: clinicalRecord.id },
+                          {
+                            onSuccess: () =>
+                              toast.success("Clinical record approved."),
+                            onError: (err) =>
+                              toast.error(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Failed to approve clinical record."
+                              ),
+                          }
+                        );
+                      }}
+                      approvingClinical={approveClinicalMutation.isPending}
+                    />
+                  </StepBlock>
+
+                  <StepBlock number={3} title="Prescription">
+                    <div className="flex flex-wrap items-center gap-2">
                       <PrescriptionChoiceButton
                         active={prescriptionChoice === "on-prescription"}
                         onClick={() => setPrescriptionChoice("on-prescription")}
@@ -923,32 +917,43 @@ export function TaskOutcomeDialog({
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="ml-auto h-7 rounded-md px-2.5 text-xs"
+                          className="ml-auto h-8 rounded-md px-3 text-sm"
                           onClick={() => setParchmentOpen(true)}
                         >
-                          <Pill className="size-3.5" />
+                          <Pill className="size-4" />
                           Open Parchment
-                          <ExternalLink className="size-3" />
+                          <ExternalLink className="size-3.5" />
                         </Button>
                       )}
                     </div>
                     {prescriptionChoice === "on-prescription" && (
-                      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                      <p className="mt-2 text-xs leading-snug text-muted-foreground">
                         Parchment opens in a new tab. The script returns to us
                         manually — you can still finalise the consultation here.
                       </p>
                     )}
-                  </div>
-                </>
-              )}
+                  </StepBlock>
 
-              {(selected === "voicemail" ||
-                selected === "callback" ||
-                selected === "wrong-time" ||
-                selected === "abandoned") && (
+                  {finaliseBlocked && (
+                    <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
+                      <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                      <p className="text-xs leading-snug">
+                        {!patientApproved && !clinicalApproved
+                          ? "Patient and clinical record are not yet approved."
+                          : !patientApproved
+                            ? "Patient status is not yet approved."
+                            : "Clinical record is not yet approved."}{" "}
+                        You can still finalise — you&apos;ll be asked to confirm.
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
                 <div>
                   <label className={OVERLINE_CLASS}>
-                    {selected === "abandoned" ? "Reason required" : "Follow-up note"}
+                    {selected === "abandoned"
+                      ? "Reason required"
+                      : "Follow-up note"}
                   </label>
                   <Textarea
                     value={followupNote}
@@ -958,30 +963,30 @@ export function TaskOutcomeDialog({
                         ? "Why is this task being closed?"
                         : "Optional note for the next attempt."
                     }
-                    className="mt-1.5 min-h-16 bg-background text-xs leading-relaxed"
+                    className="mt-2 min-h-20 bg-background text-sm leading-relaxed"
                   />
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none border-t border-border bg-card px-4 py-2 sm:flex-row sm:justify-between">
-            <p className="max-w-xs text-[11px] leading-snug text-muted-foreground">
+          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none border-t border-border bg-card px-5 py-2.5 sm:flex-row sm:justify-between">
+            <p className="max-w-sm text-xs leading-snug text-muted-foreground">
               {effectiveStatus === "completed"
                 ? "Creates a finalised consultation linked to the task."
                 : "Notes are kept with the task so you can resume from Claimed."}
             </p>
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="outline"
-                className="h-8 rounded-lg px-3 text-xs"
+                className="h-9 rounded-lg px-3.5 text-sm"
                 onClick={cancelAction}
                 disabled={submitting}
               >
                 {isManual ? "Cancel" : "Back to call"}
               </Button>
               <Button
-                className="h-8 rounded-lg px-3 text-xs"
+                className="h-9 rounded-lg px-3.5 text-sm"
                 onClick={handleSubmit}
                 disabled={isInvalid || submitting}
               >
@@ -1083,31 +1088,40 @@ function patientStatusVariantFor(
   return "neutral";
 }
 
-function ReadinessPanel({
+function StepBlock({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-background px-3.5 py-3">
+      <header className="mb-2.5 flex items-center gap-2">
+        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+          {number}
+        </span>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function PatientContextRow({
   task,
   patient,
-  clinicalRecord,
   loading,
   onPatientStatusChange,
   patientStatusSaving,
-  onApproveClinical,
-  approvingClinical,
 }: {
   task: Task;
   patient: PatientMapping | undefined;
-  clinicalRecord:
-    | {
-        id?: string;
-        reviewStatus?: "pending" | "approved";
-        reviewedBy?: string | null;
-        reviewedAt?: string | null;
-      }
-    | undefined;
   loading: boolean;
   onPatientStatusChange: (next: string) => void;
   patientStatusSaving: boolean;
-  onApproveClinical: () => void;
-  approvingClinical: boolean;
 }) {
   const patientName = patient
     ? [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
@@ -1117,17 +1131,89 @@ function ReadinessPanel({
 
   const rawStatus = patient?.patientStatus?.trim();
   const statusLower = rawStatus?.toLowerCase();
-  // Normalise to a known option when possible so the Select shows a value.
-  const matchedOption = PATIENT_STATUS_OPTIONS.find((opt) => opt.value === statusLower);
+  const matchedOption = PATIENT_STATUS_OPTIONS.find(
+    (opt) => opt.value === statusLower
+  );
   const selectValue = matchedOption?.value ?? statusLower ?? "";
   const patientStatusVariant = patientStatusVariantFor(statusLower);
-  const patientStatusLabel = matchedOption?.label
-    ?? (rawStatus
+  const patientStatusLabel =
+    matchedOption?.label ??
+    (rawStatus
       ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
       : loading
         ? "Loading…"
         : "Unknown");
+  const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
 
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+      <span className={cn(OVERLINE_CLASS, "shrink-0")}>Patient</span>
+      <p className="text-sm font-semibold">{patientName}</p>
+      <a
+        href={profileHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        aria-label="Open patient profile in new tab"
+        title="Open patient profile"
+      >
+        <ExternalLink className="size-3.5" />
+      </a>
+      <div className="ml-auto flex items-center gap-2">
+        <StatusBadge variant={patientStatusVariant}>
+          {patientStatusLabel}
+        </StatusBadge>
+        <Select
+          value={selectValue || undefined}
+          onValueChange={(v) => {
+            if (!v || v === selectValue) return;
+            onPatientStatusChange(v);
+          }}
+          disabled={loading || patientStatusSaving}
+        >
+          <SelectTrigger
+            size="sm"
+            className="h-7 w-32 bg-background text-xs"
+            aria-label="Patient status"
+          >
+            <SelectValue placeholder={loading ? "…" : "Set status"} />
+          </SelectTrigger>
+          <SelectContent>
+            {PATIENT_STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {patientStatusSaving && (
+          <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ClinicalStatusRow({
+  task,
+  clinicalRecord,
+  loading,
+  onApproveClinical,
+  approvingClinical,
+}: {
+  task: Task;
+  clinicalRecord:
+    | {
+        id?: string;
+        reviewStatus?: "pending" | "approved";
+        reviewedBy?: string | null;
+        reviewedAt?: string | null;
+      }
+    | undefined;
+  loading: boolean;
+  onApproveClinical: () => void;
+  approvingClinical: boolean;
+}) {
   const clinicalReview = clinicalRecord?.reviewStatus;
   const clinicalLabel =
     clinicalReview === "approved"
@@ -1149,71 +1235,25 @@ function ReadinessPanel({
   const clinicalReviewedBy = clinicalRecord?.reviewedBy || undefined;
   const canApproveClinical =
     !!clinicalRecord?.id && clinicalReview === "pending";
-
-  const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
   const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
 
   return (
-    <div className="space-y-2 rounded-md border border-border bg-background px-3 py-2">
-      <section className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className={cn(OVERLINE_CLASS, "w-16 shrink-0")}>Patient</p>
-        <p className="text-xs font-semibold">{patientName}</p>
-        <a
-          href={profileHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          aria-label="Open patient profile in new tab"
-          title="Open patient profile"
-        >
-          <ExternalLink className="size-3" />
-        </a>
-        <div className="ml-auto flex items-center gap-1.5">
-          <StatusBadge variant={patientStatusVariant}>{patientStatusLabel}</StatusBadge>
-          <Select
-            value={selectValue || undefined}
-            onValueChange={(v) => {
-              if (!v || v === selectValue) return;
-              onPatientStatusChange(v);
-            }}
-            disabled={loading || patientStatusSaving}
-          >
-            <SelectTrigger
-              size="sm"
-              className="h-6 w-28 bg-background text-[11px]"
-              aria-label="Patient status"
-            >
-              <SelectValue placeholder={loading ? "…" : "Set"} />
-            </SelectTrigger>
-            <SelectContent>
-              {PATIENT_STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {patientStatusSaving && (
-            <Loader2 className="size-3 animate-spin text-muted-foreground" />
-          )}
-        </div>
-      </section>
-
-      <section className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-2">
-        <p className={cn(OVERLINE_CLASS, "w-16 shrink-0")}>Clinical</p>
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
         <a
           href={clinicalHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="inline-flex items-center gap-1 rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label="Open clinical record in new tab"
           title="Open clinical record"
         >
+          View record
           <ExternalLink className="size-3" />
         </a>
-        <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
         {(clinicalReviewedAt || clinicalReviewedBy) && (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {clinicalReviewedAt}
             {clinicalReviewedAt && clinicalReviewedBy ? " · " : ""}
             {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
@@ -1224,19 +1264,25 @@ function ReadinessPanel({
             type="button"
             size="sm"
             variant="outline"
-            className="ml-auto h-6 rounded-md px-2 text-[11px]"
+            className="ml-auto h-8 rounded-md px-3 text-sm"
             onClick={onApproveClinical}
             disabled={approvingClinical}
           >
             {approvingClinical ? (
-              <Loader2 className="size-3 animate-spin" />
+              <Loader2 className="size-4 animate-spin" />
             ) : (
-              <Check className="size-3" />
+              <Check className="size-4" />
             )}
             Approve
           </Button>
         )}
-      </section>
+      </div>
+      {clinicalReview === "pending" && (
+        <p className="text-xs leading-snug text-muted-foreground">
+          Approve the clinical record before finalising, or open the record to
+          review and edit it.
+        </p>
+      )}
     </div>
   );
 }
