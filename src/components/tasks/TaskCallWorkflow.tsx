@@ -1024,12 +1024,7 @@ export function TaskOutcomeDialog({
             </div>
           </div>
 
-          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none border-t border-border bg-card px-5 py-2.5 sm:flex-row sm:justify-between">
-            <p className="max-w-sm text-xs leading-snug text-muted-foreground">
-              {effectiveStatus === "completed"
-                ? "Creates a finalised consultation linked to the task."
-                : "Notes are kept with the task so you can resume from Claimed."}
-            </p>
+          <DialogFooter className="mx-0 mb-0 items-center justify-end gap-2 rounded-none border-t border-border bg-card px-5 py-2.5 sm:flex-row sm:justify-end">
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="outline"
