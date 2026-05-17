@@ -257,7 +257,7 @@ export function TaskCallDialog({
 }) {
   const [seconds, setSeconds] = useState(0);
   const [notes, setNotes] = useState("");
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const [discardNotesOpen, setDiscardNotesOpen] = useState(false);
   const [prescriptionOpen, setPrescriptionOpen] = useState(false);
