@@ -716,6 +716,7 @@ export function TaskOutcomeDialog({
     : prescriptionChoice;
 
   const patientName = task.patientName || "patient";
+  const patientFirstName = patientName.split(" ")[0] || patientName;
   const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
 
   function buildSubmission(): TaskOutcomeSubmission {
@@ -826,8 +827,8 @@ export function TaskOutcomeDialog({
               </span>
               <DialogTitle className="text-base font-semibold">
                 {isManual
-                  ? `Log call outcome — ${patientName}`
-                  : `Call ended — ${patientName}`}
+                  ? `How did the call with ${patientFirstName} go?`
+                  : `How did the call with ${patientFirstName} end?`}
               </DialogTitle>
               <a
                 href={profileHref}
