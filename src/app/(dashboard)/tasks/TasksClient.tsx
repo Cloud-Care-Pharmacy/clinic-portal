@@ -175,6 +175,9 @@ function taskNoteForOutcome(
   const parts = [
     `Outcome: ${submission.outcomeId}`,
     `Mode: ${mode}`,
+    submission.clinicalDecision
+      ? `Clinical decision: ${submission.clinicalDecision}`
+      : undefined,
     submission.prescriptionChoice
       ? `Prescription: ${submission.prescriptionChoice}`
       : undefined,

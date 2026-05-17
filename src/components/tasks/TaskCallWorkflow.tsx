@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ExternalLink,
   FileText,
-  Loader2,
   Pill,
   UserRound,
 } from "lucide-react";
@@ -36,13 +35,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ParchmentRedirectDialog } from "@/components/prescriptions/ParchmentRedirectDialog";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
@@ -59,7 +51,6 @@ import {
   useApproveClinicalRecord,
   useLatestClinicalData,
   usePatient,
-  useUpdatePatient,
 } from "@/lib/hooks/use-patients";
 import { cn } from "@/lib/utils";
 import type { PatientMapping, Task, TaskStatus } from "@/types";
@@ -74,6 +65,8 @@ export type TaskOutcomeMode = "hangup" | "manual";
 
 export type PrescriptionChoice = "on-prescription" | "paperless";
 
+export type ClinicalDecision = "approve" | "reject";
+
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
   /**
@@ -82,6 +75,12 @@ export interface TaskOutcomeSubmission {
    * consultation (i.e. `reached`).
    */
   prescriptionChoice?: PrescriptionChoice;
+  /**
+   * Doctor's decision on the clinical record at finalisation time.
+   * `approve` triggers the approve mutation; `reject` is recorded in the
+   * audit note only (there is no backend reject endpoint).
+   */
+  clinicalDecision?: ClinicalDecision;
   status: TaskStatus;
   notes?: string;
   followupNote?: string;
@@ -650,6 +649,9 @@ export function TaskOutcomeDialog({
   const [prescriptionChoice, setPrescriptionChoice] = useState<
     PrescriptionChoice | undefined
   >(undefined);
+  const [clinicalDecision, setClinicalDecision] = useState<
+    ClinicalDecision | undefined
+  >(undefined);
   const [parchmentOpen, setParchmentOpen] = useState(false);
   const [confirmFinaliseOpen, setConfirmFinaliseOpen] = useState(false);
   const manualNotesId = useId();
@@ -657,7 +659,6 @@ export function TaskOutcomeDialog({
 
   const patientQuery = usePatient(task?.patientId);
   const clinicalQuery = useLatestClinicalData(task?.patientId);
-  const updatePatientMutation = useUpdatePatient(task?.patientId ?? "");
   const approveClinicalMutation = useApproveClinicalRecord(task?.patientId ?? "");
 
   if (!open || !task) return null;
@@ -673,26 +674,31 @@ export function TaskOutcomeDialog({
     (requiresReason && !followupNote.trim()) ||
     (requiresManualNotes && !manualNotes.trim());
 
-  // Readiness checks: patient.patientStatus and latest clinical record review.
-  const patient = patientQuery.data?.data?.patient;
+  // Readiness checks: latest clinical record review only. Patient status is
+  // no longer edited from this dialog.
   const clinicalRecord = clinicalQuery.data?.data?.clinicalData;
-  const patientStatusValue = patient?.patientStatus?.toLowerCase() ?? "";
-  const patientApproved = patientStatusValue === "approved";
-  const clinicalApproved = clinicalRecord?.reviewStatus === "approved";
+  const clinicalAlreadyApproved = clinicalRecord?.reviewStatus === "approved";
   const readinessLoading = patientQuery.isLoading || clinicalQuery.isLoading;
   const willCreateConsultation = effectiveStatus === "completed";
+  // Effective clinical outcome after the user's decision is applied at
+  // finalisation: approved if already approved server-side, or if the doctor
+  // chose Approve in this dialog.
+  const effectiveClinicalApproved =
+    clinicalAlreadyApproved || clinicalDecision === "approve";
   const finaliseBlocked =
     willCreateConsultation &&
     !readinessLoading &&
-    (!patientApproved || !clinicalApproved);
+    !effectiveClinicalApproved;
 
   const patientName = task.patientName || "patient";
+  const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
 
   function buildSubmission(): TaskOutcomeSubmission {
     return {
       outcomeId: selected,
       prescriptionChoice:
         selected === "reached" ? prescriptionChoice : undefined,
+      clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
       status: effectiveStatus,
       notes: isManual ? manualNotes.trim() : (callData?.notes.trim() ?? ""),
       followupNote: followupNote.trim() || undefined,
@@ -701,21 +707,50 @@ export function TaskOutcomeDialog({
     };
   }
 
+  // Apply any deferred side-effects (currently: approve clinical record), then
+  // delegate to the parent's submitAction. Failures abort submission so the
+  // dialog stays open with a toast.
+  async function applyAndSubmit() {
+    if (
+      selected === "reached" &&
+      clinicalDecision === "approve" &&
+      clinicalRecord?.id &&
+      !clinicalAlreadyApproved
+    ) {
+      try {
+        await approveClinicalMutation.mutateAsync({
+          recordId: clinicalRecord.id,
+        });
+        toast.success("Clinical record approved.");
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Failed to approve clinical record."
+        );
+        return;
+      }
+    }
+    submitAction(buildSubmission());
+  }
+
   function handleSubmit() {
     if (isInvalid) return;
     if (finaliseBlocked) {
       setConfirmFinaliseOpen(true);
       return;
     }
-    submitAction(buildSubmission());
+    void applyAndSubmit();
   }
 
   function confirmFinalise() {
     setConfirmFinaliseOpen(false);
-    submitAction(buildSubmission());
+    void applyAndSubmit();
   }
 
-  const submitLabel = submitting
+  const submitInFlight = submitting || approveClinicalMutation.isPending;
+
+  const submitLabel = submitInFlight
     ? "Saving…"
     : effectiveStatus === "completed"
       ? isManual
@@ -729,7 +764,7 @@ export function TaskOutcomeDialog({
         <DialogContent
           showCloseButton={false}
           overlayClassName="bg-foreground/40"
-          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-3xl"
+          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-4xl"
         >
           <DialogHeader className="gap-0 border-b border-border px-5 py-3">
             <div className="flex items-center gap-2.5">
@@ -752,6 +787,16 @@ export function TaskOutcomeDialog({
                   ? `Log call outcome — ${patientName}`
                   : `Call ended — ${patientName}`}
               </DialogTitle>
+              <a
+                href={profileHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                aria-label="Open patient profile in new tab"
+                title="Open patient profile"
+              >
+                <ExternalLink className="size-4" />
+              </a>
             </div>
             <DialogDescription className="mt-1 text-xs text-muted-foreground">
               {isManual
@@ -815,28 +860,6 @@ export function TaskOutcomeDialog({
 
             {/* RIGHT — numbered steps */}
             <div className="min-w-0 max-h-[min(78vh,38rem)] space-y-3.5 overflow-y-auto px-5 py-4">
-              <PatientContextRow
-                task={task}
-                patient={patient}
-                loading={readinessLoading}
-                onPatientStatusChange={(next) => {
-                  updatePatientMutation.mutate(
-                    { patientStatus: next },
-                    {
-                      onSuccess: () =>
-                        toast.success(`Patient status set to ${next}.`),
-                      onError: (err) =>
-                        toast.error(
-                          err instanceof Error
-                            ? err.message
-                            : "Failed to update patient status."
-                        ),
-                    }
-                  );
-                }}
-                patientStatusSaving={updatePatientMutation.isPending}
-              />
-
               {selected === "reached" ? (
                 <>
                   <StepBlock number={1} title="Consultation note">
@@ -880,23 +903,8 @@ export function TaskOutcomeDialog({
                       task={task}
                       clinicalRecord={clinicalRecord}
                       loading={readinessLoading}
-                      onApproveClinical={() => {
-                        if (!clinicalRecord?.id) return;
-                        approveClinicalMutation.mutate(
-                          { recordId: clinicalRecord.id },
-                          {
-                            onSuccess: () =>
-                              toast.success("Clinical record approved."),
-                            onError: (err) =>
-                              toast.error(
-                                err instanceof Error
-                                  ? err.message
-                                  : "Failed to approve clinical record."
-                              ),
-                          }
-                        );
-                      }}
-                      approvingClinical={approveClinicalMutation.isPending}
+                      decision={clinicalDecision}
+                      onDecisionChange={setClinicalDecision}
                     />
                   </StepBlock>
 
@@ -938,12 +946,8 @@ export function TaskOutcomeDialog({
                     <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
                       <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                       <p className="text-xs leading-snug">
-                        {!patientApproved && !clinicalApproved
-                          ? "Patient and clinical record are not yet approved."
-                          : !patientApproved
-                            ? "Patient status is not yet approved."
-                            : "Clinical record is not yet approved."}{" "}
-                        You can still finalise — you&apos;ll be asked to confirm.
+                        Clinical record will not be approved. You can still
+                        finalise — you&apos;ll be asked to confirm.
                       </p>
                     </div>
                   )}
@@ -981,17 +985,17 @@ export function TaskOutcomeDialog({
                 variant="outline"
                 className="h-9 rounded-lg px-3.5 text-sm"
                 onClick={cancelAction}
-                disabled={submitting}
+                disabled={submitInFlight}
               >
                 {isManual ? "Cancel" : "Back to call"}
               </Button>
               <Button
                 className="h-9 rounded-lg px-3.5 text-sm"
                 onClick={handleSubmit}
-                disabled={isInvalid || submitting}
+                disabled={isInvalid || submitInFlight}
               >
                 <span>{submitLabel}</span>
-                {!submitting && isManual && effectiveStatus === "completed" && (
+                {!submitInFlight && isManual && effectiveStatus === "completed" && (
                   <span data-icon="inline-end" aria-hidden="true">
                     →
                   </span>
@@ -1012,20 +1016,18 @@ export function TaskOutcomeDialog({
       <AlertDialog open={confirmFinaliseOpen} onOpenChange={setConfirmFinaliseOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Finalise without full approval?</AlertDialogTitle>
+            <AlertDialogTitle>Finalise without approval?</AlertDialogTitle>
             <AlertDialogDescription>
-              {!patientApproved && !clinicalApproved
-                ? "Neither the patient status nor the clinical record is approved yet."
-                : !patientApproved
-                  ? "The patient status is not approved yet."
-                  : "The clinical record has not been approved yet."}{" "}
+              {clinicalDecision === "reject"
+                ? "You rejected the clinical record. "
+                : "The clinical record has not been approved. "}
               You can still create the consultation, but it will be flagged for
               review. Continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>Go back</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmFinalise} disabled={submitting}>
+            <AlertDialogCancel disabled={submitInFlight}>Go back</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFinalise} disabled={submitInFlight}>
               Finalise anyway
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1072,22 +1074,6 @@ function PrescriptionChoiceButton({
   );
 }
 
-const PATIENT_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "pending", label: "Pending" },
-  { value: "current", label: "Current" },
-  { value: "approved", label: "Approved" },
-  { value: "inactive", label: "Inactive" },
-];
-
-function patientStatusVariantFor(
-  value: string | undefined
-): "success" | "warning" | "neutral" {
-  const lower = value?.toLowerCase();
-  if (lower === "approved") return "success";
-  if (lower === "pending" || lower === "review") return "warning";
-  return "neutral";
-}
-
 function StepBlock({
   number,
   title,
@@ -1110,96 +1096,12 @@ function StepBlock({
   );
 }
 
-function PatientContextRow({
-  task,
-  patient,
-  loading,
-  onPatientStatusChange,
-  patientStatusSaving,
-}: {
-  task: Task;
-  patient: PatientMapping | undefined;
-  loading: boolean;
-  onPatientStatusChange: (next: string) => void;
-  patientStatusSaving: boolean;
-}) {
-  const patientName = patient
-    ? [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
-      task.patientName ||
-      "Patient"
-    : task.patientName || "Patient";
-
-  const rawStatus = patient?.patientStatus?.trim();
-  const statusLower = rawStatus?.toLowerCase();
-  const matchedOption = PATIENT_STATUS_OPTIONS.find(
-    (opt) => opt.value === statusLower
-  );
-  const selectValue = matchedOption?.value ?? statusLower ?? "";
-  const patientStatusVariant = patientStatusVariantFor(statusLower);
-  const patientStatusLabel =
-    matchedOption?.label ??
-    (rawStatus
-      ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
-      : loading
-        ? "Loading…"
-        : "Unknown");
-  const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-      <span className={cn(OVERLINE_CLASS, "shrink-0")}>Patient</span>
-      <p className="text-sm font-semibold">{patientName}</p>
-      <a
-        href={profileHref}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-        aria-label="Open patient profile in new tab"
-        title="Open patient profile"
-      >
-        <ExternalLink className="size-3.5" />
-      </a>
-      <div className="ml-auto flex items-center gap-2">
-        <StatusBadge variant={patientStatusVariant}>
-          {patientStatusLabel}
-        </StatusBadge>
-        <Select
-          value={selectValue || undefined}
-          onValueChange={(v) => {
-            if (!v || v === selectValue) return;
-            onPatientStatusChange(v);
-          }}
-          disabled={loading || patientStatusSaving}
-        >
-          <SelectTrigger
-            size="sm"
-            className="h-7 w-32 bg-background text-xs"
-            aria-label="Patient status"
-          >
-            <SelectValue placeholder={loading ? "…" : "Set status"} />
-          </SelectTrigger>
-          <SelectContent>
-            {PATIENT_STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {patientStatusSaving && (
-          <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ClinicalStatusRow({
   task,
   clinicalRecord,
   loading,
-  onApproveClinical,
-  approvingClinical,
+  decision,
+  onDecisionChange,
 }: {
   task: Task;
   clinicalRecord:
@@ -1211,8 +1113,8 @@ function ClinicalStatusRow({
       }
     | undefined;
   loading: boolean;
-  onApproveClinical: () => void;
-  approvingClinical: boolean;
+  decision: ClinicalDecision | undefined;
+  onDecisionChange: (next: ClinicalDecision) => void;
 }) {
   const clinicalReview = clinicalRecord?.reviewStatus;
   const clinicalLabel =
@@ -1233,12 +1135,12 @@ function ClinicalStatusRow({
     ? formatTaskDate(clinicalRecord.reviewedAt)
     : undefined;
   const clinicalReviewedBy = clinicalRecord?.reviewedBy || undefined;
-  const canApproveClinical =
-    !!clinicalRecord?.id && clinicalReview === "pending";
+  const alreadyApproved = clinicalReview === "approved";
+  const canDecide = !!clinicalRecord?.id && clinicalReview === "pending";
   const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
         <a
@@ -1259,28 +1161,34 @@ function ClinicalStatusRow({
             {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
           </span>
         )}
-        {canApproveClinical && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="ml-auto h-8 rounded-md px-3 text-sm"
-            onClick={onApproveClinical}
-            disabled={approvingClinical}
-          >
-            {approvingClinical ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Check className="size-4" />
-            )}
-            Approve
-          </Button>
-        )}
       </div>
-      {clinicalReview === "pending" && (
+
+      {alreadyApproved ? (
         <p className="text-xs leading-snug text-muted-foreground">
-          Approve the clinical record before finalising, or open the record to
-          review and edit it.
+          Already approved — no action needed.
+        </p>
+      ) : canDecide ? (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <PrescriptionChoiceButton
+              active={decision === "approve"}
+              onClick={() => onDecisionChange("approve")}
+              label="Approve"
+            />
+            <PrescriptionChoiceButton
+              active={decision === "reject"}
+              onClick={() => onDecisionChange("reject")}
+              label="Reject"
+            />
+          </div>
+          <p className="text-xs leading-snug text-muted-foreground">
+            Your decision is applied when you finalise the consultation —
+            nothing changes server-side until then.
+          </p>
+        </>
+      ) : (
+        <p className="text-xs leading-snug text-muted-foreground">
+          No clinical record to review.
         </p>
       )}
     </div>
