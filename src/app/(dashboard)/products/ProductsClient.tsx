@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
-import { Button } from "@/components/ui/button";
 import { ProductTable, type QuickFilter } from "@/components/products/ProductTable";
-import { NewProductSheet } from "@/components/products/NewProductSheet";
-import { ProductDetailSheet } from "@/components/products/ProductDetailSheet";
 import {
   isExpiringSoon,
   isLowStock,
@@ -45,14 +44,13 @@ function Stat({
 }
 
 export function ProductsClient() {
+  const router = useRouter();
   const products = useSyncExternalStore(
     productStore.subscribe,
     productStore.getSnapshot,
     productStore.getServerSnapshot
   );
 
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<ProductCategory[]>([]);
   const [scheduleFilters, setScheduleFilters] = useState<ProductSchedule[]>([]);
@@ -70,21 +68,19 @@ export function ProductsClient() {
     };
   }, [products]);
 
-  const selectedProduct = useMemo(
-    () => products.find((p) => p.id === selectedProductId) ?? null,
-    [products, selectedProductId]
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Products"
         description="Manage the clinic's product catalog — medicines, devices, supplements and accessories. Mocked locally until the backend ships."
         actions={
-          <Button onClick={() => setSheetOpen(true)}>
+          <Link
+            href="/products/new"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
             <Plus className="size-4" aria-hidden="true" />
             Add product
-          </Button>
+          </Link>
         }
       />
 
@@ -111,8 +107,8 @@ export function ProductsClient() {
       <ErrorBoundary>
         <ProductTable
           products={products}
-          onAdd={() => setSheetOpen(true)}
-          onRowClick={(product) => setSelectedProductId(product.id)}
+          onAdd={() => router.push("/products/new")}
+          onRowClick={(product) => router.push(`/products/${product.id}`)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           categoryFilters={categoryFilters}
@@ -125,12 +121,6 @@ export function ProductsClient() {
           onQuickFiltersChange={setQuickFilters}
         />
       </ErrorBoundary>
-
-      <NewProductSheet open={sheetOpen} onOpenChange={setSheetOpen} />
-      <ProductDetailSheet
-        product={selectedProduct}
-        onClose={() => setSelectedProductId(null)}
-      />
     </div>
   );
 }
