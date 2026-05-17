@@ -219,7 +219,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [activeCallTask, setActiveCallTask] = useState<Task | null>(null);
+  const [activeCall, setActiveCall] = useState<{
+    task: Task;
+    initial?: TaskCallData;
+  } | null>(null);
   const [outcomeState, setOutcomeState] = useState<{
     task: Task;
     mode: TaskOutcomeMode;
@@ -357,9 +360,11 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           status: "in_progress",
         });
       }
-      setActiveCallTask({
-        ...task,
-        status: task.status === "open" ? "in_progress" : task.status,
+      setActiveCall({
+        task: {
+          ...task,
+          status: task.status === "open" ? "in_progress" : task.status,
+        },
       });
       globalThis.location.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
       toast.info("Dial started. Pick an outcome when the call ends.");
@@ -401,9 +406,9 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   }
 
   function handleHangUp(callData: TaskCallData) {
-    if (!activeCallTask) return;
-    setOutcomeState({ task: activeCallTask, mode: "hangup", callData });
-    setActiveCallTask(null);
+    if (!activeCall) return;
+    setOutcomeState({ task: activeCall.task, mode: "hangup", callData });
+    setActiveCall(null);
   }
 
   async function handleOutcomeSubmit(submission: TaskOutcomeSubmission) {
@@ -575,12 +580,13 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         onLogCall={handleManualLog}
       />
 
-      {activeCallTask && (
+      {activeCall && (
         <TaskCallDialog
-          key={activeCallTask.taskId}
-          task={activeCallTask}
+          key={activeCall.task.taskId}
+          task={activeCall.task}
+          initialCallData={activeCall.initial}
           open
-          cancelAction={() => setActiveCallTask(null)}
+          cancelAction={() => setActiveCall(null)}
           hangUpAction={handleHangUp}
         />
       )}
@@ -597,9 +603,12 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             createConsultationMutation.isPending ||
             updateConsultationMutation.isPending
           }
-          cancelAction={() => {
+          cancelAction={(resumeWith) => {
             if (outcomeState.mode === "hangup") {
-              setActiveCallTask(outcomeState.task);
+              setActiveCall({
+                task: outcomeState.task,
+                initial: resumeWith ?? outcomeState.callData,
+              });
             }
             setOutcomeState(null);
           }}

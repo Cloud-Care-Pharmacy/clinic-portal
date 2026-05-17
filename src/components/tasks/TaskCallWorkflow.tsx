@@ -269,16 +269,24 @@ function LiveStatusDot({ className }: { className?: string }) {
 export function TaskCallDialog({
   task,
   open,
+  initialCallData,
   cancelAction,
   hangUpAction,
 }: {
   task: Task | null;
   open: boolean;
+  /**
+   * When resuming a call after returning from the outcome dialog, this seeds
+   * the timer and notes textarea so the call continues from where it was.
+   */
+  initialCallData?: TaskCallData;
   cancelAction: () => void;
   hangUpAction: (callData: TaskCallData) => void;
 }) {
-  const [seconds, setSeconds] = useState(0);
-  const [notes, setNotes] = useState("");
+  const [seconds, setSeconds] = useState(
+    () => initialCallData?.durationSeconds ?? 0
+  );
+  const [notes, setNotes] = useState(() => initialCallData?.notes ?? "");
   const [detailsOpen, setDetailsOpen] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const [discardNotesOpen, setDiscardNotesOpen] = useState(false);
@@ -638,12 +646,21 @@ export function TaskOutcomeDialog({
   mode: TaskOutcomeMode;
   callData?: TaskCallData;
   open: boolean;
-  cancelAction: () => void;
+  /**
+   * When the user goes back to the call (hangup mode), we hand back the
+   * latest TaskCallData so the call dialog can resume the timer and keep the
+   * notes the doctor just edited. The argument is omitted in manual mode.
+   */
+  cancelAction: (resumeWith?: TaskCallData) => void;
   submitAction: (submission: TaskOutcomeSubmission) => void;
   submitting?: boolean;
 }) {
   const [selected, setSelected] = useState<TaskOutcomeId>("reached");
-  const [manualNotes, setManualNotes] = useState("");
+  // Seed Step 1's textarea from the call notes so anything typed during the
+  // call carries over to the consultation note. The dialog re-mounts each
+  // time it opens (parent passes a fresh `key`), so this initialiser runs
+  // once per outcome session.
+  const [manualNotes, setManualNotes] = useState(() => callData?.notes ?? "");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
   const [prescriptionChoice, setPrescriptionChoice] = useState<
@@ -700,11 +717,28 @@ export function TaskOutcomeDialog({
         selected === "reached" ? prescriptionChoice : undefined,
       clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
       status: effectiveStatus,
-      notes: isManual ? manualNotes.trim() : (callData?.notes.trim() ?? ""),
+      // Step 1's textarea is the single source of truth for the note (seeded
+      // from callData.notes on mount, edited freely afterwards).
+      notes: manualNotes.trim(),
       followupNote: followupNote.trim() || undefined,
       durationLabel: isManual ? manualDuration.trim() : callData?.durationLabel,
       durationSeconds: isManual ? undefined : callData?.durationSeconds,
     };
+  }
+
+  // Build the call-data hand-back when going "Back to call", so the timer
+  // resumes and the latest notes carry over.
+  function buildResumeData(): TaskCallData | undefined {
+    if (isManual || !callData) return undefined;
+    return {
+      durationSeconds: callData.durationSeconds,
+      durationLabel: callData.durationLabel,
+      notes: manualNotes,
+    };
+  }
+
+  function handleCancel() {
+    cancelAction(buildResumeData());
   }
 
   // Apply any deferred side-effects (currently: approve clinical record), then
@@ -941,16 +975,6 @@ export function TaskOutcomeDialog({
                       </p>
                     )}
                   </StepBlock>
-
-                  {finaliseBlocked && (
-                    <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
-                      <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                      <p className="text-xs leading-snug">
-                        Clinical record will not be approved. You can still
-                        finalise — you&apos;ll be asked to confirm.
-                      </p>
-                    </div>
-                  )}
                 </>
               ) : (
                 <div>
@@ -984,7 +1008,7 @@ export function TaskOutcomeDialog({
               <Button
                 variant="outline"
                 className="h-9 rounded-lg px-3.5 text-sm"
-                onClick={cancelAction}
+                onClick={handleCancel}
                 disabled={submitInFlight}
               >
                 {isManual ? "Cancel" : "Back to call"}
@@ -1185,6 +1209,15 @@ function ClinicalStatusRow({
             Your decision is applied when you finalise the consultation —
             nothing changes server-side until then.
           </p>
+          {decision !== "approve" && (
+            <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-3 py-2 text-status-warning-fg">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <p className="text-xs leading-snug">
+                Clinical record will not be approved. You can still finalise —
+                you&apos;ll be asked to confirm.
+              </p>
+            </div>
+          )}
         </>
       ) : (
         <p className="text-xs leading-snug text-muted-foreground">
