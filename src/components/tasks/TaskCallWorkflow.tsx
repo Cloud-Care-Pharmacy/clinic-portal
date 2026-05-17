@@ -1138,12 +1138,7 @@ function StepBlock({
   disabledHint?: string;
 }) {
   return (
-    <section
-      className={cn(
-        "rounded-lg border border-border bg-background px-3.5 py-3",
-        disabled && "opacity-60"
-      )}
-    >
+    <section className={cn(disabled && "opacity-60")}>
       <header className="mb-2.5 flex items-center gap-2">
         <span
           className={cn(
