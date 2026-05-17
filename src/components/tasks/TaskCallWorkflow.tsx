@@ -48,6 +48,7 @@ import { DocumentPreviewDialog } from "@/components/patients/DocumentPreviewDial
 import {
   highRiskMedLabel,
   medicalConditionLabel,
+  smokingStatusLabel,
 } from "@/components/patients/clinical-labels";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
@@ -534,39 +535,76 @@ export function TaskCallDialog({
 }
 
 /**
- * Collapses a clinical-data record into a chip list for the call dialog's
- * "Active conditions" section: medical conditions, free-text "other", high-
- * risk meds, cardiovascular, pregnancy, and a generic "Takes medication" chip
- * when nothing more specific is recorded.
+ * Builds a short, human-readable summary of the patient's latest intake
+ * record for the call dialog's "Active conditions" panel. Returns a list of
+ * short sentences so the surface can render them as separate lines.
  */
-function extractClinicalChips(record: ClinicalDataRecord): string[] {
-  const chips: string[] = [];
+function buildIntakeSummary(record: ClinicalDataRecord): string[] {
+  const sentences: string[] = [];
 
+  // Smoking + vaping
+  const smoking = record.smokingStatus
+    ? smokingStatusLabel(record.smokingStatus)
+    : "";
+  const smokingBits: string[] = [];
+  if (record.cigarettesPerDay) smokingBits.push(`${record.cigarettesPerDay}/day`);
+  if (record.yearsSmoked) smokingBits.push(`for ${record.yearsSmoked} years`);
+  let smokingSentence = smoking || "Smoking status not recorded";
+  if (smokingBits.length) smokingSentence += ` — ${smokingBits.join(" ")}`;
+  if (record.vapingStatus === "yes") {
+    const vapeBits: string[] = [];
+    if (record.vapingStrength) vapeBits.push(`${record.vapingStrength} strength`);
+    if (record.vapingVolume) vapeBits.push(record.vapingVolume);
+    smokingSentence += `; also vaping${vapeBits.length ? ` (${vapeBits.join(", ")})` : ""}`;
+  }
+  sentences.push(`${smokingSentence}.`);
+
+  // Medical conditions
   if (record.hasMedicalConditions === "yes") {
-    for (const slug of record.medicalConditions ?? []) {
-      if (typeof slug === "string" && slug.trim()) chips.push(medicalConditionLabel(slug));
-    }
+    const items = (record.medicalConditions ?? [])
+      .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
+      .map(medicalConditionLabel);
     const other = record.medicalConditionsOther?.trim();
-    if (other) chips.push(other);
+    if (other) items.push(other);
+    sentences.push(
+      items.length
+        ? `Reports ${items.join(", ")}.`
+        : "Reports medical conditions (not detailed)."
+    );
+  } else {
+    sentences.push("No medical conditions reported.");
   }
 
-  for (const slug of record.highRiskMedications ?? []) {
-    if (typeof slug === "string" && slug.trim()) chips.push(highRiskMedLabel(slug));
-  }
-
-  if (
-    record.takesMedication === "yes" &&
-    !(record.highRiskMedications && record.highRiskMedications.length > 0)
-  ) {
+  // Medications
+  if (record.takesMedication === "yes") {
+    const highRisk = (record.highRiskMedications ?? [])
+      .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
+      .map(highRiskMedLabel);
     const list = record.medicationsList?.trim();
-    chips.push(list ? `Medications: ${list}` : "Takes medication");
+    if (highRisk.length) {
+      sentences.push(
+        `Takes ${highRisk.join(", ")}${list ? ` (${list})` : ""}.`
+      );
+    } else if (list) {
+      sentences.push(`Takes ${list}.`);
+    } else {
+      sentences.push("Takes regular medication (not detailed).");
+    }
+  } else {
+    sentences.push("No regular medications.");
   }
 
-  if (record.cardiovascular === "yes") chips.push("Cardiovascular");
-  if (record.pregnancy === "yes") chips.push("Pregnancy");
+  // Cardiovascular / pregnancy flags
+  const flags: string[] = [];
+  if (record.cardiovascular === "yes") flags.push("cardiovascular risk");
+  if (record.pregnancy === "yes") flags.push("pregnancy");
+  if (flags.length) sentences.push(`Flagged for ${flags.join(" and ")}.`);
 
-  // De-duplicate while preserving insertion order.
-  return Array.from(new Set(chips.filter(Boolean)));
+  // Free-text additional notes
+  const notes = record.additionalNotes?.trim();
+  if (notes) sentences.push(`Notes: ${notes}`);
+
+  return sentences;
 }
 
 function TaskPatientDetails({ task }: { task: Task }) {
@@ -578,7 +616,7 @@ function TaskPatientDetails({ task }: { task: Task }) {
   });
 
   const clinicalRecord = clinicalQuery.data?.data?.clinicalData;
-  const conditions = clinicalRecord ? extractClinicalChips(clinicalRecord) : [];
+  const intakeSummary = clinicalRecord ? buildIntakeSummary(clinicalRecord) : [];
 
   const latestDocument = documentsQuery.data?.data?.documents?.[0] ?? null;
 
@@ -616,7 +654,7 @@ function TaskPatientDetails({ task }: { task: Task }) {
       </section>
       <ActiveConditionsSection
         loading={clinicalQuery.isLoading}
-        conditions={conditions}
+        summary={intakeSummary}
       />
       <LatestDocumentSection
         patientId={task.patientId}
@@ -635,31 +673,26 @@ function TaskPatientDetails({ task }: { task: Task }) {
 
 function ActiveConditionsSection({
   loading,
-  conditions,
+  summary,
 }: {
   loading: boolean;
-  conditions: string[];
+  summary: string[];
 }) {
   return (
     <section className="border-b border-border p-4">
       <p className={OVERLINE_CLASS}>Active conditions</p>
       {loading ? (
         <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
-      ) : conditions.length > 0 ? (
-        <>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {conditions.length} on file
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {conditions.map((item) => (
-              <StatusBadge key={item} variant="neutral">
-                {item}
-              </StatusBadge>
-            ))}
-          </div>
-        </>
+      ) : summary.length > 0 ? (
+        <div className="mt-2 space-y-1.5">
+          {summary.map((line, index) => (
+            <p key={`${index}-${line}`} className="text-sm leading-snug text-foreground">
+              {line}
+            </p>
+          ))}
+        </div>
       ) : (
-        <p className="mt-2 text-sm text-muted-foreground">None recorded</p>
+        <p className="mt-2 text-sm text-muted-foreground">No intake on file</p>
       )}
     </section>
   );
