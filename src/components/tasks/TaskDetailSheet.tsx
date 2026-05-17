@@ -236,6 +236,28 @@ export function TaskDetailSheet({
     );
   }
 
+  function handleClaimAndStart() {
+    if (!currentInternalUserId) {
+      toast.error(
+        profileQuery.isLoading
+          ? "Your staff profile is still loading. Try again in a moment."
+          : "Unable to claim task because your staff profile was not found."
+      );
+      return;
+    }
+
+    handleUpdate(
+      {
+        taskId: activeTask.taskId,
+        assignedUserId: currentInternalUserId,
+        assignedRole: null,
+        status: activeTask.status === "open" ? "in_progress" : activeTask.status,
+        note: "Task claimed and started",
+      },
+      "Task claimed and started"
+    );
+  }
+
   function handleUnassign() {
     handleUpdate(
       {
@@ -311,15 +333,6 @@ export function TaskDetailSheet({
               <DropdownMenuContent align="start" side="top" className="w-56">
                 {canAction && (
                   <>
-                    {!isAssignedToMe && (
-                      <DropdownMenuItem
-                        disabled={!currentInternalUserId}
-                        onClick={handleClaim}
-                      >
-                        <UserCheck className="size-4 " />
-                        Claim
-                      </DropdownMenuItem>
-                    )}
                     {isAssignedToMe && activeTask.status !== "in_progress" && (
                       <DropdownMenuItem
                         disabled={isPending}
@@ -370,14 +383,34 @@ export function TaskDetailSheet({
 
             {canAction ? (
               !isAssignedToMe ? (
-                <Button
-                  onClick={handleClaim}
-                  disabled={isPending || !currentInternalUserId}
-                  className="gap-1.5"
-                >
-                  <UserCheck className="size-4 " />
-                  {updateTask.isPending ? "Claiming…" : "Claim"}
-                </Button>
+                <div data-slot="button-group" className="inline-flex items-center">
+                  <Button
+                    onClick={handleClaimAndStart}
+                    disabled={isPending || !currentInternalUserId}
+                    className="gap-1.5 rounded-r-none border-r border-primary-foreground/20"
+                  >
+                    <Play className="size-4 " />
+                    {updateTask.isPending ? "Claiming…" : "Claim & start"}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="inline-flex h-8 w-7 items-center justify-center rounded-r-sm bg-primary text-primary-foreground transition-colors hover:bg-primary/90 aria-expanded:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                      disabled={isPending || !currentInternalUserId}
+                      aria-label="More claim actions"
+                    >
+                      <ChevronDown className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="top" className="w-48">
+                      <DropdownMenuItem
+                        disabled={isPending || !currentInternalUserId}
+                        onClick={handleClaim}
+                      >
+                        <UserCheck className="size-4 " />
+                        Claim
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ) : activeTask.status === "open" ? (
                 <Button
                   onClick={handleStart}
