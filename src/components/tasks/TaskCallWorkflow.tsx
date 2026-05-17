@@ -680,7 +680,7 @@ function ActiveConditionsSection({
 }) {
   return (
     <section className="border-b border-border p-4">
-      <p className={OVERLINE_CLASS}>Active conditions</p>
+      <p className={OVERLINE_CLASS}>Patient conditions</p>
       {loading ? (
         <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
       ) : summary.length > 0 ? (
