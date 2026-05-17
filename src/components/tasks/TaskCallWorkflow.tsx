@@ -4,6 +4,7 @@
 import { useEffect, useId, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   Check,
   ChevronDown,
@@ -45,7 +46,7 @@ import {
   TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
 } from "@/components/tasks/task-format";
-import { usePatient } from "@/lib/hooks/use-patients";
+import { useLatestClinicalData, usePatient } from "@/lib/hooks/use-patients";
 import { cn } from "@/lib/utils";
 import type { PatientMapping, Task, TaskStatus } from "@/types";
 
@@ -59,6 +60,12 @@ export type TaskOutcomeMode = "hangup" | "manual";
 
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
+  /**
+   * Sub-outcome for `reached` (e.g. "finalised", "needs-followup",
+   * "escalate", "refer-out"). Carried into the consultation outcome string
+   * and task audit note.
+   */
+  subOutcomeId?: ReachedSubOutcomeId;
   status: TaskStatus;
   notes?: string;
   followupNote?: string;
@@ -67,6 +74,12 @@ export interface TaskOutcomeSubmission {
 }
 
 type TaskOutcomeId = "reached" | "voicemail" | "callback" | "wrong-time" | "abandoned";
+
+export type ReachedSubOutcomeId =
+  | "finalised"
+  | "needs-followup"
+  | "escalate"
+  | "refer-out";
 
 const OUTCOMES: Array<{
   id: TaskOutcomeId;
@@ -111,6 +124,48 @@ const OUTCOMES: Array<{
     status: "cancelled",
     variant: "warning",
     statusLabel: "Closed",
+  },
+];
+
+const REACHED_SUBOUTCOMES: Array<{
+  id: ReachedSubOutcomeId;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  variant: "success" | "warning" | "danger" | "info" | "neutral";
+  statusLabel?: string;
+}> = [
+  {
+    id: "finalised",
+    title: "Finalised — consultation complete",
+    description: "Notes complete. Ready to finalise the consultation.",
+    status: "completed",
+    variant: "success",
+    statusLabel: "Completed",
+  },
+  {
+    id: "needs-followup",
+    title: "Needs follow-up",
+    description: "Partial consult — will continue in a follow-up call.",
+    status: "in_progress",
+    variant: "info",
+    statusLabel: "In progress",
+  },
+  {
+    id: "escalate",
+    title: "Escalate to senior clinician",
+    description: "Refer internally for clinical review.",
+    status: "in_progress",
+    variant: "info",
+    statusLabel: "In progress",
+  },
+  {
+    id: "refer-out",
+    title: "Refer out (GP / specialist)",
+    description: "Send the patient externally. Consultation logged as referral.",
+    status: "completed",
+    variant: "success",
+    statusLabel: "Completed",
   },
 ];
 
@@ -621,223 +676,476 @@ export function TaskOutcomeDialog({
   submitting?: boolean;
 }) {
   const [selected, setSelected] = useState<TaskOutcomeId>("reached");
+  const [reachedSub, setReachedSub] = useState<ReachedSubOutcomeId>("finalised");
   const [manualNotes, setManualNotes] = useState("");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
+  const [confirmFinaliseOpen, setConfirmFinaliseOpen] = useState(false);
   const manualNotesId = useId();
   const manualDurationId = useId();
+
+  const patientQuery = usePatient(task?.patientId);
+  const clinicalQuery = useLatestClinicalData(task?.patientId);
 
   if (!open || !task) return null;
 
   const isManual = mode === "manual";
   const outcome = OUTCOMES.find((item) => item.id === selected) ?? OUTCOMES[0];
+  const reachedSubOutcome =
+    REACHED_SUBOUTCOMES.find((item) => item.id === reachedSub) ?? REACHED_SUBOUTCOMES[0];
+
+  // For "reached" the sub-outcome drives status; for all others the top-level
+  // outcome status applies.
+  const effectiveStatus: TaskStatus =
+    selected === "reached" ? reachedSubOutcome.status : outcome.status;
+  const effectiveSubOutcome: ReachedSubOutcomeId | undefined =
+    selected === "reached" ? reachedSub : undefined;
+
   const requiresReason = selected === "abandoned";
-  const requiresManualNotes = isManual && selected === "reached";
-  const showsOutcomeNotes =
-    requiresManualNotes ||
-    selected === "voicemail" ||
-    selected === "callback" ||
-    selected === "wrong-time" ||
-    selected === "abandoned";
+  const requiresNotes =
+    selected === "reached" &&
+    (isManual || effectiveStatus === "completed") &&
+    // Only require notes when we are creating a finalised consultation.
+    effectiveStatus === "completed";
   const isInvalid =
     (requiresReason && !followupNote.trim()) ||
-    (requiresManualNotes && !manualNotes.trim());
+    (requiresNotes && isManual && !manualNotes.trim());
 
-  function handleSubmit() {
-    if (isInvalid) return;
-    submitAction({
+  // Readiness checks: patient.patientStatus and latest clinical record review.
+  const patient = patientQuery.data?.data?.patient;
+  const clinicalRecord = clinicalQuery.data?.data?.clinicalData;
+  const patientStatusValue = patient?.patientStatus?.toLowerCase() ?? "";
+  const patientApproved = patientStatusValue === "approved";
+  const clinicalApproved = clinicalRecord?.reviewStatus === "approved";
+  const readinessLoading = patientQuery.isLoading || clinicalQuery.isLoading;
+  const willCreateConsultation = effectiveStatus === "completed";
+  const finaliseBlocked =
+    willCreateConsultation &&
+    !readinessLoading &&
+    (!patientApproved || !clinicalApproved);
+
+  function buildSubmission(): TaskOutcomeSubmission {
+    return {
       outcomeId: selected,
-      status: outcome.status,
+      subOutcomeId: effectiveSubOutcome,
+      status: effectiveStatus,
       notes: isManual ? manualNotes.trim() : (callData?.notes.trim() ?? ""),
       followupNote: followupNote.trim() || undefined,
       durationLabel: isManual ? manualDuration.trim() : callData?.durationLabel,
       durationSeconds: isManual ? undefined : callData?.durationSeconds,
-    });
+    };
   }
 
+  function handleSubmit() {
+    if (isInvalid) return;
+    if (finaliseBlocked) {
+      setConfirmFinaliseOpen(true);
+      return;
+    }
+    submitAction(buildSubmission());
+  }
+
+  function confirmFinalise() {
+    setConfirmFinaliseOpen(false);
+    submitAction(buildSubmission());
+  }
+
+  const submitLabel = submitting
+    ? "Saving…"
+    : effectiveStatus === "completed"
+      ? isManual
+        ? "Save consultation"
+        : "Finalise consultation"
+      : "Save & close";
+
   return (
-    <Dialog open={open} onOpenChange={() => undefined}>
-      <DialogContent
-        showCloseButton={false}
-        overlayClassName="bg-foreground/40"
-        className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-150"
-      >
-        <DialogHeader className="gap-0 border-b border-border px-5 py-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span
-              className={cn(
-                "flex size-8 items-center justify-center rounded-full border",
-                isManual
-                  ? "border-status-info-border bg-status-info-bg text-status-info-fg"
-                  : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
-              )}
-            >
-              {isManual ? (
-                <FileText className="size-4" />
-              ) : (
-                <AlertCircle className="size-4" />
-              )}
-            </span>
-            <span
-              className={cn(
-                OVERLINE_CLASS,
-                isManual ? "text-status-info-fg" : "text-status-warning-fg"
-              )}
-            >
+    <>
+      <Dialog open={open} onOpenChange={() => undefined}>
+        <DialogContent
+          showCloseButton={false}
+          overlayClassName="bg-foreground/40"
+          className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-225"
+        >
+          <DialogHeader className="gap-0 border-b border-border px-5 py-4">
+            <div className="mb-3 flex items-center gap-2">
+              <span
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-full border",
+                  isManual
+                    ? "border-status-info-border bg-status-info-bg text-status-info-fg"
+                    : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
+                )}
+              >
+                {isManual ? (
+                  <FileText className="size-4" />
+                ) : (
+                  <AlertCircle className="size-4" />
+                )}
+              </span>
+              <span
+                className={cn(
+                  OVERLINE_CLASS,
+                  isManual ? "text-status-info-fg" : "text-status-warning-fg"
+                )}
+              >
+                {isManual
+                  ? "Manual log · record a call you've already made"
+                  : "Required · pick an outcome"}
+              </span>
+            </div>
+            <DialogTitle className="text-xl font-semibold">
               {isManual
-                ? "Manual log · record a call you've already made"
-                : "Required · pick an outcome"}
-            </span>
-          </div>
-          <DialogTitle className="text-xl font-semibold">
-            {isManual
-              ? `Log call outcome — ${task.patientName || "patient"}`
-              : `How did the call with ${(task.patientName || "the patient").split(" ")[0]} end?`}
-          </DialogTitle>
-          <DialogDescription className="mt-1.5 leading-5">
-            {isManual
-              ? "Use this when you've already spoken to the patient (in person, by phone, or outside Aircall) and just need to record the result."
-              : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
-                  callData?.notes
-                    ? `${callData.notes.length} chars of notes`
-                    : "no notes yet"
-                }`}
-          </DialogDescription>
-        </DialogHeader>
+                ? `Log call outcome — ${task.patientName || "patient"}`
+                : `How did the call with ${(task.patientName || "the patient").split(" ")[0]} end?`}
+            </DialogTitle>
+            <DialogDescription className="mt-1.5 leading-5">
+              {isManual
+                ? "Use this when you've already spoken to the patient (in person, by phone, or outside Aircall) and just need to record the result."
+                : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
+                    callData?.notes
+                      ? `${callData.notes.length} chars of notes`
+                      : "no notes yet"
+                  }`}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className={cn("px-4 pt-4", showsOutcomeNotes ? "pb-1" : "pb-4")}>
-          <div className="space-y-1.5">
-            {OUTCOMES.map((item) => {
-              const active = selected === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSelected(item.id)}
-                  className={cn(
-                    "flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active
-                      ? "border-primary bg-card"
-                      : "border-transparent hover:bg-muted"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border",
-                      active
-                        ? "border-primary bg-primary"
-                        : "border-input bg-background"
-                    )}
-                    aria-hidden="true"
-                  >
-                    {active && (
-                      <span className="size-1.5 rounded-full bg-primary-foreground" />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                      {item.title}
-                      <StatusBadge variant={item.variant}>
-                        {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
-                      </StatusBadge>
-                    </span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {item.description}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[17rem_1fr]">
+            {/* LEFT — outcome picker */}
+            <div className="border-b border-border px-4 py-4 md:border-r md:border-b-0">
+              <p className={OVERLINE_CLASS}>Outcome</p>
+              <div className="mt-3 space-y-1.5">
+                {OUTCOMES.map((item) => {
+                  const active = selected === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelected(item.id)}
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        active
+                          ? "border-primary bg-card"
+                          : "border-transparent hover:bg-muted"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                          active
+                            ? "border-primary bg-primary"
+                            : "border-input bg-background"
+                        )}
+                        aria-hidden="true"
+                      >
+                        {active && (
+                          <span className="size-1.5 rounded-full bg-primary-foreground" />
+                        )}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                          {item.title}
+                          <StatusBadge variant={item.variant}>
+                            {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
+                          </StatusBadge>
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {item.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        {isManual && selected === "reached" && (
-          <div className="px-5 pt-0 pb-4">
-            <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
-              Consultation notes
-            </label>
-            <Textarea
-              id={manualNotesId}
-              value={manualNotes}
-              onChange={(event) => setManualNotes(event.target.value)}
-              placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
-              className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
-            />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
-                Call duration
-              </label>
-              <Input
-                id={manualDurationId}
-                value={manualDuration}
-                onChange={(event) => setManualDuration(event.target.value)}
-                placeholder="e.g. 4 min"
-                className="w-36 bg-background text-sm"
+            {/* RIGHT — readiness, sub-outcomes, notes */}
+            <div className="min-w-0 max-h-[min(75vh,38rem)] overflow-y-auto px-5 py-4">
+              <ReadinessPanel
+                task={task}
+                patient={patient}
+                clinicalRecord={clinicalRecord}
+                loading={readinessLoading}
               />
-              <span className="text-xs text-muted-foreground">(optional)</span>
+
+              {finaliseBlocked && (
+                <div className="mt-3 flex gap-2.5 rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <p className="text-xs leading-5">
+                    {!patientApproved && !clinicalApproved
+                      ? "Patient and clinical record are not yet approved."
+                      : !patientApproved
+                        ? "Patient status is not yet approved."
+                        : "Clinical record is not yet approved."}{" "}
+                    You can still finalise, but you&apos;ll be asked to confirm.
+                  </p>
+                </div>
+              )}
+
+              {selected === "reached" && (
+                <div className="mt-4">
+                  <p className={OVERLINE_CLASS}>Consultation outcome</p>
+                  <div className="mt-2 space-y-1.5">
+                    {REACHED_SUBOUTCOMES.map((item) => {
+                      const active = reachedSub === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setReachedSub(item.id)}
+                          className={cn(
+                            "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                            active
+                              ? "border-primary bg-card"
+                              : "border-transparent hover:bg-muted"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                              active
+                                ? "border-primary bg-primary"
+                                : "border-input bg-background"
+                            )}
+                            aria-hidden="true"
+                          >
+                            {active && (
+                              <span className="size-1.5 rounded-full bg-primary-foreground" />
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                              {item.title}
+                              <StatusBadge variant={item.variant}>
+                                {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
+                              </StatusBadge>
+                            </span>
+                            <span className="mt-0.5 block text-xs text-muted-foreground">
+                              {item.description}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {selected === "reached" && isManual && (
+                <div className="mt-4">
+                  <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
+                    Consultation notes
+                  </label>
+                  <Textarea
+                    id={manualNotesId}
+                    value={manualNotes}
+                    onChange={(event) => setManualNotes(event.target.value)}
+                    placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
+                    className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
+                  />
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
+                      Call duration
+                    </label>
+                    <Input
+                      id={manualDurationId}
+                      value={manualDuration}
+                      onChange={(event) => setManualDuration(event.target.value)}
+                      placeholder="e.g. 4 min"
+                      className="w-36 bg-background text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">(optional)</span>
+                  </div>
+                </div>
+              )}
+
+              {(selected === "voicemail" ||
+                selected === "callback" ||
+                selected === "wrong-time" ||
+                selected === "abandoned") && (
+                <div className="mt-4">
+                  <label className={OVERLINE_CLASS}>
+                    {selected === "abandoned" ? "Reason required" : "Follow-up note"}
+                  </label>
+                  <Textarea
+                    value={followupNote}
+                    onChange={(event) => setFollowupNote(event.target.value)}
+                    placeholder={
+                      selected === "abandoned"
+                        ? "Why is this task being closed?"
+                        : "Optional note for the next attempt."
+                    }
+                    className="mt-2 min-h-20 bg-background text-sm"
+                  />
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {(selected === "voicemail" ||
-          selected === "callback" ||
-          selected === "wrong-time" ||
-          selected === "abandoned") && (
-          <div className="px-5 pt-0 pb-4">
-            <label className={OVERLINE_CLASS}>
-              {selected === "abandoned" ? "Reason required" : "Follow-up note"}
-            </label>
-            <Textarea
-              value={followupNote}
-              onChange={(event) => setFollowupNote(event.target.value)}
-              placeholder={
-                selected === "abandoned"
-                  ? "Why is this task being closed?"
-                  : "Optional note for the next attempt."
-              }
-              className="mt-2 min-h-20 bg-background text-sm"
-            />
-          </div>
-        )}
+          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none border-t border-border bg-card px-5 py-3 sm:flex-row sm:justify-between">
+            <p className="max-w-xs text-xs leading-5 text-muted-foreground">
+              {effectiveStatus === "completed"
+                ? "This will create a finalised consultation linked to the task."
+                : "Notes are kept with the task so you can resume from Claimed."}
+            </p>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                variant="outline"
+                className="h-9 rounded-xl px-4 text-sm"
+                onClick={cancelAction}
+                disabled={submitting}
+              >
+                {isManual ? "Cancel" : "Back to call"}
+              </Button>
+              <Button
+                className="h-9 rounded-xl px-4 text-sm"
+                onClick={handleSubmit}
+                disabled={isInvalid || submitting}
+              >
+                <span>{submitLabel}</span>
+                {!submitting && isManual && effectiveStatus === "completed" && (
+                  <span data-icon="inline-end" aria-hidden="true">
+                    →
+                  </span>
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none bg-card px-5 py-3 sm:flex-row sm:justify-between">
-          <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-            {outcome.status === "completed"
-              ? "This will create a finalised consultation linked to the task."
-              : "Notes are kept with the task so you can resume from Claimed."}
-          </p>
-          <div className="flex shrink-0 items-center gap-2">
-            <Button
-              variant="outline"
-              className="h-9 rounded-xl px-4 text-sm"
-              onClick={cancelAction}
-              disabled={submitting}
-            >
-              {isManual ? "Cancel" : "Back to call"}
-            </Button>
-            <Button
-              className="h-9 rounded-xl px-4 text-sm"
-              onClick={handleSubmit}
-              disabled={isInvalid || submitting}
-            >
-              <span>
-                {submitting
-                  ? "Saving…"
-                  : outcome.status === "completed"
-                    ? isManual
-                      ? "Save consultation"
-                      : "Finalise consultation"
-                    : "Save & close"}
-              </span>
-              {!submitting && isManual && outcome.status === "completed" && (
-                <span data-icon="inline-end" aria-hidden="true">
-                  →
-                </span>
-              )}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <AlertDialog open={confirmFinaliseOpen} onOpenChange={setConfirmFinaliseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Finalise without full approval?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {!patientApproved && !clinicalApproved
+                ? "Neither the patient status nor the clinical record is approved yet."
+                : !patientApproved
+                  ? "The patient status is not approved yet."
+                  : "The clinical record has not been approved yet."}{" "}
+              You can still create the consultation, but it will be flagged for
+              review. Continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>
+              Go back
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFinalise} disabled={submitting}>
+              Finalise anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function ReadinessPanel({
+  task,
+  patient,
+  clinicalRecord,
+  loading,
+}: {
+  task: Task;
+  patient: PatientMapping | undefined;
+  clinicalRecord:
+    | {
+        reviewStatus?: "pending" | "approved";
+        reviewedBy?: string | null;
+        reviewedAt?: string | null;
+      }
+    | undefined;
+  loading: boolean;
+}) {
+  const patientName = patient
+    ? [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
+      task.patientName ||
+      "Patient"
+    : task.patientName || "Patient";
+
+  const rawStatus = patient?.patientStatus?.trim();
+  const statusLower = rawStatus?.toLowerCase();
+  const patientStatusLabel = rawStatus
+    ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1)
+    : loading
+      ? "Loading…"
+      : "Unknown";
+  const patientStatusVariant: "success" | "warning" | "neutral" =
+    statusLower === "approved"
+      ? "success"
+      : statusLower === "pending" || statusLower === "review"
+        ? "warning"
+        : "neutral";
+
+  const clinicalReview = clinicalRecord?.reviewStatus;
+  const clinicalLabel =
+    clinicalReview === "approved"
+      ? "Approved"
+      : clinicalReview === "pending"
+        ? "Pending review"
+        : loading
+          ? "Loading…"
+          : "No clinical record";
+  const clinicalVariant: "success" | "warning" | "neutral" =
+    clinicalReview === "approved"
+      ? "success"
+      : clinicalReview === "pending"
+        ? "warning"
+        : "neutral";
+  const clinicalReviewedAt = clinicalRecord?.reviewedAt
+    ? formatTaskDate(clinicalRecord.reviewedAt)
+    : undefined;
+  const clinicalReviewedBy = clinicalRecord?.reviewedBy || undefined;
+
+  const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
+  const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
+      <section>
+        <p className={OVERLINE_CLASS}>Patient</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-sm font-semibold">{patientName}</p>
+          <a
+            href={profileHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-label="Open patient profile in new tab"
+            title="Open patient profile"
+          >
+            <ExternalLink className="size-3.5" />
+          </a>
+          <StatusBadge variant={patientStatusVariant}>{patientStatusLabel}</StatusBadge>
+        </div>
+      </section>
+
+      <section className="border-t border-border/60 pt-3">
+        <div className="flex items-center gap-2">
+          <p className={OVERLINE_CLASS}>Clinical record</p>
+          <a
+            href={clinicalHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            aria-label="Open clinical record in new tab"
+            title="Open clinical record"
+          >
+            <ExternalLink className="size-3" />
+          </a>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
+          {(clinicalReviewedAt || clinicalReviewedBy) && (
+            <span className="text-xs text-muted-foreground">
+              {clinicalReviewedAt}
+              {clinicalReviewedAt && clinicalReviewedBy ? " · " : ""}
+              {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
+            </span>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

@@ -101,6 +101,7 @@ export interface PatientMapping {
   forwardEmail: string | null;
   proofOfAgeFileName: string | null;
   proofOfAgeFileType: string | null;
+  patientStatus?: string | null;
   createdAt: string;
   updatedAt: string | null;
   archivedAt?: string | null;
