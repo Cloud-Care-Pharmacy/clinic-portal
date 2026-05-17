@@ -1,7 +1,7 @@
 /* oxlint-disable react-doctor/rendering-hydration-mismatch-time -- Locale-formatted timestamps are rendered with explicit "en-AU" locale; minor server/client timezone offset is acceptable for these display-only values. */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,9 +20,7 @@ import { PrescriberDetailsSection } from "@/components/profile/PrescriberDetails
 import { BusinessDetailsSection } from "@/components/profile/BusinessDetailsSection";
 import { ProfileSecurityTab } from "@/components/profile/ProfileSecurityTab";
 import type {
-  PractitionerProfile,
   PractitionerProfileResponse,
-  UserProfile,
   UserProfileResponse,
   UserRole,
 } from "@/types";
@@ -38,38 +36,6 @@ const ROLE_COLORS: Record<UserRole, string> = {
   doctor: "bg-status-info-bg text-status-info-fg border-status-info-border",
   staff: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
 };
-
-function computeCompleteness(
-  profile: UserProfile | null,
-  practitioner: PractitionerProfile | null,
-  isDoctor: boolean
-) {
-  if (!profile) return { pct: 0, missing: 0 };
-  const base = [profile.phone];
-  const doctorFields = isDoctor
-    ? [
-        practitioner?.title,
-        practitioner?.specialty,
-        practitioner?.qualifications,
-        practitioner?.prescriberNumber,
-        practitioner?.ahpraNumber,
-        practitioner?.providerNumber,
-        practitioner?.hpii,
-        practitioner?.business?.businessPhone,
-        practitioner?.business?.businessEmail,
-        practitioner?.business?.abn,
-        practitioner?.business?.address?.streetName,
-        practitioner?.business?.address?.suburb,
-        practitioner?.business?.address?.state,
-        practitioner?.business?.address?.postcode,
-        practitioner?.availability ? "set" : null,
-      ]
-    : [];
-  const all = [...base, ...doctorFields];
-  const filled = all.filter((v) => v && String(v).trim().length > 0).length;
-  const pct = Math.round((filled / all.length) * 100);
-  return { pct, missing: all.length - filled };
-}
 
 interface ProfileInitialUser {
   firstName: string;
@@ -125,11 +91,6 @@ export function ProfileClient({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const { pct, missing } = useMemo(
-    () => computeCompleteness(profile, practitioner, isDoctor),
-    [profile, practitioner, isDoctor]
-  );
 
   // Prescriber profile is "complete enough" to unlock availability when the
   // core identifying credentials needed to actually prescribe are present.
@@ -191,7 +152,10 @@ export function ProfileClient({
               <h2 className="text-lg font-semibold leading-tight whitespace-nowrap">
                 {fullName}
               </h2>
-              <Badge variant="outline" className={ROLE_COLORS[role]}>
+              <Badge
+                variant="outline"
+                className={`${ROLE_COLORS[role]} px-2.5 py-1 text-sm font-medium`}
+              >
                 {ROLE_LABELS[role]}
               </Badge>
               <div className="flex items-center gap-1.5">
@@ -230,27 +194,6 @@ export function ProfileClient({
                   })}
                 </span>
               )}
-            </div>
-
-            {/* Row 3: Profile completeness */}
-            <div className="flex items-center gap-3 border-t pt-3">
-              <span className="text-[13px] text-muted-foreground whitespace-nowrap">
-                <strong className="text-foreground font-semibold">
-                  Profile {pct}% complete
-                </strong>
-                {missing > 0 && (
-                  <>
-                    {" "}
-                    &mdash; {missing} field{missing === 1 ? "" : "s"} missing
-                  </>
-                )}
-              </span>
-              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-300"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
             </div>
           </div>
         </CardContent>
