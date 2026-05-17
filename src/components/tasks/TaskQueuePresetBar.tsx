@@ -39,7 +39,7 @@ export const FALLBACK_TASK_PRESETS: TaskQueuePresetDef[] = [
     label: "Unassigned",
     tone: "warning",
     icon: "users-round",
-    filter: { status: ["open", "in_progress"], assignedUserId: null },
+    filter: { assignedUserId: null },
   },
   {
     id: "mine_active",

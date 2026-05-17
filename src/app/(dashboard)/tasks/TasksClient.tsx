@@ -198,6 +198,11 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
     return raw.flatMap((preset) => {
       if (preset.id === "all") return [];
       if (preset.id === "mine_active") return [{ ...preset, label: "Claimed" }];
+      if (preset.id === "unassigned") {
+        // Unassigned should surface every unassigned task regardless of status.
+        const { status: _status, ...rest } = preset.filter as Record<string, unknown>;
+        return [{ ...preset, filter: rest }];
+      }
       return [preset];
     });
   }, [presetsQuery.data]);
