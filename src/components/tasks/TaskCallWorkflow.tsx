@@ -825,11 +825,12 @@ export function TaskOutcomeDialog({
                 href={profileHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex size-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label="Open patient profile in new tab"
                 title="Open patient profile"
               >
-                <ExternalLink className="size-4" />
+                Open patient
+                <ExternalLink className="size-3.5" />
               </a>
             </div>
             <DialogDescription className="mt-1 text-xs text-muted-foreground">
