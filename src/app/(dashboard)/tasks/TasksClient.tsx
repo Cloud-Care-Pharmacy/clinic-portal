@@ -173,8 +173,11 @@ function taskNoteForOutcome(
   mode: TaskOutcomeMode
 ) {
   const parts = [
-    `Outcome: ${submission.outcomeId}${submission.subOutcomeId ? `:${submission.subOutcomeId}` : ""}`,
+    `Outcome: ${submission.outcomeId}`,
     `Mode: ${mode}`,
+    submission.prescriptionChoice
+      ? `Prescription: ${submission.prescriptionChoice}`
+      : undefined,
     submission.durationLabel ? `Duration: ${submission.durationLabel}` : undefined,
     submission.notes ? `Notes: ${submission.notes}` : undefined,
     submission.followupNote ? `Follow-up: ${submission.followupNote}` : undefined,
@@ -424,8 +427,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           await updateConsultationMutation.mutateAsync({
             id: consultation.data.consultation.id,
             status: "completed",
-            outcome: submission.subOutcomeId
-              ? `${submission.outcomeId}:${submission.subOutcomeId}`
+            outcome: submission.prescriptionChoice
+              ? `${submission.outcomeId}:${submission.prescriptionChoice}`
               : submission.outcomeId,
             notes: submission.notes || submission.followupNote || null,
             duration: submission.durationSeconds ?? null,

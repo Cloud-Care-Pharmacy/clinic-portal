@@ -72,14 +72,16 @@ export interface TaskCallData {
 
 export type TaskOutcomeMode = "hangup" | "manual";
 
+export type PrescriptionChoice = "on-prescription" | "paperless";
+
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
   /**
-   * Sub-outcome for `reached` (e.g. "finalised", "needs-followup",
-   * "escalate", "refer-out"). Carried into the consultation outcome string
-   * and task audit note.
+   * Whether the doctor decided to write a prescription (on Parchment) or
+   * proceed paperless. Only meaningful when the outcome creates a
+   * consultation (i.e. `reached`).
    */
-  subOutcomeId?: ReachedSubOutcomeId;
+  prescriptionChoice?: PrescriptionChoice;
   status: TaskStatus;
   notes?: string;
   followupNote?: string;
@@ -88,12 +90,6 @@ export interface TaskOutcomeSubmission {
 }
 
 type TaskOutcomeId = "reached" | "voicemail" | "callback" | "wrong-time" | "abandoned";
-
-export type ReachedSubOutcomeId =
-  | "finalised"
-  | "needs-followup"
-  | "escalate"
-  | "refer-out";
 
 const OUTCOMES: Array<{
   id: TaskOutcomeId;
@@ -138,48 +134,6 @@ const OUTCOMES: Array<{
     status: "cancelled",
     variant: "warning",
     statusLabel: "Closed",
-  },
-];
-
-const REACHED_SUBOUTCOMES: Array<{
-  id: ReachedSubOutcomeId;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  variant: "success" | "warning" | "danger" | "info" | "neutral";
-  statusLabel?: string;
-}> = [
-  {
-    id: "finalised",
-    title: "Finalised — consultation complete",
-    description: "Notes complete. Ready to finalise the consultation.",
-    status: "completed",
-    variant: "success",
-    statusLabel: "Completed",
-  },
-  {
-    id: "needs-followup",
-    title: "Needs follow-up",
-    description: "Partial consult — will continue in a follow-up call.",
-    status: "in_progress",
-    variant: "info",
-    statusLabel: "In progress",
-  },
-  {
-    id: "escalate",
-    title: "Escalate to senior clinician",
-    description: "Refer internally for clinical review.",
-    status: "in_progress",
-    variant: "info",
-    statusLabel: "In progress",
-  },
-  {
-    id: "refer-out",
-    title: "Refer out (GP / specialist)",
-    description: "Send the patient externally. Consultation logged as referral.",
-    status: "completed",
-    variant: "success",
-    statusLabel: "Completed",
   },
 ];
 
@@ -690,10 +644,13 @@ export function TaskOutcomeDialog({
   submitting?: boolean;
 }) {
   const [selected, setSelected] = useState<TaskOutcomeId>("reached");
-  const [reachedSub, setReachedSub] = useState<ReachedSubOutcomeId>("finalised");
   const [manualNotes, setManualNotes] = useState("");
   const [followupNote, setFollowupNote] = useState("");
   const [manualDuration, setManualDuration] = useState("");
+  const [prescriptionChoice, setPrescriptionChoice] = useState<
+    PrescriptionChoice | undefined
+  >(undefined);
+  const [parchmentOpen, setParchmentOpen] = useState(false);
   const [confirmFinaliseOpen, setConfirmFinaliseOpen] = useState(false);
   const manualNotesId = useId();
   const manualDurationId = useId();
@@ -707,25 +664,14 @@ export function TaskOutcomeDialog({
 
   const isManual = mode === "manual";
   const outcome = OUTCOMES.find((item) => item.id === selected) ?? OUTCOMES[0];
-  const reachedSubOutcome =
-    REACHED_SUBOUTCOMES.find((item) => item.id === reachedSub) ?? REACHED_SUBOUTCOMES[0];
 
-  // For "reached" the sub-outcome drives status; for all others the top-level
-  // outcome status applies.
-  const effectiveStatus: TaskStatus =
-    selected === "reached" ? reachedSubOutcome.status : outcome.status;
-  const effectiveSubOutcome: ReachedSubOutcomeId | undefined =
-    selected === "reached" ? reachedSub : undefined;
-
+  const effectiveStatus: TaskStatus = outcome.status;
   const requiresReason = selected === "abandoned";
-  const requiresNotes =
-    selected === "reached" &&
-    (isManual || effectiveStatus === "completed") &&
-    // Only require notes when we are creating a finalised consultation.
-    effectiveStatus === "completed";
+  // Manual mode requires the doctor to type notes when they reached the patient.
+  const requiresManualNotes = isManual && selected === "reached";
   const isInvalid =
     (requiresReason && !followupNote.trim()) ||
-    (requiresNotes && isManual && !manualNotes.trim());
+    (requiresManualNotes && !manualNotes.trim());
 
   // Readiness checks: patient.patientStatus and latest clinical record review.
   const patient = patientQuery.data?.data?.patient;
@@ -740,10 +686,13 @@ export function TaskOutcomeDialog({
     !readinessLoading &&
     (!patientApproved || !clinicalApproved);
 
+  const patientName = task.patientName || "patient";
+
   function buildSubmission(): TaskOutcomeSubmission {
     return {
       outcomeId: selected,
-      subOutcomeId: effectiveSubOutcome,
+      prescriptionChoice:
+        selected === "reached" ? prescriptionChoice : undefined,
       status: effectiveStatus,
       notes: isManual ? manualNotes.trim() : (callData?.notes.trim() ?? ""),
       followupNote: followupNote.trim() || undefined,
@@ -782,41 +731,31 @@ export function TaskOutcomeDialog({
           overlayClassName="bg-foreground/40"
           className="max-h-[calc(100dvh-1rem)] gap-0 overflow-hidden p-0 sm:max-w-225"
         >
-          <DialogHeader className="gap-0 border-b border-border px-5 py-4">
-            <div className="mb-3 flex items-center gap-2">
+          <DialogHeader className="gap-0 border-b border-border px-4 py-2.5">
+            <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "flex size-8 items-center justify-center rounded-full border",
+                  "flex size-6 items-center justify-center rounded-full border",
                   isManual
                     ? "border-status-info-border bg-status-info-bg text-status-info-fg"
                     : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
                 )}
               >
                 {isManual ? (
-                  <FileText className="size-4" />
+                  <FileText className="size-3.5" />
                 ) : (
-                  <AlertCircle className="size-4" />
+                  <AlertCircle className="size-3.5" />
                 )}
               </span>
-              <span
-                className={cn(
-                  OVERLINE_CLASS,
-                  isManual ? "text-status-info-fg" : "text-status-warning-fg"
-                )}
-              >
+              <DialogTitle className="text-sm font-semibold">
                 {isManual
-                  ? "Manual log · record a call you've already made"
-                  : "Required · pick an outcome"}
-              </span>
+                  ? `Log call outcome — ${patientName}`
+                  : `Call ended — ${patientName}`}
+              </DialogTitle>
             </div>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogDescription className="mt-1 text-xs text-muted-foreground">
               {isManual
-                ? `Log call outcome — ${task.patientName || "patient"}`
-                : `How did the call with ${(task.patientName || "the patient").split(" ")[0]} end?`}
-            </DialogTitle>
-            <DialogDescription className="mt-1.5 leading-5">
-              {isManual
-                ? "Use this when you've already spoken to the patient (in person, by phone, or outside Aircall) and just need to record the result."
+                ? "Record a call you've already made (in person, by phone, or outside Aircall)."
                 : `Call lasted ${callData?.durationLabel ?? "00:00"} · ${
                     callData?.notes
                       ? `${callData.notes.length} chars of notes`
@@ -825,11 +764,11 @@ export function TaskOutcomeDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[17rem_1fr]">
+          <div className="grid min-h-0 grid-cols-1 md:grid-cols-[15rem_1fr]">
             {/* LEFT — outcome picker */}
-            <div className="border-b border-border px-4 py-4 md:border-r md:border-b-0">
+            <div className="border-b border-border px-3 py-3 md:border-r md:border-b-0">
               <p className={OVERLINE_CLASS}>Outcome</p>
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {OUTCOMES.map((item) => {
                   const active = selected === item.id;
                   return (
@@ -838,7 +777,7 @@ export function TaskOutcomeDialog({
                       type="button"
                       onClick={() => setSelected(item.id)}
                       className={cn(
-                        "flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "flex w-full items-start gap-2 rounded-md border px-2 py-1.5 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                         active
                           ? "border-primary bg-card"
                           : "border-transparent hover:bg-muted"
@@ -846,7 +785,7 @@ export function TaskOutcomeDialog({
                     >
                       <span
                         className={cn(
-                          "mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                          "mt-1 flex size-3.5 shrink-0 items-center justify-center rounded-full border",
                           active
                             ? "border-primary bg-primary"
                             : "border-input bg-background"
@@ -858,13 +797,13 @@ export function TaskOutcomeDialog({
                         )}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                        <span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold leading-tight">
                           {item.title}
                           <StatusBadge variant={item.variant}>
                             {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
                           </StatusBadge>
                         </span>
-                        <span className="mt-1 block text-xs text-muted-foreground">
+                        <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">
                           {item.description}
                         </span>
                       </span>
@@ -874,8 +813,8 @@ export function TaskOutcomeDialog({
               </div>
             </div>
 
-            {/* RIGHT — readiness, sub-outcomes, notes */}
-            <div className="min-w-0 max-h-[min(75vh,38rem)] overflow-y-auto px-5 py-4">
+            {/* RIGHT — readiness, prescription, notes */}
+            <div className="min-w-0 max-h-[min(75vh,34rem)] space-y-3 overflow-y-auto px-4 py-3">
               <ReadinessPanel
                 task={task}
                 patient={patient}
@@ -902,8 +841,7 @@ export function TaskOutcomeDialog({
                   approveClinicalMutation.mutate(
                     { recordId: clinicalRecord.id },
                     {
-                      onSuccess: () =>
-                        toast.success("Clinical record approved."),
+                      onSuccess: () => toast.success("Clinical record approved."),
                       onError: (err) =>
                         toast.error(
                           err instanceof Error
@@ -917,101 +855,98 @@ export function TaskOutcomeDialog({
               />
 
               {finaliseBlocked && (
-                <div className="mt-3 flex gap-2.5 rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                  <p className="text-xs leading-5">
+                <div className="flex gap-2 rounded-md border border-status-warning-border bg-status-warning-bg px-2.5 py-2 text-status-warning-fg">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                  <p className="text-[11px] leading-snug">
                     {!patientApproved && !clinicalApproved
                       ? "Patient and clinical record are not yet approved."
                       : !patientApproved
                         ? "Patient status is not yet approved."
                         : "Clinical record is not yet approved."}{" "}
-                    You can still finalise, but you&apos;ll be asked to confirm.
+                    You can still finalise — you&apos;ll be asked to confirm.
                   </p>
                 </div>
               )}
 
               {selected === "reached" && (
-                <div className="mt-4">
-                  <p className={OVERLINE_CLASS}>Consultation outcome</p>
-                  <div className="mt-2 space-y-1.5">
-                    {REACHED_SUBOUTCOMES.map((item) => {
-                      const active = reachedSub === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setReachedSub(item.id)}
-                          className={cn(
-                            "flex w-full items-start gap-3 rounded-lg border px-3 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                            active
-                              ? "border-primary bg-card"
-                              : "border-transparent hover:bg-muted"
-                          )}
+                <>
+                  {isManual && (
+                    <div>
+                      <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
+                        Consultation outcome
+                      </label>
+                      <Textarea
+                        id={manualNotesId}
+                        value={manualNotes}
+                        onChange={(event) => setManualNotes(event.target.value)}
+                        placeholder="What was discussed, decided, plan, next steps…"
+                        className="mt-1.5 min-h-20 bg-background text-xs leading-relaxed"
+                      />
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <label
+                          htmlFor={manualDurationId}
+                          className={OVERLINE_CLASS}
                         >
-                          <span
-                            className={cn(
-                              "mt-1 flex size-4 shrink-0 items-center justify-center rounded-full border",
-                              active
-                                ? "border-primary bg-primary"
-                                : "border-input bg-background"
-                            )}
-                            aria-hidden="true"
-                          >
-                            {active && (
-                              <span className="size-1.5 rounded-full bg-primary-foreground" />
-                            )}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-                              {item.title}
-                              <StatusBadge variant={item.variant}>
-                                {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
-                              </StatusBadge>
-                            </span>
-                            <span className="mt-0.5 block text-xs text-muted-foreground">
-                              {item.description}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                          Duration
+                        </label>
+                        <Input
+                          id={manualDurationId}
+                          value={manualDuration}
+                          onChange={(event) =>
+                            setManualDuration(event.target.value)
+                          }
+                          placeholder="e.g. 4 min"
+                          className="h-7 w-28 bg-background text-xs"
+                        />
+                        <span className="text-[11px] text-muted-foreground">
+                          (optional)
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
-              {selected === "reached" && isManual && (
-                <div className="mt-4">
-                  <label htmlFor={manualNotesId} className={OVERLINE_CLASS}>
-                    Consultation notes
-                  </label>
-                  <Textarea
-                    id={manualNotesId}
-                    value={manualNotes}
-                    onChange={(event) => setManualNotes(event.target.value)}
-                    placeholder="What did you discuss? Findings, plan, prescriptions, follow-up…"
-                    className="mt-2 min-h-[clamp(6rem,16vh,9.5rem)] bg-background text-sm"
-                  />
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <label htmlFor={manualDurationId} className={OVERLINE_CLASS}>
-                      Call duration
-                    </label>
-                    <Input
-                      id={manualDurationId}
-                      value={manualDuration}
-                      onChange={(event) => setManualDuration(event.target.value)}
-                      placeholder="e.g. 4 min"
-                      className="w-36 bg-background text-sm"
-                    />
-                    <span className="text-xs text-muted-foreground">(optional)</span>
+                  <div>
+                    <p className={OVERLINE_CLASS}>Prescription</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <PrescriptionChoiceButton
+                        active={prescriptionChoice === "on-prescription"}
+                        onClick={() => setPrescriptionChoice("on-prescription")}
+                        label="On a prescription"
+                      />
+                      <PrescriptionChoiceButton
+                        active={prescriptionChoice === "paperless"}
+                        onClick={() => setPrescriptionChoice("paperless")}
+                        label="Paperless / none"
+                      />
+                      {prescriptionChoice === "on-prescription" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="ml-auto h-7 rounded-md px-2.5 text-xs"
+                          onClick={() => setParchmentOpen(true)}
+                        >
+                          <Pill className="size-3.5" />
+                          Open Parchment
+                          <ExternalLink className="size-3" />
+                        </Button>
+                      )}
+                    </div>
+                    {prescriptionChoice === "on-prescription" && (
+                      <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                        Parchment opens in a new tab. The script returns to us
+                        manually — you can still finalise the consultation here.
+                      </p>
+                    )}
                   </div>
-                </div>
+                </>
               )}
 
               {(selected === "voicemail" ||
                 selected === "callback" ||
                 selected === "wrong-time" ||
                 selected === "abandoned") && (
-                <div className="mt-4">
+                <div>
                   <label className={OVERLINE_CLASS}>
                     {selected === "abandoned" ? "Reason required" : "Follow-up note"}
                   </label>
@@ -1023,30 +958,30 @@ export function TaskOutcomeDialog({
                         ? "Why is this task being closed?"
                         : "Optional note for the next attempt."
                     }
-                    className="mt-2 min-h-20 bg-background text-sm"
+                    className="mt-1.5 min-h-16 bg-background text-xs leading-relaxed"
                   />
                 </div>
               )}
             </div>
           </div>
 
-          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-3 rounded-none border-t border-border bg-card px-5 py-3 sm:flex-row sm:justify-between">
-            <p className="max-w-xs text-xs leading-5 text-muted-foreground">
+          <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none border-t border-border bg-card px-4 py-2 sm:flex-row sm:justify-between">
+            <p className="max-w-xs text-[11px] leading-snug text-muted-foreground">
               {effectiveStatus === "completed"
-                ? "This will create a finalised consultation linked to the task."
+                ? "Creates a finalised consultation linked to the task."
                 : "Notes are kept with the task so you can resume from Claimed."}
             </p>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="outline"
-                className="h-9 rounded-xl px-4 text-sm"
+                className="h-8 rounded-lg px-3 text-xs"
                 onClick={cancelAction}
                 disabled={submitting}
               >
                 {isManual ? "Cancel" : "Back to call"}
               </Button>
               <Button
-                className="h-9 rounded-xl px-4 text-sm"
+                className="h-8 rounded-lg px-3 text-xs"
                 onClick={handleSubmit}
                 disabled={isInvalid || submitting}
               >
@@ -1061,6 +996,13 @@ export function TaskOutcomeDialog({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ParchmentRedirectDialog
+        open={parchmentOpen}
+        onOpenChange={setParchmentOpen}
+        patientId={task.patientId}
+        patientName={patientName}
+      />
 
       <AlertDialog open={confirmFinaliseOpen} onOpenChange={setConfirmFinaliseOpen}>
         <AlertDialogContent>
@@ -1077,9 +1019,7 @@ export function TaskOutcomeDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={submitting}>
-              Go back
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={submitting}>Go back</AlertDialogCancel>
             <AlertDialogAction onClick={confirmFinalise} disabled={submitting}>
               Finalise anyway
             </AlertDialogAction>
@@ -1087,6 +1027,43 @@ export function TaskOutcomeDialog({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function PrescriptionChoiceButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        active
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+      aria-pressed={active}
+    >
+      <span
+        className={cn(
+          "flex size-3 items-center justify-center rounded-full border",
+          active ? "border-primary bg-primary" : "border-input bg-background"
+        )}
+        aria-hidden="true"
+      >
+        {active && (
+          <span className="size-1 rounded-full bg-primary-foreground" />
+        )}
+      </span>
+      {label}
+    </button>
   );
 }
 
@@ -1177,23 +1154,22 @@ function ReadinessPanel({
   const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
-      <section>
-        <p className={OVERLINE_CLASS}>Patient</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <p className="text-sm font-semibold">{patientName}</p>
-          <a
-            href={profileHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            aria-label="Open patient profile in new tab"
-            title="Open patient profile"
-          >
-            <ExternalLink className="size-3.5" />
-          </a>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+    <div className="space-y-2 rounded-md border border-border bg-background px-3 py-2">
+      <section className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className={cn(OVERLINE_CLASS, "w-16 shrink-0")}>Patient</p>
+        <p className="text-xs font-semibold">{patientName}</p>
+        <a
+          href={profileHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          aria-label="Open patient profile in new tab"
+          title="Open patient profile"
+        >
+          <ExternalLink className="size-3" />
+        </a>
+        <div className="ml-auto flex items-center gap-1.5">
+          <StatusBadge variant={patientStatusVariant}>{patientStatusLabel}</StatusBadge>
           <Select
             value={selectValue || undefined}
             onValueChange={(v) => {
@@ -1204,10 +1180,10 @@ function ReadinessPanel({
           >
             <SelectTrigger
               size="sm"
-              className="h-8 w-40 bg-background text-xs"
+              className="h-6 w-28 bg-background text-[11px]"
               aria-label="Patient status"
             >
-              <SelectValue placeholder={loading ? "Loading…" : "Set status"} />
+              <SelectValue placeholder={loading ? "…" : "Set"} />
             </SelectTrigger>
             <SelectContent>
               {PATIENT_STATUS_OPTIONS.map((opt) => (
@@ -1217,54 +1193,49 @@ function ReadinessPanel({
               ))}
             </SelectContent>
           </Select>
-          <StatusBadge variant={patientStatusVariant}>{patientStatusLabel}</StatusBadge>
           {patientStatusSaving && (
-            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+            <Loader2 className="size-3 animate-spin text-muted-foreground" />
           )}
         </div>
       </section>
 
-      <section className="border-t border-border/60 pt-3">
-        <div className="flex items-center gap-2">
-          <p className={OVERLINE_CLASS}>Clinical record</p>
-          <a
-            href={clinicalHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            aria-label="Open clinical record in new tab"
-            title="Open clinical record"
+      <section className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-2">
+        <p className={cn(OVERLINE_CLASS, "w-16 shrink-0")}>Clinical</p>
+        <a
+          href={clinicalHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex size-5 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          aria-label="Open clinical record in new tab"
+          title="Open clinical record"
+        >
+          <ExternalLink className="size-3" />
+        </a>
+        <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
+        {(clinicalReviewedAt || clinicalReviewedBy) && (
+          <span className="text-[11px] text-muted-foreground">
+            {clinicalReviewedAt}
+            {clinicalReviewedAt && clinicalReviewedBy ? " · " : ""}
+            {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
+          </span>
+        )}
+        {canApproveClinical && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="ml-auto h-6 rounded-md px-2 text-[11px]"
+            onClick={onApproveClinical}
+            disabled={approvingClinical}
           >
-            <ExternalLink className="size-3" />
-          </a>
-        </div>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
-          {(clinicalReviewedAt || clinicalReviewedBy) && (
-            <span className="text-xs text-muted-foreground">
-              {clinicalReviewedAt}
-              {clinicalReviewedAt && clinicalReviewedBy ? " · " : ""}
-              {clinicalReviewedBy ? `by ${clinicalReviewedBy}` : ""}
-            </span>
-          )}
-          {canApproveClinical && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="ml-auto h-7 rounded-md px-2.5 text-xs"
-              onClick={onApproveClinical}
-              disabled={approvingClinical}
-            >
-              {approvingClinical ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Check className="size-3.5" />
-              )}
-              Approve
-            </Button>
-          )}
-        </div>
+            {approvingClinical ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <Check className="size-3" />
+            )}
+            Approve
+          </Button>
+        )}
       </section>
     </div>
   );
