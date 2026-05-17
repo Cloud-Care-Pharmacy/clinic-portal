@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -127,6 +127,10 @@ export function PrescriberDetailsSection({
       <Card>
         <CardHeader>
           <CardTitle>Prescriber details</CardTitle>
+          <CardDescription>
+            Your professional identity and regulatory identifiers used when
+            issuing prescriptions.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Row 1: Title, Qualifications, Specialty, Prescriber # */}

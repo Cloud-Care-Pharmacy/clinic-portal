@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +9,9 @@ export function ProfileSecurityTab() {
     <Card>
       <CardHeader>
         <CardTitle>Account &amp; security</CardTitle>
+        <CardDescription>
+          Manage your password, two-factor authentication, and active sessions.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-0">
         {/* Change password */}

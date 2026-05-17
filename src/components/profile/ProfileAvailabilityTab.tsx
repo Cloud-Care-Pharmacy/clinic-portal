@@ -545,6 +545,9 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
       <Card>
         <CardHeader>
           <CardTitle>Consultation types</CardTitle>
+          <CardDescription>
+            The appointment modalities patients can book with you.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
