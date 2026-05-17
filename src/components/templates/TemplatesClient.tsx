@@ -234,14 +234,6 @@ function TemplateTypePanel({
         ),
       },
       {
-        field: "updatedBy",
-        headerName: "Updated by",
-        width: 160,
-        renderCell: (params) => (
-          <span className="text-muted-foreground">{params.row.updatedBy}</span>
-        ),
-      },
-      {
         field: "updatedAt",
         headerName: "Updated",
         width: 130,

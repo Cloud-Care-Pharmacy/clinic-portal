@@ -257,8 +257,8 @@ function DetailGrid({ template }: { template: Template }) {
           ))
         : "—",
     ],
-    ["Created", `${formatDate(template.createdAt)} by ${template.createdBy}`],
-    ["Updated", `${formatDate(template.updatedAt)} by ${template.updatedBy}`],
+    ["Created", formatDate(template.createdAt)],
+    ["Updated", formatDate(template.updatedAt)],
   ];
 
   if (template.type === "email") {
