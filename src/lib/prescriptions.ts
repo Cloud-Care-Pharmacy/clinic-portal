@@ -1,8 +1,4 @@
-import type {
-  ListPrescriptionsResponse,
-  PatientPrescription,
-  PrescriptionSource,
-} from "@/types";
+import type { ListPrescriptionsResponse, PatientPrescription } from "@/types";
 
 export function emptyListPrescriptionsResponse(
   patientId: string
@@ -13,7 +9,6 @@ export function emptyListPrescriptionsResponse(
       patientId,
       prescriptions: [],
       pagination: { limit: 50, offset: 0, total: 0 },
-      sync: null,
     },
   };
 }
@@ -30,10 +25,6 @@ export function formatPrescriptionDate(value: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-export function getPrescriptionSourceLabel(source: PrescriptionSource): string {
-  return source === "internal" ? "Internal" : "Parchment";
 }
 
 /**

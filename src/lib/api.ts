@@ -7,7 +7,6 @@ import type {
   EmailMetadata,
   GetPrescriptionResponse,
   ListPrescriptionsResponse,
-  SyncPrescriptionsResponse,
   SubmissionResult,
   IntakeFormData,
   UpdatePatientPayload,
@@ -418,15 +417,6 @@ class ApiClient {
     );
   }
 
-  async syncPatientPrescriptions(
-    patientId: string
-  ): Promise<SyncPrescriptionsResponse> {
-    return this.request(
-      `/api/patients/${encodeURIComponent(patientId)}/prescriptions/sync`,
-      { method: "POST" }
-    );
-  }
-
   // ---- User Profile (account) ----
 
   async getMyProfile(userId: string): Promise<UserProfileResponse> {
@@ -645,12 +635,6 @@ class ApiClient {
 
   getAttachmentUrl(patientId: string, emailId: string, filename: string): string {
     return `${this.baseUrl}/api/patients/${encodeURIComponent(patientId)}/emails/${encodeURIComponent(emailId)}/attachments/${encodeURIComponent(filename)}`;
-  }
-
-  // ---- Validate ----
-
-  async validateParchment(): Promise<{ success: boolean }> {
-    return this.request("/api/parchment/validate");
   }
 
   // ---- Patient Documents ----

@@ -54,7 +54,7 @@ import {
   isConsultationClinicallyRejected,
 } from "@/lib/prescriptions";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import { WriteInternalPrescriptionDialog } from "@/components/prescriptions/WriteInternalPrescriptionDialog";
+import { WritePrescriptionDialog } from "@/components/prescriptions/WritePrescriptionDialog";
 import type { Consultation, ConsultationType } from "@/types";
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
@@ -437,7 +437,7 @@ export function ConsultationDetailSheet({
       </AppSheet>
 
       {consultation && (
-        <WriteInternalPrescriptionDialog
+        <WritePrescriptionDialog
           open={writeRxOpen}
           onOpenChange={setWriteRxOpen}
           patientId={consultation.patientId}

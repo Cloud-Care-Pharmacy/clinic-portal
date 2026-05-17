@@ -200,13 +200,10 @@ export interface SubmissionResult {
 }
 
 // ============================================
-// Patient Prescription types (local index + Parchment detail + internal)
+// Patient Prescription types
 // ============================================
 
-/** Origin of a prescription row. */
-export type PrescriptionSource = "parchment" | "internal";
-
-/** Dosage form for internal prescription medications. */
+/** Dosage form for prescription medications. */
 export type PrescriptionMedicationForm =
   | "tablet"
   | "capsule"
@@ -245,7 +242,7 @@ export type PrescriptionMedicationRoute =
 /** Drug scheduling for internal prescription medications. */
 export type PrescriptionMedicationSchedule = "S3" | "S4" | "S8";
 
-/** A single line item on an internal (CRM-authored) prescription. */
+/** A single line item on a prescription. */
 export interface PrescriptionMedication {
   id: string;
   prescriptionId: string;
@@ -267,19 +264,15 @@ export interface PrescriptionMedication {
 }
 
 /**
- * Local prescription index row. May originate from Parchment
- * (`source = 'parchment'`) or be authored in-CRM (`source = 'internal'`).
+ * Prescription index row. All prescriptions are authored in the CRM.
  */
 export interface PatientPrescription {
   id: string;
   patientId: string;
   entityId: string | null;
-  source: PrescriptionSource;
-  /** Parchment scid — set when `source = 'parchment'`, null for internal. */
-  parchmentPrescriptionId: string | null;
-  /** Originating consultation — set when `source = 'internal'`, null for parchment. */
+  /** Originating consultation, if the prescription was issued from one. */
   consultationId: string | null;
-  /** Local `users.id` of the prescribing doctor — set for internal prescriptions. */
+  /** Local `users.id` of the prescribing doctor. */
   prescriberId: string | null;
   prescriptionDate: string; // ISO datetime
   prescriberName: string | null;
@@ -288,7 +281,7 @@ export interface PatientPrescription {
   updatedAt: string;
   createdBy: string | null;
   updatedBy: string | null;
-  /** Only present on detail responses when `source = 'internal'`. */
+  /** Only present on detail responses. */
   medications?: PrescriptionMedication[];
   /**
    * Point-in-time snapshot of the prescriber's signature at issuance. Frozen
@@ -310,63 +303,27 @@ export interface PrescriptionSignatureSnapshot {
   capturedAt: string;
 }
 
-/** Result of a sync from Parchment → local index. */
-export interface PrescriptionSyncResult {
-  patientId: string;
-  parchmentPatientId: string | null;
-  synced: number;
-  created: number;
-  updated: number;
-  skipped: boolean;
-  reason?: string;
-}
-
-/** Live medication payload fetched from Parchment for a single prescription. */
-export interface ParchmentPrescriptionDetail {
-  type?: string;
-  url?: string;
-  scid: string;
-  status: string;
-  createdDate: string;
-  itemName?: string;
-  quantity?: string;
-  repeatsAuthorised?: string;
-  repeatIntervals?: string;
-  pbsCode?: string;
-}
-
 export interface ListPrescriptionsResponse {
   success: true;
   data: {
     patientId: string;
     prescriptions: PatientPrescription[];
     pagination: { limit: number; offset: number; total: number };
-    sync: PrescriptionSyncResult | null;
   };
 }
 
 export interface GetPrescriptionResponse {
   success: true;
   data: {
-    /**
-     * For internal prescriptions, `prescription.medications` is inlined and
-     * `parchment` is `null`. For parchment prescriptions, `parchment` holds the
-     * live payload and `prescription.medications` is omitted.
-     */
+    /** Detail response always inlines the medications array. */
     prescription: PatientPrescription;
-    parchment: ParchmentPrescriptionDetail | null;
   };
 }
 
-export interface SyncPrescriptionsResponse {
-  success: true;
-  data: { sync: PrescriptionSyncResult };
-}
+// ---- Create prescription ----
 
-// ---- Create internal (CRM-authored) prescription ----
-
-/** A single medication item in the create-internal-prescription request. */
-export interface CreateInternalPrescriptionMedicationInput {
+/** A single medication item in the create-prescription request. */
+export interface CreatePrescriptionMedicationInput {
   name: string;
   strength?: string | null;
   form: PrescriptionMedicationForm;
@@ -381,14 +338,15 @@ export interface CreateInternalPrescriptionMedicationInput {
   routeAdministration: PrescriptionMedicationRoute;
 }
 
-export interface CreateInternalPrescriptionRequest {
-  consultationId: string;
+export interface CreatePrescriptionRequest {
+  /** Originating consultation, when the prescription is issued from one. */
+  consultationId?: string | null;
   /** Optional doctor override. Doctor callers may not pin a different prescriber. */
   prescriberId?: string | null;
-  medications: CreateInternalPrescriptionMedicationInput[];
+  medications: CreatePrescriptionMedicationInput[];
 }
 
-export interface CreateInternalPrescriptionResponse {
+export interface CreatePrescriptionResponse {
   success: true;
   data: { prescription: PatientPrescription };
 }

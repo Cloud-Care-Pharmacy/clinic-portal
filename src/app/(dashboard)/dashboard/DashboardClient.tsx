@@ -98,7 +98,7 @@ export function DashboardClient({
         (summary?.activePrescriptionsDeltaPct ?? 0) >= 0
           ? ("up" as const)
           : ("down" as const),
-      description: "Parchment-linked patients",
+      description: "Across all patients",
       subtitle: "May take longer to refresh",
     },
     {

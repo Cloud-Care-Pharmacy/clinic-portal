@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import {
   Select,
@@ -12,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -20,18 +17,16 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { usePatients } from "@/lib/hooks/use-patients";
-import { usePrescriptions, useSyncPrescriptions } from "@/lib/hooks/use-prescriptions";
+import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
-import { PrescriptionSourceBadge } from "@/components/prescriptions/PrescriptionSourceBadge";
 import type {
   ListPrescriptionsResponse,
   PatientPrescription,
   PatientsListResponse,
-  PrescriptionSource,
 } from "@/types";
 
 const prescriptionColumns: GridColDef<PatientPrescription>[] = [
@@ -41,12 +36,9 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
     flex: 1,
     minWidth: 190,
     renderCell: (params) => {
-      const secondary =
-        params.row.source === "internal"
-          ? params.row.consultationId
-            ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
-            : "Internal"
-          : (params.row.parchmentPrescriptionId ?? "—");
+      const secondary = params.row.consultationId
+        ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
+        : "Patient-initiated";
       return (
         <div className="min-w-0 py-2">
           <p
@@ -64,12 +56,6 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
         </div>
       );
     },
-  },
-  {
-    field: "source",
-    headerName: "Source",
-    width: 120,
-    renderCell: (params) => <PrescriptionSourceBadge source={params.value} />,
   },
   {
     field: "prescriberName",
@@ -98,28 +84,13 @@ function PrescriptionGrid({
   patientId: string;
   initialPrescriptions?: ListPrescriptionsResponse;
 }) {
-  const [sourceFilter, setSourceFilter] = useState<PrescriptionSource | "all">("all");
   const { data, isLoading, error } = usePrescriptions(
     patientId,
-    sourceFilter === "all" ? initialPrescriptions : undefined,
-    sourceFilter === "all" ? undefined : { source: sourceFilter }
+    initialPrescriptions
   );
-  const sync = useSyncPrescriptions(patientId);
   const [selected, setSelected] = useState<PatientPrescription | null>(null);
 
   const prescriptions = data?.data?.prescriptions ?? [];
-
-  function handleRefresh() {
-    sync.mutate(undefined, {
-      onSuccess: (res) => {
-        const { synced, created, updated } = res.data.sync;
-        toast.success(
-          `Synced ${synced} prescriptions (${created} new, ${updated} updated)`
-        );
-      },
-      onError: (err: Error) => toast.error(err.message),
-    });
-  }
 
   if (isLoading)
     return (
@@ -139,53 +110,10 @@ function PrescriptionGrid({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div
-          role="tablist"
-          aria-label="Filter prescriptions by source"
-          className="inline-flex rounded-lg border border-border bg-card p-0.5"
-        >
-          {(
-            [
-              { key: "all", label: "All" },
-              { key: "parchment", label: "Parchment" },
-              { key: "internal", label: "Internal" },
-            ] as const
-          ).map((tab) => {
-            const active = sourceFilter === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setSourceFilter(tab.key)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={sync.isPending}
-        >
-          <RefreshCw className={`size-4 ${sync.isPending ? "animate-spin" : ""}`} />
-          {sync.isPending ? "Syncing…" : "Refresh from Parchment"}
-        </Button>
-      </div>
-
       {prescriptions.length === 0 ? (
         <EmptyState
           title="No prescriptions"
-          description="No prescriptions on record yet. Click ‘Refresh from Parchment’ to pull the latest."
+          description="No prescriptions on record for this patient yet."
         />
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">

@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Write Prescription — internal (CRM-authored) prescription composer.
+ * Write Prescription — CRM-authored prescription composer.
  *
- * Opened from a completed consultation that has NOT been clinically rejected
- * (consultations.outcome !== "reject"). Posts to
- * `POST /api/patients/{patientId}/prescriptions/internal`.
+ * Can be opened from a patient (no consultation context) or from a completed
+ * consultation that has NOT been clinically rejected. Posts to
+ * `POST /api/patients/{patientId}/prescriptions`.
  *
  * 422 responses ("clinical decision = reject") are surfaced as an inline
  * banner — the caller should additionally disable the trigger button when the
@@ -30,11 +30,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { AppSheet } from "@/components/shared/AppSheet";
 import {
-  CreateInternalPrescriptionError,
-  useCreateInternalPrescription,
+  CreatePrescriptionError,
+  useCreatePrescription,
 } from "@/lib/hooks/use-prescriptions";
 import type {
-  CreateInternalPrescriptionMedicationInput,
+  CreatePrescriptionMedicationInput,
   PrescriptionMedicationForm,
   PrescriptionMedicationRoute,
   PrescriptionMedicationSchedule,
@@ -137,7 +137,7 @@ function validateMed(m: MedDraft): string | null {
   return null;
 }
 
-function toApiMed(m: MedDraft): CreateInternalPrescriptionMedicationInput {
+function toApiMed(m: MedDraft): CreatePrescriptionMedicationInput {
   return {
     name: m.name.trim(),
     strength: m.strength.trim() || null,
@@ -154,27 +154,28 @@ function toApiMed(m: MedDraft): CreateInternalPrescriptionMedicationInput {
   };
 }
 
-interface WriteInternalPrescriptionDialogProps {
+interface WritePrescriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patientId: string;
-  consultationId: string;
+  /** Optional consultation context. When provided, server enforces the clinical-decision gate. */
+  consultationId?: string;
   /** Optional doctor override (admins only — doctor callers may not change it). */
   prescriberId?: string | null;
   onCreated?: () => void;
 }
 
-export function WriteInternalPrescriptionDialog({
+export function WritePrescriptionDialog({
   open,
   onOpenChange,
   patientId,
   consultationId,
   prescriberId,
   onCreated,
-}: WriteInternalPrescriptionDialogProps) {
+}: WritePrescriptionDialogProps) {
   const [meds, setMeds] = useState<MedDraft[]>(() => [blankMed()]);
   const [rejectedBanner, setRejectedBanner] = useState(false);
-  const create = useCreateInternalPrescription(patientId);
+  const create = useCreatePrescription(patientId);
 
   function updateMed(id: string, patch: Partial<MedDraft>) {
     setMeds((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
@@ -211,7 +212,7 @@ export function WriteInternalPrescriptionDialog({
     }
     create.mutate(
       {
-        consultationId,
+        consultationId: consultationId ?? null,
         prescriberId: prescriberId ?? undefined,
         medications: meds.map(toApiMed),
       },
@@ -222,7 +223,7 @@ export function WriteInternalPrescriptionDialog({
           onOpenChange(false);
           reset();
         },
-        onError: (err: CreateInternalPrescriptionError) => {
+        onError: (err: CreatePrescriptionError) => {
           if (err.isClinicallyRejected) {
             setRejectedBanner(true);
           } else {
@@ -241,7 +242,11 @@ export function WriteInternalPrescriptionDialog({
         else onOpenChange(true);
       }}
       title="Write Prescription"
-      description="Doctor-authored prescription tied to this consultation."
+      description={
+        consultationId
+          ? "Doctor-authored prescription tied to this consultation."
+          : "Doctor-authored prescription for this patient."
+      }
       footer={
         <div className="flex w-full items-center justify-end gap-2">
           <Button variant="outline" onClick={handleClose} disabled={create.isPending}>

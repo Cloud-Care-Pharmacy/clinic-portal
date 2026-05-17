@@ -83,8 +83,8 @@ export default function PatientLayoutClient({
     : null;
   const { setOverride, clearOverride } = useBreadcrumbOverrides();
 
-  // Fetch counts for tab badges. Prescriptions are fetched directly because the
-  // counts endpoint currently returns zeroes for Parchment-derived prescriptions.
+  // Fetch counts for tab badges. Prescriptions are fetched directly so the
+  // badge stays in sync with newly written scripts.
   const { data: countsData } = usePatientCounts(id, initialData?.counts);
   const { data: rxData } = usePrescriptions(id, initialData?.prescriptions);
   const counts = countsData?.data;

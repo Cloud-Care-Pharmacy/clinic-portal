@@ -10,54 +10,11 @@ import {
   formatPrescriptionDate,
   formatPrescriptionReference,
 } from "@/lib/prescriptions";
-import { PrescriptionSourceBadge } from "@/components/prescriptions/PrescriptionSourceBadge";
-import type {
-  ParchmentPrescriptionDetail,
-  PatientPrescription,
-  PrescriptionMedication,
-} from "@/types";
+import type { PatientPrescription, PrescriptionMedication } from "@/types";
 
 export { formatPrescriptionReference } from "@/lib/prescriptions";
 
-function ParchmentMedicationCard({ detail }: { detail: ParchmentPrescriptionDetail }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <div className="flex items-start gap-3">
-        <div className="flex size-8  shrink-0 items-center justify-center rounded-lg border border-status-accent-border bg-status-accent-bg text-status-accent-fg">
-          <Pill className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <div>
-            <p className="text-sm font-medium text-foreground wrap-break-word">
-              {detail.itemName ?? detail.type ?? "Prescription item"}
-            </p>
-            {detail.type && detail.itemName && (
-              <p className="text-xs text-muted-foreground mt-0.5 wrap-break-word">
-                {detail.type}
-              </p>
-            )}
-          </div>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-            <dt className="text-muted-foreground">Quantity</dt>
-            <dd className="text-right tabular-nums">{detail.quantity ?? "—"}</dd>
-            <dt className="text-muted-foreground">Repeats</dt>
-            <dd className="text-right tabular-nums">
-              {detail.repeatsAuthorised ?? "—"}
-            </dd>
-            <dt className="text-muted-foreground">Interval</dt>
-            <dd className="text-right wrap-break-word">
-              {detail.repeatIntervals ?? "—"}
-            </dd>
-            <dt className="text-muted-foreground">PBS code</dt>
-            <dd className="text-right wrap-break-word">{detail.pbsCode ?? "—"}</dd>
-          </dl>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InternalMedicationCard({ med }: { med: PrescriptionMedication }) {
+function MedicationCard({ med }: { med: PrescriptionMedication }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-start gap-3">
@@ -114,9 +71,7 @@ export function PrescriptionDetailSheet({
   const { data, isLoading, error } = usePrescription(patientId, prescription?.id);
   const reference = stash ? formatPrescriptionReference(stash) : "";
   const detailPrescription = data?.data?.prescription ?? stash;
-  const parchmentDetail = data?.data?.parchment ?? null;
-  const internalMeds = detailPrescription?.medications ?? [];
-  const isInternal = detailPrescription?.source === "internal";
+  const meds = detailPrescription?.medications ?? [];
 
   return (
     <AppSheet
@@ -141,12 +96,6 @@ export function PrescriptionDetailSheet({
               </div>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Source</p>
-              <div className="mt-1">
-                <PrescriptionSourceBadge source={stash.source} />
-              </div>
-            </div>
-            <div>
               <p className="text-xs text-muted-foreground">Prescribed</p>
               <p className="mt-1 font-medium tabular-nums">
                 {formatPrescriptionDate(stash.prescriptionDate)}
@@ -158,11 +107,11 @@ export function PrescriptionDetailSheet({
                 {stash.prescriberName ?? "—"}
               </p>
             </div>
-            {stash.source === "parchment" && stash.parchmentPrescriptionId && (
-              <div className="col-span-2">
-                <p className="text-xs text-muted-foreground">Parchment ID</p>
+            {stash.consultationId && (
+              <div>
+                <p className="text-xs text-muted-foreground">Consultation</p>
                 <p className="mt-1 font-mono text-xs wrap-break-word">
-                  {stash.parchmentPrescriptionId}
+                  {stash.consultationId}
                 </p>
               </div>
             )}
@@ -170,13 +119,9 @@ export function PrescriptionDetailSheet({
 
           <section className="space-y-3">
             <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                {isInternal ? "Medications" : "Medication"}
-              </h3>
+              <h3 className="text-sm font-semibold text-foreground">Medications</h3>
               <p className="text-xs text-muted-foreground">
-                {isInternal
-                  ? "Authored in the CRM."
-                  : "Live detail fetched from Parchment."}
+                Line items on this prescription.
               </p>
             </div>
             {isLoading ? (
@@ -185,34 +130,16 @@ export function PrescriptionDetailSheet({
               <p className="text-destructive text-sm">
                 Medication detail unavailable, try again or contact support.
               </p>
-            ) : isInternal ? (
-              internalMeds.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No medications recorded on this prescription.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {internalMeds.map((med) => (
-                    <InternalMedicationCard key={med.id} med={med} />
-                  ))}
-                </div>
-              )
-            ) : parchmentDetail ? (
-              <ParchmentMedicationCard detail={parchmentDetail} />
-            ) : (
+            ) : meds.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Medication detail unavailable, try again or contact support.
+                No medications recorded on this prescription.
               </p>
-            )}
-            {!isInternal && parchmentDetail?.url && (
-              <a
-                href={parchmentDetail.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-primary hover:underline"
-              >
-                Open in Parchment
-              </a>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {meds.map((med) => (
+                  <MedicationCard key={med.id} med={med} />
+                ))}
+              </div>
             )}
           </section>
         </div>

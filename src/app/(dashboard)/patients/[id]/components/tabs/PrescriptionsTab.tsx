@@ -2,20 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
-import { toast } from "sonner";
+import { Plus } from "lucide-react";
 import { DataGrid, type GridColDef, type GridRowParams } from "@mui/x-data-grid";
 import { dataGridSx } from "@/lib/datagrid-theme";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { usePrescriptions, useSyncPrescriptions } from "@/lib/hooks/use-prescriptions";
+import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
 import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
-import { PrescriptionSourceBadge } from "@/components/prescriptions/PrescriptionSourceBadge";
+import { WritePrescriptionDialog } from "@/components/prescriptions/WritePrescriptionDialog";
 import type { ListPrescriptionsResponse, PatientPrescription } from "@/types";
 
 const prescriptionColumns: GridColDef<PatientPrescription>[] = [
@@ -25,12 +24,9 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
     flex: 1,
     minWidth: 190,
     renderCell: (params) => {
-      const secondary =
-        params.row.source === "internal"
-          ? params.row.consultationId
-            ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
-            : "Internal"
-          : (params.row.parchmentPrescriptionId ?? "—");
+      const secondary = params.row.consultationId
+        ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
+        : "Patient-initiated";
       return (
         <div className="min-w-0 py-2">
           <p
@@ -48,12 +44,6 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
         </div>
       );
     },
-  },
-  {
-    field: "source",
-    headerName: "Source",
-    width: 120,
-    renderCell: (params) => <PrescriptionSourceBadge source={params.value} />,
   },
   {
     field: "prescriberName",
@@ -93,10 +83,10 @@ export function PrescriptionsTab({
 }: PrescriptionsTabProps) {
   const { push, replace } = useRouter();
   const { data, isLoading } = usePrescriptions(patientId, initialPrescriptions);
-  const sync = useSyncPrescriptions(patientId);
   const [selectedFromRow, setSelectedFromRow] = useState<PatientPrescription | null>(
     null
   );
+  const [writeOpen, setWriteOpen] = useState(false);
 
   const prescriptions = data?.data?.prescriptions ?? [];
   const selected = selectedPrescriptionId
@@ -121,18 +111,6 @@ export function PrescriptionsTab({
     push(selectedPrescriptionHref(prescription.id), { scroll: false });
   }
 
-  function handleRefresh() {
-    sync.mutate(undefined, {
-      onSuccess: (res) => {
-        const { synced, created, updated } = res.data.sync;
-        toast.success(
-          `Synced ${synced} prescriptions (${created} new, ${updated} updated)`
-        );
-      },
-      onError: (err: Error) => toast.error(err.message),
-    });
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -146,21 +124,16 @@ export function PrescriptionsTab({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={sync.isPending}
-        >
-          <RefreshCw className={`size-4 ${sync.isPending ? "animate-spin" : ""}`} />
-          {sync.isPending ? "Syncing…" : "Refresh from Parchment"}
+        <Button size="sm" onClick={() => setWriteOpen(true)}>
+          <Plus className="size-4" />
+          New prescription
         </Button>
       </div>
 
       {prescriptions.length === 0 ? (
         <EmptyState
           title="No prescriptions"
-          description="No prescriptions on record yet. Click ‘Refresh from Parchment’ to pull the latest."
+          description="No prescriptions on record yet. Click ‘New prescription’ to write one."
         />
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -192,6 +165,12 @@ export function PrescriptionsTab({
         patientId={patientId}
         prescription={selected}
         onClose={clearSelectedPrescription}
+      />
+
+      <WritePrescriptionDialog
+        open={writeOpen}
+        onOpenChange={setWriteOpen}
+        patientId={patientId}
       />
     </div>
   );
