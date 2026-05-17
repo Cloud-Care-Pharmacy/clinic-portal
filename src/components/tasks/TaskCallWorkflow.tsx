@@ -707,6 +707,14 @@ export function TaskOutcomeDialog({
     !readinessLoading &&
     !effectiveClinicalApproved;
 
+  // Prescribing requires an approved clinical record. If the doctor rejects
+  // the record, Step 3 is disabled and the displayed choice falls back to
+  // "none" so submission can't leak a stale value.
+  const prescriptionDisabled = clinicalDecision === "reject";
+  const effectivePrescriptionChoice = prescriptionDisabled
+    ? undefined
+    : prescriptionChoice;
+
   const patientName = task.patientName || "patient";
   const profileHref = `/patients/${encodeURIComponent(task.patientId)}`;
 
@@ -714,7 +722,7 @@ export function TaskOutcomeDialog({
     return {
       outcomeId: selected,
       prescriptionChoice:
-        selected === "reached" ? prescriptionChoice : undefined,
+        selected === "reached" ? effectivePrescriptionChoice : undefined,
       clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
       status: effectiveStatus,
       // Step 1's textarea is the single source of truth for the note (seeded
@@ -943,38 +951,51 @@ export function TaskOutcomeDialog({
                     />
                   </StepBlock>
 
-                  <StepBlock number={3} title="Prescription">
+                  <StepBlock
+                    number={3}
+                    title="Prescription"
+                    disabled={prescriptionDisabled}
+                    disabledHint={
+                      prescriptionDisabled
+                        ? "Unavailable — clinical record rejected"
+                        : undefined
+                    }
+                  >
                     <div className="flex flex-wrap items-center gap-2">
                       <PrescriptionChoiceButton
-                        active={prescriptionChoice === "on-prescription"}
+                        active={effectivePrescriptionChoice === "on-prescription"}
                         onClick={() => setPrescriptionChoice("on-prescription")}
                         label="On a prescription"
+                        disabled={prescriptionDisabled}
                       />
                       <PrescriptionChoiceButton
-                        active={prescriptionChoice === "paperless"}
+                        active={effectivePrescriptionChoice === "paperless"}
                         onClick={() => setPrescriptionChoice("paperless")}
                         label="Paperless / none"
+                        disabled={prescriptionDisabled}
                       />
-                      {prescriptionChoice === "on-prescription" && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="ml-auto h-8 rounded-md px-3 text-sm"
-                          onClick={() => setParchmentOpen(true)}
-                        >
-                          <Pill className="size-4" />
-                          Open Parchment
-                          <ExternalLink className="size-3.5" />
-                        </Button>
-                      )}
+                      {!prescriptionDisabled &&
+                        effectivePrescriptionChoice === "on-prescription" && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="ml-auto h-8 rounded-md px-3 text-sm"
+                            onClick={() => setParchmentOpen(true)}
+                          >
+                            <Pill className="size-4" />
+                            Open Parchment
+                            <ExternalLink className="size-3.5" />
+                          </Button>
+                        )}
                     </div>
-                    {prescriptionChoice === "on-prescription" && (
-                      <p className="mt-2 text-xs leading-snug text-muted-foreground">
-                        Parchment opens in a new tab. The script returns to us
-                        manually — you can still finalise the consultation here.
-                      </p>
-                    )}
+                    {!prescriptionDisabled &&
+                      effectivePrescriptionChoice === "on-prescription" && (
+                        <p className="mt-2 text-xs leading-snug text-muted-foreground">
+                          Parchment opens in a new tab. The script returns to us
+                          manually — you can still finalise the consultation here.
+                        </p>
+                      )}
                   </StepBlock>
                 </>
               ) : (
@@ -1066,17 +1087,20 @@ function PrescriptionChoiceButton({
   active,
   onClick,
   label,
+  disabled,
 }: {
   active: boolean;
   onClick: () => void;
   label: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
         active
           ? "border-primary bg-primary/10 text-foreground"
           : "border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1103,20 +1127,50 @@ function StepBlock({
   number,
   title,
   children,
+  disabled,
+  disabledHint,
 }: {
   number: number;
   title: string;
   children: React.ReactNode;
+  disabled?: boolean;
+  disabledHint?: string;
 }) {
   return (
-    <section className="rounded-lg border border-border bg-background px-3.5 py-3">
+    <section
+      className={cn(
+        "rounded-lg border border-border bg-background px-3.5 py-3",
+        disabled && "opacity-60"
+      )}
+    >
       <header className="mb-2.5 flex items-center gap-2">
-        <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+        <span
+          className={cn(
+            "flex size-6 items-center justify-center rounded-full text-xs font-semibold",
+            disabled
+              ? "bg-muted text-muted-foreground"
+              : "bg-primary text-primary-foreground"
+          )}
+        >
           {number}
         </span>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3
+          className={cn(
+            "text-sm font-semibold",
+            disabled ? "text-muted-foreground" : "text-foreground"
+          )}
+        >
+          {title}
+        </h3>
+        {disabled && disabledHint && (
+          <span className="text-xs font-normal text-muted-foreground">
+            {disabledHint}
+          </span>
+        )}
       </header>
-      {children}
+      <div className={cn(disabled && "pointer-events-none select-none")}>
+        {children}
+      </div>
     </section>
   );
 }
