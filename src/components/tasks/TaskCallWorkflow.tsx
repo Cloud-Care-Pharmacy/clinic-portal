@@ -63,16 +63,16 @@ export interface TaskCallData {
 
 export type TaskOutcomeMode = "hangup" | "manual";
 
-export type PrescriptionChoice = "on-prescription" | "paperless";
+export type PrescriptionChoice = "parchment" | "manual";
 
 export type ClinicalDecision = "approve" | "reject";
 
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
   /**
-   * Whether the doctor decided to write a prescription (on Parchment) or
-   * proceed paperless. Only meaningful when the outcome creates a
-   * consultation (i.e. `reached`).
+   * How the doctor issued the prescription — via Parchment (script returns
+   * to us asynchronously) or manually (handwritten/external). Only meaningful
+   * when the outcome creates a consultation (i.e. `reached`).
    */
   prescriptionChoice?: PrescriptionChoice;
   /**
@@ -963,19 +963,19 @@ export function TaskOutcomeDialog({
                   >
                     <div className="flex flex-wrap items-center gap-2">
                       <PrescriptionChoiceButton
-                        active={effectivePrescriptionChoice === "on-prescription"}
-                        onClick={() => setPrescriptionChoice("on-prescription")}
-                        label="On a prescription"
+                        active={effectivePrescriptionChoice === "parchment"}
+                        onClick={() => setPrescriptionChoice("parchment")}
+                        label="Parchment"
                         disabled={prescriptionDisabled}
                       />
                       <PrescriptionChoiceButton
-                        active={effectivePrescriptionChoice === "paperless"}
-                        onClick={() => setPrescriptionChoice("paperless")}
-                        label="Paperless / none"
+                        active={effectivePrescriptionChoice === "manual"}
+                        onClick={() => setPrescriptionChoice("manual")}
+                        label="Manual"
                         disabled={prescriptionDisabled}
                       />
                       {!prescriptionDisabled &&
-                        effectivePrescriptionChoice === "on-prescription" && (
+                        effectivePrescriptionChoice === "parchment" && (
                           <Button
                             type="button"
                             variant="outline"
@@ -990,7 +990,7 @@ export function TaskOutcomeDialog({
                         )}
                     </div>
                     {!prescriptionDisabled &&
-                      effectivePrescriptionChoice === "on-prescription" && (
+                      effectivePrescriptionChoice === "parchment" && (
                         <p className="mt-2 text-xs leading-snug text-muted-foreground">
                           Parchment opens in a new tab. The script returns to us
                           manually — you can still finalise the consultation here.
