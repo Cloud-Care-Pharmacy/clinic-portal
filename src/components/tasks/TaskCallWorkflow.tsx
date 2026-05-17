@@ -1,7 +1,7 @@
 /* oxlint-disable react-doctor/rerender-state-only-in-handlers -- `minimized` IS read during render at `if (minimized) { return ... }`. */
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, Fragment } from "react";
 import {
   AlertCircle,
   ArrowRight,
@@ -882,45 +882,58 @@ export function TaskOutcomeDialog({
             <div className="border-b border-border px-3.5 py-3.5 md:border-r md:border-b-0">
               <p className={OVERLINE_CLASS}>Outcome</p>
               <div className="mt-2.5 space-y-1.5">
-                {OUTCOMES.map((item) => {
+                {OUTCOMES.map((item, index) => {
                   const active = selected === item.id;
                   return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelected(item.id)}
-                      className={cn(
-                        "flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                        active
-                          ? "border-primary bg-card"
-                          : "border-transparent hover:bg-muted"
+                    <Fragment key={item.id}>
+                      {index === 1 && (
+                        <div
+                          className="flex items-center gap-2 pt-2 pb-1"
+                          aria-hidden="true"
+                        >
+                          <span className={OVERLINE_CLASS}>Alternatives</span>
+                          <span className="h-px flex-1 bg-border" />
+                        </div>
                       )}
-                    >
-                      <span
+                      <button
+                        type="button"
+                        onClick={() => setSelected(item.id)}
                         className={cn(
-                          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                          "flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                           active
-                            ? "border-primary bg-primary"
-                            : "border-input bg-background"
+                            ? "border-primary bg-card"
+                            : "border-transparent hover:bg-muted"
                         )}
-                        aria-hidden="true"
                       >
-                        {active && (
-                          <span className="size-1.5 rounded-full bg-primary-foreground" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold leading-tight">
-                          {item.title}
-                          <StatusBadge variant={item.variant}>
-                            {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
-                          </StatusBadge>
+                        <span
+                          className={cn(
+                            "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                            active
+                              ? "border-primary bg-primary"
+                              : "border-input bg-background"
+                          )}
+                          aria-hidden="true"
+                        >
+                          {active && (
+                            <span className="size-1.5 rounded-full bg-primary-foreground" />
+                          )}
                         </span>
-                        <span className="mt-1 block text-xs leading-snug text-muted-foreground">
-                          {item.description}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold leading-tight">
+                            {item.title}
+                            <StatusBadge variant={item.variant}>
+                              {item.statusLabel ?? TASK_STATUS_LABELS[item.status]}
+                            </StatusBadge>
+                          </span>
+                          <span
+                            className="mt-1 block truncate text-xs leading-snug text-muted-foreground"
+                            title={item.description}
+                          >
+                            {item.description}
+                          </span>
                         </span>
-                      </span>
-                    </button>
+                      </button>
+                    </Fragment>
                   );
                 })}
               </div>
