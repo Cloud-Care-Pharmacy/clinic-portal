@@ -1278,7 +1278,7 @@ function PrescriptionActionCard({
         return {
           Icon: Link2,
           iconTone: "bg-primary/10 text-primary",
-          title: "Send via ERX",
+          title: "Send via Parchment",
           body: "Opens in a new tab. The script returns to us manually - you can still finalise here.",
           action: (
             <Button
@@ -1289,7 +1289,7 @@ function PrescriptionActionCard({
               onClick={onOpenParchment}
               disabled={disabled}
             >
-              Open ERX
+              Open Parchment
               <ExternalLink className="size-3.5" />
             </Button>
           ),
