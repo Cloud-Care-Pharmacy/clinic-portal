@@ -12,6 +12,7 @@ import {
   FileText,
   Link2,
   Pill,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -916,6 +917,16 @@ export function TaskOutcomeDialog({
                       placeholder="Summary, BP / pulse, adherence, next steps…"
                       className="min-h-24 bg-background text-sm leading-relaxed"
                     />
+                    {!isManual && (
+                      <p className="mt-2 flex items-start gap-1.5 text-xs leading-snug text-muted-foreground">
+                        <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                        <span>
+                          The call recording is saved to this patient&apos;s
+                          profile. An AI-generated summary will appear here
+                          shortly after the call ends.
+                        </span>
+                      </p>
+                    )}
                     {isManual && (
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         <label
