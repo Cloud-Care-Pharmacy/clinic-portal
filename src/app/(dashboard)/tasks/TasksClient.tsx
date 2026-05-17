@@ -30,6 +30,16 @@ import {
   useUpdateConsultation,
 } from "@/lib/hooks/use-consultations";
 import {
+  createPrescription,
+  CreatePrescriptionError,
+} from "@/lib/hooks/use-prescriptions";
+import type { Medication as ManualRxMedication } from "@/components/prescriptions/manual-rx/types";
+import type {
+  CreatePrescriptionMedicationInput,
+  PrescriptionMedicationForm,
+  PrescriptionMedicationRoute,
+} from "@/types";
+import {
   useAllTasks,
   useClaimTasks,
   useTaskPresets,
@@ -188,6 +198,41 @@ function taskNoteForOutcome(
   ].filter(Boolean);
 
   return parts.join("\n");
+}
+
+const MANUAL_RX_FORM_MAP: Record<ManualRxMedication["form"], PrescriptionMedicationForm> = {
+  Tablet: "tablet",
+  Solution: "solution",
+  Patch: "patch",
+  Spray: "spray",
+  Gum: "other",
+  Lozenge: "other",
+};
+
+const MANUAL_RX_ROUTE_MAP: Record<ManualRxMedication["form"], PrescriptionMedicationRoute> = {
+  Tablet: "oral",
+  Solution: "oral",
+  Patch: "transdermal",
+  Spray: "buccal",
+  Gum: "buccal",
+  Lozenge: "buccal",
+};
+
+function toCallApiMed(m: ManualRxMedication): CreatePrescriptionMedicationInput {
+  return {
+    name: m.name.trim(),
+    strength: m.strength.trim() || null,
+    form: MANUAL_RX_FORM_MAP[m.form],
+    schedule: m.schedule,
+    sig: m.sig.trim(),
+    qty: Number.parseInt(m.qty, 10) || 0,
+    repeats: Number.parseInt(m.repeats, 10) || 0,
+    brandSub: m.brandSub,
+    pbs: m.pbs,
+    authority: m.authority,
+    pbsCode: null,
+    routeAdministration: MANUAL_RX_ROUTE_MAP[m.form],
+  };
 }
 
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
@@ -448,6 +493,42 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
             .mutateAsync(consultation.data.consultation.id)
             .catch(() => undefined);
           throw updateErr;
+        }
+
+        // Persist any prescription drafted during the call. The call modal
+        // collects medications in its own composer, but TasksClient owns the
+        // submit lifecycle, so the actual POST happens here.
+        if (
+          submission.prescriptionChoice === "internal" &&
+          submission.prescriptionMeds &&
+          submission.prescriptionMeds.length > 0
+        ) {
+          try {
+            await createPrescription(task.patientId, {
+              consultationId: consultation.data.consultation.id,
+              prescriberId: doctorId,
+              medications: submission.prescriptionMeds.map(toCallApiMed),
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["prescriptions", task.patientId],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["patient-counts", task.patientId],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["patient-activity", task.patientId],
+            });
+          } catch (rxErr) {
+            const rxMessage =
+              rxErr instanceof CreatePrescriptionError
+                ? rxErr.message
+                : rxErr instanceof Error
+                  ? rxErr.message
+                  : "Failed to save prescription.";
+            // Consultation is already completed; surface a non-blocking warning
+            // so the clinician knows the script did not persist.
+            toast.error(`Consultation saved, but prescription failed: ${rxMessage}`);
+          }
         }
       }
 

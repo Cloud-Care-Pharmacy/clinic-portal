@@ -147,7 +147,7 @@ export class CreatePrescriptionError extends Error {
   }
 }
 
-async function createPrescription(
+export async function createPrescription(
   patientId: string,
   body: CreatePrescriptionRequest
 ): Promise<CreatePrescriptionResponse> {
