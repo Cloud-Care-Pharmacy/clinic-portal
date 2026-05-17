@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Plus, Trash2, Copy, Video, Building2, House, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
+import { LeaveSection } from "@/components/profile/LeaveSection";
 import { useUpdatePractitionerAvailability } from "@/lib/hooks/use-practitioner";
 import type {
   AvailabilityDayEntry,
@@ -582,16 +583,8 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
             Block out dates when you&apos;re unavailable for consultations.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button type="button" variant="outline" className="border-dashed">
-              <Plus className="mr-2 size-4 " />
-              Add leave period
-            </Button>
-            <span className="text-[13px] text-muted-foreground">
-              No upcoming leave scheduled.
-            </span>
-          </div>
+        <CardContent>
+          <LeaveSection practitionerId={practitioner?.userId ?? null} />
         </CardContent>
       </Card>
 

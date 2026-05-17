@@ -1611,6 +1611,59 @@ export interface PractitionerFreeSlotsResponse {
 }
 
 // ============================================
+// Practitioner leave (Rosters tag)
+// ============================================
+
+export type PractitionerLeaveKind = "annual" | "sick" | "personal" | "other";
+
+/**
+ * A single block of time a practitioner is unavailable. Whole-day windows in
+ * the entity's local time zone — `startDate` and `endDate` are inclusive
+ * `YYYY-MM-DD` strings.
+ */
+export interface PractitionerLeave {
+  id: string;
+  entityId: string;
+  practitionerId: string;
+  startDate: string;
+  endDate: string;
+  kind: PractitionerLeaveKind;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListPractitionerLeaveQuery {
+  /** Inclusive `YYYY-MM-DD`. Required. */
+  from: string;
+  /** Inclusive `YYYY-MM-DD`. Must be on or after `from`. */
+  to: string;
+  /** Filter to a single practitioner's `users.id`. */
+  practitionerId?: string;
+  /** Defaults to the caller's entity. */
+  entityId?: string;
+}
+
+export interface CreatePractitionerLeavePayload {
+  practitionerId: string;
+  startDate: string;
+  endDate: string;
+  kind: PractitionerLeaveKind;
+  note?: string | null;
+  entityId?: string;
+}
+
+export interface PractitionerLeaveListResponse {
+  success: boolean;
+  data: { leave: PractitionerLeave[] };
+}
+
+export interface PractitionerLeaveResponse {
+  success: boolean;
+  data: { leave: PractitionerLeave };
+}
+
+// ============================================
 // Session types
 // ============================================
 
