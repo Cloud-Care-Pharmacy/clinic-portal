@@ -1363,7 +1363,9 @@ function ClinicalStatusRow({
   const clinicalReviewedBy = clinicalRecord?.reviewedBy || undefined;
   const alreadyApproved = clinicalReview === "approved";
   const canDecide = !!clinicalRecord?.id && clinicalReview === "pending";
-  const clinicalHref = `/patients/${encodeURIComponent(task.patientId)}?tab=clinical`;
+  const clinicalHref = clinicalRecord?.id
+    ? `/patients/${encodeURIComponent(task.patientId)}/clinical?selected=${encodeURIComponent(clinicalRecord.id)}`
+    : `/patients/${encodeURIComponent(task.patientId)}/clinical`;
 
   return (
     <div className="space-y-3">
