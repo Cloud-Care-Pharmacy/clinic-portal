@@ -112,6 +112,7 @@ export function TemplateDetailSheet({
       <AppSheet
         open={open}
         onOpenChange={onOpenChange}
+        className="sm:w-[60vw]! sm:max-w-3xl! lg:w-[55vw]! lg:max-w-4xl!"
         title={
           <span className="inline-flex items-center gap-2">
             <Icon className="size-4 text-muted-foreground" />

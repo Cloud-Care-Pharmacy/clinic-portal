@@ -65,12 +65,6 @@ export function TemplatesClient() {
       <PageHeader
         title="Templates"
         description="Author reusable email, SMS, and notification templates with shared variables."
-        actions={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            New template
-          </Button>
-        }
       />
 
       <Tabs
@@ -97,6 +91,7 @@ export function TemplatesClient() {
               onNew={() => setCreateOpen(true)}
               onRowClick={(row) => setDetailTarget(row)}
             />
+
           </TabsContent>
         ))}
       </Tabs>
@@ -207,16 +202,9 @@ function TemplateTypePanel({
         flex: 2,
         minWidth: 220,
         renderCell: (params) => (
-          <div className="flex h-full w-full min-w-0 flex-col justify-center overflow-hidden">
-            <span className="truncate font-medium text-foreground">
-              {params.row.name}
-            </span>
-            {params.row.description ? (
-              <span className="block truncate text-xs leading-5 text-muted-foreground">
-                {params.row.description}
-              </span>
-            ) : null}
-          </div>
+          <span className="truncate font-medium text-foreground">
+            {params.row.name}
+          </span>
         ),
       },
       {
@@ -294,6 +282,12 @@ function TemplateTypePanel({
       resultCount={hasActiveFilters ? filteredRows.length : data.length}
       resultCountLoading={isLoading}
       resultLabel="templates"
+      trailing={
+        <Button onClick={onNew}>
+          <Plus className="size-4" />
+          New template
+        </Button>
+      }
     />
   );
 
