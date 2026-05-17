@@ -707,13 +707,15 @@ export function TaskOutcomeDialog({
     !readinessLoading &&
     !effectiveClinicalApproved;
 
-  // Prescribing requires an approved clinical record. If the doctor rejects
-  // the record, Step 3 is disabled and the displayed choice falls back to
-  // "none" so submission can't leak a stale value.
-  const prescriptionDisabled = clinicalDecision === "reject";
-  const effectivePrescriptionChoice = prescriptionDisabled
-    ? undefined
-    : prescriptionChoice;
+  // Rejecting the clinical record auto-selects "None" for prescription
+  // (you can't prescribe against a rejected record). Step 3 stays
+  // interactive in case the doctor changes their mind.
+  function handleClinicalDecisionChange(next: ClinicalDecision) {
+    setClinicalDecision(next);
+    if (next === "reject") {
+      setPrescriptionChoice("none");
+    }
+  }
 
   const patientName = task.patientName || "patient";
   const patientFirstName = patientName.split(" ")[0] || patientName;
@@ -723,7 +725,7 @@ export function TaskOutcomeDialog({
     return {
       outcomeId: selected,
       prescriptionChoice:
-        selected === "reached" ? effectivePrescriptionChoice : undefined,
+        selected === "reached" ? prescriptionChoice : undefined,
       clinicalDecision: selected === "reached" ? clinicalDecision : undefined,
       status: effectiveStatus,
       // Step 1's textarea is the single source of truth for the note (seeded
@@ -944,30 +946,22 @@ export function TaskOutcomeDialog({
                       clinicalRecord={clinicalRecord}
                       loading={readinessLoading}
                       decision={clinicalDecision}
-                      onDecisionChange={setClinicalDecision}
+                      onDecisionChange={handleClinicalDecisionChange}
                     />
                   </StepBlock>
 
                   <StepBlock
                     number={3}
                     title="Prescription"
-                    disabled={prescriptionDisabled}
-                    disabledHint={
-                      prescriptionDisabled
-                        ? "Unavailable — clinical record rejected"
-                        : undefined
-                    }
                     headerRight={
                       <PrescriptionSegmentedToggle
-                        value={effectivePrescriptionChoice ?? "parchment"}
+                        value={prescriptionChoice}
                         onChange={setPrescriptionChoice}
-                        disabled={prescriptionDisabled}
                       />
                     }
                   >
                     <PrescriptionActionCard
-                      choice={effectivePrescriptionChoice ?? "parchment"}
-                      disabled={prescriptionDisabled}
+                      choice={prescriptionChoice}
                       onOpenParchment={() => setParchmentOpen(true)}
                       onComposeManual={() =>
                         toast.info("Manual script editor coming soon.")
