@@ -301,12 +301,21 @@ export function TaskDetailSheet({
                 {canAction && (
                   <>
                     <DropdownMenuItem
-                      disabled={!currentInternalUserId}
-                      onClick={handleClaim}
+                      disabled={!activeTask.assignedUserId || isPending}
+                      onClick={handleComplete}
                     >
-                      <UserCheck className="size-4 " />
-                      Claim
+                      <CheckCircle2 className="size-4 " />
+                      Mark completed
                     </DropdownMenuItem>
+                    {activeTask.status === "open" && (
+                      <DropdownMenuItem
+                        disabled={!activeTask.assignedUserId}
+                        onClick={handleStart}
+                      >
+                        <Play className="size-4 " />
+                        Start
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       disabled={
                         !activeTask.assignedUserId && !activeTask.assignedRole
@@ -316,12 +325,6 @@ export function TaskDetailSheet({
                       <UserMinus className="size-4 " />
                       Unassign
                     </DropdownMenuItem>
-                    {activeTask.status === "open" && (
-                      <DropdownMenuItem onClick={handleStart}>
-                        <Play className="size-4 " />
-                        Start
-                      </DropdownMenuItem>
-                    )}
                     {onScheduleConsultation && (
                       <DropdownMenuItem
                         onClick={() => onScheduleConsultation(activeTask)}
@@ -344,9 +347,21 @@ export function TaskDetailSheet({
             </DropdownMenu>
 
             {canAction ? (
-              <Button onClick={handleComplete} disabled={isPending} className="gap-1.5">
-                <CheckCircle2 className="size-4 " />
-                {completeTask.isPending ? "Saving…" : "Mark completed"}
+              <Button
+                onClick={handleClaim}
+                disabled={
+                  isPending ||
+                  !currentInternalUserId ||
+                  activeTask.assignedUserId === currentInternalUserId
+                }
+                className="gap-1.5"
+              >
+                <UserCheck className="size-4 " />
+                {activeTask.assignedUserId === currentInternalUserId
+                  ? "Claimed"
+                  : updateTask.isPending
+                    ? "Claiming…"
+                    : "Claim"}
               </Button>
             ) : null}
           </div>
