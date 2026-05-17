@@ -153,9 +153,6 @@ export function BusinessDetailsSection({ practitioner }: BusinessDetailsSectionP
                 placeholder="e.g. 51 824 753 556"
                 {...form.register("abn")}
               />
-              <p className="text-xs text-muted-foreground">
-                Australian Business Number
-              </p>
             </div>
           </div>
 
