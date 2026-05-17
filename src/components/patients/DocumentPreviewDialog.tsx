@@ -21,6 +21,12 @@ interface DocumentPreviewDialogProps {
   document: PatientDocument | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Hide every download CTA (footer + fallback states) when false. Used by
+   * surfaces that should let staff view a document inline without offering a
+   * download path. Defaults to `true`.
+   */
+  allowDownload?: boolean;
 }
 
 type PreviewKind = "pdf" | "image" | "unsupported";
@@ -36,6 +42,7 @@ export function DocumentPreviewDialog({
   document,
   open,
   onOpenChange,
+  allowDownload = true,
 }: DocumentPreviewDialogProps) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,10 +130,12 @@ export function DocumentPreviewDialog({
               <FileText className="size-8 text-muted-foreground" />
               <p className="text-sm text-foreground">Unable to load preview</p>
               <p className="text-xs text-muted-foreground">{error}</p>
-              <Button type="button" variant="outline" onClick={handleDownload}>
-                <Download className="size-4" />
-                Download instead
-              </Button>
+              {allowDownload && (
+                <Button type="button" variant="outline" onClick={handleDownload}>
+                  <Download className="size-4" />
+                  Download instead
+                </Button>
+              )}
             </div>
           )}
 
@@ -137,10 +146,12 @@ export function DocumentPreviewDialog({
                 Preview is not available for this file type.
               </p>
               <p className="text-xs text-muted-foreground">{document.contentType}</p>
-              <Button type="button" variant="outline" onClick={handleDownload}>
-                <Download className="size-4" />
-                Download to view
-              </Button>
+              {allowDownload && (
+                <Button type="button" variant="outline" onClick={handleDownload}>
+                  <Download className="size-4" />
+                  Download to view
+                </Button>
+              )}
             </div>
           )}
 
@@ -161,12 +172,14 @@ export function DocumentPreviewDialog({
           )}
         </div>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={handleDownload}>
-            <Download className="size-4" />
-            Download
-          </Button>
-        </div>
+        {allowDownload && (
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={handleDownload}>
+              <Download className="size-4" />
+              Download
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

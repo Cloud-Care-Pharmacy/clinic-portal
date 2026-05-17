@@ -2,15 +2,18 @@
 "use client";
 
 import { useEffect, useId, useState, Fragment } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   ArrowRight,
   Check,
   ChevronDown,
+  Eye,
   ExternalLink,
   FileText,
   Link2,
   Pill,
+  SquareArrowOutUpRight,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -242,14 +245,6 @@ function formatPatientDetailsLine({
   return [phone, ageSex, location].filter(Boolean).join(" · ");
 }
 
-function formatTaskReferenceStatus(task: Task) {
-  if (isTaskOverdue(task) && !["completed", "cancelled"].includes(task.status)) {
-    return "overdue";
-  }
-
-  return TASK_STATUS_LABELS[task.status].toLowerCase();
-}
-
 function LiveStatusDot({ className }: { className?: string }) {
   return (
     <span
@@ -307,10 +302,8 @@ export function TaskCallDialog({
   const patient = patientQuery.data?.data?.patient;
   const phone = patient?.mobile?.trim() || getTaskPatientPhone(task) || undefined;
   const patientName = task.patientName || "Patient";
-  const displayTitle = getTaskDisplayTitle(task.taskType, task.title);
   const patientDetailsLine =
     formatPatientDetailsLine({ patient, task, phone }) || "Patient details unavailable";
-  const taskReferenceStatus = formatTaskReferenceStatus(task);
 
   function handleNoteChange(value: string) {
     setNotes(value);
@@ -365,8 +358,10 @@ export function TaskCallDialog({
     <>
       <Dialog
         open={open}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) requestCancel();
+        onOpenChange={(nextOpen, eventDetails) => {
+          // The call dialog can only be dismissed via the Cancel call button.
+          // Block outside clicks, Esc, and any other Base UI close request.
+          if (!nextOpen) eventDetails.cancel();
         }}
       >
         <DialogContent
@@ -408,17 +403,22 @@ export function TaskCallDialog({
                     {taskInitials(task)}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-lg font-semibold" title={patientName}>
-                      {patientName}
-                    </p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate text-lg font-semibold" title={patientName}>
+                        {patientName}
+                      </p>
+                      <Link
+                        href={`/patients/${task.patientId}`}
+                        target="_blank"
+                        rel="noopener"
+                        aria-label={`Open ${patientName}'s profile in a new tab`}
+                        className="text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+                      >
+                        <SquareArrowOutUpRight className="size-4" />
+                      </Link>
+                    </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {patientDetailsLine}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      For task:{" "}
-                      <span className="font-semibold text-foreground">
-                        {displayTitle}, {taskReferenceStatus}
-                      </span>
                     </p>
                   </div>
                 </div>
@@ -463,7 +463,7 @@ export function TaskCallDialog({
                 </div>
               </div>
 
-              <DialogFooter className="mx-0 mb-0 items-center justify-end gap-2 rounded-none bg-card px-5 py-3 sm:flex-row">
+              <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none bg-card px-5 py-3 sm:flex-row">
                 <Button
                   variant="outline"
                   className="h-9 rounded-xl px-4 text-sm"
@@ -621,33 +621,36 @@ function LatestDocumentSection({
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const description = loading
-    ? "Loading the latest uploaded document…"
-    : latestDocument
-      ? latestDocument.filename
-      : "No documents have been uploaded for this patient yet.";
-
   return (
     <section className="border-b border-border p-4">
-      <p className={OVERLINE_CLASS}>Prescriptions</p>
-      <p className="mt-2 truncate text-sm text-muted-foreground" title={description}>
-        {description}
-      </p>
-      <Button
-        type="button"
-        variant="outline"
-        className="mt-3 h-9 w-full justify-start rounded-xl px-3 text-sm"
-        disabled={loading || !latestDocument}
-        onClick={() => setPreviewOpen(true)}
-      >
-        <FileText className="size-4" />
-        View document
-      </Button>
+      <p className={OVERLINE_CLASS}>Documents</p>
+      {loading ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Loading the latest uploaded document…
+        </p>
+      ) : latestDocument ? (
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="mt-2 flex w-full items-center gap-2 rounded-md text-left text-sm text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          title={`Preview ${latestDocument.filename}`}
+        >
+          <FileText className="size-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">{latestDocument.filename}</span>
+          <Eye className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Preview document</span>
+        </button>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">
+          No documents have been uploaded for this patient yet.
+        </p>
+      )}
       <DocumentPreviewDialog
         patientId={patientId}
         document={latestDocument}
         open={previewOpen}
         onOpenChange={setPreviewOpen}
+        allowDownload={false}
       />
     </section>
   );
