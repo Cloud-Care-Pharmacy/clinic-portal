@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CalendarPlus,
   CheckCircle2,
+  ChevronDown,
   ClipboardCheck,
   ClipboardList,
   Clock,
@@ -14,6 +15,8 @@ import {
   FileText,
   Inbox,
   MoreHorizontal,
+  PencilLine,
+  Phone,
   Play,
   User,
   UserCheck,
@@ -60,6 +63,8 @@ interface TaskDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onScheduleConsultation?: (task: Task) => void;
+  onCallTask?: (task: Task) => void;
+  onLogCall?: (task: Task) => void;
 }
 
 function DetailRow({
@@ -156,6 +161,8 @@ export function TaskDetailSheet({
   open,
   onOpenChange,
   onScheduleConsultation,
+  onCallTask,
+  onLogCall,
 }: TaskDetailSheetProps) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const profileQuery = useProfile();
@@ -186,6 +193,10 @@ export function TaskDetailSheet({
 
   const canAction =
     activeTask.status !== "completed" && activeTask.status !== "cancelled";
+  const isAssignedToMe =
+    !!currentInternalUserId &&
+    activeTask.assignedUserId === currentInternalUserId;
+  const canCall = Boolean(activeTask.patientId) && Boolean(onCallTask);
   const assignedToLabel =
     activeTask.assignedUserName ||
     (activeTask.assignedUserId
@@ -300,14 +311,25 @@ export function TaskDetailSheet({
               <DropdownMenuContent align="start" side="top" className="w-56">
                 {canAction && (
                   <>
-                    <DropdownMenuItem
-                      disabled={!activeTask.assignedUserId || isPending}
-                      onClick={handleComplete}
-                    >
-                      <CheckCircle2 className="size-4 " />
-                      Mark completed
-                    </DropdownMenuItem>
-                    {activeTask.status === "open" && (
+                    {!isAssignedToMe && (
+                      <DropdownMenuItem
+                        disabled={!currentInternalUserId}
+                        onClick={handleClaim}
+                      >
+                        <UserCheck className="size-4 " />
+                        Claim
+                      </DropdownMenuItem>
+                    )}
+                    {isAssignedToMe && activeTask.status !== "in_progress" && (
+                      <DropdownMenuItem
+                        disabled={isPending}
+                        onClick={handleComplete}
+                      >
+                        <CheckCircle2 className="size-4 " />
+                        Mark completed
+                      </DropdownMenuItem>
+                    )}
+                    {activeTask.status === "open" && !isAssignedToMe && (
                       <DropdownMenuItem
                         disabled={!activeTask.assignedUserId}
                         onClick={handleStart}
@@ -347,22 +369,69 @@ export function TaskDetailSheet({
             </DropdownMenu>
 
             {canAction ? (
-              <Button
-                onClick={handleClaim}
-                disabled={
-                  isPending ||
-                  !currentInternalUserId ||
-                  activeTask.assignedUserId === currentInternalUserId
-                }
-                className="gap-1.5"
-              >
-                <UserCheck className="size-4 " />
-                {activeTask.assignedUserId === currentInternalUserId
-                  ? "Claimed"
-                  : updateTask.isPending
-                    ? "Claiming…"
-                    : "Claim"}
-              </Button>
+              !isAssignedToMe ? (
+                <Button
+                  onClick={handleClaim}
+                  disabled={isPending || !currentInternalUserId}
+                  className="gap-1.5"
+                >
+                  <UserCheck className="size-4 " />
+                  {updateTask.isPending ? "Claiming…" : "Claim"}
+                </Button>
+              ) : activeTask.status === "open" ? (
+                <Button
+                  onClick={handleStart}
+                  disabled={isPending}
+                  className="gap-1.5"
+                >
+                  <Play className="size-4 " />
+                  {updateTask.isPending ? "Starting…" : "Start"}
+                </Button>
+              ) : activeTask.status === "in_progress" && canCall ? (
+                <div data-slot="button-group" className="inline-flex items-center">
+                  <Button
+                    onClick={() => onCallTask?.(activeTask)}
+                    disabled={isPending}
+                    className="gap-1.5 rounded-r-none border-r border-primary-foreground/20"
+                  >
+                    <Phone className="size-4 " />
+                    Call
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="inline-flex h-8 w-7 items-center justify-center rounded-r-sm bg-primary text-primary-foreground transition-colors hover:bg-primary/90 aria-expanded:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                      disabled={isPending}
+                      aria-label="More call actions"
+                    >
+                      <ChevronDown className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" side="top" className="w-48">
+                      <DropdownMenuItem
+                        disabled={isPending}
+                        onClick={handleComplete}
+                      >
+                        <CheckCircle2 className="size-4 " />
+                        Mark completed
+                      </DropdownMenuItem>
+                      {onLogCall && (
+                        <DropdownMenuItem onClick={() => onLogCall(activeTask)}>
+                          <PencilLine className="size-4 " />
+                          Log a call
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleComplete}
+                  disabled={isPending}
+                  className="gap-1.5"
+                >
+                  <CheckCircle2 className="size-4 " />
+                  {completeTask.isPending ? "Saving…" : "Mark completed"}
+                </Button>
+              )
             ) : null}
           </div>
         }

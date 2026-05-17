@@ -558,6 +558,8 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         onOpenChange={(open) => {
           if (!open) setSelectedTask(null);
         }}
+        onCallTask={handleCallTask}
+        onLogCall={handleManualLog}
       />
 
       {activeCallTask && (
