@@ -447,17 +447,6 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-end justify-end gap-2">
-            <div className="w-full space-y-2 sm:w-56">
-              <label
-                className="text-xs font-medium text-muted-foreground"
-                htmlFor="timezone"
-              >
-                Timezone
-              </label>
-              <Input id="timezone" className="h-9" {...form.register("timezone")} />
-            </div>
-          </div>
           <div className="grid grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[240px_1fr]">
             {/* Day list */}
             <div className="bg-card md:border-r">
@@ -537,6 +526,18 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
               {hasErrors ? " · fix highlighted rows to save" : ""}
             </p>
           ) : null}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium leading-none"
+                htmlFor="timezone"
+              >
+                Timezone
+              </label>
+              <Input id="timezone" {...form.register("timezone")} />
+            </div>
+          </div>
         </CardContent>
       </Card>
 

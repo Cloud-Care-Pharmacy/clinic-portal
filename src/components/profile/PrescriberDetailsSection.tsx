@@ -218,9 +218,6 @@ export function PrescriberDetailsSection({
                   {form.formState.errors.hpii.message}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                Healthcare Provider Identifier (Individual)
-              </p>
             </div>
           </div>
         </CardContent>
