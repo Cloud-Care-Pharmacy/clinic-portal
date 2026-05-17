@@ -48,6 +48,8 @@ import { DocumentPreviewDialog } from "@/components/patients/DocumentPreviewDial
 import {
   highRiskMedLabel,
   medicalConditionLabel,
+  quitMethodLabel,
+  quitMotivationLabel,
   smokingStatusLabel,
 } from "@/components/patients/clinical-labels";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -535,76 +537,152 @@ export function TaskCallDialog({
 }
 
 /**
- * Builds a short, human-readable summary of the patient's latest intake
- * record for the call dialog's "Active conditions" panel. Returns a list of
- * short sentences so the surface can render them as separate lines.
+ * Builds a human-readable patient summary from the latest intake record.
+ * Each entry is a complete sentence so the side panel can render them as
+ * separate paragraphs. Reads like a short clinical handover note.
  */
 function buildIntakeSummary(record: ClinicalDataRecord): string[] {
   const sentences: string[] = [];
 
-  // Smoking + vaping
-  const smoking = record.smokingStatus
+  // --- Smoking ---
+  const smokingLabel = record.smokingStatus
     ? smokingStatusLabel(record.smokingStatus)
     : "";
-  const smokingBits: string[] = [];
-  if (record.cigarettesPerDay) smokingBits.push(`${record.cigarettesPerDay}/day`);
-  if (record.yearsSmoked) smokingBits.push(`for ${record.yearsSmoked} years`);
-  let smokingSentence = smoking || "Smoking status not recorded";
-  if (smokingBits.length) smokingSentence += ` — ${smokingBits.join(" ")}`;
-  if (record.vapingStatus === "yes") {
-    const vapeBits: string[] = [];
-    if (record.vapingStrength) vapeBits.push(`${record.vapingStrength} strength`);
-    if (record.vapingVolume) vapeBits.push(record.vapingVolume);
-    smokingSentence += `; also vaping${vapeBits.length ? ` (${vapeBits.join(", ")})` : ""}`;
+  const cigs = cleanIntakeValue(record.cigarettesPerDay);
+  const years = cleanIntakeValue(record.yearsSmoked)?.replace(
+    /[-\s]*years?$/i,
+    ""
+  );
+  if (smokingLabel) {
+    const detail: string[] = [];
+    if (cigs) detail.push(`${cigs} cigarettes per day`);
+    if (years) detail.push(`for ${years} years`);
+    sentences.push(
+      detail.length
+        ? `${smokingLabel} — ${detail.join(" ")}.`
+        : `${smokingLabel}.`
+    );
+  } else {
+    sentences.push("Smoking status not recorded.");
   }
-  sentences.push(`${smokingSentence}.`);
 
-  // Medical conditions
+  // Quit attempts (only render if the patient supplied details)
+  const tries = cleanIntakeValue(record.timesTriedQuitting);
+  const methods = (record.quitMethods ?? [])
+    .map(quitMethodLabel)
+    .filter(Boolean);
+  const motivation = (record.quitMotivation ?? [])
+    .map(quitMotivationLabel)
+    .filter(Boolean);
+  const last = cleanIntakeValue(record.lastCigarette);
+  if (tries || methods.length || motivation.length || last) {
+    const parts: string[] = [];
+    if (tries) {
+      parts.push(
+        `has tried to quit ${tries} time${tries === "1" ? "" : "s"}`
+      );
+    }
+    if (methods.length) parts.push(`using ${joinList(methods)}`);
+    if (motivation.length) {
+      parts.push(`motivated by ${joinList(motivation).toLowerCase()}`);
+    }
+    if (last) parts.push(`last cigarette ${last.replace(/-/g, " ")}`);
+    sentences.push(`${capitaliseFirst(parts.join("; "))}.`);
+  }
+
+  // --- Vaping ---
+  if (record.vapingStatus === "yes") {
+    const strength = cleanIntakeValue(record.vapingStrength);
+    const volume = cleanIntakeValue(record.vapingVolume);
+    const method = cleanIntakeValue(record.vapingMethod);
+    const vapeParts: string[] = [];
+    if (method) vapeParts.push(method.replace(/-/g, " "));
+    if (strength) vapeParts.push(`${strength} strength`);
+    if (volume) vapeParts.push(`${volume} per day`);
+    sentences.push(
+      vapeParts.length
+        ? `Also vaping (${vapeParts.join(", ")}).`
+        : "Also vaping."
+    );
+  }
+
+  // --- Medical conditions ---
   if (record.hasMedicalConditions === "yes") {
     const items = (record.medicalConditions ?? [])
-      .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
+      .filter(
+        (slug): slug is string =>
+          typeof slug === "string" && slug.trim().length > 0 && slug !== "other"
+      )
       .map(medicalConditionLabel);
     const other = record.medicalConditionsOther?.trim();
     if (other) items.push(other);
     sentences.push(
       items.length
-        ? `Reports ${items.join(", ")}.`
-        : "Reports medical conditions (not detailed)."
+        ? `Reports ${joinList(items)}.`
+        : "Reports medical conditions (details not provided)."
     );
   } else {
     sentences.push("No medical conditions reported.");
   }
 
-  // Medications
+  // --- Medications ---
   if (record.takesMedication === "yes") {
     const highRisk = (record.highRiskMedications ?? [])
-      .filter((slug): slug is string => typeof slug === "string" && slug.trim().length > 0)
+      .filter(
+        (slug): slug is string =>
+          typeof slug === "string" && slug.trim().length > 0 && slug !== "other"
+      )
       .map(highRiskMedLabel);
     const list = record.medicationsList?.trim();
-    if (highRisk.length) {
-      sentences.push(
-        `Takes ${highRisk.join(", ")}${list ? ` (${list})` : ""}.`
-      );
-    } else if (list) {
-      sentences.push(`Takes ${list}.`);
-    } else {
-      sentences.push("Takes regular medication (not detailed).");
-    }
+    const allMeds = list ? [...highRisk, list] : highRisk;
+    sentences.push(
+      allMeds.length
+        ? `Takes ${joinList(allMeds)}.`
+        : "Takes regular medication (details not provided)."
+    );
   } else {
-    sentences.push("No regular medications.");
+    sentences.push("Not taking any regular medication.");
   }
 
-  // Cardiovascular / pregnancy flags
-  const flags: string[] = [];
-  if (record.cardiovascular === "yes") flags.push("cardiovascular risk");
-  if (record.pregnancy === "yes") flags.push("pregnancy");
-  if (flags.length) sentences.push(`Flagged for ${flags.join(" and ")}.`);
+  // --- Flags ---
+  if (record.cardiovascular === "yes") {
+    sentences.push("Flagged for cardiovascular risk.");
+  }
+  if (record.pregnancy === "yes") {
+    sentences.push("Currently pregnant.");
+  }
 
-  // Free-text additional notes
+  // --- Free-text notes ---
   const notes = record.additionalNotes?.trim();
-  if (notes) sentences.push(`Notes: ${notes}`);
+  if (notes) sentences.push(`Additional notes: ${notes}`);
 
   return sentences;
+}
+
+/**
+ * Trim an intake value and drop common "unknown" sentinels so they don't leak
+ * into the summary as e.g. "I Dont Know strength".
+ */
+function cleanIntakeValue(value: string | null | undefined): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^(i[-\s]?don'?t[-\s]?know|unknown|na|n\/a|none)$/i.test(trimmed)) {
+    return "";
+  }
+  return trimmed;
+}
+
+/** Oxford-comma join: [a] → "a", [a,b] → "a and b", [a,b,c] → "a, b, and c". */
+function joinList(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function capitaliseFirst(s: string): string {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
 function TaskPatientDetails({ task }: { task: Task }) {
