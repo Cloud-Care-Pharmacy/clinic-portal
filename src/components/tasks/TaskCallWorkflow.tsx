@@ -60,6 +60,7 @@ import {
   TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
 } from "@/components/tasks/task-format";
+import { formatDateOfBirth } from "@/components/layout/search-palette-utils";
 import {
   useApproveClinicalRecord,
   useLatestClinicalData,
@@ -233,7 +234,7 @@ function formatPatientLocation(patient: PatientMapping | undefined, task: Task) 
   return state || postcode || undefined;
 }
 
-function formatPatientDetailsLine({
+function formatPatientContactLine({
   patient,
   task,
   phone,
@@ -242,6 +243,18 @@ function formatPatientDetailsLine({
   task: Task;
   phone?: string;
 }) {
+  const location = formatPatientLocation(patient, task);
+  return [phone, location].filter(Boolean).join(" · ");
+}
+
+function formatPatientDobLine({
+  patient,
+  task,
+}: {
+  patient?: PatientMapping;
+  task: Task;
+}) {
+  const dob = formatDateOfBirth(patient?.dateOfBirth ?? null);
   const age =
     formatPatientAge(patient?.dateOfBirth) ||
     taskMetadataString(task, ["age", "patientAge"]);
@@ -249,9 +262,7 @@ function formatPatientDetailsLine({
     patient?.gender || taskMetadataString(task, ["sex", "gender", "patientSex"])
   );
   const ageSex = [age, sex].filter(Boolean).join("·");
-  const location = formatPatientLocation(patient, task);
-
-  return [phone, ageSex, location].filter(Boolean).join(" · ");
+  return [dob, ageSex].filter(Boolean).join(" · ");
 }
 
 function LiveStatusDot({ className }: { className?: string }) {
@@ -311,8 +322,8 @@ export function TaskCallDialog({
   const patient = patientQuery.data?.data?.patient;
   const phone = patient?.mobile?.trim() || getTaskPatientPhone(task) || undefined;
   const patientName = task.patientName || "Patient";
-  const patientDetailsLine =
-    formatPatientDetailsLine({ patient, task, phone }) || "Patient details unavailable";
+  const patientContactLine = formatPatientContactLine({ patient, task, phone });
+  const patientDobLine = formatPatientDobLine({ patient, task });
 
   function handleNoteChange(value: string) {
     setNotes(value);
@@ -427,8 +438,13 @@ export function TaskCallDialog({
                       </Link>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {patientDetailsLine}
+                      {patientContactLine || "Contact details unavailable"}
                     </p>
+                    {patientDobLine && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {patientDobLine}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
