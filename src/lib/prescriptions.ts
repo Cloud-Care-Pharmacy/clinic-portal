@@ -1,4 +1,8 @@
-import type { ListPrescriptionsResponse, PatientPrescription } from "@/types";
+import type {
+  ListPrescriptionsResponse,
+  PatientPrescription,
+  PrescriptionSource,
+} from "@/types";
 
 export function emptyListPrescriptionsResponse(
   patientId: string
@@ -26,4 +30,22 @@ export function formatPrescriptionDate(value: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+export function getPrescriptionSourceLabel(source: PrescriptionSource): string {
+  return source === "internal" ? "Internal" : "Parchment";
+}
+
+/**
+ * The clinical-decision gate lives on `consultations.outcome`. When a doctor
+ * marks a consultation as rejected, the outcome is stored as the literal
+ * string "reject" (case-insensitive). The backend uses the same check to
+ * return 422 from the create-internal-prescription endpoint.
+ */
+export const CLINICAL_DECISION_REJECT = "reject";
+
+export function isConsultationClinicallyRejected(
+  outcome: string | null | undefined
+): boolean {
+  return (outcome ?? "").trim().toLowerCase() === CLINICAL_DECISION_REJECT;
 }

@@ -26,10 +26,12 @@ import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
+import { PrescriptionSourceBadge } from "@/components/prescriptions/PrescriptionSourceBadge";
 import type {
   ListPrescriptionsResponse,
   PatientPrescription,
   PatientsListResponse,
+  PrescriptionSource,
 } from "@/types";
 
 const prescriptionColumns: GridColDef<PatientPrescription>[] = [
@@ -38,22 +40,36 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
     headerName: "Prescription",
     flex: 1,
     minWidth: 190,
-    renderCell: (params) => (
-      <div className="min-w-0 py-2">
-        <p
-          className="truncate text-sm font-medium"
-          title={formatPrescriptionReference(params.row)}
-        >
-          {formatPrescriptionReference(params.row)}
-        </p>
-        <p
-          className="truncate text-xs text-muted-foreground font-mono"
-          title={params.row.parchmentPrescriptionId}
-        >
-          {params.row.parchmentPrescriptionId}
-        </p>
-      </div>
-    ),
+    renderCell: (params) => {
+      const secondary =
+        params.row.source === "internal"
+          ? params.row.consultationId
+            ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
+            : "Internal"
+          : (params.row.parchmentPrescriptionId ?? "—");
+      return (
+        <div className="min-w-0 py-2">
+          <p
+            className="truncate text-sm font-medium"
+            title={formatPrescriptionReference(params.row)}
+          >
+            {formatPrescriptionReference(params.row)}
+          </p>
+          <p
+            className="truncate text-xs text-muted-foreground font-mono"
+            title={secondary}
+          >
+            {secondary}
+          </p>
+        </div>
+      );
+    },
+  },
+  {
+    field: "source",
+    headerName: "Source",
+    width: 120,
+    renderCell: (params) => <PrescriptionSourceBadge source={params.value} />,
   },
   {
     field: "prescriberName",
@@ -82,7 +98,12 @@ function PrescriptionGrid({
   patientId: string;
   initialPrescriptions?: ListPrescriptionsResponse;
 }) {
-  const { data, isLoading, error } = usePrescriptions(patientId, initialPrescriptions);
+  const [sourceFilter, setSourceFilter] = useState<PrescriptionSource | "all">("all");
+  const { data, isLoading, error } = usePrescriptions(
+    patientId,
+    sourceFilter === "all" ? initialPrescriptions : undefined,
+    sourceFilter === "all" ? undefined : { source: sourceFilter }
+  );
   const sync = useSyncPrescriptions(patientId);
   const [selected, setSelected] = useState<PatientPrescription | null>(null);
 
@@ -118,7 +139,38 @@ function PrescriptionGrid({
 
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div
+          role="tablist"
+          aria-label="Filter prescriptions by source"
+          className="inline-flex rounded-lg border border-border bg-card p-0.5"
+        >
+          {(
+            [
+              { key: "all", label: "All" },
+              { key: "parchment", label: "Parchment" },
+              { key: "internal", label: "Internal" },
+            ] as const
+          ).map((tab) => {
+            const active = sourceFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setSourceFilter(tab.key)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
         <Button
           variant="outline"
           size="sm"

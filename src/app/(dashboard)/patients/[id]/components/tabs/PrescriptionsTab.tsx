@@ -15,6 +15,7 @@ import {
   PrescriptionDetailSheet,
   formatPrescriptionReference,
 } from "@/components/prescriptions/PrescriptionDetailSheet";
+import { PrescriptionSourceBadge } from "@/components/prescriptions/PrescriptionSourceBadge";
 import type { ListPrescriptionsResponse, PatientPrescription } from "@/types";
 
 const prescriptionColumns: GridColDef<PatientPrescription>[] = [
@@ -23,22 +24,36 @@ const prescriptionColumns: GridColDef<PatientPrescription>[] = [
     headerName: "Prescription",
     flex: 1,
     minWidth: 190,
-    renderCell: (params) => (
-      <div className="min-w-0 py-2">
-        <p
-          className="truncate text-sm font-medium"
-          title={formatPrescriptionReference(params.row)}
-        >
-          {formatPrescriptionReference(params.row)}
-        </p>
-        <p
-          className="truncate text-xs text-muted-foreground font-mono"
-          title={params.row.parchmentPrescriptionId}
-        >
-          {params.row.parchmentPrescriptionId}
-        </p>
-      </div>
-    ),
+    renderCell: (params) => {
+      const secondary =
+        params.row.source === "internal"
+          ? params.row.consultationId
+            ? `Consultation ${params.row.consultationId.slice(0, 8)}…`
+            : "Internal"
+          : (params.row.parchmentPrescriptionId ?? "—");
+      return (
+        <div className="min-w-0 py-2">
+          <p
+            className="truncate text-sm font-medium"
+            title={formatPrescriptionReference(params.row)}
+          >
+            {formatPrescriptionReference(params.row)}
+          </p>
+          <p
+            className="truncate text-xs text-muted-foreground font-mono"
+            title={secondary}
+          >
+            {secondary}
+          </p>
+        </div>
+      );
+    },
+  },
+  {
+    field: "source",
+    headerName: "Source",
+    width: 120,
+    renderCell: (params) => <PrescriptionSourceBadge source={params.value} />,
   },
   {
     field: "prescriberName",

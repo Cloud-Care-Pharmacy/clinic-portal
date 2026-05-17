@@ -200,22 +200,96 @@ export interface SubmissionResult {
 }
 
 // ============================================
-// Patient Prescription types (local index + Parchment detail)
+// Patient Prescription types (local index + Parchment detail + internal)
 // ============================================
 
-/** Local prescription index row — populated by Parchment webhook. */
+/** Origin of a prescription row. */
+export type PrescriptionSource = "parchment" | "internal";
+
+/** Dosage form for internal prescription medications. */
+export type PrescriptionMedicationForm =
+  | "tablet"
+  | "capsule"
+  | "liquid"
+  | "solution"
+  | "suspension"
+  | "cream"
+  | "ointment"
+  | "gel"
+  | "spray"
+  | "inhaler"
+  | "patch"
+  | "injection"
+  | "suppository"
+  | "drops"
+  | "other";
+
+/** Route of administration for internal prescription medications. */
+export type PrescriptionMedicationRoute =
+  | "oral"
+  | "topical"
+  | "sublingual"
+  | "buccal"
+  | "rectal"
+  | "vaginal"
+  | "ophthalmic"
+  | "otic"
+  | "nasal"
+  | "inhaled"
+  | "intravenous"
+  | "intramuscular"
+  | "subcutaneous"
+  | "transdermal"
+  | "other";
+
+/** Drug scheduling for internal prescription medications. */
+export type PrescriptionMedicationSchedule = "S3" | "S4" | "S8";
+
+/** A single line item on an internal (CRM-authored) prescription. */
+export interface PrescriptionMedication {
+  id: string;
+  prescriptionId: string;
+  position: number;
+  name: string;
+  strength: string | null;
+  form: PrescriptionMedicationForm;
+  schedule: PrescriptionMedicationSchedule;
+  sig: string;
+  qty: number;
+  repeats: number;
+  brandSub: boolean;
+  pbs: boolean;
+  authority: boolean;
+  pbsCode: string | null;
+  routeAdministration: PrescriptionMedicationRoute;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Local prescription index row. May originate from Parchment
+ * (`source = 'parchment'`) or be authored in-CRM (`source = 'internal'`).
+ */
 export interface PatientPrescription {
   id: string;
   patientId: string;
   entityId: string | null;
-  parchmentPrescriptionId: string;
+  source: PrescriptionSource;
+  /** Parchment scid — set when `source = 'parchment'`, null for internal. */
+  parchmentPrescriptionId: string | null;
+  /** Originating consultation — set when `source = 'internal'`, null for parchment. */
+  consultationId: string | null;
+  /** Local `users.id` of the prescribing doctor — set for internal prescriptions. */
+  prescriberId: string | null;
   prescriptionDate: string; // ISO datetime
   prescriberName: string | null;
-  status: string; // free-form from Parchment: 'active' | 'expired' | 'cancelled' | ...
+  status: string; // free-form: 'active' | 'expired' | 'cancelled' | ...
   createdAt: string;
   updatedAt: string;
   createdBy: string | null;
   updatedBy: string | null;
+  /** Only present on detail responses when `source = 'internal'`. */
+  medications?: PrescriptionMedication[];
 }
 
 /** Result of a sync from Parchment → local index. */
@@ -256,6 +330,11 @@ export interface ListPrescriptionsResponse {
 export interface GetPrescriptionResponse {
   success: true;
   data: {
+    /**
+     * For internal prescriptions, `prescription.medications` is inlined and
+     * `parchment` is `null`. For parchment prescriptions, `parchment` holds the
+     * live payload and `prescription.medications` is omitted.
+     */
     prescription: PatientPrescription;
     parchment: ParchmentPrescriptionDetail | null;
   };
@@ -264,6 +343,36 @@ export interface GetPrescriptionResponse {
 export interface SyncPrescriptionsResponse {
   success: true;
   data: { sync: PrescriptionSyncResult };
+}
+
+// ---- Create internal (CRM-authored) prescription ----
+
+/** A single medication item in the create-internal-prescription request. */
+export interface CreateInternalPrescriptionMedicationInput {
+  name: string;
+  strength?: string | null;
+  form: PrescriptionMedicationForm;
+  schedule: PrescriptionMedicationSchedule;
+  sig: string;
+  qty: number;
+  repeats: number;
+  brandSub: boolean;
+  pbs: boolean;
+  authority: boolean;
+  pbsCode?: string | null;
+  routeAdministration: PrescriptionMedicationRoute;
+}
+
+export interface CreateInternalPrescriptionRequest {
+  consultationId: string;
+  /** Optional doctor override. Doctor callers may not pin a different prescriber. */
+  prescriberId?: string | null;
+  medications: CreateInternalPrescriptionMedicationInput[];
+}
+
+export interface CreateInternalPrescriptionResponse {
+  success: true;
+  data: { prescription: PatientPrescription };
 }
 
 // ============================================

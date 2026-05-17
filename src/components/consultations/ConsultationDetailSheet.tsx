@@ -48,8 +48,13 @@ import {
   useDeleteConsultation,
 } from "@/lib/hooks/use-consultations";
 import { usePrescriptions } from "@/lib/hooks/use-prescriptions";
-import { formatPrescriptionDate } from "@/lib/prescriptions";
+import {
+  CLINICAL_DECISION_REJECT,
+  formatPrescriptionDate,
+  isConsultationClinicallyRejected,
+} from "@/lib/prescriptions";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
+import { WriteInternalPrescriptionDialog } from "@/components/prescriptions/WriteInternalPrescriptionDialog";
 import type { Consultation, ConsultationType } from "@/types";
 
 const TYPE_COLORS: Record<ConsultationType, string> = {
@@ -96,12 +101,16 @@ export function ConsultationDetailSheet({
   const [outcomeText, setOutcomeText] = useState("");
   const [showOutcomeInput, setShowOutcomeInput] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [writeRxOpen, setWriteRxOpen] = useState(false);
   const consultation = useLastDefined(input);
   const prescriptionsQuery = usePrescriptions(consultation?.patientId);
   const recentPrescriptions =
     prescriptionsQuery.data?.data.prescriptions.slice(0, 5) ?? [];
 
   const isScheduled = consultation?.status === "scheduled";
+  const isCompleted = consultation?.status === "completed";
+  const isRejected = isConsultationClinicallyRejected(consultation?.outcome);
+  const canWritePrescription = isCompleted && !isRejected;
 
   function handleComplete() {
     if (!showOutcomeInput) {
@@ -136,6 +145,24 @@ export function ConsultationDetailSheet({
             `Consultation marked as ${status === "no-show" ? "no-show" : "cancelled"}`
           );
           onClose();
+        },
+        onError: (err) => toast.error(err.message),
+      }
+    );
+  }
+
+  function handleClinicalReject() {
+    // Sets outcome to the literal "reject" string — the clinical-decision gate
+    // honoured by POST /prescriptions/internal (returns 422 thereafter).
+    updateConsultation.mutate(
+      {
+        id: consultation!.id,
+        status: "completed",
+        outcome: CLINICAL_DECISION_REJECT,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Consultation completed — clinically rejected");
         },
         onError: (err) => toast.error(err.message),
       }
@@ -185,6 +212,12 @@ export function ConsultationDetailSheet({
               </DropdownMenuItem>
             </>
           )}
+          {isCompleted && !isRejected && (
+            <DropdownMenuItem onClick={handleClinicalReject}>
+              <XCircle className="size-4 " />
+              Clinically reject (no Rx)
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="size-4 " />
@@ -201,6 +234,15 @@ export function ConsultationDetailSheet({
               ? "Saving…"
               : "Confirm complete"
             : "Mark completed"}
+        </Button>
+      ) : canWritePrescription ? (
+        <Button
+          onClick={() => setWriteRxOpen(true)}
+          disabled={isPending}
+          className="gap-1.5"
+        >
+          <Pill className="size-4 " />
+          Write Prescription
         </Button>
       ) : onEdit ? (
         <Button
@@ -241,7 +283,25 @@ export function ConsultationDetailSheet({
               >
                 {consultation.type}
               </Badge>
+              {isRejected && (
+                <Badge
+                  variant="outline"
+                  className="text-xs border-destructive/40 bg-destructive/10 text-destructive"
+                >
+                  Clinically rejected
+                </Badge>
+              )}
             </div>
+
+            {isRejected && isCompleted && (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                This consultation was clinically rejected — no prescription can be
+                issued.
+              </div>
+            )}
 
             <DetailRow icon={<User className="size-4 " />} label="Patient">
               <Link
@@ -375,6 +435,15 @@ export function ConsultationDetailSheet({
           </div>
         ) : null}
       </AppSheet>
+
+      {consultation && (
+        <WriteInternalPrescriptionDialog
+          open={writeRxOpen}
+          onOpenChange={setWriteRxOpen}
+          patientId={consultation.patientId}
+          consultationId={consultation.id}
+        />
+      )}
 
       <AlertDialog
         open={deleteOpen}
