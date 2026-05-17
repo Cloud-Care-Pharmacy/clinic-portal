@@ -152,7 +152,7 @@ export async function createPrescription(
   body: CreatePrescriptionRequest
 ): Promise<CreatePrescriptionResponse> {
   const res = await fetch(
-    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions`,
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions/internal`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
