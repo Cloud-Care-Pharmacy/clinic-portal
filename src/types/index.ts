@@ -1481,8 +1481,31 @@ export interface PractitionerProfile {
   business: PractitionerBusinessDetails | null;
   availability: PractitionerAvailability | null;
 
+  /**
+   * Stored prescriber signature used to stamp issued prescriptions. `null`
+   * until the prescriber captures one in their profile. Optional on the type
+   * so older backend responses (without this field) still parse.
+   */
+  signature?: PractitionerSignature | null;
+
   createdAt: string;
   updatedAt: string;
+}
+
+export type SignatureCaptureMethod = "drawn" | "uploaded" | "typed";
+
+/**
+ * Stored signature asset metadata. `assetUrl` is a short-lived, signed URL the
+ * frontend can use to render the image — never a public link.
+ */
+export interface PractitionerSignature {
+  assetUrl: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  method: SignatureCaptureMethod;
+  capturedAt: string;
+  sha256?: string;
 }
 
 export interface PractitionerProfileResponse {
@@ -1524,6 +1547,21 @@ export interface UpdatePractitionerAvailabilityPayload {
   timezone?: string;
   availability: AvailabilitySchedule;
   consultationTypes?: ConsultationModality[] | null;
+}
+
+/**
+ * Payload for PUT /api/practitioners/me/signature. The frontend uploads the
+ * captured image inline as a base64 data URL — the backend persists the asset
+ * (e.g. R2) and returns the updated `PractitionerProfile`. Sending `null` (via
+ * DELETE) revokes the current signature.
+ */
+export interface UpdatePractitionerSignaturePayload {
+  /** `data:image/png;base64,...` (PNG strongly preferred; SVG accepted). */
+  dataUrl: string;
+  mimeType: string;
+  width: number;
+  height: number;
+  method: SignatureCaptureMethod;
 }
 
 // ============================================

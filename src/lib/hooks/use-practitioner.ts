@@ -6,6 +6,7 @@ import type {
   PractitionerFreeSlotsResponse,
   UpdatePractitionerPayload,
   UpdatePractitionerAvailabilityPayload,
+  UpdatePractitionerSignaturePayload,
 } from "@/types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -87,6 +88,57 @@ export function useUpdatePractitionerAvailability() {
   return useMutation({
     mutationFn: (data: UpdatePractitionerAvailabilityPayload) =>
       updatePractitionerAvailability(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["practitioner"] });
+    },
+  });
+}
+
+// ---- Signature ----
+
+async function updatePractitionerSignature(data: UpdatePractitionerSignaturePayload) {
+  const res = await fetch("/api/proxy/practitioners/me/signature", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Failed to update signature" }));
+    throw new Error(err.error ?? "Failed to update signature");
+  }
+  return res.json() as Promise<PractitionerProfileResponse>;
+}
+
+async function deletePractitionerSignature() {
+  const res = await fetch("/api/proxy/practitioners/me/signature", {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const err = await res
+      .json()
+      .catch(() => ({ error: "Failed to remove signature" }));
+    throw new Error(err.error ?? "Failed to remove signature");
+  }
+  return res.json() as Promise<PractitionerProfileResponse>;
+}
+
+export function useUpdatePractitionerSignature() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdatePractitionerSignaturePayload) =>
+      updatePractitionerSignature(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["practitioner"] });
+    },
+  });
+}
+
+export function useDeletePractitionerSignature() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => deletePractitionerSignature(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["practitioner"] });
     },

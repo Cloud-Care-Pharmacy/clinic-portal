@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StickyFormBar } from "@/components/shared/StickyFormBar";
+import { PrescriberSignatureCard } from "@/components/profile/PrescriberSignatureCard";
 import { useUpdatePractitioner } from "@/lib/hooks/use-practitioner";
 import type { PractitionerProfile, UpdatePractitionerPayload } from "@/types";
 
@@ -110,6 +111,7 @@ export function PrescriberDetailsSection({
   }
 
   return (
+    <div className="space-y-4">
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {!practitioner && (
         <Card>
@@ -226,5 +228,8 @@ export function PrescriberDetailsSection({
         onDiscard={() => form.reset()}
       />
     </form>
+
+    <PrescriberSignatureCard signature={practitioner?.signature ?? null} />
+    </div>
   );
 }
