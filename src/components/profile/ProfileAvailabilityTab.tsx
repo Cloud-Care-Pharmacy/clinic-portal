@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -529,12 +530,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <label
-                className="text-sm font-medium leading-none"
-                htmlFor="timezone"
-              >
-                Timezone
-              </label>
+              <Label htmlFor="timezone">Timezone</Label>
               <Input id="timezone" {...form.register("timezone")} />
             </div>
           </div>
