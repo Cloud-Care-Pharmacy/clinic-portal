@@ -102,7 +102,7 @@ const OUTCOMES: Array<{
 }> = [
   {
     id: "reached",
-    title: "Reached patient — finalised",
+    title: "Reached patient - finalised",
     description: "Patient answered. Notes complete. Consultation ready to finalise.",
     status: "completed",
     variant: "success",
@@ -130,7 +130,7 @@ const OUTCOMES: Array<{
   },
   {
     id: "abandoned",
-    title: "Abandon task — not appropriate",
+    title: "Abandon task - not appropriate",
     description: "Task closed without consultation. Captures the reason in audit log.",
     status: "cancelled",
     variant: "warning",
@@ -156,7 +156,7 @@ function taskInitials(task: Task) {
     parts
       .slice(0, 2)
       .map((part) => part[0]?.toUpperCase())
-      .join("") || "—"
+      .join("") || "-"
   );
 }
 
@@ -454,7 +454,7 @@ export function TaskCallDialog({
                 <Textarea
                   value={notes}
                   onChange={(event) => handleNoteChange(event.target.value)}
-                  placeholder="Write as you talk — every keystroke saves to the draft consultation. Try the snippets below."
+                  placeholder="Write as you talk - every keystroke saves to the draft consultation. Try the snippets below."
                   className="min-h-40 resize-y bg-background text-sm leading-relaxed"
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -1193,7 +1193,7 @@ function PrescriptionActionCard({
           iconTone: "bg-primary/10 text-primary",
           title: "Send via Parchment",
           body:
-            "Opens in a new tab. The script returns to us manually — you can still finalise here.",
+            "Opens in a new tab. The script returns to us manually - you can still finalise here.",
           action: (
             <Button
               type="button"
@@ -1373,7 +1373,7 @@ function ClinicalStatusRow({
         <StatusBadge variant={clinicalVariant}>{clinicalLabel}</StatusBadge>
         {!alreadyApproved && canDecide && (
           <span className="text-xs text-muted-foreground">
-            Applied when you finalise — nothing changes server-side until then.
+            Applied when you finalise - nothing changes until then.
           </span>
         )}
         <a
@@ -1398,7 +1398,7 @@ function ClinicalStatusRow({
 
       {alreadyApproved ? (
         <p className="text-xs leading-snug text-muted-foreground">
-          Already approved — no action needed.
+          Already approved - no action needed.
         </p>
       ) : canDecide ? (
         <div className="flex flex-wrap items-center gap-2">
