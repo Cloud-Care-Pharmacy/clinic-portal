@@ -1161,17 +1161,6 @@ export interface DashboardRecentActivityResponse {
   };
 }
 
-export interface EntityPrescriptionSummaryResponse {
-  success: boolean;
-  data: {
-    entityId: string;
-    activePrescriptions: number;
-    expiredPrescriptions: number;
-    pendingPrescriptions: number;
-    newThisWeek: number;
-  };
-}
-
 export interface RecentActivity {
   id: string;
   action: string;

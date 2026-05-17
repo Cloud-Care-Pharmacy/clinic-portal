@@ -38,7 +38,6 @@ import type {
   DashboardIntakeOverviewResponse,
   DashboardRecentActivityResponse,
   ActivityEventCategory,
-  EntityPrescriptionSummaryResponse,
   PractitionerProfileResponse,
   PractitionerAvailabilityResponse,
   UpdatePractitionerPayload,
@@ -425,19 +424,6 @@ class ApiClient {
     return this.request(
       `/api/patients/${encodeURIComponent(patientId)}/prescriptions/sync`,
       { method: "POST" }
-    );
-  }
-
-  async getEntityPrescriptionSummary(
-    entityId: string,
-    opts?: { from?: string; to?: string }
-  ): Promise<EntityPrescriptionSummaryResponse> {
-    const params = new URLSearchParams();
-    if (opts?.from) params.set("from", opts.from);
-    if (opts?.to) params.set("to", opts.to);
-    const qs = params.toString() ? `?${params.toString()}` : "";
-    return this.request(
-      `/api/entities/${encodeURIComponent(entityId)}/prescriptions/summary${qs}`
     );
   }
 

@@ -1,7 +1,6 @@
 import type {
   CreateInternalPrescriptionRequest,
   CreateInternalPrescriptionResponse,
-  EntityPrescriptionSummaryResponse,
   GetPrescriptionResponse,
   ListPrescriptionsResponse,
   PrescriptionSource,
@@ -107,21 +106,6 @@ async function syncPrescriptions(patientId: string) {
     throw new Error(message);
   }
   return (await res.json()) as SyncPrescriptionsResponse;
-}
-
-async function fetchEntityPrescriptionSummary(
-  entityId: string,
-  opts?: { from?: string; to?: string }
-) {
-  const params = new URLSearchParams();
-  if (opts?.from) params.set("from", opts.from);
-  if (opts?.to) params.set("to", opts.to);
-  const qs = params.toString() ? `?${params}` : "";
-  const res = await fetch(
-    `/api/proxy/entities/${encodeURIComponent(entityId)}/prescriptions/summary${qs}`
-  );
-  if (!res.ok) throw new Error("Failed to fetch prescription summary");
-  return res.json() as Promise<EntityPrescriptionSummaryResponse>;
 }
 
 export function prescriptionsQueryOptions(
@@ -255,20 +239,3 @@ export function useCreateParchmentPrescriptionLink() {
   });
 }
 
-export function useEntityPrescriptionSummary(
-  entityId: string | undefined,
-  opts?: { from?: string; to?: string },
-  initialData?: EntityPrescriptionSummaryResponse
-) {
-  return useQuery({
-    queryKey: [
-      "entity-prescription-summary",
-      entityId,
-      opts?.from ?? "",
-      opts?.to ?? "",
-    ],
-    queryFn: () => fetchEntityPrescriptionSummary(entityId!, opts),
-    enabled: !!entityId,
-    initialData,
-  });
-}
