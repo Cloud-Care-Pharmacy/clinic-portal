@@ -12,6 +12,7 @@ import { Mail, MessageSquare, Bell, Plus, type LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { FilterBar, type FilterDefinition } from "@/components/shared/FilterBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { dataGridSx } from "@/lib/datagrid-theme";
@@ -133,6 +134,70 @@ function TemplateTypePanel({
   const [sortModel, setSortModel] = useState<GridSortModel>([
     { field: "updatedAt", sort: "desc" },
   ]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of data) {
+      if (t.category) set.add(t.category);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [data]);
+
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return data.filter((row) => {
+      if (categoryFilters.length > 0) {
+        if (!row.category || !categoryFilters.includes(row.category)) return false;
+      }
+      if (statusFilters.length > 0) {
+        const status = row.active ? "active" : "inactive";
+        if (!statusFilters.includes(status)) return false;
+      }
+      if (q) {
+        const hay = [row.name, row.description, row.category]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [data, searchQuery, categoryFilters, statusFilters]);
+
+  const filters: FilterDefinition[] = useMemo(
+    () => [
+      {
+        key: "category",
+        label: "Category",
+        options: categoryOptions,
+        value: categoryFilters,
+        onChange: setCategoryFilters,
+      },
+      {
+        key: "status",
+        label: "Status",
+        options: ["active", "inactive"],
+        value: statusFilters,
+        onChange: setStatusFilters,
+        formatOption: (o) => o.charAt(0).toUpperCase() + o.slice(1),
+      },
+    ],
+    [categoryOptions, categoryFilters, statusFilters]
+  );
+
+  const hasActiveFilters =
+    searchQuery.length > 0 ||
+    categoryFilters.length > 0 ||
+    statusFilters.length > 0;
+
+  function clearFilters() {
+    setSearchQuery("");
+    setCategoryFilters([]);
+    setStatusFilters([]);
+  }
 
   const columns: GridColDef<Template>[] = useMemo(
     () => [
@@ -220,33 +285,63 @@ function TemplateTypePanel({
     );
   }
 
+  const toolbar = (
+    <FilterBar
+      searchPlaceholder={`Search ${TYPE_META[type].label.toLowerCase()} templates…`}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      filters={filters}
+      resultCount={hasActiveFilters ? filteredRows.length : data.length}
+      resultCountLoading={isLoading}
+      resultLabel="templates"
+    />
+  );
+
+  if (!isLoading && filteredRows.length === 0) {
+    return (
+      <div>
+        {toolbar}
+        <EmptyState
+          title="No templates match your filters"
+          description="Adjust or clear the search and filters to see more results."
+          actionLabel="Clear filters"
+          onAction={clearFilters}
+          dashed
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <DataGrid
-        rows={data}
-        columns={columns}
-        loading={isLoading}
-        autoHeight
-        pagination
-        disableRowSelectionOnClick
-        disableColumnMenu
-        columnHeaderHeight={44}
-        rowHeight={64}
-        sortModel={sortModel}
-        onSortModelChange={setSortModel}
-        pageSizeOptions={[10, 25, 50]}
-        initialState={{
-          pagination: { paginationModel: { pageSize: 10, page: 0 } },
-        }}
-        onRowClick={handleRowClick}
-        slotProps={{
-          loadingOverlay: {
-            variant: "skeleton",
-            noRowsVariant: "skeleton",
-          },
-        }}
-        sx={dataGridSx}
-      />
+    <div>
+      {toolbar}
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <DataGrid
+          rows={filteredRows}
+          columns={columns}
+          loading={isLoading}
+          autoHeight
+          pagination
+          disableRowSelectionOnClick
+          disableColumnMenu
+          columnHeaderHeight={44}
+          rowHeight={64}
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10, page: 0 } },
+          }}
+          onRowClick={handleRowClick}
+          slotProps={{
+            loadingOverlay: {
+              variant: "skeleton",
+              noRowsVariant: "skeleton",
+            },
+          }}
+          sx={dataGridSx}
+        />
+      </div>
     </div>
   );
 }

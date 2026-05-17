@@ -43,3 +43,5 @@ next-env.d.ts
 
 # Workflow handoff source materials (kept locally only)
 workflow-handoff/
+tmp/
+scripts/*
