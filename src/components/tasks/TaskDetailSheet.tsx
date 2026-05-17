@@ -17,6 +17,7 @@ import {
   Play,
   User,
   UserCheck,
+  UserMinus,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -224,6 +225,18 @@ export function TaskDetailSheet({
     );
   }
 
+  function handleUnassign() {
+    handleUpdate(
+      {
+        taskId: activeTask.taskId,
+        assignedUserId: null,
+        assignedRole: null,
+        note: "Task unassigned",
+      },
+      "Task unassigned"
+    );
+  }
+
   function handleStart() {
     handleUpdate(
       {
@@ -293,6 +306,15 @@ export function TaskDetailSheet({
                     >
                       <UserCheck className="size-4 " />
                       Claim
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={
+                        !activeTask.assignedUserId && !activeTask.assignedRole
+                      }
+                      onClick={handleUnassign}
+                    >
+                      <UserMinus className="size-4 " />
+                      Unassign
                     </DropdownMenuItem>
                     {activeTask.status === "open" && (
                       <DropdownMenuItem onClick={handleStart}>
