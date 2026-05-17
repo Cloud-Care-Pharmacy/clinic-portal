@@ -119,28 +119,28 @@ const OUTCOMES: Array<{
   {
     id: "voicemail",
     title: "Voicemail / no answer",
-    description: "Couldn't reach the patient. Will retry. Task stays in progress.",
+    description: "No answer - retry later.",
     status: "in_progress",
     variant: "info",
   },
   {
     id: "callback",
     title: "Patient asked to call back",
-    description: "Schedule a callback. Notes saved as draft.",
+    description: "Schedule a callback.",
     status: "in_progress",
     variant: "info",
   },
   {
     id: "wrong-time",
     title: "Reached but bad timing",
-    description: "Patient busy. Will call again later today.",
+    description: "Busy - retry later today.",
     status: "in_progress",
     variant: "info",
   },
   {
     id: "abandoned",
     title: "Abandon task - not appropriate",
-    description: "Task closed without consultation. Captures the reason in audit log.",
+    description: "Closed without consultation.",
     status: "cancelled",
     variant: "warning",
     statusLabel: "Closed",
@@ -926,8 +926,7 @@ export function TaskOutcomeDialog({
                             </StatusBadge>
                           </span>
                           <span
-                            className="mt-1 block truncate text-xs leading-snug text-muted-foreground"
-                            title={item.description}
+                            className="mt-1 block text-xs leading-snug text-muted-foreground"
                           >
                             {item.description}
                           </span>
