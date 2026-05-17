@@ -998,6 +998,11 @@ export function TaskOutcomeDialog({
                       <PrescriptionSegmentedToggle
                         value={prescriptionChoice}
                         onChange={setPrescriptionChoice}
+                        disabledValues={
+                          clinicalDecision === "reject"
+                            ? ["erx", "internal"]
+                            : undefined
+                        }
                       />
                     }
                   >
@@ -1179,10 +1184,12 @@ function PrescriptionSegmentedToggle({
   value,
   onChange,
   disabled,
+  disabledValues,
 }: {
   value: PrescriptionChoice;
   onChange: (next: PrescriptionChoice) => void;
   disabled?: boolean;
+  disabledValues?: ReadonlyArray<PrescriptionChoice>;
 }) {
   return (
     <div
@@ -1196,13 +1203,15 @@ function PrescriptionSegmentedToggle({
       {PRESCRIPTION_SEGMENTS.map((segment) => {
         const Icon = segment.icon;
         const active = value === segment.value;
+        const segmentDisabled =
+          disabled || (disabledValues?.includes(segment.value) ?? false);
         return (
           <button
             key={segment.value}
             type="button"
             role="radio"
             aria-checked={active}
-            disabled={disabled}
+            disabled={segmentDisabled}
             onClick={() => onChange(segment.value)}
             className={cn(
               "inline-flex h-7 items-center gap-1.5 rounded-md px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
