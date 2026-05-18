@@ -181,7 +181,11 @@ export function useUpdateWorkflow(workflowId: string) {
         }
       );
       if (!res.ok) throw await readError(res, "Failed to save workflow");
-      return res.json();
+      // Backend returns the engine's nested wire shape; the canvas works
+      // in the flat shape, so normalize before the data hits any caller
+      // (mutation `data`, optimistic cache write, etc.).
+      const body = (await res.json()) as WorkflowResponse;
+      return { ...body, data: normalizeWorkflow(body.data) };
     },
     onSuccess: (data) => {
       qc.setQueryData(["workflows", "detail", workflowId], data);
@@ -293,7 +297,13 @@ export function useActivateWorkflow(workflowId: string) {
         { method: "POST" }
       );
       if (!res.ok) throw await readError(res, "Failed to activate workflow");
-      return res.json();
+      const body = (await res.json()) as WorkflowActivateResponse;
+      // Activate returns the nested wire shape under `data.record`;
+      // normalize so the cached detail matches what the canvas expects.
+      return {
+        ...body,
+        data: { ...body.data, record: normalizeWorkflow(body.data.record) },
+      };
     },
     onSuccess: (data, variables) => {
       if (!variables?.dryRun) {
