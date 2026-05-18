@@ -1901,7 +1901,7 @@ interface WorkflowStepBase {
    */
   branchIndex?: number;
   /**
-   * Audit capture mode for this step. Defaults to `'summary'`. Omit from
+   * Audit capture mode for this step. Defaults to `'full'`. Omit from
    * serialized definition when default.
    */
   capture?: WorkflowStepCaptureMode;

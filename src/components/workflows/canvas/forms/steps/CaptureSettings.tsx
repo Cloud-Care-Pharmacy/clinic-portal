@@ -36,7 +36,7 @@ const CAPTURE_OPTIONS: ReadonlyArray<{
 /**
  * Per-step audit capture controls (capture mode + sensitive flag). Renders
  * inside `StepInspector` for every step kind. Defaults are not persisted —
- * the save path strips `capture: 'summary'` and `sensitive: false` so the
+ * the save path strips `capture: 'full'` and `sensitive: false` so the
  * stored definition stays clean.
  */
 export function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
@@ -44,7 +44,7 @@ export function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
   // When `sensitive`, capture is forced to `'none'`.
   const captureMode: WorkflowStepCaptureMode = sensitive
     ? "none"
-    : (step.capture ?? "summary");
+    : (step.capture ?? "full");
 
   function updateCapture(next: WorkflowStepCaptureMode) {
     onChange({ ...step, capture: next });
@@ -54,7 +54,7 @@ export function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
     if (next) {
       onChange({ ...step, sensitive: true, capture: "none" });
     } else {
-      onChange({ ...step, sensitive: false, capture: "summary" });
+      onChange({ ...step, sensitive: false, capture: "full" });
     }
   }
 
