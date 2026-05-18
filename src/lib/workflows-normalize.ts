@@ -143,3 +143,121 @@ function collapseConditions(branch: NestedRouterBranch): unknown {
   }
   return undefined;
 }
+
+/**
+ * Inverse of `normalizeWorkflowDefinition`: rebuild the engine's **nested**
+ * wire shape from the canvas's flat representation so the API accepts it.
+ *
+ * The backend's step validator requires:
+ *  - `router.branches[i].conditions: Condition[][]` (OR-of-AND) — never
+ *    omitted, even when the branch is unconditional (`[]`).
+ *  - `router.branches[i].steps: Step[]` — child chain, always present.
+ *  - `router.fallback.steps: Step[]` — fallback child chain, always present
+ *    when `fallback` is set.
+ *  - `loop_on_items.steps: Step[]` — loop body, always present (may be
+ *    empty).
+ *
+ * The flat shape used by the canvas (`parentStepName` + `branchIndex`
+ * markers on children, single `branch.condition`, no `branch.steps` /
+ * `fallback.steps`) is rejected by the API as
+ * `Invalid workflow definition`. This function re-nests children, wraps
+ * the single condition as `[[condition]]`, and strips the canvas-only
+ * marker fields along with default-valued audit fields (`capture: 'full'`,
+ * `sensitive: false`, missing `retry`).
+ *
+ * Idempotent against pre-existing wire input: if children are already
+ * nested under their parents (no `parentStepName` markers), the function
+ * just performs the default-stripping pass and re-emits.
+ *
+ * Names are derived as `step.id ?? "step_" + flatIndex` to match
+ * `hoistSteps`'s naming so children added by the normalizer round-trip
+ * correctly.
+ */
+export function serializeWorkflowSteps(flatSteps: WorkflowStep[]): WorkflowStep[] {
+  type Indexed = { step: WorkflowStep; flatIndex: number };
+  const childrenByParent = new Map<string, Map<number, Indexed[]>>();
+  const topLevel: Indexed[] = [];
+
+  flatSteps.forEach((step, flatIndex) => {
+    const parent = step.parentStepName;
+    if (parent !== undefined) {
+      const branchIdx = step.branchIndex ?? 0;
+      let byBranch = childrenByParent.get(parent);
+      if (!byBranch) {
+        byBranch = new Map();
+        childrenByParent.set(parent, byBranch);
+      }
+      const list = byBranch.get(branchIdx) ?? [];
+      byBranch.set(branchIdx, list);
+      list.push({ step, flatIndex });
+    } else {
+      topLevel.push({ step, flatIndex });
+    }
+  });
+
+  function nameOf({ step, flatIndex }: Indexed): string {
+    return typeof step.id === "string" && step.id ? step.id : `step_${flatIndex}`;
+  }
+
+  function buildOne(entry: Indexed): WorkflowStep {
+    const { step } = entry;
+    const {
+      // Strip canvas-only flat markers; not part of the wire shape.
+      parentStepName: _parentStepName,
+      branchIndex: _branchIndex,
+      capture,
+      sensitive,
+      retry,
+      ...rest
+    } = step as WorkflowStep & {
+      parentStepName?: string;
+      branchIndex?: number;
+      capture?: WorkflowStep["capture"];
+      sensitive?: WorkflowStep["sensitive"];
+      retry?: WorkflowStep["retry"];
+    };
+    void _parentStepName;
+    void _branchIndex;
+    const cleaned: Record<string, unknown> = { ...rest };
+    if (capture && capture !== "full") cleaned.capture = capture;
+    if (sensitive === true) cleaned.sensitive = true;
+    if (retry !== undefined) cleaned.retry = retry;
+
+    const parentName = nameOf(entry);
+    const byBranch = childrenByParent.get(parentName);
+
+    if (cleaned.kind === "router") {
+      const rawBranches = Array.isArray(cleaned.branches)
+        ? (cleaned.branches as Array<{ name: string; condition?: unknown }>)
+        : [];
+      cleaned.branches = rawBranches.map((branch, branchIdx) => {
+        const conditions =
+          branch.condition && typeof branch.condition === "object"
+            ? [[branch.condition]]
+            : [];
+        const branchChildren = byBranch?.get(branchIdx) ?? [];
+        return {
+          name: branch.name,
+          conditions,
+          steps: branchChildren.map(buildOne),
+        };
+      });
+
+      const fallbackChildren = byBranch?.get(FALLBACK_BRANCH_INDEX) ?? [];
+      const existingFallback = cleaned.fallback as { name?: string } | undefined;
+      if (existingFallback || fallbackChildren.length > 0) {
+        cleaned.fallback = {
+          ...(existingFallback ?? {}),
+          steps: fallbackChildren.map(buildOne),
+        };
+      }
+    } else if (cleaned.kind === "loop_on_items") {
+      const loopChildren = byBranch?.get(0) ?? [];
+      cleaned.steps = loopChildren.map(buildOne);
+    }
+
+    return cleaned as unknown as WorkflowStep;
+  }
+
+  return topLevel.map(buildOne);
+}

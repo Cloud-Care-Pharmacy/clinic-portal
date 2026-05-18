@@ -38,6 +38,10 @@ import {
   useWorkflowVarsCatalog,
 } from "@/lib/hooks/use-workflow-vars-catalog";
 import { countOutdatedRuns } from "@/lib/workflow-versions";
+import {
+  normalizeWorkflowDefinition,
+  serializeWorkflowSteps,
+} from "@/lib/workflows-normalize";
 import type {
   Workflow,
   WorkflowNote,
@@ -56,25 +60,13 @@ const WEBHOOK_BASE_URL =
   process.env.NEXT_PUBLIC_WEBHOOK_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "";
 
 /**
- * Strip default capture/sensitive/retry fields from each step before
- * serializing to the backend. The default `capture: 'full'` and
- * `sensitive: false` are inferred when missing, and `retry` is omitted when
- * unset, so we drop them to keep the stored definition (and JSON diffs)
- * clean.
+ * Serialize the canvas's flat draft steps into the nested wire shape the
+ * backend expects (`router.branches[].{conditions,steps}`,
+ * `router.fallback.steps`, `loop_on_items.steps`). Implementation lives in
+ * `workflows-normalize` next to its inverse `normalizeWorkflowDefinition`.
  */
 function serializeStepsForSave(steps: WorkflowStep[]): WorkflowStep[] {
-  return steps.map((step) => {
-    const { capture, sensitive, retry, ...rest } = step as WorkflowStep & {
-      capture?: WorkflowStep["capture"];
-      sensitive?: WorkflowStep["sensitive"];
-      retry?: WorkflowStep["retry"];
-    };
-    const next = { ...rest } as WorkflowStep;
-    if (capture && capture !== "full") next.capture = capture;
-    if (sensitive === true) next.sensitive = true;
-    if (retry !== undefined) next.retry = retry;
-    return next;
-  });
+  return serializeWorkflowSteps(steps);
 }
 
 /**
@@ -288,7 +280,13 @@ export function WorkflowDetailClient({
     } catch (err) {
       if (err instanceof WorkflowApiError) {
         setServerError({ path: err.path, message: err.fieldMessage ?? err.message });
-        toast.error("Save failed", { description: err.message });
+        // Prefer the structured first-issue path so users see WHICH field
+        // the backend rejected (e.g. `definition.steps.0.branches.0.steps`)
+        // instead of just the generic envelope message.
+        const description = err.path
+          ? `${err.path}: ${err.fieldMessage ?? err.message}`
+          : err.message;
+        toast.error("Save failed", { description });
       } else {
         toast.error("Save failed");
       }
@@ -447,13 +445,24 @@ export function WorkflowDetailClient({
       ? (candidate.triggers as WorkflowTrigger[])
       : draftTriggers;
 
+    // Imported JSON may be in the nested wire shape (e.g. a workflow
+    // re-exported from the API or a download made after this fix). Flatten
+    // it through the same normalizer the load path uses so the canvas can
+    // render router/loop children regardless of the source shape.
+    const flattened = normalizeWorkflowDefinition({
+      version: 1,
+      steps: nextSteps,
+      ...(nextNotes ? { notes: nextNotes } : null),
+    });
+    const importedSteps = flattened.steps;
+
     setDraftTriggers(nextTriggers);
-    setDraftSteps(nextSteps);
+    setDraftSteps(importedSteps);
     setDraftNotes(nextNotes ?? []);
     setDraftDirty(true);
     setServerError(null);
     toast.success(
-      `Imported ${nextSteps.length} step${nextSteps.length === 1 ? "" : "s"}`,
+      `Imported ${importedSteps.length} step${importedSteps.length === 1 ? "" : "s"}`,
       { description: "Review the canvas and click Save draft to persist." }
     );
   }
