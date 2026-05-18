@@ -2,8 +2,149 @@ import {
   FALLBACK_BRANCH_INDEX,
   type Workflow,
   type WorkflowDefinitionBody,
+  type WorkflowRunStep,
   type WorkflowStep,
 } from "@/types";
+
+/**
+ * For each step in the canvas's flat `WorkflowStep[]`, compute the wire
+ * `stepPath` the gateway emits on `WorkflowRunStep` so a run's projection
+ * can be joined back to canvas positions.
+ *
+ * Path grammar (matches the engine's projection):
+ *  - Top-level step:         `null`   (the gateway omits the path here)
+ *  - Router branch child:    `"<topIdx>.branches[<bi>].steps[<pos>]"`
+ *  - Router fallback child:  `"<topIdx>.fallback.steps[<pos>]"`
+ *  - Loop body child:        `"<topIdx>.steps[<pos>]"`
+ *
+ * `<topIdx>` is the parent's ordinal within the top-level chain (the only
+ * containers that nest steps today are `router` and `loop_on_items`, and
+ * both must sit at the top level). `<pos>` is the child's ordinal within
+ * its branch/body chain.
+ *
+ * Returns an array aligned 1:1 with the input `steps`.
+ */
+export function canvasStepPaths(
+  steps: readonly WorkflowStep[],
+): (string | null)[] {
+  // Map each top-level container's id → its top-level ordinal so child
+  // paths can reference the parent by index.
+  const topOrdinalByName = new Map<string, number>();
+  let topOrd = 0;
+  steps.forEach((s, i) => {
+    if (s.parentStepName) return;
+    const name = s.id ?? `step_${i}`;
+    topOrdinalByName.set(name, topOrd);
+    topOrd += 1;
+  });
+
+  // Track child positions per (parentName, branchIndex). The flat array
+  // already lists children in chain order, so each occurrence increments
+  // the per-chain counter.
+  const childPosCounter = new Map<string, number>();
+  // Index parents by name so we can look up their kind for path shape.
+  const stepByName = new Map<string, WorkflowStep>();
+  steps.forEach((s, i) => {
+    const name = s.id ?? `step_${i}`;
+    stepByName.set(name, s);
+  });
+
+  return steps.map((s) => {
+    if (!s.parentStepName) return null;
+    const parentOrd = topOrdinalByName.get(s.parentStepName);
+    if (parentOrd === undefined) return null;
+    const bi = s.branchIndex ?? 0;
+    const key = `${s.parentStepName}|${bi}`;
+    const pos = childPosCounter.get(key) ?? 0;
+    childPosCounter.set(key, pos + 1);
+    const parent = stepByName.get(s.parentStepName);
+    if (parent?.kind === "loop_on_items") {
+      return `${parentOrd}.steps[${pos}]`;
+    }
+    if (bi === FALLBACK_BRANCH_INDEX) {
+      return `${parentOrd}.fallback.steps[${pos}]`;
+    }
+    return `${parentOrd}.branches[${bi}].steps[${pos}]`;
+  });
+}
+
+/**
+ * Flatten a tree of `WorkflowRunStep` projections (parent + nested
+ * `children`) into a single array in DFS preorder. The resulting order
+ * mirrors `normalizeWorkflowDefinition`'s flat `steps[]` order, so the
+ * Nth flattened projection lines up with the Nth definition step.
+ *
+ * The gateway returns `data.steps[]` as a tree where `stepIndex` is reset
+ * inside each nested container (router branches, loop bodies). Use this
+ * helper any time you need a unique-per-step list or want to index by
+ * canvas position. Lookup by `stepPath` remains the canonical key.
+ */
+export function flattenRunSteps(
+  steps: readonly WorkflowRunStep[] | null | undefined,
+): WorkflowRunStep[] {
+  if (!steps || steps.length === 0) return [];
+  const out: WorkflowRunStep[] = [];
+  const walk = (list: readonly WorkflowRunStep[]) => {
+    for (const s of list) {
+      out.push(s);
+      if (Array.isArray(s.children) && s.children.length) walk(s.children);
+    }
+  };
+  walk(steps);
+  return out;
+}
+
+/**
+ * Find a step in a (possibly nested) projection tree by its `stepPath`.
+ * Returns `undefined` when no match is found.
+ */
+export function findRunStepByPath(
+  steps: readonly WorkflowRunStep[] | null | undefined,
+  path: string | null | undefined,
+): WorkflowRunStep | undefined {
+  if (!steps || !path) return undefined;
+  for (const s of steps) {
+    if (s.stepPath === path) return s;
+    if (Array.isArray(s.children) && s.children.length) {
+      const hit = findRunStepByPath(s.children, path);
+      if (hit) return hit;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Replace a step in a (possibly nested) projection tree by `stepPath`,
+ * returning a new tree (immutable update). When no match is found the
+ * original tree is returned unchanged.
+ */
+export function replaceRunStepByPath(
+  steps: readonly WorkflowRunStep[],
+  next: WorkflowRunStep,
+): WorkflowRunStep[] {
+  const path = next.stepPath;
+  if (!path) return steps as WorkflowRunStep[];
+  let mutated = false;
+  const walk = (list: readonly WorkflowRunStep[]): WorkflowRunStep[] => {
+    const out: WorkflowRunStep[] = new Array(list.length);
+    for (let i = 0; i < list.length; i += 1) {
+      const s = list[i]!;
+      if (s.stepPath === path) {
+        out[i] = next;
+        mutated = true;
+        continue;
+      }
+      if (Array.isArray(s.children) && s.children.length) {
+        const newChildren = walk(s.children);
+        out[i] = newChildren === s.children ? s : { ...s, children: newChildren };
+        continue;
+      }
+      out[i] = s;
+    }
+    return mutated ? out : (list as WorkflowRunStep[]);
+  };
+  return walk(steps);
+}
 
 /**
  * Convert a wire-format workflow definition into the flat representation the

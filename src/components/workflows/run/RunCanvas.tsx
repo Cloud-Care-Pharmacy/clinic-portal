@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { WorkflowGraph } from "@/components/workflows/canvas/WorkflowGraph";
 import type { NodeRunStatus } from "@/components/workflows/canvas/lib/graph-builder";
 import { stepNodeName } from "@/components/workflows/canvas/lib/step-tree";
+import { canvasStepPaths, flattenRunSteps } from "@/lib/workflows-normalize";
 import type {
   WorkflowNote,
   WorkflowRunStep,
@@ -53,30 +54,67 @@ function RunCanvasBody({
 }: RunCanvasProps) {
   const { fitView } = useReactFlow();
 
+  // Flatten the projection tree (DFS preorder) so we can walk every
+  // executed step regardless of nesting depth. The gateway returns nested
+  // `children` for router / loop kinds and resets `stepIndex` to 0 inside
+  // each container — never key overlays by `stepIndex` directly.
+  const flatRunSteps = useMemo(() => flattenRunSteps(runSteps), [runSteps]);
+
+  // Resolve each projection entry to a canvas flat-index via `stepPath`.
+  // We can't use positional mapping because the projection only contains
+  // entries for branches the engine actually took, while the canvas paints
+  // *every* branch. Mismatched chain lengths would otherwise shift child
+  // statuses onto sibling-branch nodes.
+  const runIdxByCanvasIdx = useMemo<Map<number, number>>(() => {
+    const paths = canvasStepPaths(steps);
+    const canvasIdxByPath = new Map<string, number>();
+    const canvasTopLevel: number[] = [];
+    paths.forEach((p, i) => {
+      if (p === null) canvasTopLevel.push(i);
+      else canvasIdxByPath.set(p, i);
+    });
+    const out = new Map<number, number>();
+    let topOrd = 0;
+    flatRunSteps.forEach((s, runIdx) => {
+      if (!s.stepPath) {
+        // Top-level projection entries arrive in top-level order.
+        const canvasIdx = canvasTopLevel[topOrd];
+        topOrd += 1;
+        if (canvasIdx !== undefined) out.set(canvasIdx, runIdx);
+        return;
+      }
+      const canvasIdx = canvasIdxByPath.get(s.stepPath);
+      if (canvasIdx !== undefined) out.set(canvasIdx, runIdx);
+    });
+    return out;
+  }, [steps, flatRunSteps]);
+
   // Map the projection → per-step canvas status. The projection has 6
   // statuses; the canvas's `NodeRunStatus` enum has 5 (no `skipped`), so
   // `skipped` collapses to `done` for display purposes. `pending` entries
   // are omitted so unstarted nodes paint with their default style.
   const stepRunStatus = useMemo<Record<number, NodeRunStatus>>(() => {
     const out: Record<number, NodeRunStatus> = {};
-    for (const s of runSteps) {
+    runIdxByCanvasIdx.forEach((runIdx, canvasIdx) => {
+      const s = flatRunSteps[runIdx];
+      if (!s) return;
       switch (s.status) {
         case "running":
         case "done":
         case "failed":
         case "waiting":
-          out[s.stepIndex] = s.status;
+          out[canvasIdx] = s.status;
           break;
         case "skipped":
-          out[s.stepIndex] = "done";
+          out[canvasIdx] = "done";
           break;
         case "pending":
           // Leave undefined — the graph treats absence as "not started".
           break;
       }
-    }
+    });
     return out;
-  }, [runSteps]);
+  }, [flatRunSteps, runIdxByCanvasIdx]);
 
   // Per-step metadata for the node pills. `durationMs` for terminal steps,
   // a ticking `liveElapsedMs` for the in-flight one. Sourced entirely from
@@ -85,17 +123,19 @@ function RunCanvasBody({
     Record<number, { durationMs?: number; liveElapsedMs?: number }>
   >(() => {
     const out: Record<number, { durationMs?: number; liveElapsedMs?: number }> = {};
-    for (const s of runSteps) {
+    runIdxByCanvasIdx.forEach((runIdx, canvasIdx) => {
+      const s = flatRunSteps[runIdx];
+      if (!s) return;
       if (s.status === "running" && s.startedAt) {
-        out[s.stepIndex] = {
+        out[canvasIdx] = {
           liveElapsedMs: Math.max(0, now - new Date(s.startedAt).getTime()),
         };
       } else if (s.durationMs != null) {
-        out[s.stepIndex] = { durationMs: s.durationMs };
+        out[canvasIdx] = { durationMs: s.durationMs };
       }
-    }
+    });
     return out;
-  }, [runSteps, now]);
+  }, [flatRunSteps, runIdxByCanvasIdx, now]);
 
   // Identify the currently-active step node id (if any) so the action bar
   // can fit-view onto it.

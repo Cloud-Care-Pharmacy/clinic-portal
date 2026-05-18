@@ -2442,6 +2442,20 @@ export interface WorkflowRunStep {
   output: unknown | null;
   /** True when either `input` or `output` exceeded the inline 2 KB cap. */
   captureTruncated: boolean;
+  /**
+   * Stable hierarchical identifier of this step within the run snapshot,
+   * e.g. `"0.branches[0].steps[1]"`. `null` only on top-level entries when
+   * the server omits it. **Use this as the lookup key** — `stepIndex` is
+   * reset to 0 inside each nested container and is no longer unique.
+   */
+  stepPath?: string | null;
+  /**
+   * Nested children for container kinds (`router`, `loop_on_items`). The
+   * gateway returns the projection as a tree mirroring the definition; use
+   * `flattenRunSteps()` from `@/lib/workflows-normalize` when a flat list
+   * is needed (e.g. for `RunCanvas` overlays).
+   */
+  children?: WorkflowRunStep[];
 }
 
 /**

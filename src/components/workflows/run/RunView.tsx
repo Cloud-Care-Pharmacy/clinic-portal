@@ -30,6 +30,10 @@ import {
 import { cn } from "@/lib/utils";
 import { isRunOutdated } from "@/lib/workflow-versions";
 import {
+  flattenRunSteps,
+  replaceRunStepByPath,
+} from "@/lib/workflows-normalize";
+import {
   useCancelWorkflowRun,
   useWorkflowRun,
   useWorkflowRunStream,
@@ -443,11 +447,13 @@ type RunSummary = {
  * the aggregate counts the header needs.
  */
 function buildRunSummary(run: WorkflowRun, steps: WorkflowRunStep[]): RunSummary {
-  const rows: StepRow[] = steps.map((s) => ({ step: s }));
+  // Flatten the projection tree so nested router/loop children are counted.
+  const flat = flattenRunSteps(steps);
+  const rows: StepRow[] = flat.map((s) => ({ step: s }));
   let completed = 0;
   let hasRunning = false;
   let hasFailed = false;
-  for (const s of steps) {
+  for (const s of flat) {
     if (
       s.status === "done" ||
       s.status === "failed" ||
@@ -793,15 +799,22 @@ function RunPanel({
       );
     },
     onStepState: (step) => {
-      // Replace the matching projection entry by `stepIndex`. The server
-      // re-emits `step_state` for every step on (re)connect, so this is
-      // safely idempotent — unknown indices are appended (defensive,
-      // shouldn't happen since `totalSteps` is snapshot-stable).
+      // Replace the matching projection entry by `stepPath` — the gateway
+      // returns the projection as a tree, and `stepIndex` is reset to 0
+      // inside each nested container so it's no longer unique. For
+      // top-level entries the server may return `stepPath: null`; in that
+      // case `stepIndex` is still unique within the top-level array so
+      // fall back to an index-based replace.
       queryClient.setQueryData<WorkflowRunDetailResponse>(
         ["workflow-runs", "detail", runId],
         (prev) => {
           if (!prev) return prev;
           const steps = prev.data.steps ?? [];
+          if (step.stepPath) {
+            const next = replaceRunStepByPath(steps, step);
+            if (next === steps) return prev;
+            return { ...prev, data: { ...prev.data, steps: next } };
+          }
           const idx = steps.findIndex((s) => s.stepIndex === step.stepIndex);
           const next =
             idx === -1
