@@ -221,7 +221,13 @@ function TemplateModeFields({
           <SelectTrigger>
             <SelectValue
               placeholder={isLoading ? "Loading…" : "Select a template"}
-            />
+            >
+              {(value: unknown) => {
+                if (!value || typeof value !== "string") return null;
+                const match = templates.find((t) => t.id === value);
+                return match?.name ?? selected?.name ?? value;
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {templates
