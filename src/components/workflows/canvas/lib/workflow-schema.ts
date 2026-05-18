@@ -130,15 +130,15 @@ const sendEmailStep = z
     kind: z.literal("send_email"),
     to: templateString,
     /**
-     * v4 UUID of an active `type: "email"` template. The full
-     * existence/type/active check happens server-side; this only
+     * UUID of an active `type: "email"` template (any RFC 4122 version).
+     * The full existence/type/active check happens server-side; this only
      * guards against obvious shape errors.
      */
     templateId: z
       .string()
       .regex(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-        "Must be a v4 UUID",
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        "Must be a valid UUID",
       )
       .optional(),
     /**
@@ -189,15 +189,15 @@ const sendSmsStep = z
     kind: z.literal("send_sms"),
     to: templateString,
     /**
-     * v4 UUID of an active `type: "sms"` template. Existence/type/active
-     * checks happen server-side; this only guards against obvious shape
-     * errors.
+     * UUID of an active `type: "sms"` template (any RFC 4122 version).
+     * Existence/type/active checks happen server-side; this only guards
+     * against obvious shape errors.
      */
     templateId: z
       .string()
       .regex(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-        "Must be a v4 UUID",
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        "Must be a valid UUID",
       )
       .optional(),
     /**
