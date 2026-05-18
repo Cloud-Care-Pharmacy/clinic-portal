@@ -139,7 +139,11 @@ function AttachmentsEditor({
 
 export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
   const { step, onChange, errors } = props;
-  const mode: "template" | "inline" = step.templateId ? "template" : "inline";
+  // `templateId` is `undefined` only when the user explicitly chose inline
+  // mode. An empty string ("") means template mode with no template picked
+  // yet — needed so the Source select can switch back from inline to template.
+  const mode: "template" | "inline" =
+    step.templateId !== undefined ? "template" : "inline";
   return (
     <>
       <Field label="Source">
