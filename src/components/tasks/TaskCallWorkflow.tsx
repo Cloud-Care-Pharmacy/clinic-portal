@@ -463,16 +463,15 @@ export function TaskCallDialog({
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div className="mb-2 flex items-center justify-between gap-3">
-                  <span className={OVERLINE_CLASS}>Consultation notes, draft</span>
+                  <span className={OVERLINE_CLASS}>Consultation notes</span>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    <Check className="size-3.5" />
-                    Saved just now
+                    Saved when you finalise
                   </span>
                 </div>
                 <Textarea
                   value={notes}
                   onChange={(event) => handleNoteChange(event.target.value)}
-                  placeholder="Write as you talk - every keystroke saves to the draft consultation. Try the snippets below."
+                  placeholder="Jot notes as you talk. Use the snippets below for common sections — everything is saved when you hang up and finalise."
                   className="min-h-40 resize-y bg-background text-sm leading-relaxed"
                 />
                 <div className="mt-3 flex flex-wrap gap-2">
