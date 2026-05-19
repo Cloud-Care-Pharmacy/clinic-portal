@@ -14,7 +14,6 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AppSheet } from "@/components/shared/AppSheet";
-import { Alert, AlertBody, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -73,7 +72,6 @@ const INTEGRATION_CATALOG: IntegrationDefinition[] = [
 ];
 
 interface IntegrationsState {
-  enabled: boolean;
   integrations: Record<IntegrationId, IntegrationSettings>;
 }
 
@@ -91,7 +89,6 @@ interface IntegrationSettings {
 }
 
 const DEFAULT_STATE: IntegrationsState = {
-  enabled: false,
   integrations: {
     shopify: {
       connected: false,
@@ -210,7 +207,6 @@ function getStoredIntegrationsState(entityId: string): IntegrationsState {
     }
 
     return {
-      enabled: Boolean(parsed.enabled),
       integrations,
     };
   } catch {
@@ -284,20 +280,8 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
     }
   }
 
-  function toggleWorkspaceIntegrations(nextEnabled: boolean) {
-    setState((current) => ({
-      ...current,
-      enabled: nextEnabled,
-    }));
-    toast.success(nextEnabled ? "Integrations enabled" : "Integrations paused");
-  }
-
   function saveIntegrationSettings(data: IntegrationSettingsForm) {
     if (!activeIntegrationId || !activeIntegration) return;
-    if (!state.enabled) {
-      toast.error("Enable integrations first");
-      return;
-    }
 
     const parsed = integrationSettingsSchema.safeParse(data);
     if (!parsed.success) {
@@ -348,39 +332,10 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
             Integrations
           </CardTitle>
           <CardDescription>
-            Enable app integrations for this workspace, then connect providers like
-            Shopify.
+            Connect providers like Shopify and manage credentials in the sidebar.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Enable integrations</p>
-              <p className="text-sm text-muted-foreground">
-                Controls whether connected apps can sync data to this workspace.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <StatusBadge variant={state.enabled ? "success" : "neutral"}>
-                {state.enabled ? "Enabled" : "Disabled"}
-              </StatusBadge>
-              <Switch
-                checked={state.enabled}
-                onCheckedChange={toggleWorkspaceIntegrations}
-                aria-label="Enable integrations for this workspace"
-              />
-            </div>
-          </div>
-
-          {!state.enabled ? (
-            <Alert variant="info">
-              <AlertTitle>Integrations are paused</AlertTitle>
-              <AlertBody>
-                Turn on integrations to connect providers and allow sync jobs.
-              </AlertBody>
-            </Alert>
-          ) : null}
-
           <div className="grid gap-3 sm:grid-cols-2">
             {INTEGRATION_CATALOG.map((integration) => {
               const integrationSettings = state.integrations[integration.id];
@@ -418,7 +373,6 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
                       variant={isConnected ? "secondary" : "outline"}
                       size="sm"
                       onClick={() => openSettingsSheet(integration.id)}
-                      disabled={!state.enabled}
                     >
                       <Settings2 className="size-4" />
                       {isConnected ? "Edit settings" : "Connect"}
@@ -453,7 +407,7 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
             <Button
               type="submit"
               form={formId}
-              disabled={!state.enabled || !activeIntegrationId}
+              disabled={!activeIntegrationId}
             >
               Save settings
             </Button>
