@@ -385,7 +385,7 @@ const shopifyAdminStep = z
     ...baseStep,
     kind: z.literal("shopify_admin"),
     operation: z.enum(SHOPIFY_ADMIN_OPERATIONS),
-    shopDomain: templateString,
+    shopDomain: templateString.optional(),
     storeAs: stepIdRefinement.optional(),
 
     customerId: shopifyIdField.optional(),

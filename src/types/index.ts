@@ -2225,8 +2225,8 @@ export interface CallWorkflowStep extends WorkflowStepBase {
 export interface ShopifyAdminStep extends WorkflowStepBase {
   kind: "shopify_admin";
   operation: ShopifyAdminOperation;
-  /** Shop handle or full `*.myshopify.com` domain. Templating allowed. */
-  shopDomain: string;
+  /** Shop handle or full `*.myshopify.com` domain. Templating allowed. Optional — falls back to the entity's saved Shopify integration. */
+  shopDomain?: string;
   /** Saves the returned Shopify resource under `vars.<storeAs>`. */
   storeAs?: string;
 

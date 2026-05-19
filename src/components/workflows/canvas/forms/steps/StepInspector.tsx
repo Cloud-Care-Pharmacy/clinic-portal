@@ -131,7 +131,6 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
       return {
         kind: "shopify_admin",
         operation: "update_customer",
-        shopDomain: "",
       };
   }
 }

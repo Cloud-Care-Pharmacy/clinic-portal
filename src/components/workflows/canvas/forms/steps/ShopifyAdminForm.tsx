@@ -632,22 +632,14 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
         />
       ))}
 
-      <Collapsible label="Advanced settings">
-        {/*
-          shopDomain is required by the backend (it's the KV lookup key for the
-          Admin API token). Long-term this should be auto-filled from a
-          "Shopify connection" entity setting and the field removed entirely;
-          until that exists, we keep it editable but tucked away so single-store
-          tenants don't have to think about it.
-        */}
-        <TemplatedField
-          label="Shopify store (multi-store only)"
-          value={step.shopDomain ?? ""}
-          onChange={(v) => onChange({ ...step, shopDomain: v })}
-          placeholder="my-store"
-          hint="Normally set up once with your Shopify connection — only change this if you have more than one Shopify store connected and need to target a specific one. Accepts a store handle (my-store) or the full *.myshopify.com address."
-          error={errors?.shopDomain}
-        />
+      <Collapsible
+        label="Advanced settings"
+        defaultOpen={
+          !!step.storeAs ||
+          (meta.metafield &&
+            (!!step.namespace || !!step.key || !!step.type))
+        }
+      >
         {meta.metafield && (
           <MetafieldAdvanced step={step} onChange={onChange} errors={errors} />
         )}
@@ -727,7 +719,14 @@ function FindCustomerFields({
         hint="E.164 phone number, e.g. +61400000000."
         error={errors?.phone}
       />
-      <Collapsible label="Or look up by metafield">
+      <Collapsible
+        label="Or look up by metafield"
+        defaultOpen={
+          !!step.metafieldNamespace ||
+          !!step.metafieldKey ||
+          !!step.metafieldValue
+        }
+      >
         <div className="mb-3 text-[11px] text-muted-foreground">
           Match by a custom Shopify metafield. Fill in all three fields
           together.

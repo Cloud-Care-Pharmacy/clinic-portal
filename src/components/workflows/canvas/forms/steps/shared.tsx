@@ -166,11 +166,13 @@ export function KeyValueEditor({
 export function Collapsible({
   label,
   children,
+  defaultOpen = false,
 }: {
   label: string;
   children: ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-4 rounded-lg border border-border/60">
       <button
