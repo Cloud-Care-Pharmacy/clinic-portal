@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -36,6 +38,14 @@ jobs:
 
       - name: Lint
         run: npm run lint --if-present
+
+      - name: React Doctor (PR diff)
+        if: github.event_name == 'pull_request'
+        run: npx react-doctor --yes --diff origin/${{ github.base_ref }} --annotations --fail-on error
+
+      - name: React Doctor (full scan)
+        if: github.event_name == 'push'
+        run: npx react-doctor --yes --full --annotations --fail-on error
 
   # ── 2. Deploy preview (PRs) ───────────────────────────────────────
   deploy-preview:
