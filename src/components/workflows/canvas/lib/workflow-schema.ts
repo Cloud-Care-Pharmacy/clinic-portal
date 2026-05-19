@@ -1,10 +1,12 @@
 import { z } from "zod";
 import {
   BRANCH_OP_VALUES,
+  CONSULTATION_ACTION_OPERATIONS,
   RECORD_ACTIVITY_STEP_ENTITY_TYPES,
   RECORD_ACTIVITY_STEP_TYPES,
   SHOPIFY_ADMIN_OPERATIONS,
   UNARY_BRANCH_OPS,
+  WORKFLOW_STEP_ACTOR_ROLES,
 } from "@/types";
 
 /**
@@ -139,7 +141,7 @@ const sendEmailStep = z
       .string()
       .regex(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-        "Must be a valid UUID",
+        "Must be a valid UUID"
       )
       .optional(),
     /**
@@ -152,9 +154,7 @@ const sendEmailStep = z
      * fed into the template body. Only permitted when `templateId` is
      * set — enforced server-side and mirrored here.
      */
-    variables: z
-      .record(z.string().min(1).max(255), z.string().max(8192))
-      .optional(),
+    variables: z.record(z.string().min(1).max(255), z.string().max(8192)).optional(),
     text: z.string().max(8192).optional(),
     html: z.string().max(8192).optional(),
     from: z.string().max(8192).optional(),
@@ -198,7 +198,7 @@ const sendSmsStep = z
       .string()
       .regex(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-        "Must be a valid UUID",
+        "Must be a valid UUID"
       )
       .optional(),
     /**
@@ -211,9 +211,7 @@ const sendSmsStep = z
      * fed into the template body. Only permitted when `templateId` is
      * set — enforced server-side and mirrored here.
      */
-    variables: z
-      .record(z.string().min(1).max(255), z.string().max(8192))
-      .optional(),
+    variables: z.record(z.string().min(1).max(255), z.string().max(8192)).optional(),
     from: z.string().max(8192).optional(),
     idempotencyKeySuffix: z.string().max(255).optional(),
     storeAs: z.string().max(64).optional(),
@@ -320,6 +318,91 @@ const lookupConsultationStep = z.object({
   storeAs: stepIdRefinement,
 });
 
+const lookupPatientConsultationsStep = z.object({
+  ...baseStep,
+  kind: z.literal("lookup_patient_consultations"),
+  patientId: templateString,
+  storeAs: stepIdRefinement,
+  status: templateString.optional(),
+  type: templateString.optional(),
+  doctorId: templateString.optional(),
+  from: templateString.optional(),
+  to: templateString.optional(),
+  sort: templateString.optional(),
+  order: templateString.optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+  offset: z.number().int().min(0).optional(),
+});
+
+const findFreeSlotsStep = z.object({
+  ...baseStep,
+  kind: z.literal("find_free_slots"),
+  practitionerUserId: templateString,
+  date: templateString,
+  durationMinutes: z.number().int().min(1).max(1440),
+  storeAs: stepIdRefinement,
+  timezone: templateString.optional(),
+});
+
+const checkConsultationConflictsStep = z.object({
+  ...baseStep,
+  kind: z.literal("check_consultation_conflicts"),
+  doctorId: templateString,
+  scheduledAt: templateString,
+  durationMinutes: z.number().int().min(1).max(1440),
+  storeAs: stepIdRefinement,
+  excludeConsultationId: templateString.optional(),
+});
+
+const actorSchema = z
+  .object({
+    actorId: templateString.optional(),
+    actorName: templateString.optional(),
+    actorRole: z.enum(WORKFLOW_STEP_ACTOR_ROLES).optional(),
+  })
+  .optional();
+
+const consultationActionStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("consultation_action"),
+    operation: z.enum(CONSULTATION_ACTION_OPERATIONS),
+    consultationId: templateString,
+    storeAs: stepIdRefinement,
+    scheduledAt: templateString.optional(),
+    durationMinutes: z.number().int().min(1).max(1440).optional(),
+    doctorId: templateString.optional(),
+    doctorName: templateString.optional(),
+    skipConflictCheck: z.boolean().optional(),
+    outcome: templateString.optional(),
+    notes: z.string().max(8192).optional(),
+    actor: actorSchema,
+  })
+  .superRefine((step, ctx) => {
+    if (step.operation === "reschedule" && !step.scheduledAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["scheduledAt"],
+        message: "scheduledAt is required for reschedule",
+      });
+    }
+  });
+
+const isPractitionerOnLeaveStep = z.object({
+  ...baseStep,
+  kind: z.literal("is_practitioner_on_leave"),
+  practitionerUserId: templateString,
+  date: templateString,
+  storeAs: stepIdRefinement,
+});
+
+const getPractitionerAvailabilityStep = z.object({
+  ...baseStep,
+  kind: z.literal("get_practitioner_availability"),
+  practitionerUserId: templateString,
+  storeAs: stepIdRefinement,
+});
+
 const recordActivityStep = z.object({
   ...baseStep,
   kind: z.literal("record_activity"),
@@ -372,10 +455,7 @@ const callWorkflowStep = z.object({
  * required wrapper fields per operation (see handoff matrix).
  */
 // ID fields accept either a positive integer or a templated string.
-const shopifyIdField = z.union([
-  z.number().int().positive(),
-  templateString,
-]);
+const shopifyIdField = z.union([z.number().int().positive(), templateString]);
 // `availableAdjustment` may be negative.
 const shopifyIntField = z.union([z.number().int(), templateString]);
 const shopifyObjectField = z.record(z.string(), z.unknown());
@@ -443,8 +523,7 @@ const shopifyAdminStep = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["customerId"],
-            message:
-              "Provide a customer ID, or look up by email or phone.",
+            message: "Provide a customer ID, or look up by email or phone.",
           });
         }
         requireField("customer", !!step.customer);
@@ -458,8 +537,7 @@ const shopifyAdminStep = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["customerId"],
-            message:
-              "Provide a customer ID, or look up by email or phone.",
+            message: "Provide a customer ID, or look up by email or phone.",
           });
         }
         requireField("namespace", !!step.namespace);
@@ -503,15 +581,11 @@ const shopifyAdminStep = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["inventoryItemId"],
-            message:
-              "Provide an inventory item ID, or look up the product by SKU.",
+            message: "Provide an inventory item ID, or look up the product by SKU.",
           });
         }
         requireField("locationId", step.locationId !== undefined);
-        requireField(
-          "availableAdjustment",
-          step.availableAdjustment !== undefined,
-        );
+        requireField("availableAdjustment", step.availableAdjustment !== undefined);
         break;
       case "find_customer": {
         const hasEmail = !!step.email;
@@ -535,8 +609,7 @@ const shopifyAdminStep = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["metafieldNamespace"],
-            message:
-              "Metafield lookup needs all three: namespace, key and value.",
+            message: "Metafield lookup needs all three: namespace, key and value.",
           });
         }
         break;
@@ -557,6 +630,12 @@ export const stepSchema = z.discriminatedUnion("kind", [
   loopOnItemsStep,
   lookupPatientStep,
   lookupConsultationStep,
+  lookupPatientConsultationsStep,
+  findFreeSlotsStep,
+  checkConsultationConflictsStep,
+  consultationActionStep,
+  isPractitionerOnLeaveStep,
+  getPractitionerAvailabilityStep,
   recordActivityStep,
   httpCallStep,
   callWorkflowStep,

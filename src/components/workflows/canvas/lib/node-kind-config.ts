@@ -13,6 +13,12 @@ import {
   Repeat,
   UserSearch,
   CalendarSearch,
+  CalendarRange,
+  CalendarPlus,
+  CalendarX,
+  CalendarCheck,
+  CalendarDays,
+  UserMinus,
   Activity,
   PhoneOutgoing,
   ShoppingBag,
@@ -44,7 +50,10 @@ export interface NodeKindConfig {
   accent: string;
 }
 
-const FAMILIES: Record<NodeKindConfig["family"], Omit<NodeKindConfig, "label" | "shortLabel" | "description" | "icon" | "family">> = {
+const FAMILIES: Record<
+  NodeKindConfig["family"],
+  Omit<NodeKindConfig, "label" | "shortLabel" | "description" | "icon" | "family">
+> = {
   trigger: {
     bg: "var(--status-warning-bg)",
     fg: "var(--status-warning-fg)",
@@ -154,6 +163,42 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
     description: "Find a consultation to use later in the workflow",
     icon: CalendarSearch,
   }),
+  lookup_patient_consultations: fam("tool", {
+    label: "List patient consultations",
+    shortLabel: "Consults",
+    description: "List a patient's consultations with optional filters",
+    icon: CalendarRange,
+  }),
+  find_free_slots: fam("tool", {
+    label: "Find free slots",
+    shortLabel: "Free slots",
+    description: "Find a practitioner's open slots for a day",
+    icon: CalendarPlus,
+  }),
+  check_consultation_conflicts: fam("tool", {
+    label: "Check conflicts",
+    shortLabel: "Conflicts",
+    description: "Check a doctor's calendar for conflicting consultations",
+    icon: CalendarX,
+  }),
+  consultation_action: fam("tool", {
+    label: "Consultation action",
+    shortLabel: "Consult action",
+    description: "Cancel, complete or reschedule a consultation",
+    icon: CalendarCheck,
+  }),
+  is_practitioner_on_leave: fam("tool", {
+    label: "Practitioner on leave?",
+    shortLabel: "On leave",
+    description: "Check whether a practitioner is on leave for a date",
+    icon: UserMinus,
+  }),
+  get_practitioner_availability: fam("tool", {
+    label: "Practitioner availability",
+    shortLabel: "Availability",
+    description: "Read a practitioner's stored availability + schedule",
+    icon: CalendarDays,
+  }),
   wait: fam("human", {
     label: "Wait",
     shortLabel: "Wait",
@@ -218,6 +263,12 @@ export const STEP_KINDS: WorkflowStepKind[] = [
   "loop_on_items",
   "lookup_patient",
   "lookup_consultation",
+  "lookup_patient_consultations",
+  "find_free_slots",
+  "check_consultation_conflicts",
+  "consultation_action",
+  "is_practitioner_on_leave",
+  "get_practitioner_availability",
   "record_activity",
   "call_workflow",
 ];
@@ -260,7 +311,7 @@ export function triggerLabel(t: WorkflowTrigger): { label: string; sub: string }
 
 export function stepLabel(
   s: WorkflowStep,
-  flatIndex: number,
+  flatIndex: number
 ): { label: string; sub: string } {
   const fallback = s.id ?? `step_${flatIndex + 1}`;
   const named = s.name?.trim();
@@ -289,10 +340,43 @@ export function stepLabel(
       return { label: named || "Lookup patient", sub: s.storeAs || fallback };
     case "lookup_consultation":
       return { label: named || "Lookup consultation", sub: s.storeAs || fallback };
+    case "lookup_patient_consultations":
+      return {
+        label: named || "List consultations",
+        sub: s.storeAs || fallback,
+      };
+    case "find_free_slots":
+      return {
+        label: named || "Find free slots",
+        sub: s.storeAs || fallback,
+      };
+    case "check_consultation_conflicts":
+      return {
+        label: named || "Check conflicts",
+        sub: s.storeAs || fallback,
+      };
+    case "consultation_action":
+      return {
+        label: named || "Consultation action",
+        sub: s.operation ? `${s.operation} · ${s.storeAs || fallback}` : fallback,
+      };
+    case "is_practitioner_on_leave":
+      return {
+        label: named || "Practitioner on leave?",
+        sub: s.storeAs || fallback,
+      };
+    case "get_practitioner_availability":
+      return {
+        label: named || "Practitioner availability",
+        sub: s.storeAs || fallback,
+      };
     case "record_activity":
       return { label: named || "Record activity", sub: s.title || fallback };
     case "http_call":
-      return { label: named || "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
+      return {
+        label: named || "HTTP call",
+        sub: `${s.method ?? "GET"} ${s.url || fallback}`,
+      };
     case "call_workflow":
       return { label: named || "Call workflow", sub: s.workflowId || fallback };
     case "shopify_admin":

@@ -3,8 +3,14 @@
 import type {
   BranchIfStep,
   CallWorkflowStep,
+  CheckConsultationConflictsStep,
+  ConsultationActionStep,
+  FindFreeSlotsStep,
+  GetPractitionerAvailabilityStep,
   HttpCallStep,
+  IsPractitionerOnLeaveStep,
   LookupConsultationStep,
+  LookupPatientConsultationsStep,
   LookupPatientStep,
   LoopOnItemsStep,
   RecordActivityStep,
@@ -20,8 +26,14 @@ import type {
 } from "@/types";
 import { BranchIfForm } from "./BranchIfForm";
 import { CallWorkflowForm } from "./CallWorkflowForm";
+import { CheckConsultationConflictsForm } from "./CheckConsultationConflictsForm";
+import { ConsultationActionForm } from "./ConsultationActionForm";
+import { FindFreeSlotsForm } from "./FindFreeSlotsForm";
+import { GetPractitionerAvailabilityForm } from "./GetPractitionerAvailabilityForm";
 import { HttpCallForm } from "./HttpCallForm";
+import { IsPractitionerOnLeaveForm } from "./IsPractitionerOnLeaveForm";
 import { LookupConsultationForm } from "./LookupConsultationForm";
+import { LookupPatientConsultationsForm } from "./LookupPatientConsultationsForm";
 import { LookupPatientForm } from "./LookupPatientForm";
 import { LoopOnItemsForm } from "./LoopOnItemsForm";
 import { RecordActivityForm } from "./RecordActivityForm";
@@ -70,8 +82,36 @@ function StepKindForm(props: StepInspectorProps) {
       return <LookupPatientForm {...(props as StepFormProps<LookupPatientStep>)} />;
     case "lookup_consultation":
       return (
-        <LookupConsultationForm
-          {...(props as StepFormProps<LookupConsultationStep>)}
+        <LookupConsultationForm {...(props as StepFormProps<LookupConsultationStep>)} />
+      );
+    case "lookup_patient_consultations":
+      return (
+        <LookupPatientConsultationsForm
+          {...(props as StepFormProps<LookupPatientConsultationsStep>)}
+        />
+      );
+    case "find_free_slots":
+      return <FindFreeSlotsForm {...(props as StepFormProps<FindFreeSlotsStep>)} />;
+    case "check_consultation_conflicts":
+      return (
+        <CheckConsultationConflictsForm
+          {...(props as StepFormProps<CheckConsultationConflictsStep>)}
+        />
+      );
+    case "consultation_action":
+      return (
+        <ConsultationActionForm {...(props as StepFormProps<ConsultationActionStep>)} />
+      );
+    case "is_practitioner_on_leave":
+      return (
+        <IsPractitionerOnLeaveForm
+          {...(props as StepFormProps<IsPractitionerOnLeaveStep>)}
+        />
+      );
+    case "get_practitioner_availability":
+      return (
+        <GetPractitionerAvailabilityForm
+          {...(props as StepFormProps<GetPractitionerAvailabilityStep>)}
         />
       );
     case "record_activity":
@@ -114,6 +154,48 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
         kind: "lookup_consultation",
         consultationId: "",
         storeAs: "consult",
+      };
+    case "lookup_patient_consultations":
+      return {
+        kind: "lookup_patient_consultations",
+        patientId: "",
+        storeAs: "consultations",
+      };
+    case "find_free_slots":
+      return {
+        kind: "find_free_slots",
+        practitionerUserId: "",
+        date: "",
+        durationMinutes: 30,
+        storeAs: "slots",
+      };
+    case "check_consultation_conflicts":
+      return {
+        kind: "check_consultation_conflicts",
+        doctorId: "",
+        scheduledAt: "",
+        durationMinutes: 30,
+        storeAs: "conflicts",
+      };
+    case "consultation_action":
+      return {
+        kind: "consultation_action",
+        operation: "complete",
+        consultationId: "",
+        storeAs: "result",
+      };
+    case "is_practitioner_on_leave":
+      return {
+        kind: "is_practitioner_on_leave",
+        practitionerUserId: "",
+        date: "",
+        storeAs: "leave",
+      };
+    case "get_practitioner_availability":
+      return {
+        kind: "get_practitioner_availability",
+        practitionerUserId: "",
+        storeAs: "availability",
       };
     case "record_activity":
       return {

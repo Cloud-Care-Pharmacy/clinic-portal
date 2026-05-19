@@ -1468,10 +1468,7 @@ export interface PractitionerProfile {
   updatedAt: string;
 }
 
-export type SignatureMimeType =
-  | "image/png"
-  | "image/jpeg"
-  | "image/svg+xml";
+export type SignatureMimeType = "image/png" | "image/jpeg" | "image/svg+xml";
 
 /**
  * Stored prescriber signature metadata returned on PractitionerProfile.
@@ -1798,11 +1795,45 @@ export type WorkflowStepKind =
   | "loop_on_items"
   | "lookup_patient"
   | "lookup_consultation"
+  | "lookup_patient_consultations"
+  | "find_free_slots"
+  | "check_consultation_conflicts"
+  | "consultation_action"
+  | "is_practitioner_on_leave"
+  | "get_practitioner_availability"
   | "record_activity"
   | "http_call"
   | "wait_for_event"
   | "call_workflow"
   | "shopify_admin";
+
+/**
+ * Optional actor metadata stamped on activity / audit records by
+ * consultation-mutation steps. When omitted, the backend records the
+ * change as "System".
+ */
+export const WORKFLOW_STEP_ACTOR_ROLES = [
+  "admin",
+  "doctor",
+  "staff",
+  "system",
+] as const;
+export type WorkflowStepActorRole = (typeof WORKFLOW_STEP_ACTOR_ROLES)[number];
+
+export interface WorkflowStepActor {
+  actorId?: string;
+  actorName?: string;
+  actorRole?: WorkflowStepActorRole;
+}
+
+/** Operations supported by the `consultation_action` step. */
+export const CONSULTATION_ACTION_OPERATIONS = [
+  "cancel",
+  "complete",
+  "reschedule",
+] as const;
+export type ConsultationActionOperation =
+  (typeof CONSULTATION_ACTION_OPERATIONS)[number];
 
 /**
  * Supported Shopify Admin operations. Mirrors the server-side enum in
@@ -2118,6 +2149,98 @@ export interface LookupConsultationStep extends WorkflowStepBase {
 }
 
 /**
+ * Lists a patient's consultations, optionally filtered by status, type,
+ * doctor or date range, and stores the result under `vars.<storeAs>` as
+ * `{ patientId, total, limit, offset, consultations[] }`.
+ */
+export interface LookupPatientConsultationsStep extends WorkflowStepBase {
+  kind: "lookup_patient_consultations";
+  patientId: string;
+  storeAs: string;
+  status?: string;
+  type?: string;
+  doctorId?: string;
+  from?: string;
+  to?: string;
+  sort?: string;
+  order?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Returns the practitioner's free slots for the given day. Stores
+ * `{ date, timezone, duration, slots[] }` under `vars.<storeAs>`.
+ */
+export interface FindFreeSlotsStep extends WorkflowStepBase {
+  kind: "find_free_slots";
+  practitionerUserId: string;
+  date: string;
+  durationMinutes: number;
+  storeAs: string;
+  timezone?: string;
+}
+
+/**
+ * Checks the doctor's calendar for conflicts against the proposed slot.
+ * Stores `{ doctorId, scheduledAt, durationMinutes, hasConflict, count,
+ * conflicts[] }` under `vars.<storeAs>`.
+ */
+export interface CheckConsultationConflictsStep extends WorkflowStepBase {
+  kind: "check_consultation_conflicts";
+  doctorId: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  storeAs: string;
+  excludeConsultationId?: string;
+}
+
+/**
+ * Cancel / complete / reschedule a consultation. The required additional
+ * fields depend on `operation` — the Zod schema enforces the matrix.
+ */
+export interface ConsultationActionStep extends WorkflowStepBase {
+  kind: "consultation_action";
+  operation: ConsultationActionOperation;
+  consultationId: string;
+  storeAs: string;
+  /** Required when `operation === "reschedule"`. */
+  scheduledAt?: string;
+  /** Optional for `reschedule`. */
+  durationMinutes?: number;
+  doctorId?: string;
+  doctorName?: string;
+  skipConflictCheck?: boolean;
+  /** Optional for `complete`. */
+  outcome?: string;
+  notes?: string;
+  actor?: WorkflowStepActor;
+}
+
+/**
+ * Checks whether the practitioner is on leave for a given date. Stores
+ * `{ practitionerUserId, date, isOnLeave, leaves[] }` under
+ * `vars.<storeAs>`.
+ */
+export interface IsPractitionerOnLeaveStep extends WorkflowStepBase {
+  kind: "is_practitioner_on_leave";
+  practitionerUserId: string;
+  date: string;
+  storeAs: string;
+}
+
+/**
+ * Returns the practitioner's stored availability — schedule, timezone and
+ * consultation types. Stores `{ practitionerUserId, hasAvailability,
+ * timezone, schedule, consultationTypes }` under `vars.<storeAs>`.
+ */
+export interface GetPractitionerAvailabilityStep extends WorkflowStepBase {
+  kind: "get_practitioner_availability";
+  practitionerUserId: string;
+  storeAs: string;
+}
+
+/**
  * Allowed `record_activity.type` values per the workflows backend handoff.
  * Stricter than the read-side `ActivityEventType` (which includes additional
  * activity types emitted directly by the API).
@@ -2278,6 +2401,12 @@ export type WorkflowStep =
   | LoopOnItemsStep
   | LookupPatientStep
   | LookupConsultationStep
+  | LookupPatientConsultationsStep
+  | FindFreeSlotsStep
+  | CheckConsultationConflictsStep
+  | ConsultationActionStep
+  | IsPractitionerOnLeaveStep
+  | GetPractitionerAvailabilityStep
   | RecordActivityStep
   | HttpCallStep
   | WaitForEventStep

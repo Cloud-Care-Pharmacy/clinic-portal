@@ -1,8 +1,14 @@
 export { BranchIfForm } from "./BranchIfForm";
 export { CallWorkflowForm } from "./CallWorkflowForm";
 export { CaptureSettings } from "./CaptureSettings";
+export { CheckConsultationConflictsForm } from "./CheckConsultationConflictsForm";
+export { ConsultationActionForm } from "./ConsultationActionForm";
+export { FindFreeSlotsForm } from "./FindFreeSlotsForm";
+export { GetPractitionerAvailabilityForm } from "./GetPractitionerAvailabilityForm";
 export { HttpCallForm } from "./HttpCallForm";
+export { IsPractitionerOnLeaveForm } from "./IsPractitionerOnLeaveForm";
 export { LookupConsultationForm } from "./LookupConsultationForm";
+export { LookupPatientConsultationsForm } from "./LookupPatientConsultationsForm";
 export { LookupPatientForm } from "./LookupPatientForm";
 export { LoopOnItemsForm } from "./LoopOnItemsForm";
 export { RecordActivityForm } from "./RecordActivityForm";
