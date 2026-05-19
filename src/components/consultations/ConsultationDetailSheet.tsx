@@ -268,7 +268,7 @@ export function ConsultationDetailSheet({
         title="Consultation Details"
         description={
           consultation
-            ? `${consultation.patientName} — ${consultation.type} consultation`
+            ? `${consultation.patientName}: ${consultation.type} consultation`
             : ""
         }
         footer={footerActions}
@@ -298,7 +298,7 @@ export function ConsultationDetailSheet({
                 role="alert"
                 className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
               >
-                This consultation was clinically rejected — no prescription can be
+                This consultation was clinically rejected; no prescription can be
                 issued.
               </div>
             )}

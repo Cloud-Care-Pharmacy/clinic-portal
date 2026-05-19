@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTemplate, useTemplates } from "@/lib/hooks/use-templates";
-import type { EmailTemplate, SendEmailAttachment, SendEmailStep } from "@/types";
+import type { SendEmailAttachment, SendEmailStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
 import {
   Collapsible,
@@ -199,11 +199,7 @@ export function SendEmailForm(props: StepFormProps<SendEmailStep>) {
   );
 }
 
-function TemplateModeFields({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<SendEmailStep>) {
+function TemplateModeFields({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
   const { data: templates, isLoading } = useTemplates("email", { active: true });
   // Selected template details give us its declared variable bindings.
   const selectedId = step.templateId || undefined;
@@ -223,9 +219,7 @@ function TemplateModeFields({
           }}
         >
           <SelectTrigger>
-            <SelectValue
-              placeholder={isLoading ? "Loading…" : "Select a template"}
-            >
+            <SelectValue placeholder={isLoading ? "Loading…" : "Select a template"}>
               {(value: unknown) => {
                 if (!value || typeof value !== "string") return null;
                 const match = templates.find((t) => t.id === value);
@@ -234,13 +228,15 @@ function TemplateModeFields({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {templates
-              .filter((t): t is EmailTemplate => t.type === "email" && t.active)
-              .map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
+            {templates.flatMap((t) =>
+              t.type === "email" && t.active
+                ? [
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>,
+                  ]
+                : []
+            )}
           </SelectContent>
         </Select>
       </Field>
@@ -258,10 +254,10 @@ function TemplateModeFields({
 
       <Collapsible label="Overrides (optional)">
         <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
-          Inline subject/body/from/replyTo replace the template values. Cc and
-          Bcc lists merge with the template (de-duped). Reserved headers
-          (to/from/cc/bcc/subject/reply-to/authorization/idempotency-key/etc.)
-          cannot be set via custom headers.
+          Inline subject/body/from/replyTo replace the template values. Cc and Bcc lists
+          merge with the template (de-duped). Reserved headers
+          (to/from/cc/bcc/subject/reply-to/authorization/idempotency-key/etc.) cannot be
+          set via custom headers.
         </p>
         <SubjectField step={step} onChange={onChange} errors={errors} />
         <SendEmailContent step={step} onChange={onChange} errors={errors} />
@@ -274,11 +270,7 @@ function TemplateModeFields({
   );
 }
 
-function InlineModeFields({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<SendEmailStep>) {
+function InlineModeFields({ step, onChange, errors }: StepFormProps<SendEmailStep>) {
   return (
     <>
       <SubjectField step={step} onChange={onChange} errors={errors} required />
@@ -336,18 +328,14 @@ function SenderFields({ step, onChange, errors }: StepFormProps<SendEmailStep>) 
       >
         <Input
           value={step.fromName ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, fromName: e.target.value || undefined })
-          }
+          onChange={(e) => onChange({ ...step, fromName: e.target.value || undefined })}
           placeholder="Cloud Care Pharmacy"
         />
       </Field>
       <Field label="Reply-To (optional)" error={errors?.replyTo}>
         <Input
           value={step.replyTo ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, replyTo: e.target.value || undefined })
-          }
+          onChange={(e) => onChange({ ...step, replyTo: e.target.value || undefined })}
           placeholder="reply@cloudcare.example"
           className="font-mono text-xs"
         />
@@ -415,4 +403,3 @@ function AttachmentsField({ step, onChange, errors }: StepFormProps<SendEmailSte
     </Field>
   );
 }
-

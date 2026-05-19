@@ -182,9 +182,7 @@ export function WritePrescriptionDialog({
   }
 
   function addMed() {
-    setMeds((prev) =>
-      prev.length >= MAX_MEDS ? prev : [...prev, blankMed()]
-    );
+    setMeds((prev) => (prev.length >= MAX_MEDS ? prev : [...prev, blankMed()]));
   }
 
   function removeMed(id: string) {
@@ -264,7 +262,7 @@ export function WritePrescriptionDialog({
             role="alert"
             className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
           >
-            This consultation was clinically rejected — no prescription can be issued.
+            This consultation was clinically rejected; no prescription can be issued.
           </div>
         )}
 
@@ -317,7 +315,10 @@ export function WritePrescriptionDialog({
                 <Select
                   value={med.schedule}
                   onValueChange={(v) => {
-                    if (v) updateMed(med.id, { schedule: v as PrescriptionMedicationSchedule });
+                    if (v)
+                      updateMed(med.id, {
+                        schedule: v as PrescriptionMedicationSchedule,
+                      });
                   }}
                 >
                   <SelectTrigger>
@@ -413,24 +414,34 @@ export function WritePrescriptionDialog({
               </div>
 
               <div className="col-span-2 flex flex-wrap items-center gap-4 pt-1">
-                <label className="flex items-center gap-2 text-sm">
+                <label
+                  htmlFor={`brandSub-${med.id}`}
+                  className="flex items-center gap-2 text-sm"
+                >
                   <Checkbox
+                    id={`brandSub-${med.id}`}
                     checked={med.brandSub}
-                    onCheckedChange={(v) =>
-                      updateMed(med.id, { brandSub: v === true })
-                    }
+                    onCheckedChange={(v) => updateMed(med.id, { brandSub: v === true })}
                   />
                   Brand substitution allowed
                 </label>
-                <label className="flex items-center gap-2 text-sm">
+                <label
+                  htmlFor={`pbs-${med.id}`}
+                  className="flex items-center gap-2 text-sm"
+                >
                   <Checkbox
+                    id={`pbs-${med.id}`}
                     checked={med.pbs}
                     onCheckedChange={(v) => updateMed(med.id, { pbs: v === true })}
                   />
                   PBS
                 </label>
-                <label className="flex items-center gap-2 text-sm">
+                <label
+                  htmlFor={`authority-${med.id}`}
+                  className="flex items-center gap-2 text-sm"
+                >
                   <Checkbox
+                    id={`authority-${med.id}`}
                     checked={med.authority}
                     onCheckedChange={(v) =>
                       updateMed(med.id, { authority: v === true })

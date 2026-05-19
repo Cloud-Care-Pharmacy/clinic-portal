@@ -87,17 +87,18 @@ const DATE_FMT = new Intl.DateTimeFormat("en-AU", {
   year: "numeric",
 });
 
+const SHORT_DATE_FMT = new Intl.DateTimeFormat("en-AU", {
+  day: "numeric",
+  month: "short",
+});
+
 function formatRange(start: string, end: string): string {
   const a = new Date(`${start}T00:00:00`);
   const b = new Date(`${end}T00:00:00`);
   if (start === end) return DATE_FMT.format(a);
   // Same year → omit year on the start date.
   if (a.getFullYear() === b.getFullYear()) {
-    const short = new Intl.DateTimeFormat("en-AU", {
-      day: "numeric",
-      month: "short",
-    }).format(a);
-    return `${short} – ${DATE_FMT.format(b)}`;
+    return `${SHORT_DATE_FMT.format(a)} – ${DATE_FMT.format(b)}`;
   }
   return `${DATE_FMT.format(a)} – ${DATE_FMT.format(b)}`;
 }
@@ -119,7 +120,7 @@ export function LeaveSection({ practitionerId }: LeaveSectionProps) {
 
   const entries = useMemo(() => {
     const list = leaveQuery.data?.data?.leave ?? [];
-    return [...list].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    return list.toSorted((a, b) => a.startDate.localeCompare(b.startDate));
   }, [leaveQuery.data]);
 
   if (!practitionerId) {
@@ -182,7 +183,9 @@ function LeaveRow({ leave }: { leave: PractitionerLeave }) {
       <CalendarDays className="size-4 mt-0.5 shrink-0 text-muted-foreground" />
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          <span className="font-medium">{formatRange(leave.startDate, leave.endDate)}</span>
+          <span className="font-medium">
+            {formatRange(leave.startDate, leave.endDate)}
+          </span>
           <span className="text-xs text-muted-foreground tabular-nums">
             · {days} day{days === 1 ? "" : "s"}
           </span>
@@ -191,7 +194,9 @@ function LeaveRow({ leave }: { leave: PractitionerLeave }) {
           </StatusBadge>
         </div>
         {leave.note ? (
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{leave.note}</p>
+          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+            {leave.note}
+          </p>
         ) : null}
       </div>
 
@@ -217,9 +222,9 @@ function LeaveRow({ leave }: { leave: PractitionerLeave }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove this leave period?</AlertDialogTitle>
             <AlertDialogDescription>
-              {formatRange(leave.startDate, leave.endDate)} ({KIND_LABEL[leave.kind].toLowerCase()})
-              will be deleted. Patients will be able to book consultations in this window
-              again.
+              {formatRange(leave.startDate, leave.endDate)} (
+              {KIND_LABEL[leave.kind].toLowerCase()}) will be deleted. Patients will be
+              able to book consultations in this window again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

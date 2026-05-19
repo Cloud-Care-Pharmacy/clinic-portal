@@ -548,18 +548,13 @@ function buildIntakeSummary(record: ClinicalDataRecord): string[] {
     ? smokingStatusLabel(record.smokingStatus)
     : "";
   const cigs = cleanIntakeValue(record.cigarettesPerDay);
-  const years = cleanIntakeValue(record.yearsSmoked)?.replace(
-    /[-\s]*years?$/i,
-    ""
-  );
+  const years = cleanIntakeValue(record.yearsSmoked)?.replace(/[-\s]*years?$/i, "");
   if (smokingLabel) {
     const detail: string[] = [];
     if (cigs) detail.push(`${cigs} cigarettes per day`);
     if (years) detail.push(`for ${years} years`);
     sentences.push(
-      detail.length
-        ? `${smokingLabel} — ${detail.join(" ")}.`
-        : `${smokingLabel}.`
+      detail.length ? `${smokingLabel} — ${detail.join(" ")}.` : `${smokingLabel}.`
     );
   } else {
     sentences.push("Smoking status not recorded.");
@@ -567,19 +562,19 @@ function buildIntakeSummary(record: ClinicalDataRecord): string[] {
 
   // Quit attempts (only render if the patient supplied details)
   const tries = cleanIntakeValue(record.timesTriedQuitting);
-  const methods = (record.quitMethods ?? [])
-    .map(quitMethodLabel)
-    .filter(Boolean);
-  const motivation = (record.quitMotivation ?? [])
-    .map(quitMotivationLabel)
-    .filter(Boolean);
+  const methods = (record.quitMethods ?? []).flatMap((s) => {
+    const label = quitMethodLabel(s);
+    return label ? [label] : [];
+  });
+  const motivation = (record.quitMotivation ?? []).flatMap((s) => {
+    const label = quitMotivationLabel(s);
+    return label ? [label] : [];
+  });
   const last = cleanIntakeValue(record.lastCigarette);
   if (tries || methods.length || motivation.length || last) {
     const parts: string[] = [];
     if (tries) {
-      parts.push(
-        `has tried to quit ${tries} time${tries === "1" ? "" : "s"}`
-      );
+      parts.push(`has tried to quit ${tries} time${tries === "1" ? "" : "s"}`);
     }
     if (methods.length) parts.push(`using ${joinList(methods)}`);
     if (motivation.length) {
@@ -599,20 +594,17 @@ function buildIntakeSummary(record: ClinicalDataRecord): string[] {
     if (strength) vapeParts.push(`${strength} strength`);
     if (volume) vapeParts.push(`${volume} per day`);
     sentences.push(
-      vapeParts.length
-        ? `Also vaping (${vapeParts.join(", ")}).`
-        : "Also vaping."
+      vapeParts.length ? `Also vaping (${vapeParts.join(", ")}).` : "Also vaping."
     );
   }
 
   // --- Medical conditions ---
   if (record.hasMedicalConditions === "yes") {
-    const items = (record.medicalConditions ?? [])
-      .filter(
-        (slug): slug is string =>
-          typeof slug === "string" && slug.trim().length > 0 && slug !== "other"
-      )
-      .map(medicalConditionLabel);
+    const items: string[] = [];
+    for (const slug of record.medicalConditions ?? []) {
+      if (typeof slug !== "string" || !slug.trim() || slug === "other") continue;
+      items.push(medicalConditionLabel(slug));
+    }
     const other = record.medicalConditionsOther?.trim();
     if (other) items.push(other);
     sentences.push(
@@ -626,12 +618,11 @@ function buildIntakeSummary(record: ClinicalDataRecord): string[] {
 
   // --- Medications ---
   if (record.takesMedication === "yes") {
-    const highRisk = (record.highRiskMedications ?? [])
-      .filter(
-        (slug): slug is string =>
-          typeof slug === "string" && slug.trim().length > 0 && slug !== "other"
-      )
-      .map(highRiskMedLabel);
+    const highRisk: string[] = [];
+    for (const slug of record.highRiskMedications ?? []) {
+      if (typeof slug !== "string" || !slug.trim() || slug === "other") continue;
+      highRisk.push(highRiskMedLabel(slug));
+    }
     const list = record.medicationsList?.trim();
     const allMeds = list ? [...highRisk, list] : highRisk;
     sentences.push(
@@ -762,8 +753,8 @@ function ActiveConditionsSection({
         <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
       ) : summary.length > 0 ? (
         <div className="mt-2 space-y-1.5">
-          {summary.map((line, index) => (
-            <p key={`${index}-${line}`} className="text-sm leading-snug text-foreground">
+          {summary.map((line) => (
+            <p key={line} className="text-sm leading-snug text-foreground">
               {line}
             </p>
           ))}
@@ -1063,7 +1054,7 @@ export function TaskOutcomeDialog({
             )}
           >
             {/* LEFT — outcome picker */}
-            <div className="border-b border-border px-3.5 py-3.5 md:border-r md:border-b-0">
+            <div className="border-b border-border p-3.5 md:border-r md:border-b-0">
               <p className={OVERLINE_CLASS}>Outcome</p>
               <div className="mt-2.5 space-y-1.5">
                 {OUTCOMES.map((item, index) => {
@@ -1229,7 +1220,7 @@ export function TaskOutcomeDialog({
                   </div>
                   <Pill className="size-4 shrink-0 text-muted-foreground" />
                 </header>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
                   <ManualRxComposer value={rxMeds} onChange={setRxMeds} />
                 </div>
               </aside>

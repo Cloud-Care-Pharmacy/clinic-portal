@@ -11,7 +11,7 @@ import { ProductForm, useProductForm } from "@/components/products/ProductForm";
 import { productStore } from "@/components/products/mock-products";
 
 export function NewProductClient() {
-  const router = useRouter();
+  const { push } = useRouter();
   const formId = useId();
   const form = useProductForm();
 
@@ -39,13 +39,13 @@ export function NewProductClient() {
           onValidSubmit={(input) => {
             const created = productStore.add(input);
             toast.success(`Added ${created.name}`);
-            router.push(`/products/${created.id}`);
+            push(`/products/${created.id}`);
           }}
         />
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => router.push("/products")}>
+        <Button type="button" variant="ghost" onClick={() => push("/products")}>
           Cancel
         </Button>
         <Button type="submit" form={formId}>

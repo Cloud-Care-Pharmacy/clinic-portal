@@ -44,7 +44,7 @@ function Stat({
 }
 
 export function ProductsClient() {
-  const router = useRouter();
+  const { push } = useRouter();
   const products = useSyncExternalStore(
     productStore.subscribe,
     productStore.getSnapshot,
@@ -107,8 +107,8 @@ export function ProductsClient() {
       <ErrorBoundary>
         <ProductTable
           products={products}
-          onAdd={() => router.push("/products/new")}
-          onRowClick={(product) => router.push(`/products/${product.id}`)}
+          onAdd={() => push("/products/new")}
+          onRowClick={(product) => push(`/products/${product.id}`)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           categoryFilters={categoryFilters}

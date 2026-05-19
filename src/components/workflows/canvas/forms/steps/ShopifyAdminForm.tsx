@@ -82,8 +82,7 @@ const OPERATION_DESCRIPTIONS: Record<ShopifyAdminOperation, string> = {
   create_transaction: "Record a transaction (capture, refund, etc.) on an order.",
   create_product: "Add a new product to your Shopify store.",
   update_product: "Change details on an existing Shopify product.",
-  adjust_inventory:
-    "Add stock to or remove stock from an inventory location.",
+  adjust_inventory: "Add stock to or remove stock from an inventory location.",
   find_product_by_sku:
     "Look up a Shopify product variant by SKU. Useful before adjusting stock or updating a product.",
 };
@@ -345,7 +344,10 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
  * -------------------------------------------------------------------------- */
 
 const OBJECT_EXAMPLES: Partial<
-  Record<ObjectFieldName, Partial<Record<ShopifyAdminOperation, Record<string, unknown>>>>
+  Record<
+    ObjectFieldName,
+    Partial<Record<ShopifyAdminOperation, Record<string, unknown>>>
+  >
 > = {
   customer: {
     create_customer: {
@@ -532,7 +534,7 @@ function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
  * Shopify metafield terminology. */
 function applyOperationDefaults(
   step: ShopifyAdminStep,
-  op: ShopifyAdminOperation,
+  op: ShopifyAdminOperation
 ): ShopifyAdminStep {
   if (op === "set_customer_metafield") {
     return {
@@ -600,9 +602,7 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
           key={id.name}
           label={id.label}
           value={step[id.name]}
-          onChange={(v) =>
-            onChange({ ...step, [id.name]: v } as ShopifyAdminStep)
-          }
+          onChange={(v) => onChange({ ...step, [id.name]: v } as ShopifyAdminStep)}
           hint={id.hint}
           error={errors?.[id.name]}
         />
@@ -625,19 +625,11 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
       )}
 
       {meta.inlineCustomerLookup && (
-        <InlineCustomerLookup
-          step={step}
-          onChange={onChange}
-          errors={errors}
-        />
+        <InlineCustomerLookup step={step} onChange={onChange} errors={errors} />
       )}
 
       {meta.inlineProductLookup && (
-        <InlineProductLookup
-          step={step}
-          onChange={onChange}
-          errors={errors}
-        />
+        <InlineProductLookup step={step} onChange={onChange} errors={errors} />
       )}
 
       {meta.metafield && (
@@ -664,9 +656,7 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
           key={obj.name}
           label={obj.label}
           value={step[obj.name]}
-          onChange={(v) =>
-            onChange({ ...step, [obj.name]: v } as ShopifyAdminStep)
-          }
+          onChange={(v) => onChange({ ...step, [obj.name]: v } as ShopifyAdminStep)}
           hint={obj.hint}
           example={OBJECT_EXAMPLES[obj.name]?.[op]}
           error={errors?.[obj.name]}
@@ -677,8 +667,7 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
         label="Advanced settings"
         defaultOpen={
           !!step.storeAs ||
-          (meta.metafield &&
-            (!!step.namespace || !!step.key || !!step.type))
+          (meta.metafield && (!!step.namespace || !!step.key || !!step.type))
         }
       >
         {meta.metafield && (
@@ -736,12 +725,12 @@ function FindCustomerFields({
           Provide at least one identifier
         </p>
         <p>
-          Use email, phone, or all three metafield fields together. The result
-          is written to <code className="font-mono">vars.&lt;name&gt;</code> so
-          a later branch step can check{" "}
+          Use email, phone, or all three metafield fields together. The result is
+          written to <code className="font-mono">vars.&lt;name&gt;</code> so a later
+          branch step can check{" "}
           <code className="font-mono">{"{{vars.<name>.found}}"}</code> and{" "}
-          <code className="font-mono">{"{{vars.<name>.ambiguous}}"}</code>{" "}
-          before deciding whether to create or update.
+          <code className="font-mono">{"{{vars.<name>.ambiguous}}"}</code> before
+          deciding whether to create or update.
         </p>
       </div>
       <TemplatedField
@@ -763,21 +752,16 @@ function FindCustomerFields({
       <Collapsible
         label="Or look up by metafield"
         defaultOpen={
-          !!step.metafieldNamespace ||
-          !!step.metafieldKey ||
-          !!step.metafieldValue
+          !!step.metafieldNamespace || !!step.metafieldKey || !!step.metafieldValue
         }
       >
         <div className="mb-3 text-[11px] text-muted-foreground">
-          Match by a custom Shopify metafield. Fill in all three fields
-          together.
+          Match by a custom Shopify metafield. Fill in all three fields together.
         </div>
         <TemplatedField
           label="Metafield namespace"
           value={step.metafieldNamespace ?? ""}
-          onChange={(v) =>
-            onChange({ ...step, metafieldNamespace: v || undefined })
-          }
+          onChange={(v) => onChange({ ...step, metafieldNamespace: v || undefined })}
           placeholder="quity"
           hint="Shopify metafield namespace (e.g. quity)."
           error={errors?.metafieldNamespace}
@@ -785,9 +769,7 @@ function FindCustomerFields({
         <TemplatedField
           label="Metafield key"
           value={step.metafieldKey ?? ""}
-          onChange={(v) =>
-            onChange({ ...step, metafieldKey: v || undefined })
-          }
+          onChange={(v) => onChange({ ...step, metafieldKey: v || undefined })}
           placeholder="patient_id"
           hint="Metafield key (e.g. patient_id)."
           error={errors?.metafieldKey}
@@ -795,9 +777,7 @@ function FindCustomerFields({
         <TemplatedField
           label="Metafield value"
           value={step.metafieldValue ?? ""}
-          onChange={(v) =>
-            onChange({ ...step, metafieldValue: v || undefined })
-          }
+          onChange={(v) => onChange({ ...step, metafieldValue: v || undefined })}
           placeholder="{{vars.patient.id}}"
           hint="Metafield value to match (e.g. {{vars.patient.id}})."
           error={errors?.metafieldValue}
@@ -848,8 +828,8 @@ function InlineCustomerLookup({
       defaultOpen={hasInline}
     >
       <div className="mb-3 text-[11px] text-muted-foreground">
-        Skip the Customer field above and let Shopify find the customer for
-        you. Provide either email or phone — backend looks them up at run time.
+        Skip the Customer field above and let Shopify find the customer for you. Provide
+        either email or phone; backend looks them up at run time.
       </div>
       <TemplatedField
         label="Customer email"
@@ -906,13 +886,10 @@ function InlineProductLookup({
 }) {
   const hasInline = !!step.productSku;
   return (
-    <Collapsible
-      label="Or look up the product by SKU"
-      defaultOpen={hasInline}
-    >
+    <Collapsible label="Or look up the product by SKU" defaultOpen={hasInline}>
       <div className="mb-3 text-[11px] text-muted-foreground">
-        Skip the ID field above and let Shopify find the product for you.
-        Backend runs the lookup at run time.
+        Skip the ID field above and let Shopify find the product for you. Backend runs
+        the lookup at run time.
       </div>
       <TemplatedField
         label="Product SKU"
@@ -966,8 +943,8 @@ function MetafieldAdvanced({
   return (
     <>
       <div className="mb-3 text-[11px] text-muted-foreground">
-        These control how Shopify groups and reads the custom data. The defaults
-        work for most cases — only change them if you know you need to.
+        These control how Shopify groups and reads the custom data. The defaults work
+        for most cases; only change them if you know you need to.
       </div>
       <Field
         label="Group (namespace)"
@@ -990,9 +967,7 @@ function MetafieldAdvanced({
       >
         <Input
           value={step.key ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, key: e.target.value || undefined })
-          }
+          onChange={(e) => onChange({ ...step, key: e.target.value || undefined })}
           placeholder="patient_id"
           className="font-mono text-xs"
         />
@@ -1078,14 +1053,7 @@ interface IdFieldProps {
   allowNegative?: boolean;
 }
 
-function IdField({
-  label,
-  value,
-  onChange,
-  hint,
-  error,
-  allowNegative,
-}: IdFieldProps) {
+function IdField({ label, value, onChange, hint, error, allowNegative }: IdFieldProps) {
   const text = value === undefined || value === null ? "" : String(value);
   return (
     <TemplatedField
@@ -1143,7 +1111,7 @@ function JsonObjectField({
   error,
 }: JsonObjectFieldProps) {
   const [draft, setDraft] = useState(() =>
-    value ? JSON.stringify(value, null, 2) : "",
+    value ? JSON.stringify(value, null, 2) : ""
   );
   const [parseError, setParseError] = useState<string | undefined>();
 
@@ -1165,11 +1133,7 @@ function JsonObjectField({
     }
     try {
       const parsed = JSON.parse(trimmed);
-      if (
-        typeof parsed !== "object" ||
-        parsed === null ||
-        Array.isArray(parsed)
-      ) {
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
         setParseError("This needs to be a JSON object — wrap it in { … }.");
         return;
       }
@@ -1179,7 +1143,7 @@ function JsonObjectField({
       setParseError(
         e instanceof Error
           ? `That's not valid JSON: ${e.message}`
-          : "That's not valid JSON.",
+          : "That's not valid JSON."
       );
     }
   }

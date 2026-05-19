@@ -169,9 +169,7 @@ export function RxMedCard({
             <Field label="Medication">
               <Input
                 value={med.name}
-                onChange={(event) =>
-                  onChange({ ...med, name: event.target.value })
-                }
+                onChange={(event) => onChange({ ...med, name: event.target.value })}
                 className={INPUT_CLASS}
                 aria-invalid={!med.name.trim()}
               />
@@ -179,9 +177,7 @@ export function RxMedCard({
             <Field label="Strength">
               <Input
                 value={med.strength}
-                onChange={(event) =>
-                  onChange({ ...med, strength: event.target.value })
-                }
+                onChange={(event) => onChange({ ...med, strength: event.target.value })}
                 placeholder="e.g. 20 mg/mL"
                 className={INPUT_CLASS}
                 aria-invalid={!med.strength.trim()}
@@ -218,9 +214,7 @@ export function RxMedCard({
               <Textarea
                 ref={sigRef}
                 value={med.sig}
-                onChange={(event) =>
-                  onChange({ ...med, sig: event.target.value })
-                }
+                onChange={(event) => onChange({ ...med, sig: event.target.value })}
                 placeholder="Patient instructions"
                 className="min-h-[60px] resize-y rounded-lg border-border bg-background text-[13px] leading-snug focus-visible:border-primary"
                 aria-invalid={!med.sig.trim()}
@@ -252,9 +246,7 @@ export function RxMedCard({
                 min={1}
                 inputMode="numeric"
                 value={med.qty}
-                onChange={(event) =>
-                  onChange({ ...med, qty: event.target.value })
-                }
+                onChange={(event) => onChange({ ...med, qty: event.target.value })}
                 onBlur={(event) => {
                   const n = Number.parseInt(event.target.value, 10);
                   if (!Number.isFinite(n) || n < 1) {
@@ -275,9 +267,7 @@ export function RxMedCard({
                 max={MAX_REPEATS}
                 inputMode="numeric"
                 value={med.repeats}
-                onChange={(event) =>
-                  onChange({ ...med, repeats: event.target.value })
-                }
+                onChange={(event) => onChange({ ...med, repeats: event.target.value })}
                 onBlur={(event) => {
                   const n = Number.parseInt(event.target.value, 10);
                   if (!Number.isFinite(n) || n < 0) {
@@ -345,7 +335,7 @@ export function RxMedCard({
                 onClick={onClose}
                 className="h-8 rounded-full px-3 text-xs font-medium"
               >
-                Done
+                Save changes
               </Button>
             </div>
           </div>
@@ -355,13 +345,7 @@ export function RxMedCard({
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className={SUB_LABEL_CLASS}>{label}</span>

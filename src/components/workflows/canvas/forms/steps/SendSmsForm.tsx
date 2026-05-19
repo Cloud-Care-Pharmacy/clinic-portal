@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTemplate, useTemplates } from "@/lib/hooks/use-templates";
-import type { SendSmsStep, SmsTemplate } from "@/types";
+import type { SendSmsStep } from "@/types";
 import { Field, TemplatedField } from "../Field";
 import { Collapsible, VariablesEditor } from "./shared";
 import type { StepFormProps } from "./types";
@@ -74,11 +74,7 @@ export function SendSmsForm(props: StepFormProps<SendSmsStep>) {
   );
 }
 
-function TemplateModeFields({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<SendSmsStep>) {
+function TemplateModeFields({ step, onChange, errors }: StepFormProps<SendSmsStep>) {
   const { data: templates, isLoading } = useTemplates("sms", { active: true });
   const selectedId = step.templateId || undefined;
   const { data: selected } = useTemplate(selectedId);
@@ -97,9 +93,7 @@ function TemplateModeFields({
           }}
         >
           <SelectTrigger>
-            <SelectValue
-              placeholder={isLoading ? "Loading…" : "Select a template"}
-            >
+            <SelectValue placeholder={isLoading ? "Loading…" : "Select a template"}>
               {(value: unknown) => {
                 if (!value || typeof value !== "string") return null;
                 const match = templates.find((t) => t.id === value);
@@ -108,13 +102,15 @@ function TemplateModeFields({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {templates
-              .filter((t): t is SmsTemplate => t.type === "sms" && t.active)
-              .map((t) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
-                </SelectItem>
-              ))}
+            {templates.flatMap((t) =>
+              t.type === "sms" && t.active
+                ? [
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>,
+                  ]
+                : []
+            )}
           </SelectContent>
         </Select>
       </Field>
@@ -133,8 +129,7 @@ function TemplateModeFields({
       <Collapsible label="Overrides (optional)">
         <p className="-mt-1 mb-3 text-[11px] text-muted-foreground">
           Inline <code>body</code> replaces the template body. <code>from</code>{" "}
-          resolves to: inline → template <code>senderId</code> → provider
-          default.
+          resolves to: inline → template <code>senderId</code> → provider default.
         </p>
         <BodyField step={step} onChange={onChange} errors={errors} />
         <FromField step={step} onChange={onChange} errors={errors} />
@@ -143,11 +138,7 @@ function TemplateModeFields({
   );
 }
 
-function InlineModeFields({
-  step,
-  onChange,
-  errors,
-}: StepFormProps<SendSmsStep>) {
+function InlineModeFields({ step, onChange, errors }: StepFormProps<SendSmsStep>) {
   return (
     <>
       <BodyField step={step} onChange={onChange} errors={errors} required />
@@ -186,7 +177,7 @@ function FromField({ step, onChange, errors }: StepFormProps<SendSmsStep>) {
   return (
     <Field
       label="From (optional)"
-      hint='Sender ID. Falls back to the template\u2019s senderId, then the provider default.'
+      hint="Sender ID. Falls back to the template\u2019s senderId, then the provider default."
       error={errors?.from}
     >
       <Input

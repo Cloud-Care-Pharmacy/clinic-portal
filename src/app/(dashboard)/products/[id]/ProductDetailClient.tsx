@@ -81,13 +81,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -116,7 +110,7 @@ interface ProductDetailClientProps {
 }
 
 export function ProductDetailClient({ productId }: ProductDetailClientProps) {
-  const router = useRouter();
+  const { push } = useRouter();
   const products = useSyncExternalStore(
     productStore.subscribe,
     productStore.getSnapshot,
@@ -139,9 +133,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
     onConfirm: () => void;
   }>(null);
 
-  const form = useProductForm(
-    product ? productToFormData(product) : undefined
-  );
+  const form = useProductForm(product ? productToFormData(product) : undefined);
 
   // Keep form in sync when product changes (e.g., status mutation outside edit mode).
   useEffect(() => {
@@ -207,7 +199,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
           title="Product not found"
           description={`No product with id ${productId}. It may have been removed.`}
           actionLabel="Back to products"
-          onAction={() => router.push("/products")}
+          onAction={() => push("/products")}
         />
       </div>
     );
@@ -266,8 +258,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                   description:
                     "Inactive products are hidden from prescribing and ordering flows but remain in the catalog.",
                   confirmLabel: "Archive",
-                  onConfirm: () =>
-                    changeStatus("inactive", "Product archived"),
+                  onConfirm: () => changeStatus("inactive", "Product archived"),
                 })
               }
             >
@@ -285,10 +276,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                     "Use this when the supplier has discontinued the line. Existing stock can still be dispensed.",
                   confirmLabel: "Discontinue",
                   onConfirm: () =>
-                    changeStatus(
-                      "discontinued",
-                      "Product marked as discontinued"
-                    ),
+                    changeStatus("discontinued", "Product marked as discontinued"),
                 })
               }
             >
@@ -338,9 +326,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {product.name}
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{product.name}</h1>
             <StatusBadge
               variant={statusVariant(product.status)}
               dot
@@ -418,9 +404,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{confirm?.title}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirm?.description}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{confirm?.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -464,10 +448,7 @@ function OverviewTab({
                   : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
               }`}
             >
-              <AlertTriangle
-                className="size-4 mt-0.5 shrink-0"
-                aria-hidden="true"
-              />
+              <AlertTriangle className="size-4 mt-0.5 shrink-0" aria-hidden="true" />
               <span>{w.text}</span>
             </div>
           ))}
@@ -476,12 +457,8 @@ function OverviewTab({
 
       <section className="space-y-3 rounded-xl border border-border bg-card p-6">
         <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">
-            {PRODUCT_CATEGORY_LABELS[product.category]}
-          </Badge>
-          <Badge variant="outline">
-            {PRODUCT_FORM_LABELS[product.form]}
-          </Badge>
+          <Badge variant="outline">{PRODUCT_CATEGORY_LABELS[product.category]}</Badge>
+          <Badge variant="outline">{PRODUCT_FORM_LABELS[product.form]}</Badge>
           <Badge
             variant="outline"
             className={
@@ -516,25 +493,16 @@ function OverviewTab({
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryStat label="In stock" value={product.stock.toString()} />
-        <SummaryStat
-          label="Retail price"
-          value={PRICE_FMT.format(product.price)}
-        />
+        <SummaryStat label="Retail price" value={PRICE_FMT.format(product.price)} />
         <SummaryStat
           label="Earliest expiry"
           value={
             product.earliestExpiry
-              ? new Date(product.earliestExpiry).toLocaleDateString(
-                  "en-AU",
-                  DATE_FMT
-                )
+              ? new Date(product.earliestExpiry).toLocaleDateString("en-AU", DATE_FMT)
               : "—"
           }
         />
-        <SummaryStat
-          label="Storage"
-          value={PRODUCT_STORAGE_LABELS[product.storage]}
-        />
+        <SummaryStat label="Storage" value={PRODUCT_STORAGE_LABELS[product.storage]} />
       </div>
     </div>
   );
@@ -557,23 +525,17 @@ function DetailsTab({ product }: { product: Product }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Identification
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Identification</h2>
         <div className="grid grid-cols-2 gap-4">
           <DetailRow label="Name">{product.name}</DetailRow>
           <DetailRow label="Brand">{product.brand ?? "—"}</DetailRow>
-          <DetailRow label="Generic name">
-            {product.genericName ?? "—"}
-          </DetailRow>
+          <DetailRow label="Generic name">{product.genericName ?? "—"}</DetailRow>
           <DetailRow label="Active ingredient">
             {product.activeIngredient ?? "—"}
           </DetailRow>
           <DetailRow label="Strength">{product.strength ?? "—"}</DetailRow>
           <DetailRow label="Pack size">{product.packSize ?? "—"}</DetailRow>
-          <DetailRow label="Form">
-            {PRODUCT_FORM_LABELS[product.form]}
-          </DetailRow>
+          <DetailRow label="Form">{PRODUCT_FORM_LABELS[product.form]}</DetailRow>
           <DetailRow label="Category">
             {PRODUCT_CATEGORY_LABELS[product.category]}
           </DetailRow>
@@ -581,14 +543,10 @@ function DetailsTab({ product }: { product: Product }) {
       </section>
 
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Codes & regulatory
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Codes & regulatory</h2>
         <div className="grid grid-cols-2 gap-4">
           <DetailRow label="SKU">{product.sku}</DetailRow>
-          <DetailRow label="Barcode (GTIN)">
-            {product.barcode ?? "—"}
-          </DetailRow>
+          <DetailRow label="Barcode (GTIN)">{product.barcode ?? "—"}</DetailRow>
           <DetailRow label="ARTG">{product.artgNumber ?? "—"}</DetailRow>
           <DetailRow label="PBS code">{product.pbsCode ?? "—"}</DetailRow>
           <DetailRow label="Schedule">
@@ -598,9 +556,7 @@ function DetailsTab({ product }: { product: Product }) {
             {product.requiresPrescription ? "Yes" : "No"}
           </DetailRow>
           <DetailRow label="Supplier">{product.supplier ?? "—"}</DetailRow>
-          <DetailRow label="Status">
-            {PRODUCT_STATUS_LABELS[product.status]}
-          </DetailRow>
+          <DetailRow label="Status">{PRODUCT_STATUS_LABELS[product.status]}</DetailRow>
         </div>
       </section>
 
@@ -638,9 +594,7 @@ function StockTab({ product }: { product: Product }) {
   return (
     <div className="space-y-6">
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Inventory levels
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Inventory levels</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <DetailRow label="In stock">
             <span className="flex items-center gap-2 tabular-nums">
@@ -676,45 +630,33 @@ function StockTab({ product }: { product: Product }) {
 
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground">
-            Adjust stock
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">Adjust stock</h2>
           {isControlled && (
             <Badge
               variant="outline"
               className="border-status-danger-border bg-status-danger-bg text-status-danger-fg"
             >
-              S8 — log in CD register
+              S8: log in CD register
             </Badge>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Mock adjustment — changes are local. Once the backend ships this will
-          create an audited stock movement.
+          Mock adjustment (changes are local). Once the backend ships this will create
+          an audited stock movement.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Input
             type="number"
             min={1}
             value={adjustQty}
-            onChange={(e) =>
-              setAdjustQty(Math.max(1, Number(e.target.value) || 1))
-            }
+            onChange={(e) => setAdjustQty(Math.max(1, Number(e.target.value) || 1))}
             className="w-24"
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => adjust(adjustQty)}
-          >
+          <Button type="button" variant="outline" onClick={() => adjust(adjustQty)}>
             <Plus className="size-4" aria-hidden="true" />
             Add
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => adjust(-adjustQty)}
-          >
+          <Button type="button" variant="outline" onClick={() => adjust(-adjustQty)}>
             <Minus className="size-4" aria-hidden="true" />
             Remove
           </Button>
@@ -722,9 +664,7 @@ function StockTab({ product }: { product: Product }) {
       </section>
 
       <section className="space-y-4 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Storage & expiry
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Storage & expiry</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DetailRow label="Storage requirement">
             {PRODUCT_STORAGE_LABELS[product.storage]}
@@ -739,10 +679,7 @@ function StockTab({ product }: { product: Product }) {
               )}
             >
               {product.earliestExpiry
-                ? new Date(product.earliestExpiry).toLocaleDateString(
-                    "en-AU",
-                    DATE_FMT
-                  )
+                ? new Date(product.earliestExpiry).toLocaleDateString("en-AU", DATE_FMT)
                 : "—"}
             </span>
           </DetailRow>
@@ -754,13 +691,8 @@ function StockTab({ product }: { product: Product }) {
         </div>
         {product.schedule === "S8" && product.storage !== "controlled" && (
           <div className="flex items-start gap-2 rounded-lg border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">
-            <AlertTriangle
-              className="size-4 mt-0.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span>
-              S8 controlled drug must be stored in a controlled-drug safe.
-            </span>
+            <AlertTriangle className="size-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <span>S8 controlled drug must be stored in a controlled-drug safe.</span>
           </div>
         )}
       </section>
@@ -784,21 +716,15 @@ function PricingTab({ product }: { product: Product }) {
         <h2 className="text-sm font-semibold text-foreground">Prices</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <DetailRow label="Cost price">
-            {product.costPrice != null
-              ? PRICE_FMT.format(product.costPrice)
-              : "—"}
+            {product.costPrice != null ? PRICE_FMT.format(product.costPrice) : "—"}
           </DetailRow>
           <DetailRow label="Retail price">
             <span className="text-lg font-semibold">
               {PRICE_FMT.format(product.price)}
             </span>
           </DetailRow>
-          <DetailRow label="Margin">
-            {margin != null ? `${margin}%` : "—"}
-          </DetailRow>
-          <DetailRow label="Markup">
-            {markup != null ? `${markup}%` : "—"}
-          </DetailRow>
+          <DetailRow label="Margin">{margin != null ? `${margin}%` : "—"}</DetailRow>
+          <DetailRow label="Markup">{markup != null ? `${markup}%` : "—"}</DetailRow>
         </div>
       </section>
 
@@ -837,9 +763,7 @@ function ActivityTab({ product }: { product: Product }) {
       </section>
 
       <section className="space-y-3 rounded-xl border border-border bg-card p-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Activity history
-        </h2>
+        <h2 className="text-sm font-semibold text-foreground">Activity history</h2>
         <EmptyState
           icon={Package}
           title="No activity recorded"

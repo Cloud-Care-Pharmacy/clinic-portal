@@ -1,3 +1,4 @@
+/* oxlint-disable react-doctor/nextjs-no-img-element -- Signatures are auth-gated streams (saved) or local data URLs (preview) that next/image cannot optimize. */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -240,9 +241,9 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
               )}
             </CardTitle>
             <CardDescription>
-              Captured once and stamped automatically onto every prescription
-              you issue. You will re-authenticate at issue time — your
-              signature is never re-drawn per script.
+              Captured once and stamped automatically onto every prescription you issue.
+              You will re-authenticate at issue time; your signature is never re-drawn
+              per script.
             </CardDescription>
           </div>
           {signature && (
@@ -265,8 +266,8 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
                 <AlertDialogHeader>
                   <AlertDialogTitle>Remove signature?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Your stored signature will be revoked. You will not be able
-                    to issue prescriptions until you capture a new one.
+                    Your stored signature will be revoked. You will not be able to issue
+                    prescriptions until you capture a new one.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -359,9 +360,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
                 <span className="text-sm font-medium">
                   Upload a PNG, JPEG, or SVG (transparent background recommended)
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  Max 1 MB
-                </span>
+                <span className="text-xs text-muted-foreground">Max 1 MB</span>
                 <input
                   type="file"
                   accept={ACCEPTED_MIMES.join(",")}
@@ -390,12 +389,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
+              <Button type="button" size="sm" onClick={handleSave} disabled={isSaving}>
                 {isSaving && <Loader2 className="mr-2 size-4 animate-spin" />}
                 Save signature
               </Button>
