@@ -45,7 +45,7 @@ jobs:
 
       - name: React Doctor (full scan)
         if: github.event_name == 'push'
-        run: npx react-doctor --yes --full --annotations --fail-on error
+        run: npx react-doctor --full --annotations --fail-on error
 
   # ── 2. Deploy preview (PRs) ───────────────────────────────────────
   deploy-preview:
