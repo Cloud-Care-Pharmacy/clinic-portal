@@ -362,12 +362,7 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
                       {isConnected ? "Connected" : "Not connected"}
                     </StatusBadge>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs text-muted-foreground">
-                      {isConnected
-                        ? "Credentials and sync preferences saved"
-                        : "Open sidebar to add credentials and settings"}
-                    </p>
+                  <div className="flex items-center justify-end gap-2">
                     <Button
                       type="button"
                       variant={isConnected ? "secondary" : "outline"}
