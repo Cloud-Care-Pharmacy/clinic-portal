@@ -2812,3 +2812,83 @@ export interface NotificationTemplate extends BaseTemplate {
 }
 
 export type Template = EmailTemplate | SmsTemplate | NotificationTemplate;
+
+// ---- Workspace integrations ----
+
+export type IntegrationProvider = "shopify" | "stripe" | "xero" | "mailchimp";
+export type IntegrationSyncMode = "manual" | "hourly" | "daily";
+export type IntegrationSyncStatus = "success" | "failed" | "running";
+
+export interface WorkspaceIntegration {
+  id: string;
+  entityId: string;
+  provider: IntegrationProvider;
+  connected: boolean;
+  accountId: string | null;
+  hasApiKey: boolean;
+  hasApiSecret: boolean;
+  hasWebhookSecret: boolean;
+  apiKeyMasked: string | null;
+  syncMode: IntegrationSyncMode;
+  autoSync: boolean;
+  configuredAt: string | null;
+  lastSyncAt: string | null;
+  lastSyncStatus: IntegrationSyncStatus | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertWorkspaceIntegrationPayload {
+  accountId: string;
+  apiKey?: string;
+  apiSecret?: string;
+  webhookSecret?: string;
+  syncMode: IntegrationSyncMode;
+  autoSync: boolean;
+}
+
+export interface TestWorkspaceIntegrationPayload {
+  accountId?: string;
+  apiKey?: string;
+  apiSecret?: string;
+}
+
+export type IntegrationTestErrorCode =
+  | "INVALID_CREDENTIALS"
+  | "PROVIDER_UNREACHABLE"
+  | "RATE_LIMITED"
+  | "MISSING_CREDENTIALS"
+  | null;
+
+export interface IntegrationTestResult {
+  ok: boolean;
+  status: number;
+  accountId: string | null;
+  message: string;
+  errorCode: IntegrationTestErrorCode;
+}
+
+export interface IntegrationSyncTrigger {
+  provider: IntegrationProvider;
+  queuedAt: string;
+}
+
+export interface WorkspaceIntegrationsResponse {
+  success: true;
+  data: { integrations: WorkspaceIntegration[] };
+}
+
+export interface WorkspaceIntegrationResponse {
+  success: true;
+  data: { integration: WorkspaceIntegration };
+}
+
+export interface WorkspaceIntegrationTestResponse {
+  success: true;
+  data: { test: IntegrationTestResult };
+}
+
+export interface WorkspaceIntegrationSyncResponse {
+  success: true;
+  data: { sync: IntegrationSyncTrigger };
+}

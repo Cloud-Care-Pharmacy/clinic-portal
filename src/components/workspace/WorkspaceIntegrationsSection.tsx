@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   CreditCard,
   type LucideIcon,
   Megaphone,
   ReceiptText,
+  RefreshCw,
   Settings2,
   ShoppingBag,
   Workflow,
@@ -34,14 +35,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { cn } from "@/lib/utils";
-
-type IntegrationId = "shopify" | "stripe" | "xero" | "mailchimp";
+import {
+  useDeleteWorkspaceIntegration,
+  useTestWorkspaceIntegration,
+  useTriggerWorkspaceIntegrationSync,
+  useUpsertWorkspaceIntegration,
+  useWorkspaceIntegrations,
+} from "@/lib/hooks/use-workspace-integrations";
+import { WorkspaceApiError } from "@/lib/hooks/use-workspace";
+import type {
+  IntegrationProvider,
+  IntegrationSyncMode,
+  UpsertWorkspaceIntegrationPayload,
+  WorkspaceIntegration,
+  WorkspaceIntegrationsResponse,
+} from "@/types";
 
 interface IntegrationDefinition {
-  id: IntegrationId;
+  id: IntegrationProvider;
   name: string;
   summary: string;
   icon: LucideIcon;
+  accountIdLabel: string;
+  accountIdPlaceholder: string;
+  apiKeyPlaceholder: string;
 }
 
 const INTEGRATION_CATALOG: IntegrationDefinition[] = [
@@ -50,203 +67,115 @@ const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     name: "Shopify",
     summary: "Sync products and order events from your Shopify store.",
     icon: ShoppingBag,
+    accountIdLabel: "Shop handle",
+    accountIdPlaceholder: "acme (without .myshopify.com)",
+    apiKeyPlaceholder: "shpat_...",
   },
   {
     id: "stripe",
     name: "Stripe",
     summary: "Import payment status updates and payout references.",
     icon: CreditCard,
+    accountIdLabel: "Account ID",
+    accountIdPlaceholder: "acct_123...",
+    apiKeyPlaceholder: "sk_live_...",
   },
   {
     id: "xero",
     name: "Xero",
     summary: "Push invoices and reconcile transaction records.",
     icon: ReceiptText,
+    accountIdLabel: "Tenant ID",
+    accountIdPlaceholder: "Xero tenant ID",
+    apiKeyPlaceholder: "Client ID",
   },
   {
     id: "mailchimp",
     name: "Mailchimp",
     summary: "Send lifecycle automations from patient segmentation rules.",
     icon: Megaphone,
+    accountIdLabel: "Account ID",
+    accountIdPlaceholder: "Mailchimp account ID",
+    apiKeyPlaceholder: "API key",
   },
 ];
 
-interface IntegrationsState {
-  integrations: Record<IntegrationId, IntegrationSettings>;
-}
-
-type SyncMode = "manual" | "hourly" | "daily";
-
-interface IntegrationSettings {
-  connected: boolean;
-  accountId: string;
-  apiKey: string;
-  apiSecret: string;
-  webhookSecret: string;
-  syncMode: SyncMode;
-  autoSync: boolean;
-  configuredAt: string | null;
-}
-
-const DEFAULT_STATE: IntegrationsState = {
-  integrations: {
-    shopify: {
-      connected: false,
-      accountId: "",
-      apiKey: "",
-      apiSecret: "",
-      webhookSecret: "",
-      syncMode: "hourly",
-      autoSync: true,
-      configuredAt: null,
-    },
-    stripe: {
-      connected: false,
-      accountId: "",
-      apiKey: "",
-      apiSecret: "",
-      webhookSecret: "",
-      syncMode: "daily",
-      autoSync: false,
-      configuredAt: null,
-    },
-    xero: {
-      connected: false,
-      accountId: "",
-      apiKey: "",
-      apiSecret: "",
-      webhookSecret: "",
-      syncMode: "daily",
-      autoSync: false,
-      configuredAt: null,
-    },
-    mailchimp: {
-      connected: false,
-      accountId: "",
-      apiKey: "",
-      apiSecret: "",
-      webhookSecret: "",
-      syncMode: "manual",
-      autoSync: false,
-      configuredAt: null,
-    },
-  },
-};
-
 const integrationSettingsSchema = z.object({
   accountId: z.string().trim().min(1, "Account/store ID is required"),
-  apiKey: z.string().trim().min(1, "API key is required"),
-  apiSecret: z.string().trim().min(1, "API secret is required"),
-  webhookSecret: z.string().trim().optional(),
+  apiKey: z.string(),
+  apiSecret: z.string(),
+  webhookSecret: z.string(),
   syncMode: z.enum(["manual", "hourly", "daily"]),
   autoSync: z.boolean(),
 });
 
 type IntegrationSettingsForm = z.infer<typeof integrationSettingsSchema>;
 
-function getStorageKey(entityId: string) {
-  return `workspace-integrations:${entityId}`;
+const DEFAULT_FORM: IntegrationSettingsForm = {
+  accountId: "",
+  apiKey: "",
+  apiSecret: "",
+  webhookSecret: "",
+  syncMode: "hourly",
+  autoSync: true,
+};
+
+function formatTimestamp(value: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString();
 }
 
-function cloneDefaultIntegrations(): Record<IntegrationId, IntegrationSettings> {
-  return {
-    shopify: { ...DEFAULT_STATE.integrations.shopify },
-    stripe: { ...DEFAULT_STATE.integrations.stripe },
-    xero: { ...DEFAULT_STATE.integrations.xero },
-    mailchimp: { ...DEFAULT_STATE.integrations.mailchimp },
-  };
+function describeError(error: unknown, fallback: string) {
+  if (error instanceof WorkspaceApiError) return error.message;
+  if (error instanceof Error) return error.message;
+  return fallback;
 }
 
-function getStoredIntegrationsState(entityId: string): IntegrationsState {
-  if (typeof window === "undefined") {
-    return DEFAULT_STATE;
-  }
-
-  const raw = window.localStorage.getItem(getStorageKey(entityId));
-  if (!raw) return DEFAULT_STATE;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<IntegrationsState>;
-
-    const integrations = cloneDefaultIntegrations();
-    const maybeIntegrations = parsed.integrations;
-    if (maybeIntegrations && typeof maybeIntegrations === "object") {
-      for (const integration of INTEGRATION_CATALOG) {
-        const value = (maybeIntegrations as Record<string, Partial<IntegrationSettings>>)[
-          integration.id
-        ];
-        if (!value) continue;
-        integrations[integration.id] = {
-          ...integrations[integration.id],
-          connected: Boolean(value.connected),
-          accountId: value.accountId ?? integrations[integration.id].accountId,
-          apiKey: value.apiKey ?? integrations[integration.id].apiKey,
-          apiSecret: value.apiSecret ?? integrations[integration.id].apiSecret,
-          webhookSecret:
-            value.webhookSecret ?? integrations[integration.id].webhookSecret,
-          syncMode:
-            value.syncMode === "manual" ||
-            value.syncMode === "hourly" ||
-            value.syncMode === "daily"
-              ? value.syncMode
-              : integrations[integration.id].syncMode,
-          autoSync: Boolean(value.autoSync),
-          configuredAt: value.configuredAt ?? integrations[integration.id].configuredAt,
-        };
-      }
-    }
-
-    // Backward compatibility for old shape using activeIntegrations array.
-    const legacyActive = (parsed as { activeIntegrations?: unknown }).activeIntegrations;
-    if (Array.isArray(legacyActive)) {
-      legacyActive.forEach((id) => {
-        if (typeof id === "string" && id in integrations) {
-          integrations[id as IntegrationId].connected = true;
-        }
-      });
-    }
-
-    return {
-      integrations,
-    };
-  } catch {
-    window.localStorage.removeItem(getStorageKey(entityId));
-    return DEFAULT_STATE;
-  }
-}
-
-export function WorkspaceIntegrationsSection({ entityId }: { entityId: string }) {
-  const [state, setState] = useState<IntegrationsState>(() =>
-    getStoredIntegrationsState(entityId)
+export function WorkspaceIntegrationsSection({
+  entityId,
+  initialIntegrations,
+}: {
+  entityId: string;
+  initialIntegrations?: WorkspaceIntegrationsResponse;
+}) {
+  const integrationsQuery = useWorkspaceIntegrations(
+    entityId || undefined,
+    initialIntegrations
   );
-  const [activeIntegrationId, setActiveIntegrationId] = useState<IntegrationId | null>(
-    null
-  );
+  const upsertMutation = useUpsertWorkspaceIntegration();
+  const deleteMutation = useDeleteWorkspaceIntegration();
+  const testMutation = useTestWorkspaceIntegration();
+  const syncMutation = useTriggerWorkspaceIntegrationSync();
+
+  const integrationsByProvider = useMemo(() => {
+    const map = new Map<IntegrationProvider, WorkspaceIntegration>();
+    for (const integration of integrationsQuery.data?.data.integrations ?? []) {
+      map.set(integration.provider, integration);
+    }
+    return map;
+  }, [integrationsQuery.data]);
+
+  const [activeProvider, setActiveProvider] =
+    useState<IntegrationProvider | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const formId = useId();
   const form = useForm<IntegrationSettingsForm>({
-    defaultValues: {
-      accountId: "",
-      apiKey: "",
-      apiSecret: "",
-      webhookSecret: "",
-      syncMode: "hourly",
-      autoSync: true,
-    },
+    defaultValues: DEFAULT_FORM,
   });
   const syncMode = useWatch({ control: form.control, name: "syncMode" });
   const autoSync = useWatch({ control: form.control, name: "autoSync" });
 
-  useEffect(() => {
-    const storageKey = getStorageKey(entityId);
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
-  }, [entityId, state]);
-
-  const activeIntegration = activeIntegrationId
-    ? INTEGRATION_CATALOG.find((integration) => integration.id === activeIntegrationId)
+  const activeDefinition = activeProvider
+    ? INTEGRATION_CATALOG.find((entry) => entry.id === activeProvider) ?? null
     : null;
-  const activeIntegrationSettings = activeIntegrationId
-    ? state.integrations[activeIntegrationId]
+  const activeIntegration = activeProvider
+    ? integrationsByProvider.get(activeProvider) ?? null
+    : null;
+
+  const loadError = integrationsQuery.error
+    ? describeError(integrationsQuery.error, "Failed to load integrations")
     : null;
 
   function setFieldError(issue: z.core.$ZodIssue) {
@@ -254,16 +183,16 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
     if (field) form.setError(field, { message: issue.message });
   }
 
-  function openSettingsSheet(integrationId: IntegrationId) {
-    const settings = state.integrations[integrationId];
-    setActiveIntegrationId(integrationId);
+  function openSettingsSheet(provider: IntegrationProvider) {
+    const integration = integrationsByProvider.get(provider);
+    setActiveProvider(provider);
     form.reset({
-      accountId: settings.accountId,
-      apiKey: settings.apiKey,
-      apiSecret: settings.apiSecret,
-      webhookSecret: settings.webhookSecret,
-      syncMode: settings.syncMode,
-      autoSync: settings.autoSync,
+      accountId: integration?.accountId ?? "",
+      apiKey: "",
+      apiSecret: "",
+      webhookSecret: "",
+      syncMode: integration?.syncMode ?? "hourly",
+      autoSync: integration?.autoSync ?? true,
     });
     setSheetOpen(true);
   }
@@ -277,11 +206,55 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
     setSheetOpen(nextOpen);
     if (!nextOpen) {
       form.reset(form.getValues());
+      setActiveProvider(null);
     }
   }
 
-  function saveIntegrationSettings(data: IntegrationSettingsForm) {
-    if (!activeIntegrationId || !activeIntegration) return;
+  function buildPayload(
+    data: IntegrationSettingsForm,
+    integration: WorkspaceIntegration | null
+  ): {
+    payload: UpsertWorkspaceIntegrationPayload;
+    missingApiKey: boolean;
+    missingApiSecret: boolean;
+  } {
+    const apiKey = data.apiKey.trim();
+    const apiSecret = data.apiSecret.trim();
+    const webhookSecret = data.webhookSecret.trim();
+    const payload: UpsertWorkspaceIntegrationPayload = {
+      accountId: data.accountId.trim(),
+      syncMode: data.syncMode,
+      autoSync: data.autoSync,
+    };
+    if (apiKey) payload.apiKey = apiKey;
+    if (apiSecret) payload.apiSecret = apiSecret;
+    if (webhookSecret) payload.webhookSecret = webhookSecret;
+
+    return {
+      payload,
+      missingApiKey: !apiKey && !integration?.hasApiKey,
+      missingApiSecret: !apiSecret && !integration?.hasApiSecret,
+    };
+  }
+
+  function applyFieldErrors(details: unknown) {
+    if (!details || typeof details !== "object") return false;
+    const fieldErrors = details as Record<string, string[]>;
+    let applied = false;
+    for (const [field, messages] of Object.entries(fieldErrors)) {
+      if (!Array.isArray(messages) || messages.length === 0) continue;
+      if (field in DEFAULT_FORM) {
+        form.setError(field as keyof IntegrationSettingsForm, {
+          message: messages[0],
+        });
+        applied = true;
+      }
+    }
+    return applied;
+  }
+
+  async function saveIntegrationSettings(data: IntegrationSettingsForm) {
+    if (!activeProvider || !activeDefinition) return;
 
     const parsed = integrationSettingsSchema.safeParse(data);
     if (!parsed.success) {
@@ -289,39 +262,95 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
       return;
     }
 
-    setState((current) => ({
-      ...current,
-      integrations: {
-        ...current.integrations,
-        [activeIntegrationId]: {
-          ...current.integrations[activeIntegrationId],
-          ...parsed.data,
-          connected: true,
-          configuredAt: new Date().toISOString(),
-        },
-      },
-    }));
+    const { payload, missingApiKey, missingApiSecret } = buildPayload(
+      parsed.data,
+      activeIntegration
+    );
 
-    toast.success(`${activeIntegration.name} settings saved`);
-    setSheetOpen(false);
+    if (missingApiKey) {
+      form.setError("apiKey", { message: "API key is required" });
+    }
+    if (missingApiSecret) {
+      form.setError("apiSecret", { message: "API secret is required" });
+    }
+    if (missingApiKey || missingApiSecret) return;
+
+    try {
+      await upsertMutation.mutateAsync({
+        entityId,
+        provider: activeProvider,
+        data: payload,
+      });
+      toast.success(`${activeDefinition.name} settings saved`);
+      setSheetOpen(false);
+      setActiveProvider(null);
+    } catch (error) {
+      if (error instanceof WorkspaceApiError) {
+        const handled = applyFieldErrors(error.details);
+        if (!handled) {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error(describeError(error, "Failed to save integration"));
+      }
+    }
   }
 
-  function disconnectIntegration() {
-    if (!activeIntegrationId || !activeIntegration) return;
-
-    setState((current) => ({
-      ...current,
-      integrations: {
-        ...current.integrations,
-        [activeIntegrationId]: {
-          ...current.integrations[activeIntegrationId],
-          connected: false,
-        },
-      },
-    }));
-    toast.success(`${activeIntegration.name} disconnected`);
-    setSheetOpen(false);
+  async function disconnectIntegration() {
+    if (!activeProvider || !activeDefinition) return;
+    try {
+      await deleteMutation.mutateAsync({
+        entityId,
+        provider: activeProvider,
+      });
+      toast.success(`${activeDefinition.name} disconnected`);
+      setSheetOpen(false);
+      setActiveProvider(null);
+    } catch (error) {
+      toast.error(describeError(error, "Failed to disconnect integration"));
+    }
   }
+
+  async function runConnectionTest() {
+    if (!activeProvider || !activeDefinition) return;
+    const data = form.getValues();
+    const accountId = data.accountId.trim();
+    const apiKey = data.apiKey.trim();
+    const apiSecret = data.apiSecret.trim();
+
+    try {
+      const response = await testMutation.mutateAsync({
+        entityId,
+        provider: activeProvider,
+        data: {
+          ...(accountId ? { accountId } : {}),
+          ...(apiKey ? { apiKey } : {}),
+          ...(apiSecret ? { apiSecret } : {}),
+        },
+      });
+      const result = response.data.test;
+      if (result.ok) {
+        toast.success(result.message || "Connection successful");
+      } else {
+        toast.error(result.message || "Connection test failed");
+      }
+    } catch (error) {
+      toast.error(describeError(error, "Connection test failed"));
+    }
+  }
+
+  async function runSyncNow(provider: IntegrationProvider, name: string) {
+    try {
+      await syncMutation.mutateAsync({ entityId, provider });
+      toast.success(`${name} sync queued`);
+    } catch (error) {
+      toast.error(describeError(error, "Failed to queue sync"));
+    }
+  }
+
+  const isSaving = upsertMutation.isPending;
+  const isDisconnecting = deleteMutation.isPending;
+  const isTesting = testMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -336,15 +365,22 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {loadError ? (
+            <p className="text-sm text-destructive">{loadError}</p>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
-            {INTEGRATION_CATALOG.map((integration) => {
-              const integrationSettings = state.integrations[integration.id];
-              const isConnected = integrationSettings.connected;
-              const Icon = integration.icon;
+            {INTEGRATION_CATALOG.map((definition) => {
+              const integration = integrationsByProvider.get(definition.id);
+              const isConnected = Boolean(integration?.connected);
+              const Icon = definition.icon;
+              const lastSync = formatTimestamp(integration?.lastSyncAt ?? null);
+              const isSyncingThis =
+                syncMutation.isPending &&
+                syncMutation.variables?.provider === definition.id;
 
               return (
                 <div
-                  key={integration.id}
+                  key={definition.id}
                   className={cn(
                     "rounded-lg border p-3",
                     isConnected ? "border-border bg-muted/20" : "border-border"
@@ -354,20 +390,54 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
                     <div className="space-y-1">
                       <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <Icon className="size-4" />
-                        {integration.name}
+                        {definition.name}
                       </p>
-                      <p className="text-sm text-muted-foreground">{integration.summary}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {definition.summary}
+                      </p>
+                      {isConnected && integration?.apiKeyMasked ? (
+                        <p className="font-mono text-xs text-muted-foreground">
+                          {integration.apiKeyMasked}
+                        </p>
+                      ) : null}
+                      {lastSync ? (
+                        <p className="text-xs text-muted-foreground">
+                          Last sync: {lastSync}
+                          {integration?.lastSyncStatus
+                            ? ` (${integration.lastSyncStatus})`
+                            : ""}
+                        </p>
+                      ) : null}
                     </div>
                     <StatusBadge variant={isConnected ? "success" : "neutral"}>
                       {isConnected ? "Connected" : "Not connected"}
                     </StatusBadge>
                   </div>
-                  <div className="flex items-center justify-end gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {isConnected ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isSyncingThis}
+                        onClick={() =>
+                          runSyncNow(definition.id, definition.name)
+                        }
+                      >
+                        <RefreshCw
+                          className={cn(
+                            "size-4",
+                            isSyncingThis && "animate-spin"
+                          )}
+                        />
+                        Sync now
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       variant={isConnected ? "secondary" : "outline"}
                       size="sm"
-                      onClick={() => openSettingsSheet(integration.id)}
+                      onClick={() => openSettingsSheet(definition.id)}
                     >
                       <Settings2 className="size-4" />
                       {isConnected ? "Edit settings" : "Connect"}
@@ -383,7 +453,11 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
       <AppSheet
         open={sheetOpen}
         onOpenChange={requestSheetOpenChange}
-        title={activeIntegration ? `${activeIntegration.name} integration` : "Integration"}
+        title={
+          activeDefinition
+            ? `${activeDefinition.name} integration`
+            : "Integration"
+        }
         description="Add credentials and sync settings for this provider."
         footer={
           <>
@@ -394,37 +468,56 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
             >
               Cancel
             </Button>
-            {activeIntegrationSettings?.connected ? (
-              <Button type="button" variant="outline-destructive" onClick={disconnectIntegration}>
+            {activeIntegration?.connected ? (
+              <Button
+                type="button"
+                variant="outline-destructive"
+                onClick={disconnectIntegration}
+                disabled={isDisconnecting}
+              >
                 Disconnect integration
               </Button>
             ) : null}
             <Button
+              type="button"
+              variant="outline"
+              onClick={runConnectionTest}
+              disabled={isTesting || !activeProvider}
+            >
+              Test connection
+            </Button>
+            <Button
               type="submit"
               form={formId}
-              disabled={!activeIntegrationId}
+              disabled={!activeProvider || isSaving}
             >
               Save settings
             </Button>
           </>
         }
       >
-        {activeIntegration ? (
+        {activeDefinition ? (
           <form
             id={formId}
             onSubmit={form.handleSubmit(saveIntegrationSettings)}
             className="space-y-4"
           >
             <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <p className="text-sm font-medium text-foreground">{activeIntegration.name}</p>
-              <p className="text-sm text-muted-foreground">{activeIntegration.summary}</p>
+              <p className="text-sm font-medium text-foreground">
+                {activeDefinition.name}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeDefinition.summary}
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="integrationAccountId">Account or store ID</Label>
+              <Label htmlFor="integrationAccountId">
+                {activeDefinition.accountIdLabel}
+              </Label>
               <Input
                 id="integrationAccountId"
-                placeholder="your-store.myshopify.com"
+                placeholder={activeDefinition.accountIdPlaceholder}
                 aria-invalid={!!form.formState.errors.accountId}
                 {...form.register("accountId")}
               />
@@ -439,10 +532,19 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
               <Label htmlFor="integrationApiKey">API key</Label>
               <Input
                 id="integrationApiKey"
-                placeholder="Enter API key"
+                placeholder={
+                  activeIntegration?.hasApiKey
+                    ? "•••• Leave blank to keep current"
+                    : activeDefinition.apiKeyPlaceholder
+                }
                 aria-invalid={!!form.formState.errors.apiKey}
                 {...form.register("apiKey")}
               />
+              {activeIntegration?.apiKeyMasked ? (
+                <p className="font-mono text-xs text-muted-foreground">
+                  Current: {activeIntegration.apiKeyMasked}
+                </p>
+              ) : null}
               {form.formState.errors.apiKey ? (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.apiKey.message}
@@ -455,7 +557,11 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
               <Input
                 id="integrationApiSecret"
                 type="password"
-                placeholder="Enter API secret"
+                placeholder={
+                  activeIntegration?.hasApiSecret
+                    ? "•••• Leave blank to keep current"
+                    : "Enter API secret"
+                }
                 aria-invalid={!!form.formState.errors.apiSecret}
                 {...form.register("apiSecret")}
               />
@@ -467,11 +573,17 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="integrationWebhookSecret">Webhook secret (optional)</Label>
+              <Label htmlFor="integrationWebhookSecret">
+                Webhook secret (optional)
+              </Label>
               <Input
                 id="integrationWebhookSecret"
                 type="password"
-                placeholder="Optional webhook signing secret"
+                placeholder={
+                  activeIntegration?.hasWebhookSecret
+                    ? "•••• Leave blank to keep current"
+                    : "Optional webhook signing secret"
+                }
                 {...form.register("webhookSecret")}
               />
             </div>
@@ -482,7 +594,9 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
                 value={syncMode}
                 onValueChange={(value) => {
                   if (value) {
-                    form.setValue("syncMode", value as SyncMode, { shouldDirty: true });
+                    form.setValue("syncMode", value as IntegrationSyncMode, {
+                      shouldDirty: true,
+                    });
                   }
                 }}
               >
@@ -499,7 +613,9 @@ export function WorkspaceIntegrationsSection({ entityId }: { entityId: string })
 
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Auto sync enabled</p>
+                <p className="text-sm font-medium text-foreground">
+                  Auto sync enabled
+                </p>
                 <p className="text-sm text-muted-foreground">
                   Keep records updated automatically on your selected schedule.
                 </p>

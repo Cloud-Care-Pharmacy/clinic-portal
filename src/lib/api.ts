@@ -55,6 +55,13 @@ import type {
   WorkspaceInvitationsResponse,
   WorkspaceUsersResponse,
   UserRole,
+  IntegrationProvider,
+  UpsertWorkspaceIntegrationPayload,
+  TestWorkspaceIntegrationPayload,
+  WorkspaceIntegrationsResponse,
+  WorkspaceIntegrationResponse,
+  WorkspaceIntegrationTestResponse,
+  WorkspaceIntegrationSyncResponse,
   RosterWeekResponse,
   RosterMonthResponse,
   WorkflowsListResponse,
@@ -561,6 +568,83 @@ class ApiClient {
       body: JSON.stringify(data),
       headers: clerkUserHeader(clerkUserId),
     });
+  }
+
+  // ---- Workspace integrations ----
+
+  async listIntegrations(
+    entityId: string,
+    clerkUserId?: string
+  ): Promise<WorkspaceIntegrationsResponse> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations`,
+      { headers: clerkUserHeader(clerkUserId) }
+    );
+  }
+
+  async getIntegration(
+    entityId: string,
+    provider: IntegrationProvider,
+    clerkUserId?: string
+  ): Promise<WorkspaceIntegrationResponse> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations/${encodeURIComponent(provider)}`,
+      { headers: clerkUserHeader(clerkUserId) }
+    );
+  }
+
+  async upsertIntegration(
+    entityId: string,
+    provider: IntegrationProvider,
+    data: UpsertWorkspaceIntegrationPayload,
+    clerkUserId?: string
+  ): Promise<WorkspaceIntegrationResponse> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations/${encodeURIComponent(provider)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: clerkUserHeader(clerkUserId),
+      }
+    );
+  }
+
+  async deleteIntegration(
+    entityId: string,
+    provider: IntegrationProvider,
+    clerkUserId?: string
+  ): Promise<{ success: true; data: { provider: IntegrationProvider } }> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations/${encodeURIComponent(provider)}`,
+      { method: "DELETE", headers: clerkUserHeader(clerkUserId) }
+    );
+  }
+
+  async testIntegration(
+    entityId: string,
+    provider: IntegrationProvider,
+    data: TestWorkspaceIntegrationPayload,
+    clerkUserId?: string
+  ): Promise<WorkspaceIntegrationTestResponse> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations/${encodeURIComponent(provider)}/test`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: clerkUserHeader(clerkUserId),
+      }
+    );
+  }
+
+  async triggerIntegrationSync(
+    entityId: string,
+    provider: IntegrationProvider,
+    clerkUserId?: string
+  ): Promise<WorkspaceIntegrationSyncResponse> {
+    return this.request(
+      `/api/entities/${encodeURIComponent(entityId)}/integrations/${encodeURIComponent(provider)}/sync`,
+      { method: "POST", headers: clerkUserHeader(clerkUserId) }
+    );
   }
 
   // ---- Practitioner Profile ----

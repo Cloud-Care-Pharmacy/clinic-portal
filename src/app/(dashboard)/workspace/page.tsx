@@ -7,8 +7,13 @@ export default async function WorkspacePage() {
   const { role, userId, entityId } = await requireAuth();
   if (role !== "admin") redirect("/dashboard");
 
-  const [initialEntity, initialUsers, initialInvitations, initialSettings] =
-    await Promise.all([
+  const [
+    initialEntity,
+    initialUsers,
+    initialInvitations,
+    initialSettings,
+    initialIntegrations,
+  ] = await Promise.all([
       entityId ? api.getEntity(entityId).catch(() => undefined) : undefined,
       api
         .getWorkspaceUsers({
@@ -31,6 +36,9 @@ export default async function WorkspacePage() {
       entityId
         ? api.getWorkspaceEntitySettings(entityId, userId).catch(() => undefined)
         : undefined,
+      entityId
+        ? api.listIntegrations(entityId, userId).catch(() => undefined)
+        : undefined,
     ]);
 
   return (
@@ -40,6 +48,7 @@ export default async function WorkspacePage() {
       initialUsers={initialUsers}
       initialInvitations={initialInvitations}
       initialSettings={initialSettings}
+      initialIntegrations={initialIntegrations}
     />
   );
 }

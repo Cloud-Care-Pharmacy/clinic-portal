@@ -20,6 +20,7 @@ import type {
   Entity,
   WorkspaceEntitySettings,
   WorkspaceEntitySettingsResponse,
+  WorkspaceIntegrationsResponse,
   WorkspaceInvitationsResponse,
   WorkspaceUsersResponse,
 } from "@/types";
@@ -30,6 +31,7 @@ interface WorkspaceClientProps {
   initialUsers?: WorkspaceUsersResponse;
   initialInvitations?: WorkspaceInvitationsResponse;
   initialSettings?: WorkspaceEntitySettingsResponse;
+  initialIntegrations?: WorkspaceIntegrationsResponse;
 }
 
 function entityToSettings(entity?: Entity): WorkspaceEntitySettings | null {
@@ -58,6 +60,7 @@ export function WorkspaceClient({
   initialUsers,
   initialInvitations,
   initialSettings,
+  initialIntegrations,
 }: WorkspaceClientProps) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const usersQuery = useWorkspaceUsers(entityId || undefined, initialUsers);
@@ -153,7 +156,10 @@ export function WorkspaceClient({
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-4">
-          <WorkspaceIntegrationsSection entityId={entityId} />
+          <WorkspaceIntegrationsSection
+            entityId={entityId}
+            initialIntegrations={initialIntegrations}
+          />
         </TabsContent>
       </Tabs>
 
