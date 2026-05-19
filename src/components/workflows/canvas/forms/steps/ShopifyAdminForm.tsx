@@ -37,6 +37,7 @@ const OPERATION_GROUPS: { label: string; ops: OpMeta[] }[] = [
   {
     label: "Customers",
     ops: [
+      { value: "find_customer", label: "Find a customer" },
       { value: "create_customer", label: "Create a customer" },
       { value: "update_customer", label: "Update a customer" },
       { value: "set_customer_metafield", label: "Save custom data on a customer" },
@@ -54,20 +55,20 @@ const OPERATION_GROUPS: { label: string; ops: OpMeta[] }[] = [
     ],
   },
   {
-    label: "Products",
+    label: "Products & inventory",
     ops: [
+      { value: "find_product_by_sku", label: "Find a product by SKU" },
       { value: "create_product", label: "Create a product" },
       { value: "update_product", label: "Update a product" },
+      { value: "adjust_inventory", label: "Adjust stock" },
     ],
-  },
-  {
-    label: "Inventory",
-    ops: [{ value: "adjust_inventory", label: "Adjust stock" }],
   },
 ];
 
 /** Friendly one-liner shown under the operation dropdown. */
 const OPERATION_DESCRIPTIONS: Record<ShopifyAdminOperation, string> = {
+  find_customer:
+    "Look up an existing Shopify customer by email, phone, or a custom metafield. Pair with a branch step to decide whether to create or update.",
   create_customer: "Add a new customer record to your Shopify store.",
   update_customer:
     "Change details on an existing Shopify customer — tags, notes, email, phone, etc.",
@@ -83,6 +84,8 @@ const OPERATION_DESCRIPTIONS: Record<ShopifyAdminOperation, string> = {
   update_product: "Change details on an existing Shopify product.",
   adjust_inventory:
     "Add stock to or remove stock from an inventory location.",
+  find_product_by_sku:
+    "Look up a Shopify product variant by SKU. Useful before adjusting stock or updating a product.",
 };
 
 /* -----------------------------------------------------------------------------
@@ -123,6 +126,8 @@ interface OperationFields {
   objects: ObjectFieldMeta[];
   metafield: boolean;
   inventory: boolean;
+  lookupCustomer: boolean;
+  lookupProduct: boolean;
 }
 
 const CUSTOMER_ID: IdFieldMeta = {
@@ -169,9 +174,11 @@ function orderObject(label = "Order details"): ObjectFieldMeta {
 }
 
 function operationFields(op: ShopifyAdminOperation): OperationFields {
+  const base = { lookupCustomer: false, lookupProduct: false };
   switch (op) {
     case "create_customer":
       return {
+        ...base,
         ids: [],
         objects: [customerObject("New customer details")],
         metafield: false,
@@ -179,6 +186,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "update_customer":
       return {
+        ...base,
         ids: [CUSTOMER_ID],
         objects: [customerObject("Changes to apply")],
         metafield: false,
@@ -186,6 +194,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "set_customer_metafield":
       return {
+        ...base,
         ids: [CUSTOMER_ID],
         objects: [],
         metafield: true,
@@ -193,6 +202,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "create_order":
       return {
+        ...base,
         ids: [],
         objects: [orderObject("New order details")],
         metafield: false,
@@ -200,6 +210,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "update_order":
       return {
+        ...base,
         ids: [ORDER_ID],
         objects: [orderObject("Changes to apply")],
         metafield: false,
@@ -207,6 +218,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "create_draft_order":
       return {
+        ...base,
         ids: [],
         objects: [
           {
@@ -221,6 +233,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "cancel_order":
       return {
+        ...base,
         ids: [ORDER_ID],
         objects: [
           {
@@ -235,6 +248,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "close_order":
       return {
+        ...base,
         ids: [ORDER_ID],
         objects: [],
         metafield: false,
@@ -242,6 +256,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "create_transaction":
       return {
+        ...base,
         ids: [ORDER_ID],
         objects: [
           {
@@ -256,6 +271,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "create_product":
       return {
+        ...base,
         ids: [],
         objects: [
           {
@@ -270,6 +286,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "update_product":
       return {
+        ...base,
         ids: [PRODUCT_ID],
         objects: [
           {
@@ -284,10 +301,29 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "adjust_inventory":
       return {
+        ...base,
         ids: [INVENTORY_ITEM_ID, LOCATION_ID],
         objects: [],
         metafield: false,
         inventory: true,
+      };
+    case "find_customer":
+      return {
+        ...base,
+        ids: [],
+        objects: [],
+        metafield: false,
+        inventory: false,
+        lookupCustomer: true,
+      };
+    case "find_product_by_sku":
+      return {
+        ...base,
+        ids: [],
+        objects: [],
+        metafield: false,
+        inventory: false,
+        lookupProduct: true,
       };
   }
 }
@@ -298,7 +334,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
  * -------------------------------------------------------------------------- */
 
 const OBJECT_EXAMPLES: Partial<
-  Record<ObjectFieldName, Record<ShopifyAdminOperation, Record<string, unknown> | undefined>>
+  Record<ObjectFieldName, Partial<Record<ShopifyAdminOperation, Record<string, unknown>>>>
 > = {
   customer: {
     create_customer: {
@@ -436,6 +472,12 @@ const ALL_OP_FIELDS = [
   "options",
   "transaction",
   "product",
+  "email",
+  "phone",
+  "metafieldNamespace",
+  "metafieldKey",
+  "metafieldValue",
+  "sku",
 ] as const;
 
 function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
@@ -450,6 +492,14 @@ function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
     used.add("value");
   }
   if (meta.inventory) used.add("availableAdjustment");
+  if (meta.lookupCustomer) {
+    used.add("email");
+    used.add("phone");
+    used.add("metafieldNamespace");
+    used.add("metafieldKey");
+    used.add("metafieldValue");
+  }
+  if (meta.lookupProduct) used.add("sku");
   return used;
 }
 
@@ -553,6 +603,21 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
         <MetafieldBasics step={step} onChange={onChange} errors={errors} />
       )}
 
+      {meta.lookupCustomer && (
+        <FindCustomerFields step={step} onChange={onChange} errors={errors} />
+      )}
+
+      {meta.lookupProduct && (
+        <TemplatedField
+          label="SKU"
+          value={step.sku ?? ""}
+          onChange={(v) => onChange({ ...step, sku: v || undefined })}
+          placeholder="e.g. SKU-123 or {{vars.product.sku}}"
+          hint="The SKU to look up. Matches a single product variant."
+          error={errors?.sku}
+        />
+      )}
+
       {meta.objects.map((obj) => (
         <JsonObjectField
           key={obj.name}
@@ -621,6 +686,86 @@ function OperationDescription({ text }: { text: string }) {
 /* Metafield UX split: "basics" (Value) above the fold, the Shopify-jargon
  * fields (Namespace / Key / Type) tucked into Advanced with smart defaults
  * pre-filled so most users never need to touch them. */
+
+function FindCustomerFields({
+  step,
+  onChange,
+  errors,
+}: {
+  step: ShopifyAdminStep;
+  onChange: (next: ShopifyAdminStep) => void;
+  errors?: StepFormProps<ShopifyAdminStep>["errors"];
+}) {
+  return (
+    <>
+      <div className="mb-4 rounded-md border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+        <p className="mb-1.5 font-medium text-foreground">
+          Provide at least one identifier
+        </p>
+        <p>
+          Use email, phone, or all three metafield fields together. The result
+          is written to <code className="font-mono">vars.&lt;name&gt;</code> so
+          a later branch step can check{" "}
+          <code className="font-mono">{"{{vars.<name>.found}}"}</code> and{" "}
+          <code className="font-mono">{"{{vars.<name>.ambiguous}}"}</code>{" "}
+          before deciding whether to create or update.
+        </p>
+      </div>
+      <TemplatedField
+        label="Email"
+        value={step.email ?? ""}
+        onChange={(v) => onChange({ ...step, email: v || undefined })}
+        placeholder="{{vars.patient.email}}"
+        hint="Patient email to look up in Shopify."
+        error={errors?.email}
+      />
+      <TemplatedField
+        label="Phone"
+        value={step.phone ?? ""}
+        onChange={(v) => onChange({ ...step, phone: v || undefined })}
+        placeholder="+61400000000"
+        hint="E.164 phone number, e.g. +61400000000."
+        error={errors?.phone}
+      />
+      <Collapsible label="Or look up by metafield">
+        <div className="mb-3 text-[11px] text-muted-foreground">
+          Match by a custom Shopify metafield. Fill in all three fields
+          together.
+        </div>
+        <TemplatedField
+          label="Metafield namespace"
+          value={step.metafieldNamespace ?? ""}
+          onChange={(v) =>
+            onChange({ ...step, metafieldNamespace: v || undefined })
+          }
+          placeholder="quity"
+          hint="Shopify metafield namespace (e.g. quity)."
+          error={errors?.metafieldNamespace}
+        />
+        <TemplatedField
+          label="Metafield key"
+          value={step.metafieldKey ?? ""}
+          onChange={(v) =>
+            onChange({ ...step, metafieldKey: v || undefined })
+          }
+          placeholder="patient_id"
+          hint="Metafield key (e.g. patient_id)."
+          error={errors?.metafieldKey}
+        />
+        <TemplatedField
+          label="Metafield value"
+          value={step.metafieldValue ?? ""}
+          onChange={(v) =>
+            onChange({ ...step, metafieldValue: v || undefined })
+          }
+          placeholder="{{vars.patient.id}}"
+          hint="Metafield value to match (e.g. {{vars.patient.id}})."
+          error={errors?.metafieldValue}
+        />
+      </Collapsible>
+    </>
+  );
+}
 
 function MetafieldBasics({
   step,

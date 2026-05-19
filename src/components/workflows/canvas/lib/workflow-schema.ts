@@ -400,6 +400,13 @@ const shopifyAdminStep = z
     type: z.string().min(1).max(255).optional(),
     value: z.string().max(131_072).optional(),
 
+    email: templateString.optional(),
+    phone: templateString.optional(),
+    metafieldNamespace: templateString.optional(),
+    metafieldKey: templateString.optional(),
+    metafieldValue: templateString.optional(),
+    sku: templateString.optional(),
+
     customer: shopifyObjectField.optional(),
     order: shopifyObjectField.optional(),
     draftOrder: shopifyObjectField.optional(),
@@ -465,6 +472,37 @@ const shopifyAdminStep = z
           "availableAdjustment",
           step.availableAdjustment !== undefined,
         );
+        break;
+      case "find_customer": {
+        const hasEmail = !!step.email;
+        const hasPhone = !!step.phone;
+        const mfParts = [
+          step.metafieldNamespace,
+          step.metafieldKey,
+          step.metafieldValue,
+        ];
+        const mfCount = mfParts.filter((p) => !!p).length;
+        const hasMf = mfCount === 3;
+        if (!hasEmail && !hasPhone && mfCount === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["email"],
+            message:
+              "Provide at least one of email, phone, or the metafield namespace/key/value.",
+          });
+        }
+        if (mfCount > 0 && !hasMf) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["metafieldNamespace"],
+            message:
+              "Metafield lookup needs all three: namespace, key and value.",
+          });
+        }
+        break;
+      }
+      case "find_product_by_sku":
+        requireField("sku", !!step.sku);
         break;
     }
   });

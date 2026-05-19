@@ -1812,6 +1812,7 @@ export type WorkflowStepKind =
  * Grouped in the editor as Customers / Orders / Products / Inventory.
  */
 export const SHOPIFY_ADMIN_OPERATIONS = [
+  "find_customer",
   "create_customer",
   "update_customer",
   "set_customer_metafield",
@@ -1821,6 +1822,7 @@ export const SHOPIFY_ADMIN_OPERATIONS = [
   "cancel_order",
   "close_order",
   "create_transaction",
+  "find_product_by_sku",
   "create_product",
   "update_product",
   "adjust_inventory",
@@ -2242,6 +2244,16 @@ export interface ShopifyAdminStep extends WorkflowStepBase {
   key?: string;
   type?: string;
   value?: string;
+
+  // `find_customer` lookup fields.
+  email?: string;
+  phone?: string;
+  metafieldNamespace?: string;
+  metafieldKey?: string;
+  metafieldValue?: string;
+
+  // `find_product_by_sku` lookup field.
+  sku?: string;
 
   // Object payload fields — passed through to Shopify after templating.
   customer?: Record<string, unknown>;
