@@ -58,7 +58,15 @@ interface IntegrationDefinition {
   icon: LucideIcon;
   accountIdLabel: string;
   accountIdPlaceholder: string;
+  accountIdHelp?: string;
+  apiKeyLabel?: string;
   apiKeyPlaceholder: string;
+  apiKeyHelp?: string;
+  apiSecretLabel?: string;
+  apiSecretPlaceholder?: string;
+  apiSecretHelp?: string;
+  webhookSecretLabel?: string;
+  webhookSecretHelp?: string;
 }
 
 const INTEGRATION_CATALOG: IntegrationDefinition[] = [
@@ -67,9 +75,21 @@ const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     name: "Shopify",
     summary: "Sync products and order events from your Shopify store.",
     icon: ShoppingBag,
-    accountIdLabel: "Shop handle",
-    accountIdPlaceholder: "acme (without .myshopify.com)",
-    apiKeyPlaceholder: "shpat_...",
+    accountIdLabel: "Store handle",
+    accountIdPlaceholder: "acme",
+    accountIdHelp:
+      "The part before .myshopify.com (e.g. acme). Full domain also accepted.",
+    apiKeyLabel: "Client ID",
+    apiKeyPlaceholder: "Shopify app Client ID",
+    apiKeyHelp:
+      "From your Shopify Dev Dashboard app → API credentials.",
+    apiSecretLabel: "Client Secret",
+    apiSecretPlaceholder: "Shopify app Client Secret",
+    apiSecretHelp:
+      "From the same app. Stored encrypted; used to mint short-lived (24h) Admin API tokens.",
+    webhookSecretLabel: "Webhook signing secret",
+    webhookSecretHelp:
+      "Optional. Required only if you wire Shopify webhooks back to us.",
   },
   {
     id: "stripe",
@@ -521,6 +541,11 @@ export function WorkspaceIntegrationsSection({
                 aria-invalid={!!form.formState.errors.accountId}
                 {...form.register("accountId")}
               />
+              {activeDefinition.accountIdHelp ? (
+                <p className="text-xs text-muted-foreground">
+                  {activeDefinition.accountIdHelp}
+                </p>
+              ) : null}
               {form.formState.errors.accountId ? (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.accountId.message}
@@ -529,7 +554,9 @@ export function WorkspaceIntegrationsSection({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="integrationApiKey">API key</Label>
+              <Label htmlFor="integrationApiKey">
+                {activeDefinition.apiKeyLabel ?? "API key"}
+              </Label>
               <Input
                 id="integrationApiKey"
                 placeholder={
@@ -540,6 +567,11 @@ export function WorkspaceIntegrationsSection({
                 aria-invalid={!!form.formState.errors.apiKey}
                 {...form.register("apiKey")}
               />
+              {activeDefinition.apiKeyHelp ? (
+                <p className="text-xs text-muted-foreground">
+                  {activeDefinition.apiKeyHelp}
+                </p>
+              ) : null}
               {activeIntegration?.apiKeyMasked ? (
                 <p className="font-mono text-xs text-muted-foreground">
                   Current: {activeIntegration.apiKeyMasked}
@@ -553,18 +585,25 @@ export function WorkspaceIntegrationsSection({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="integrationApiSecret">API secret</Label>
+              <Label htmlFor="integrationApiSecret">
+                {activeDefinition.apiSecretLabel ?? "API secret"}
+              </Label>
               <Input
                 id="integrationApiSecret"
                 type="password"
                 placeholder={
                   activeIntegration?.hasApiSecret
                     ? "•••• Leave blank to keep current"
-                    : "Enter API secret"
+                    : activeDefinition.apiSecretPlaceholder ?? "Enter API secret"
                 }
                 aria-invalid={!!form.formState.errors.apiSecret}
                 {...form.register("apiSecret")}
               />
+              {activeDefinition.apiSecretHelp ? (
+                <p className="text-xs text-muted-foreground">
+                  {activeDefinition.apiSecretHelp}
+                </p>
+              ) : null}
               {form.formState.errors.apiSecret ? (
                 <p className="text-sm text-destructive">
                   {form.formState.errors.apiSecret.message}
@@ -574,7 +613,8 @@ export function WorkspaceIntegrationsSection({
 
             <div className="space-y-2">
               <Label htmlFor="integrationWebhookSecret">
-                Webhook secret (optional)
+                {activeDefinition.webhookSecretLabel ??
+                  "Webhook secret (optional)"}
               </Label>
               <Input
                 id="integrationWebhookSecret"
@@ -586,6 +626,11 @@ export function WorkspaceIntegrationsSection({
                 }
                 {...form.register("webhookSecret")}
               />
+              {activeDefinition.webhookSecretHelp ? (
+                <p className="text-xs text-muted-foreground">
+                  {activeDefinition.webhookSecretHelp}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
