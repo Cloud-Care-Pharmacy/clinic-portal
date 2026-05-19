@@ -11,6 +11,7 @@ import type {
   RouterStep,
   SendEmailStep,
   SendSmsStep,
+  ShopifyAdminStep,
   WaitForEventStep,
   WaitStep,
   Workflow,
@@ -27,6 +28,7 @@ import { RecordActivityForm } from "./RecordActivityForm";
 import { RouterForm } from "./RouterForm";
 import { SendEmailForm } from "./SendEmailForm";
 import { SendSmsForm } from "./SendSmsForm";
+import { ShopifyAdminForm } from "./ShopifyAdminForm";
 import { WaitForEventForm } from "./WaitForEventForm";
 import { WaitForm } from "./WaitForm";
 import type { StepErrors, StepFormProps } from "./types";
@@ -78,6 +80,8 @@ function StepKindForm(props: StepInspectorProps) {
       return <HttpCallForm {...(props as StepFormProps<HttpCallStep>)} />;
     case "call_workflow":
       return <CallWorkflowForm {...(props as StepFormProps<CallWorkflowStep>)} />;
+    case "shopify_admin":
+      return <ShopifyAdminForm {...(props as StepFormProps<ShopifyAdminStep>)} />;
   }
 }
 
@@ -123,5 +127,11 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
       return { kind: "http_call", url: "", method: "GET" };
     case "call_workflow":
       return { kind: "call_workflow", workflowId: "" };
+    case "shopify_admin":
+      return {
+        kind: "shopify_admin",
+        operation: "update_customer",
+        shopDomain: "",
+      };
   }
 }

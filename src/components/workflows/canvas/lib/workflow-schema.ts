@@ -3,6 +3,7 @@ import {
   BRANCH_OP_VALUES,
   RECORD_ACTIVITY_STEP_ENTITY_TYPES,
   RECORD_ACTIVITY_STEP_TYPES,
+  SHOPIFY_ADMIN_OPERATIONS,
   UNARY_BRANCH_OPS,
 } from "@/types";
 
@@ -364,6 +365,110 @@ const callWorkflowStep = z.object({
   storeAs: stepIdRefinement.optional(),
 });
 
+/**
+ * `shopify_admin` step. Backend remains the source of truth — credentials
+ * are resolved server-side from KV, and per-operation Shopify validation
+ * runs on the worker. These checks just give immediate feedback for the
+ * required wrapper fields per operation (see handoff matrix).
+ */
+// ID fields accept either a positive integer or a templated string.
+const shopifyIdField = z.union([
+  z.number().int().positive(),
+  templateString,
+]);
+// `availableAdjustment` may be negative.
+const shopifyIntField = z.union([z.number().int(), templateString]);
+const shopifyObjectField = z.record(z.string(), z.unknown());
+
+const shopifyAdminStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("shopify_admin"),
+    operation: z.enum(SHOPIFY_ADMIN_OPERATIONS),
+    shopDomain: templateString,
+    storeAs: stepIdRefinement.optional(),
+
+    customerId: shopifyIdField.optional(),
+    orderId: shopifyIdField.optional(),
+    productId: shopifyIdField.optional(),
+    inventoryItemId: shopifyIdField.optional(),
+    locationId: shopifyIdField.optional(),
+    availableAdjustment: shopifyIntField.optional(),
+
+    namespace: z.string().min(1).max(255).optional(),
+    key: z.string().min(1).max(255).optional(),
+    type: z.string().min(1).max(255).optional(),
+    value: z.string().max(131_072).optional(),
+
+    customer: shopifyObjectField.optional(),
+    order: shopifyObjectField.optional(),
+    draftOrder: shopifyObjectField.optional(),
+    options: shopifyObjectField.optional(),
+    transaction: shopifyObjectField.optional(),
+    product: shopifyObjectField.optional(),
+  })
+  .superRefine((step, ctx) => {
+    function requireField(path: string, present: boolean, message?: string) {
+      if (!present) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [path],
+          message: message ?? `Required for ${step.operation}`,
+        });
+      }
+    }
+    const op = step.operation;
+    switch (op) {
+      case "create_customer":
+        requireField("customer", !!step.customer);
+        break;
+      case "update_customer":
+        requireField("customerId", step.customerId !== undefined);
+        requireField("customer", !!step.customer);
+        break;
+      case "set_customer_metafield":
+        requireField("customerId", step.customerId !== undefined);
+        requireField("namespace", !!step.namespace);
+        requireField("key", !!step.key);
+        requireField("type", !!step.type);
+        requireField("value", step.value !== undefined && step.value !== "");
+        break;
+      case "create_order":
+        requireField("order", !!step.order);
+        break;
+      case "update_order":
+        requireField("orderId", step.orderId !== undefined);
+        requireField("order", !!step.order);
+        break;
+      case "create_draft_order":
+        requireField("draftOrder", !!step.draftOrder);
+        break;
+      case "cancel_order":
+      case "close_order":
+        requireField("orderId", step.orderId !== undefined);
+        break;
+      case "create_transaction":
+        requireField("orderId", step.orderId !== undefined);
+        requireField("transaction", !!step.transaction);
+        break;
+      case "create_product":
+        requireField("product", !!step.product);
+        break;
+      case "update_product":
+        requireField("productId", step.productId !== undefined);
+        requireField("product", !!step.product);
+        break;
+      case "adjust_inventory":
+        requireField("inventoryItemId", step.inventoryItemId !== undefined);
+        requireField("locationId", step.locationId !== undefined);
+        requireField(
+          "availableAdjustment",
+          step.availableAdjustment !== undefined,
+        );
+        break;
+    }
+  });
+
 export const stepSchema = z.discriminatedUnion("kind", [
   sendEmailStep,
   sendSmsStep,
@@ -377,6 +482,7 @@ export const stepSchema = z.discriminatedUnion("kind", [
   recordActivityStep,
   httpCallStep,
   callWorkflowStep,
+  shopifyAdminStep,
 ]);
 
 /**

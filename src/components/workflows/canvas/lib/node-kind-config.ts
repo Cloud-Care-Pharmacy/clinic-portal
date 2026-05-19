@@ -15,6 +15,7 @@ import {
   CalendarSearch,
   Activity,
   PhoneOutgoing,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import type {
@@ -189,6 +190,12 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
     description: "Run another workflow as part of this one",
     icon: PhoneOutgoing,
   }),
+  shopify_admin: fam("tool", {
+    label: "Shopify Admin",
+    shortLabel: "Shopify",
+    description: "Create or update Shopify customers, orders, and products",
+    icon: ShoppingBag,
+  }),
 };
 
 export const TRIGGER_KINDS: WorkflowTriggerKind[] = [
@@ -203,6 +210,7 @@ export const STEP_KINDS: WorkflowStepKind[] = [
   "send_email",
   "send_sms",
   "http_call",
+  "shopify_admin",
   "wait",
   "wait_for_event",
   "branch_if",
@@ -287,6 +295,11 @@ export function stepLabel(
       return { label: named || "HTTP call", sub: `${s.method ?? "GET"} ${s.url || fallback}` };
     case "call_workflow":
       return { label: named || "Call workflow", sub: s.workflowId || fallback };
+    case "shopify_admin":
+      return {
+        label: named || "Shopify Admin",
+        sub: s.operation ? s.operation.replace(/_/g, " ") : fallback,
+      };
     default:
       return {
         label: named || ((s as { kind?: string })?.kind ?? "Step"),

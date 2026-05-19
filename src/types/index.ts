@@ -1801,7 +1801,49 @@ export type WorkflowStepKind =
   | "record_activity"
   | "http_call"
   | "wait_for_event"
-  | "call_workflow";
+  | "call_workflow"
+  | "shopify_admin";
+
+/**
+ * Supported Shopify Admin operations. Mirrors the server-side enum in
+ * `prescription-gateway` (`src/modules/workflows/workflow-schema.ts` and
+ * the runtime handler `src/modules/workflows/steps/shopify-admin.ts`).
+ *
+ * Grouped in the editor as Customers / Orders / Products / Inventory.
+ */
+export const SHOPIFY_ADMIN_OPERATIONS = [
+  "create_customer",
+  "update_customer",
+  "set_customer_metafield",
+  "create_order",
+  "update_order",
+  "create_draft_order",
+  "cancel_order",
+  "close_order",
+  "create_transaction",
+  "create_product",
+  "update_product",
+  "adjust_inventory",
+] as const;
+export type ShopifyAdminOperation = (typeof SHOPIFY_ADMIN_OPERATIONS)[number];
+
+/**
+ * Suggested Shopify metafield `type` values for the
+ * `set_customer_metafield` operation. Shopify can add new types; the form
+ * allows free-text entry as well.
+ */
+export const SHOPIFY_METAFIELD_TYPES = [
+  "single_line_text_field",
+  "multi_line_text_field",
+  "number_integer",
+  "number_decimal",
+  "boolean",
+  "date",
+  "date_time",
+  "json",
+  "url",
+] as const;
+export type ShopifyMetafieldType = (typeof SHOPIFY_METAFIELD_TYPES)[number];
 
 /**
  * Single source of truth for branch operators. Wire `value` is what the
@@ -2161,6 +2203,55 @@ export interface CallWorkflowStep extends WorkflowStepBase {
   storeAs?: string;
 }
 
+/**
+ * Shopify Admin action step. Credentials are NEVER stored in the workflow
+ * definition — the backend resolves the Admin API token from KV at runtime
+ * using the (normalized) `shopDomain`. See
+ * `prescription-gateway/src/modules/workflows/steps/shopify-admin.ts`.
+ *
+ * `shopDomain` accepts `test-store`, `test-store.myshopify.com`, or a
+ * templated value; the backend normalizes to `*.myshopify.com`.
+ *
+ * Most ID fields (`customerId`, `orderId`, `productId`, `inventoryItemId`,
+ * `locationId`) accept either a positive integer or a template string that
+ * resolves to one. `availableAdjustment` may be positive or negative.
+ *
+ * Object-payload fields (`customer`, `order`, `draftOrder`, `options`,
+ * `transaction`, `product`) are sent through to Shopify Admin REST/GraphQL
+ * after template interpolation of nested string values.
+ */
+export interface ShopifyAdminStep extends WorkflowStepBase {
+  kind: "shopify_admin";
+  operation: ShopifyAdminOperation;
+  /** Shop handle or full `*.myshopify.com` domain. Templating allowed. */
+  shopDomain: string;
+  /** Saves the returned Shopify resource under `vars.<storeAs>`. */
+  storeAs?: string;
+
+  // ID fields — accept literal numbers or template strings.
+  customerId?: string | number;
+  orderId?: string | number;
+  productId?: string | number;
+  inventoryItemId?: string | number;
+  locationId?: string | number;
+  /** Positive or negative integer (or template). */
+  availableAdjustment?: string | number;
+
+  // `set_customer_metafield` fields.
+  namespace?: string;
+  key?: string;
+  type?: string;
+  value?: string;
+
+  // Object payload fields — passed through to Shopify after templating.
+  customer?: Record<string, unknown>;
+  order?: Record<string, unknown>;
+  draftOrder?: Record<string, unknown>;
+  options?: Record<string, unknown>;
+  transaction?: Record<string, unknown>;
+  product?: Record<string, unknown>;
+}
+
 export type WorkflowStep =
   | SendEmailStep
   | SendSmsStep
@@ -2173,7 +2264,8 @@ export type WorkflowStep =
   | RecordActivityStep
   | HttpCallStep
   | WaitForEventStep
-  | CallWorkflowStep;
+  | CallWorkflowStep
+  | ShopifyAdminStep;
 
 /**
  * Sticky-note color presets for workflow canvas notes. Each maps to a
