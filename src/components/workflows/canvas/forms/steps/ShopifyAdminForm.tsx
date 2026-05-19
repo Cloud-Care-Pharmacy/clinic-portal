@@ -520,15 +520,6 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
 
       <OperationDescription text={OPERATION_DESCRIPTIONS[op]} />
 
-      <TemplatedField
-        label="Shopify store"
-        value={step.shopDomain ?? ""}
-        onChange={(v) => onChange({ ...step, shopDomain: v })}
-        placeholder="my-store"
-        hint="Your store handle (e.g. my-store) or the full *.myshopify.com address. You don't need to enter any password or token — that's handled for you."
-        error={errors?.shopDomain}
-      />
-
       {meta.ids.map((id) => (
         <IdField
           key={id.name}
@@ -577,6 +568,21 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
       ))}
 
       <Collapsible label="Advanced settings">
+        {/*
+          shopDomain is required by the backend (it's the KV lookup key for the
+          Admin API token). Long-term this should be auto-filled from a
+          "Shopify connection" entity setting and the field removed entirely;
+          until that exists, we keep it editable but tucked away so single-store
+          tenants don't have to think about it.
+        */}
+        <TemplatedField
+          label="Shopify store (multi-store only)"
+          value={step.shopDomain ?? ""}
+          onChange={(v) => onChange({ ...step, shopDomain: v })}
+          placeholder="my-store"
+          hint="Normally set up once with your Shopify connection — only change this if you have more than one Shopify store connected and need to target a specific one. Accepts a store handle (my-store) or the full *.myshopify.com address."
+          error={errors?.shopDomain}
+        />
         {meta.metafield && (
           <MetafieldAdvanced step={step} onChange={onChange} errors={errors} />
         )}
