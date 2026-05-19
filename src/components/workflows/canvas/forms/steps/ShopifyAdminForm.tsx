@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,10 +21,11 @@ import {
   type ShopifyAdminStep,
 } from "@/types";
 import { Field, TemplatedField } from "../Field";
+import { Collapsible } from "./shared";
 import type { StepFormProps } from "./types";
 
 /* -----------------------------------------------------------------------------
- * Operation catalog (grouped for the Select dropdown).
+ * Operation catalog — grouped + described in plain English.
  * -------------------------------------------------------------------------- */
 
 interface OpMeta {
@@ -34,37 +37,56 @@ const OPERATION_GROUPS: { label: string; ops: OpMeta[] }[] = [
   {
     label: "Customers",
     ops: [
-      { value: "create_customer", label: "Create customer" },
-      { value: "update_customer", label: "Update customer" },
-      { value: "set_customer_metafield", label: "Set customer metafield" },
+      { value: "create_customer", label: "Create a customer" },
+      { value: "update_customer", label: "Update a customer" },
+      { value: "set_customer_metafield", label: "Save custom data on a customer" },
     ],
   },
   {
     label: "Orders",
     ops: [
-      { value: "create_order", label: "Create order" },
-      { value: "update_order", label: "Update order" },
-      { value: "create_draft_order", label: "Create draft order" },
-      { value: "cancel_order", label: "Cancel order" },
-      { value: "close_order", label: "Close order" },
-      { value: "create_transaction", label: "Create transaction" },
+      { value: "create_order", label: "Create an order" },
+      { value: "update_order", label: "Update an order" },
+      { value: "create_draft_order", label: "Create a draft order" },
+      { value: "cancel_order", label: "Cancel an order" },
+      { value: "close_order", label: "Close an order" },
+      { value: "create_transaction", label: "Record a transaction" },
     ],
   },
   {
     label: "Products",
     ops: [
-      { value: "create_product", label: "Create product" },
-      { value: "update_product", label: "Update product" },
+      { value: "create_product", label: "Create a product" },
+      { value: "update_product", label: "Update a product" },
     ],
   },
   {
     label: "Inventory",
-    ops: [{ value: "adjust_inventory", label: "Adjust inventory" }],
+    ops: [{ value: "adjust_inventory", label: "Adjust stock" }],
   },
 ];
 
+/** Friendly one-liner shown under the operation dropdown. */
+const OPERATION_DESCRIPTIONS: Record<ShopifyAdminOperation, string> = {
+  create_customer: "Add a new customer record to your Shopify store.",
+  update_customer:
+    "Change details on an existing Shopify customer — tags, notes, email, phone, etc.",
+  set_customer_metafield:
+    "Save extra information against a customer (custom Shopify metadata). Use this for things like a patient ID — not for built-in fields like tags or notes.",
+  create_order: "Create a new order in Shopify.",
+  update_order: "Change details on an existing Shopify order.",
+  create_draft_order: "Create a draft order that can be completed later.",
+  cancel_order: "Cancel an existing order.",
+  close_order: "Mark an order as closed.",
+  create_transaction: "Record a transaction (capture, refund, etc.) on an order.",
+  create_product: "Add a new product to your Shopify store.",
+  update_product: "Change details on an existing Shopify product.",
+  adjust_inventory:
+    "Add stock to or remove stock from an inventory location.",
+};
+
 /* -----------------------------------------------------------------------------
- * Field name helpers — keep operation→field wiring in one place.
+ * Per-operation field map — labels are user-facing copy.
  * -------------------------------------------------------------------------- */
 
 type IdFieldName =
@@ -82,16 +104,68 @@ type ObjectFieldName =
   | "transaction"
   | "product";
 
+interface IdFieldMeta {
+  name: IdFieldName;
+  label: string;
+  hint: string;
+  required: boolean;
+}
+
+interface ObjectFieldMeta {
+  name: ObjectFieldName;
+  label: string;
+  hint: string;
+  required: boolean;
+}
+
 interface OperationFields {
-  ids: { name: IdFieldName; label: string; required: boolean }[];
-  objects: {
-    name: ObjectFieldName;
-    label: string;
-    required: boolean;
-    hint?: string;
-  }[];
+  ids: IdFieldMeta[];
+  objects: ObjectFieldMeta[];
   metafield: boolean;
   inventory: boolean;
+}
+
+const CUSTOMER_ID: IdFieldMeta = {
+  name: "customerId",
+  label: "Customer",
+  hint: "The Shopify customer this applies to. Paste their Shopify ID or use a value from the trigger, e.g. {{event.payload.customerId}}.",
+  required: true,
+};
+const ORDER_ID: IdFieldMeta = {
+  name: "orderId",
+  label: "Order",
+  hint: "The Shopify order this applies to.",
+  required: true,
+};
+const PRODUCT_ID: IdFieldMeta = {
+  name: "productId",
+  label: "Product",
+  hint: "The Shopify product this applies to.",
+  required: true,
+};
+const INVENTORY_ITEM_ID: IdFieldMeta = {
+  name: "inventoryItemId",
+  label: "Inventory item",
+  hint: "The Shopify inventory item to adjust.",
+  required: true,
+};
+const LOCATION_ID: IdFieldMeta = {
+  name: "locationId",
+  label: "Location",
+  hint: "The Shopify location where stock is being adjusted.",
+  required: true,
+};
+
+function customerObject(label = "Customer details"): ObjectFieldMeta {
+  return {
+    name: "customer",
+    label,
+    hint: "What to set on the customer — tags, note, email, phone, addresses, etc. (Not for custom metadata — use the 'Save custom data on a customer' action for that.)",
+    required: true,
+  };
+}
+function orderObject(label = "Order details"): ObjectFieldMeta {
+  return { name: "order", label, hint: "What to set on the order.", required: true };
 }
 
 function operationFields(op: ShopifyAdminOperation): OperationFields {
@@ -99,20 +173,20 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
     case "create_customer":
       return {
         ids: [],
-        objects: [{ name: "customer", label: "Customer", required: true }],
+        objects: [customerObject("New customer details")],
         metafield: false,
         inventory: false,
       };
     case "update_customer":
       return {
-        ids: [{ name: "customerId", label: "Customer ID", required: true }],
-        objects: [{ name: "customer", label: "Customer", required: true }],
+        ids: [CUSTOMER_ID],
+        objects: [customerObject("Changes to apply")],
         metafield: false,
         inventory: false,
       };
     case "set_customer_metafield":
       return {
-        ids: [{ name: "customerId", label: "Customer ID", required: true }],
+        ids: [CUSTOMER_ID],
         objects: [],
         metafield: true,
         inventory: false,
@@ -120,33 +194,40 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
     case "create_order":
       return {
         ids: [],
-        objects: [{ name: "order", label: "Order", required: true }],
+        objects: [orderObject("New order details")],
         metafield: false,
         inventory: false,
       };
     case "update_order":
       return {
-        ids: [{ name: "orderId", label: "Order ID", required: true }],
-        objects: [{ name: "order", label: "Order", required: true }],
+        ids: [ORDER_ID],
+        objects: [orderObject("Changes to apply")],
         metafield: false,
         inventory: false,
       };
     case "create_draft_order":
       return {
         ids: [],
-        objects: [{ name: "draftOrder", label: "Draft order", required: true }],
+        objects: [
+          {
+            name: "draftOrder",
+            label: "Draft order details",
+            hint: "Line items, customer, discounts, etc.",
+            required: true,
+          },
+        ],
         metafield: false,
         inventory: false,
       };
     case "cancel_order":
       return {
-        ids: [{ name: "orderId", label: "Order ID", required: true }],
+        ids: [ORDER_ID],
         objects: [
           {
             name: "options",
-            label: "Options",
+            label: "Cancel options (optional)",
+            hint: "Reason for the cancellation, whether to refund, whether to restock, etc.",
             required: false,
-            hint: "Optional Shopify cancel options (reason, refund, restock, …).",
           },
         ],
         metafield: false,
@@ -154,16 +235,21 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
       };
     case "close_order":
       return {
-        ids: [{ name: "orderId", label: "Order ID", required: true }],
+        ids: [ORDER_ID],
         objects: [],
         metafield: false,
         inventory: false,
       };
     case "create_transaction":
       return {
-        ids: [{ name: "orderId", label: "Order ID", required: true }],
+        ids: [ORDER_ID],
         objects: [
-          { name: "transaction", label: "Transaction", required: true },
+          {
+            name: "transaction",
+            label: "Transaction details",
+            hint: "Kind (sale / capture / refund), amount, currency, gateway, etc.",
+            required: true,
+          },
         ],
         metafield: false,
         inventory: false,
@@ -171,23 +257,34 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
     case "create_product":
       return {
         ids: [],
-        objects: [{ name: "product", label: "Product", required: true }],
+        objects: [
+          {
+            name: "product",
+            label: "New product details",
+            hint: "Title, body html, variants, options, etc.",
+            required: true,
+          },
+        ],
         metafield: false,
         inventory: false,
       };
     case "update_product":
       return {
-        ids: [{ name: "productId", label: "Product ID", required: true }],
-        objects: [{ name: "product", label: "Product", required: true }],
+        ids: [PRODUCT_ID],
+        objects: [
+          {
+            name: "product",
+            label: "Changes to apply",
+            hint: "What to set on the product.",
+            required: true,
+          },
+        ],
         metafield: false,
         inventory: false,
       };
     case "adjust_inventory":
       return {
-        ids: [
-          { name: "inventoryItemId", label: "Inventory item ID", required: true },
-          { name: "locationId", label: "Location ID", required: true },
-        ],
+        ids: [INVENTORY_ITEM_ID, LOCATION_ID],
         objects: [],
         metafield: false,
         inventory: true,
@@ -195,10 +292,134 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
   }
 }
 
-/** Fields that may be present on a `ShopifyAdminStep` but are not used by
- * the selected operation. Cleared when the operation changes so saved JSON
- * stays tidy. */
-const ALL_OP_FIELDS: (IdFieldName | ObjectFieldName | "availableAdjustment" | "namespace" | "key" | "type" | "value")[] = [
+/* -----------------------------------------------------------------------------
+ * Example payloads — the "Insert example" button on JSON editors uses these
+ * so non-technical users have a starting point.
+ * -------------------------------------------------------------------------- */
+
+const OBJECT_EXAMPLES: Partial<
+  Record<ObjectFieldName, Record<ShopifyAdminOperation, Record<string, unknown> | undefined>>
+> = {
+  customer: {
+    create_customer: {
+      email: "{{event.payload.email}}",
+      first_name: "{{event.payload.firstName}}",
+      last_name: "{{event.payload.lastName}}",
+      tags: "patient",
+    },
+    update_customer: {
+      tags: "workflow, reviewed",
+      note: "Updated by workflow {{run.id}}",
+    },
+    set_customer_metafield: undefined,
+    create_order: undefined,
+    update_order: undefined,
+    create_draft_order: undefined,
+    cancel_order: undefined,
+    close_order: undefined,
+    create_transaction: undefined,
+    create_product: undefined,
+    update_product: undefined,
+    adjust_inventory: undefined,
+  },
+  order: {
+    create_order: {
+      line_items: [{ variant_id: 0, quantity: 1 }],
+      customer: { id: "{{event.payload.customerId}}" },
+      financial_status: "paid",
+    },
+    update_order: { tags: "fulfilled" },
+    create_customer: undefined,
+    update_customer: undefined,
+    set_customer_metafield: undefined,
+    create_draft_order: undefined,
+    cancel_order: undefined,
+    close_order: undefined,
+    create_transaction: undefined,
+    create_product: undefined,
+    update_product: undefined,
+    adjust_inventory: undefined,
+  },
+  draftOrder: {
+    create_draft_order: {
+      line_items: [{ variant_id: 0, quantity: 1 }],
+      customer: { id: "{{event.payload.customerId}}" },
+    },
+    create_customer: undefined,
+    update_customer: undefined,
+    set_customer_metafield: undefined,
+    create_order: undefined,
+    update_order: undefined,
+    cancel_order: undefined,
+    close_order: undefined,
+    create_transaction: undefined,
+    create_product: undefined,
+    update_product: undefined,
+    adjust_inventory: undefined,
+  },
+  options: {
+    cancel_order: {
+      reason: "customer",
+      email: true,
+      refund: false,
+      restock: true,
+    },
+    create_customer: undefined,
+    update_customer: undefined,
+    set_customer_metafield: undefined,
+    create_order: undefined,
+    update_order: undefined,
+    create_draft_order: undefined,
+    close_order: undefined,
+    create_transaction: undefined,
+    create_product: undefined,
+    update_product: undefined,
+    adjust_inventory: undefined,
+  },
+  transaction: {
+    create_transaction: {
+      kind: "capture",
+      amount: "10.00",
+      currency: "AUD",
+    },
+    create_customer: undefined,
+    update_customer: undefined,
+    set_customer_metafield: undefined,
+    create_order: undefined,
+    update_order: undefined,
+    create_draft_order: undefined,
+    cancel_order: undefined,
+    close_order: undefined,
+    create_product: undefined,
+    update_product: undefined,
+    adjust_inventory: undefined,
+  },
+  product: {
+    create_product: {
+      title: "{{event.payload.productTitle}}",
+      body_html: "<p>Description</p>",
+      vendor: "Cloud Care",
+      product_type: "Prescription",
+    },
+    update_product: { tags: "in-stock" },
+    create_customer: undefined,
+    update_customer: undefined,
+    set_customer_metafield: undefined,
+    create_order: undefined,
+    update_order: undefined,
+    create_draft_order: undefined,
+    cancel_order: undefined,
+    close_order: undefined,
+    create_transaction: undefined,
+    adjust_inventory: undefined,
+  },
+};
+
+/* -----------------------------------------------------------------------------
+ * Field-clearing helpers — keep saved JSON tidy when operation changes.
+ * -------------------------------------------------------------------------- */
+
+const ALL_OP_FIELDS = [
   "customerId",
   "orderId",
   "productId",
@@ -215,7 +436,7 @@ const ALL_OP_FIELDS: (IdFieldName | ObjectFieldName | "availableAdjustment" | "n
   "options",
   "transaction",
   "product",
-];
+] as const;
 
 function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
   const meta = operationFields(op);
@@ -232,6 +453,22 @@ function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
   return used;
 }
 
+/** Seed sensible defaults so non-technical users don't have to know
+ * Shopify metafield terminology. */
+function applyOperationDefaults(
+  step: ShopifyAdminStep,
+  op: ShopifyAdminOperation,
+): ShopifyAdminStep {
+  if (op === "set_customer_metafield") {
+    return {
+      ...step,
+      namespace: step.namespace ?? "quity",
+      type: step.type ?? "single_line_text_field",
+    };
+  }
+  return step;
+}
+
 /* -----------------------------------------------------------------------------
  * Form
  * -------------------------------------------------------------------------- */
@@ -243,21 +480,20 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
 
   function handleOperationChange(next: ShopifyAdminOperation) {
     if (next === op) return;
-    // Drop fields the new operation doesn't use, so saved JSON stays clean
-    // and backend validation isn't confused by stale wrappers.
     const keep = fieldsForOperation(next);
-    const cleaned: ShopifyAdminStep = { ...step, operation: next };
+    let cleaned: ShopifyAdminStep = { ...step, operation: next };
     for (const f of ALL_OP_FIELDS) {
       if (!keep.has(f)) {
         delete (cleaned as unknown as Record<string, unknown>)[f];
       }
     }
+    cleaned = applyOperationDefaults(cleaned, next);
     onChange(cleaned);
   }
 
   return (
     <>
-      <Field label="Operation" error={errors?.operation}>
+      <Field label="Action" error={errors?.operation}>
         <Select
           value={op}
           onValueChange={(v) => {
@@ -265,7 +501,7 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select operation" />
+            <SelectValue placeholder="Choose what to do in Shopify" />
           </SelectTrigger>
           <SelectContent>
             {OPERATION_GROUPS.map((group) => (
@@ -282,78 +518,105 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
         </Select>
       </Field>
 
+      <OperationDescription text={OPERATION_DESCRIPTIONS[op]} />
+
       <TemplatedField
-        label="Shop domain"
+        label="Shopify store"
         value={step.shopDomain ?? ""}
         onChange={(v) => onChange({ ...step, shopDomain: v })}
-        placeholder="test-store.myshopify.com"
-        hint="Accepts `test-store`, `test-store.myshopify.com`, or a templated value. Backend normalizes to *.myshopify.com. The Admin API token is resolved server-side; do not enter it here."
-        monospace
+        placeholder="my-store"
+        hint="Your store handle (e.g. my-store) or the full *.myshopify.com address. You don't need to enter any password or token — that's handled for you."
         error={errors?.shopDomain}
       />
 
       {meta.ids.map((id) => (
         <IdField
           key={id.name}
-          label={id.label + (id.required ? "" : " (optional)")}
+          label={id.label}
           value={step[id.name]}
-          onChange={(v) => onChange({ ...step, [id.name]: v } as ShopifyAdminStep)}
+          onChange={(v) =>
+            onChange({ ...step, [id.name]: v } as ShopifyAdminStep)
+          }
+          hint={id.hint}
           error={errors?.[id.name]}
         />
       ))}
 
       {meta.inventory && (
         <IdField
-          label="Available adjustment"
+          label="Quantity change"
           allowNegative
           value={step.availableAdjustment}
           onChange={(v) =>
-            onChange({ ...step, availableAdjustment: v } as ShopifyAdminStep)
+            onChange({
+              ...step,
+              availableAdjustment: v,
+            } as ShopifyAdminStep)
           }
-          hint="Positive to add stock, negative to remove. Template values allowed."
+          hint="Use a positive number to add stock (e.g. 5) or a negative number to remove stock (e.g. -3)."
           error={errors?.availableAdjustment}
         />
       )}
 
       {meta.metafield && (
-        <MetafieldFields step={step} onChange={onChange} errors={errors} />
+        <MetafieldBasics step={step} onChange={onChange} errors={errors} />
       )}
 
       {meta.objects.map((obj) => (
         <JsonObjectField
           key={obj.name}
-          label={obj.label + (obj.required ? "" : " (optional)")}
+          label={obj.label}
           value={step[obj.name]}
           onChange={(v) =>
             onChange({ ...step, [obj.name]: v } as ShopifyAdminStep)
           }
-          hint={
-            obj.hint ??
-            "JSON object sent through to Shopify after template interpolation. Nested string values may use {{event.*}} / {{vars.*}}."
-          }
+          hint={obj.hint}
+          example={OBJECT_EXAMPLES[obj.name]?.[op]}
           error={errors?.[obj.name]}
         />
       ))}
 
-      <Field label="Store result as (optional)" error={errors?.storeAs}>
-        <Input
-          value={step.storeAs ?? ""}
-          onChange={(e) =>
-            onChange({ ...step, storeAs: e.target.value || undefined })
-          }
-          placeholder="shopifyResource"
-          className="font-mono text-xs"
-        />
-      </Field>
+      <Collapsible label="Advanced settings">
+        {meta.metafield && (
+          <MetafieldAdvanced step={step} onChange={onChange} errors={errors} />
+        )}
+        <Field
+          label="Save the result as (optional)"
+          hint="If set, later steps in this workflow can read the result back using this name, e.g. {{vars.customer.id}}."
+          error={errors?.storeAs}
+        >
+          <Input
+            value={step.storeAs ?? ""}
+            onChange={(e) =>
+              onChange({ ...step, storeAs: e.target.value || undefined })
+            }
+            placeholder="customer"
+            className="font-mono text-xs"
+          />
+        </Field>
+      </Collapsible>
     </>
   );
 }
 
 /* -----------------------------------------------------------------------------
- * Sub-fields
+ * UI bits
  * -------------------------------------------------------------------------- */
 
-function MetafieldFields({
+function OperationDescription({ text }: { text: string }) {
+  return (
+    <div className="mb-4 flex gap-2 rounded-md border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+      <Info className="mt-0.5 size-3.5 shrink-0" />
+      <p>{text}</p>
+    </div>
+  );
+}
+
+/* Metafield UX split: "basics" (Value) above the fold, the Shopify-jargon
+ * fields (Namespace / Key / Type) tucked into Advanced with smart defaults
+ * pre-filled so most users never need to touch them. */
+
+function MetafieldBasics({
   step,
   onChange,
   errors,
@@ -362,34 +625,70 @@ function MetafieldFields({
   onChange: (next: ShopifyAdminStep) => void;
   errors?: StepFormProps<ShopifyAdminStep>["errors"];
 }) {
-  // Free-text fallback for the `type` field — Shopify can add new types.
+  return (
+    <TemplatedField
+      label="Value to save"
+      value={step.value ?? ""}
+      onChange={(v) => onChange({ ...step, value: v })}
+      placeholder="{{event.payload.patientId}}"
+      hint="The value you want to store on the customer. Use {{event.…}} or {{vars.…}} to pull from earlier steps."
+      multiline
+      rows={3}
+      error={errors?.value}
+    />
+  );
+}
+
+function MetafieldAdvanced({
+  step,
+  onChange,
+  errors,
+}: {
+  step: ShopifyAdminStep;
+  onChange: (next: ShopifyAdminStep) => void;
+  errors?: StepFormProps<ShopifyAdminStep>["errors"];
+}) {
   const isKnownType =
     !step.type || (SHOPIFY_METAFIELD_TYPES as readonly string[]).includes(step.type);
   const [customType, setCustomType] = useState(!isKnownType);
 
   return (
     <>
-      <TemplatedField
-        label="Namespace"
-        value={step.namespace ?? ""}
-        onChange={(v) => onChange({ ...step, namespace: v })}
-        placeholder="quity"
-        hint="Shopify metafield namespace. Required."
-        monospace
-        error={errors?.namespace}
-      />
-      <TemplatedField
-        label="Key"
-        value={step.key ?? ""}
-        onChange={(v) => onChange({ ...step, key: v })}
-        placeholder="patient_id"
-        hint="Shopify metafield key. Required."
-        monospace
-        error={errors?.key}
-      />
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        These control how Shopify groups and reads the custom data. The defaults
+        work for most cases — only change them if you know you need to.
+      </div>
       <Field
-        label="Type"
-        hint="Shopify metafield type. Choose 'Custom…' to enter a value Shopify added recently."
+        label="Group (namespace)"
+        hint="Like a folder name for your custom data in Shopify."
+        error={errors?.namespace}
+      >
+        <Input
+          value={step.namespace ?? ""}
+          onChange={(e) =>
+            onChange({ ...step, namespace: e.target.value || undefined })
+          }
+          placeholder="quity"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field
+        label="Field name (key)"
+        hint="The name of this specific piece of data, e.g. patient_id."
+        error={errors?.key}
+      >
+        <Input
+          value={step.key ?? ""}
+          onChange={(e) =>
+            onChange({ ...step, key: e.target.value || undefined })
+          }
+          placeholder="patient_id"
+          className="font-mono text-xs"
+        />
+      </Field>
+      <Field
+        label="Data type"
+        hint="Tells Shopify what kind of value you're saving. 'Single-line text' works for IDs and short strings."
         error={errors?.type}
       >
         <div className="flex flex-col gap-1.5">
@@ -406,15 +705,15 @@ function MetafieldFields({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select metafield type" />
+                <SelectValue placeholder="Pick a data type" />
               </SelectTrigger>
               <SelectContent>
                 {SHOPIFY_METAFIELD_TYPES.map((t) => (
                   <SelectItem key={t} value={t}>
-                    {t}
+                    {METAFIELD_TYPE_LABELS[t] ?? t}
                   </SelectItem>
                 ))}
-                <SelectItem value="__custom__">Custom…</SelectItem>
+                <SelectItem value="__custom__">Other (type a value)…</SelectItem>
               </SelectContent>
             </Select>
           ) : (
@@ -433,42 +732,41 @@ function MetafieldFields({
                   onChange({ ...step, type: undefined });
                 }}
               >
-                Reset
+                Back to list
               </button>
             </div>
           )}
         </div>
       </Field>
-      <TemplatedField
-        label="Value"
-        value={step.value ?? ""}
-        onChange={(v) => onChange({ ...step, value: v })}
-        placeholder="{{event.payload.patientId}}"
-        hint="Required. Max 131,072 characters. Templating allowed."
-        multiline
-        rows={3}
-        monospace
-        error={errors?.value}
-      />
     </>
   );
 }
+
+const METAFIELD_TYPE_LABELS: Record<string, string> = {
+  single_line_text_field: "Single-line text",
+  multi_line_text_field: "Multi-line text",
+  number_integer: "Whole number",
+  number_decimal: "Decimal number",
+  boolean: "Yes / no",
+  date: "Date",
+  date_time: "Date and time",
+  json: "JSON",
+  url: "URL",
+};
+
+/* -----------------------------------------------------------------------------
+ * ID field — number-or-template, hidden coercion.
+ * -------------------------------------------------------------------------- */
 
 interface IdFieldProps {
   label: string;
   value: string | number | undefined;
   onChange: (next: string | number | undefined) => void;
-  hint?: string;
+  hint: string;
   error?: string;
   allowNegative?: boolean;
 }
 
-/**
- * Input for Shopify ID / integer fields. Accepts either a literal number
- * or a templated string; we treat anything containing `{{` as a template,
- * otherwise try to coerce to a number so the persisted JSON keeps the
- * `number` shape the backend expects.
- */
 function IdField({
   label,
   value,
@@ -501,35 +799,36 @@ function IdField({
         // author can keep typing; backend will surface a final error.
         onChange(v);
       }}
-      placeholder={allowNegative ? "1 or -2 or {{vars.delta}}" : "12345 or {{event.payload.id}}"}
-      hint={
-        hint ?? "Positive integer, or a template that resolves to one."
+      placeholder={
+        allowNegative
+          ? "e.g. 5  or  -3  or  {{event.payload.delta}}"
+          : "e.g. 12345  or  {{event.payload.customerId}}"
       }
-      monospace
+      hint={hint}
       error={error}
     />
   );
 }
 
+/* -----------------------------------------------------------------------------
+ * JSON object field — with "Insert example" helper.
+ * -------------------------------------------------------------------------- */
+
 interface JsonObjectFieldProps {
   label: string;
   value: Record<string, unknown> | undefined;
   onChange: (next: Record<string, unknown> | undefined) => void;
-  hint?: string;
+  hint: string;
+  example?: Record<string, unknown>;
   error?: string;
 }
 
-/**
- * Inline JSON object editor. Backend expects a real object (not a string),
- * so we keep a local draft string for editing and only commit a parsed
- * object to the step when JSON.parse succeeds and produces an object.
- * Parse errors are shown inline; they do not overwrite the saved value.
- */
 function JsonObjectField({
   label,
   value,
   onChange,
   hint,
+  example,
   error,
 }: JsonObjectFieldProps) {
   const [draft, setDraft] = useState(() =>
@@ -537,8 +836,6 @@ function JsonObjectField({
   );
   const [parseError, setParseError] = useState<string | undefined>();
 
-  // Sync draft when upstream value changes from outside (e.g. switching
-  // nodes or operation reset).
   const lastValueRef = useRef(value);
   useEffect(() => {
     if (lastValueRef.current === value) return;
@@ -562,19 +859,23 @@ function JsonObjectField({
         parsed === null ||
         Array.isArray(parsed)
       ) {
-        setParseError("Must be a JSON object (use `{ … }`).");
+        setParseError("This needs to be a JSON object — wrap it in { … }.");
         return;
       }
       setParseError(undefined);
       onChange(parsed as Record<string, unknown>);
     } catch (e) {
       setParseError(
-        e instanceof Error ? `Invalid JSON: ${e.message}` : "Invalid JSON.",
+        e instanceof Error
+          ? `That's not valid JSON: ${e.message}`
+          : "That's not valid JSON.",
       );
     }
   }
 
   const showError = parseError ?? error;
+  const showInsertExample = !!example && draft.trim() === "";
+
   return (
     <Field label={label} hint={!showError ? hint : undefined} error={showError}>
       <Textarea
@@ -582,12 +883,22 @@ function JsonObjectField({
         onChange={(e) => handleChange(e.target.value)}
         rows={8}
         spellCheck={false}
-        className={cn(
-          "font-mono text-xs",
-          showError && "border-destructive",
-        )}
+        className={cn("font-mono text-xs", showError && "border-destructive")}
         placeholder={'{\n  "tags": "workflow",\n  "note": "Updated by {{run.id}}"\n}'}
       />
+      {showInsertExample && (
+        <div className="mt-1.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-[11px]"
+            onClick={() => handleChange(JSON.stringify(example, null, 2))}
+          >
+            Insert example
+          </Button>
+        </div>
+      )}
     </Field>
   );
 }
