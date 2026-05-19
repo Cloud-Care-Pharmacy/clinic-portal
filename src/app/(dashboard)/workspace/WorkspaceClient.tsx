@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, MailPlus, Users } from "lucide-react";
+import { Building2, Link2, MailPlus, Users } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -9,6 +9,7 @@ import { InviteUserSheet } from "@/components/workspace/InviteUserSheet";
 import { WorkspaceUsersTable } from "@/components/workspace/WorkspaceUsersTable";
 import { WorkspaceInvitationsTable } from "@/components/workspace/WorkspaceInvitationsTable";
 import { EntitySettingsForm } from "@/components/workspace/EntitySettingsForm";
+import { WorkspaceIntegrationsSection } from "@/components/workspace/WorkspaceIntegrationsSection";
 import {
   useWorkspaceEntitySettings,
   useWorkspaceInvitations,
@@ -109,6 +110,10 @@ export function WorkspaceClient({
               <Building2 className="size-4" />
               Entity settings
             </TabsTrigger>
+            <TabsTrigger value="integrations">
+              <Link2 className="size-4" />
+              Integrations
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -145,6 +150,10 @@ export function WorkspaceClient({
               </CardHeader>
             </Card>
           ) : null}
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-4">
+          <WorkspaceIntegrationsSection entityId={entityId} />
         </TabsContent>
       </Tabs>
 
