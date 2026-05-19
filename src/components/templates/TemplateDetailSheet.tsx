@@ -350,13 +350,28 @@ function EmailPreview({
           <div className="text-xs text-muted-foreground">{preheader}</div>
         ) : null}
       </div>
-      <div
-        className="prose prose-sm max-w-none p-4 [&_p]:my-1"
-        // Template HTML is authored by internal staff (admin/doctor/staff) via
-        // the in-portal editor and rendered back to those same authors for
-        // preview. Not user-generated content from external sources.
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: bodyHtml }}
+      {/*
+        Render the email body inside a sandboxed iframe so any <style> rules
+        in the template (e.g. `a { color: ... }` or `* { ... !important }`)
+        stay scoped to the preview and don't leak into the surrounding app
+        (sidebar links, etc.).
+      */}
+      <iframe
+        title="Email preview"
+        sandbox=""
+        srcDoc={bodyHtml}
+        className="block w-full border-0 bg-white"
+        style={{ height: 600 }}
+        onLoad={(e) => {
+          const frame = e.currentTarget;
+          const doc = frame.contentDocument;
+          if (!doc) return;
+          const height = Math.max(
+            doc.documentElement?.scrollHeight ?? 0,
+            doc.body?.scrollHeight ?? 0
+          );
+          if (height > 0) frame.style.height = `${height}px`;
+        }}
       />
     </div>
   );
