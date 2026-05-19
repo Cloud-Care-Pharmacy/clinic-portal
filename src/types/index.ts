@@ -2206,13 +2206,10 @@ export interface CallWorkflowStep extends WorkflowStepBase {
 }
 
 /**
- * Shopify Admin action step. Credentials are NEVER stored in the workflow
- * definition — the backend resolves the Admin API token from KV at runtime
- * using the (normalized) `shopDomain`. See
+ * Shopify Admin action step. Credentials AND the shop domain are NEVER
+ * stored in the workflow definition — the backend resolves both from the
+ * entity's saved Shopify integration at runtime. See
  * `prescription-gateway/src/modules/workflows/steps/shopify-admin.ts`.
- *
- * `shopDomain` accepts `test-store`, `test-store.myshopify.com`, or a
- * templated value; the backend normalizes to `*.myshopify.com`.
  *
  * Most ID fields (`customerId`, `orderId`, `productId`, `inventoryItemId`,
  * `locationId`) accept either a positive integer or a template string that
@@ -2225,8 +2222,6 @@ export interface CallWorkflowStep extends WorkflowStepBase {
 export interface ShopifyAdminStep extends WorkflowStepBase {
   kind: "shopify_admin";
   operation: ShopifyAdminOperation;
-  /** Shop handle or full `*.myshopify.com` domain. Templating allowed. Optional — falls back to the entity's saved Shopify integration. */
-  shopDomain?: string;
   /** Saves the returned Shopify resource under `vars.<storeAs>`. */
   storeAs?: string;
 
