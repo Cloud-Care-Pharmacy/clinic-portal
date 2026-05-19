@@ -2250,6 +2250,16 @@ export interface ShopifyAdminStep extends WorkflowStepBase {
   // `find_product_by_sku` lookup field.
   sku?: string;
 
+  // Inline lookup on action steps — avoids needing a separate find_* node.
+  // `update_customer` / `set_customer_metafield` accept email/phone in
+  // place of `customerId`.
+  customerEmail?: string;
+  customerPhone?: string;
+  onCustomerNotFound?: "fail" | "skip";
+  // `update_product` / `adjust_inventory` accept SKU in place of `productId`.
+  productSku?: string;
+  onProductNotFound?: "fail" | "skip";
+
   // Object payload fields — passed through to Shopify after templating.
   customer?: Record<string, unknown>;
   order?: Record<string, unknown>;

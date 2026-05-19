@@ -406,6 +406,12 @@ const shopifyAdminStep = z
     metafieldValue: templateString.optional(),
     sku: templateString.optional(),
 
+    customerEmail: templateString.optional(),
+    customerPhone: templateString.optional(),
+    onCustomerNotFound: z.enum(["fail", "skip"]).optional(),
+    productSku: templateString.optional(),
+    onProductNotFound: z.enum(["fail", "skip"]).optional(),
+
     customer: shopifyObjectField.optional(),
     order: shopifyObjectField.optional(),
     draftOrder: shopifyObjectField.optional(),
@@ -429,11 +435,33 @@ const shopifyAdminStep = z
         requireField("customer", !!step.customer);
         break;
       case "update_customer":
-        requireField("customerId", step.customerId !== undefined);
+        if (
+          step.customerId === undefined &&
+          !step.customerEmail &&
+          !step.customerPhone
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["customerId"],
+            message:
+              "Provide a customer ID, or look up by email or phone.",
+          });
+        }
         requireField("customer", !!step.customer);
         break;
       case "set_customer_metafield":
-        requireField("customerId", step.customerId !== undefined);
+        if (
+          step.customerId === undefined &&
+          !step.customerEmail &&
+          !step.customerPhone
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["customerId"],
+            message:
+              "Provide a customer ID, or look up by email or phone.",
+          });
+        }
         requireField("namespace", !!step.namespace);
         requireField("key", !!step.key);
         requireField("type", !!step.type);
@@ -461,11 +489,24 @@ const shopifyAdminStep = z
         requireField("product", !!step.product);
         break;
       case "update_product":
-        requireField("productId", step.productId !== undefined);
+        if (step.productId === undefined && !step.productSku) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["productId"],
+            message: "Provide a product ID, or look up by SKU.",
+          });
+        }
         requireField("product", !!step.product);
         break;
       case "adjust_inventory":
-        requireField("inventoryItemId", step.inventoryItemId !== undefined);
+        if (step.inventoryItemId === undefined && !step.productSku) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["inventoryItemId"],
+            message:
+              "Provide an inventory item ID, or look up the product by SKU.",
+          });
+        }
         requireField("locationId", step.locationId !== undefined);
         requireField(
           "availableAdjustment",

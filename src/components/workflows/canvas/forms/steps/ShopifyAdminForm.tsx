@@ -128,6 +128,8 @@ interface OperationFields {
   inventory: boolean;
   lookupCustomer: boolean;
   lookupProduct: boolean;
+  inlineCustomerLookup: boolean;
+  inlineProductLookup: boolean;
 }
 
 const CUSTOMER_ID: IdFieldMeta = {
@@ -174,7 +176,12 @@ function orderObject(label = "Order details"): ObjectFieldMeta {
 }
 
 function operationFields(op: ShopifyAdminOperation): OperationFields {
-  const base = { lookupCustomer: false, lookupProduct: false };
+  const base = {
+    lookupCustomer: false,
+    lookupProduct: false,
+    inlineCustomerLookup: false,
+    inlineProductLookup: false,
+  };
   switch (op) {
     case "create_customer":
       return {
@@ -191,6 +198,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
         objects: [customerObject("Changes to apply")],
         metafield: false,
         inventory: false,
+        inlineCustomerLookup: true,
       };
     case "set_customer_metafield":
       return {
@@ -199,6 +207,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
         objects: [],
         metafield: true,
         inventory: false,
+        inlineCustomerLookup: true,
       };
     case "create_order":
       return {
@@ -298,6 +307,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
         ],
         metafield: false,
         inventory: false,
+        inlineProductLookup: true,
       };
     case "adjust_inventory":
       return {
@@ -306,6 +316,7 @@ function operationFields(op: ShopifyAdminOperation): OperationFields {
         objects: [],
         metafield: false,
         inventory: true,
+        inlineProductLookup: true,
       };
     case "find_customer":
       return {
@@ -478,6 +489,11 @@ const ALL_OP_FIELDS = [
   "metafieldKey",
   "metafieldValue",
   "sku",
+  "customerEmail",
+  "customerPhone",
+  "onCustomerNotFound",
+  "productSku",
+  "onProductNotFound",
 ] as const;
 
 function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
@@ -500,6 +516,15 @@ function fieldsForOperation(op: ShopifyAdminOperation): Set<string> {
     used.add("metafieldValue");
   }
   if (meta.lookupProduct) used.add("sku");
+  if (meta.inlineCustomerLookup) {
+    used.add("customerEmail");
+    used.add("customerPhone");
+    used.add("onCustomerNotFound");
+  }
+  if (meta.inlineProductLookup) {
+    used.add("productSku");
+    used.add("onProductNotFound");
+  }
   return used;
 }
 
@@ -596,6 +621,22 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
           }
           hint="Use a positive number to add stock (e.g. 5) or a negative number to remove stock (e.g. -3)."
           error={errors?.availableAdjustment}
+        />
+      )}
+
+      {meta.inlineCustomerLookup && (
+        <InlineCustomerLookup
+          step={step}
+          onChange={onChange}
+          errors={errors}
+        />
+      )}
+
+      {meta.inlineProductLookup && (
+        <InlineProductLookup
+          step={step}
+          onChange={onChange}
+          errors={errors}
         />
       )}
 
@@ -786,6 +827,126 @@ function MetafieldBasics({
       rows={3}
       error={errors?.value}
     />
+  );
+}
+
+/* Inline lookup: lets authors skip a separate find_customer node when they
+ * only have an email / phone. Backend runs the lookup internally. */
+function InlineCustomerLookup({
+  step,
+  onChange,
+  errors,
+}: {
+  step: ShopifyAdminStep;
+  onChange: (next: ShopifyAdminStep) => void;
+  errors?: StepFormProps<ShopifyAdminStep>["errors"];
+}) {
+  const hasInline = !!step.customerEmail || !!step.customerPhone;
+  return (
+    <Collapsible
+      label="Or look up the customer by email / phone"
+      defaultOpen={hasInline}
+    >
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Skip the Customer field above and let Shopify find the customer for
+        you. Provide either email or phone — backend looks them up at run time.
+      </div>
+      <TemplatedField
+        label="Customer email"
+        value={step.customerEmail ?? ""}
+        onChange={(v) => onChange({ ...step, customerEmail: v || undefined })}
+        placeholder="{{event.payload.patient.email}}"
+        hint="Email to look up in Shopify."
+        error={errors?.customerEmail}
+      />
+      <TemplatedField
+        label="Customer phone"
+        value={step.customerPhone ?? ""}
+        onChange={(v) => onChange({ ...step, customerPhone: v || undefined })}
+        placeholder="+61400000000"
+        hint="E.164 phone number to look up in Shopify."
+        error={errors?.customerPhone}
+      />
+      <Field
+        label="If the customer is not found"
+        hint="‘Skip’ completes the step quietly and lets the workflow continue. ‘Fail’ stops the run."
+        error={errors?.onCustomerNotFound}
+      >
+        <Select
+          value={step.onCustomerNotFound ?? "fail"}
+          onValueChange={(v) => {
+            if (!v) return;
+            onChange({
+              ...step,
+              onCustomerNotFound: v as "fail" | "skip",
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="fail">Fail the step</SelectItem>
+            <SelectItem value="skip">Skip the step and continue</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+    </Collapsible>
+  );
+}
+
+function InlineProductLookup({
+  step,
+  onChange,
+  errors,
+}: {
+  step: ShopifyAdminStep;
+  onChange: (next: ShopifyAdminStep) => void;
+  errors?: StepFormProps<ShopifyAdminStep>["errors"];
+}) {
+  const hasInline = !!step.productSku;
+  return (
+    <Collapsible
+      label="Or look up the product by SKU"
+      defaultOpen={hasInline}
+    >
+      <div className="mb-3 text-[11px] text-muted-foreground">
+        Skip the ID field above and let Shopify find the product for you.
+        Backend runs the lookup at run time.
+      </div>
+      <TemplatedField
+        label="Product SKU"
+        value={step.productSku ?? ""}
+        onChange={(v) => onChange({ ...step, productSku: v || undefined })}
+        placeholder="e.g. SKU-123 or {{vars.product.sku}}"
+        hint="SKU to look up. Matches a single product variant."
+        error={errors?.productSku}
+      />
+      <Field
+        label="If the product is not found"
+        hint="‘Skip’ completes the step quietly and lets the workflow continue. ‘Fail’ stops the run."
+        error={errors?.onProductNotFound}
+      >
+        <Select
+          value={step.onProductNotFound ?? "fail"}
+          onValueChange={(v) => {
+            if (!v) return;
+            onChange({
+              ...step,
+              onProductNotFound: v as "fail" | "skip",
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="fail">Fail the step</SelectItem>
+            <SelectItem value="skip">Skip the step and continue</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+    </Collapsible>
   );
 }
 
