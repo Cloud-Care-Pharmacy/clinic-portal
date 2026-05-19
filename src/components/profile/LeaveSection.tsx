@@ -24,8 +24,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/shared/DatePicker";
 import {
   Select,
   SelectContent,
@@ -326,22 +326,20 @@ function AddLeaveDialog({ practitionerId, today }: AddLeaveDialogProps) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="leaveStart">Start date</Label>
-              <Input
+              <DatePicker
                 id="leaveStart"
-                type="date"
                 value={startDate}
                 min={today}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="leaveEnd">End date</Label>
-              <Input
+              <DatePicker
                 id="leaveEnd"
-                type="date"
                 value={endDate}
                 min={startDate || today}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={setEndDate}
               />
             </div>
           </div>

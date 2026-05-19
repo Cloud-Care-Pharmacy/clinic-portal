@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/shared/TimePicker";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -676,23 +677,21 @@ function DayEditor({
                     issue?.row && "bg-destructive/5 px-2 py-1.5"
                   )}
                 >
-                  <Input
-                    type="time"
-                    step={900}
+                  <TimePicker
+                    step={15}
                     value={slot.startTime}
-                    aria-invalid={!!issue?.start || !!issue?.row}
-                    onChange={(e) => onUpdateSlot(slotIdx, "startTime", e.target.value)}
+                    ariaInvalid={!!issue?.start || !!issue?.row}
+                    onChange={(v) => onUpdateSlot(slotIdx, "startTime", v)}
                     className="h-9 w-33 text-[13px] tabular-nums"
                   />
                   <span className="text-muted-foreground" aria-hidden>
                     &ndash;
                   </span>
-                  <Input
-                    type="time"
-                    step={900}
+                  <TimePicker
+                    step={15}
                     value={slot.endTime}
-                    aria-invalid={!!issue?.end || !!issue?.row}
-                    onChange={(e) => onUpdateSlot(slotIdx, "endTime", e.target.value)}
+                    ariaInvalid={!!issue?.end || !!issue?.row}
+                    onChange={(v) => onUpdateSlot(slotIdx, "endTime", v)}
                     className="h-9 w-33 text-[13px] tabular-nums"
                   />
                   <span className="ml-2 min-w-15 text-right text-xs tabular-nums text-muted-foreground">

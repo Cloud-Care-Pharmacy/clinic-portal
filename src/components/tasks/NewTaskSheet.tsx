@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AppSheet } from "@/components/shared/AppSheet";
+import { DatePicker } from "@/components/shared/DatePicker";
+import { TimePicker } from "@/components/shared/TimePicker";
 import { usePatientSearch } from "@/lib/hooks/use-patients";
 import { useCreateTask } from "@/lib/hooks/use-tasks";
 import { useUnsavedChangesGuard } from "@/components/tasks/use-unsaved-changes-guard";
@@ -381,7 +383,44 @@ export function NewTaskSheet({
 
           <div className="space-y-2">
             <Label htmlFor="taskDueAt">Due date</Label>
-            <Input id="taskDueAt" type="datetime-local" {...form.register("dueAt")} />
+            <div className="flex flex-wrap items-center gap-2">
+              <DatePicker
+                id="taskDueAt"
+                className="flex-1 min-w-0"
+                value={(form.watch("dueAt") ?? "").split("T")[0] ?? ""}
+                onChange={(date) => {
+                  const current = form.getValues("dueAt") ?? "";
+                  const time = current.includes("T")
+                    ? current.split("T")[1].slice(0, 5)
+                    : "09:00";
+                  form.setValue("dueAt", `${date}T${time}`, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
+                ariaInvalid={!!form.formState.errors.dueAt}
+              />
+              <TimePicker
+                step={15}
+                className="w-32"
+                value={
+                  (form.watch("dueAt") ?? "").includes("T")
+                    ? (form.watch("dueAt") ?? "").split("T")[1].slice(0, 5)
+                    : undefined
+                }
+                onChange={(time) => {
+                  const current = form.getValues("dueAt") ?? "";
+                  const date = current.includes("T")
+                    ? current.split("T")[0]
+                    : new Date().toISOString().slice(0, 10);
+                  form.setValue("dueAt", `${date}T${time}`, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
+                ariaInvalid={!!form.formState.errors.dueAt}
+              />
+            </div>
             {form.formState.errors.dueAt && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.dueAt.message}

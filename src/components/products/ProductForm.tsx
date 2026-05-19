@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { DatePicker } from "@/components/shared/DatePicker";
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
@@ -667,10 +668,12 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor={`${id}-expiry`}>Earliest expiry</Label>
-          <Input
+          <DatePicker
             id={`${id}-expiry`}
-            type="date"
-            {...form.register("earliestExpiry")}
+            value={form.watch("earliestExpiry") ?? ""}
+            onChange={(v) =>
+              form.setValue("earliestExpiry", v, { shouldDirty: true, shouldValidate: true })
+            }
           />
           <p className="text-xs text-muted-foreground">
             Earliest expiry across all batches in stock. Update when receiving

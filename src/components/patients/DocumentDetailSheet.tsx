@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AppSheet } from "@/components/shared/AppSheet";
+import { DatePicker } from "@/components/shared/DatePicker";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import {
   AlertDialog,
@@ -411,11 +412,16 @@ export function DocumentDetailSheet({
 
               <div className="space-y-2">
                 <Label htmlFor="document-expiry-date">Expiry date</Label>
-                <Input
+                <DatePicker
                   id="document-expiry-date"
-                  type="date"
-                  aria-invalid={!!form.formState.errors.expiryDate}
-                  {...form.register("expiryDate")}
+                  value={form.watch("expiryDate") ?? ""}
+                  onChange={(v) =>
+                    form.setValue("expiryDate", v, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  ariaInvalid={!!form.formState.errors.expiryDate}
                 />
                 {form.formState.errors.expiryDate && (
                   <p className="text-sm text-destructive">
