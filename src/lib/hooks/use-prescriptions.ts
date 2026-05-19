@@ -127,6 +127,63 @@ export function usePrescription(
   });
 }
 
+// ---- Prescription PDF download ----
+
+export class DownloadPrescriptionError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "DownloadPrescriptionError";
+    this.status = status;
+  }
+}
+
+/**
+ * Fetch the rendered prescription PDF and trigger a browser download. The
+ * backend returns `application/pdf` with a `Content-Disposition: attachment`
+ * header; we wrap the blob in an anchor click so users get the native save UX
+ * regardless of browser PDF-viewer settings.
+ */
+export async function downloadPrescriptionPdf(
+  patientId: string,
+  prescriptionId: string
+): Promise<void> {
+  const res = await fetch(
+    `/api/proxy/patients/${encodeURIComponent(patientId)}/prescriptions/${encodeURIComponent(prescriptionId)}/download`,
+    { method: "GET" }
+  );
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    const message =
+      body.error ??
+      (res.status === 404
+        ? "Prescription not found."
+        : res.status === 422
+          ? "This prescription cannot be printed."
+          : res.status === 403
+            ? "You are not authorised to download this prescription."
+            : `Download failed (${res.status}).`);
+    throw new DownloadPrescriptionError(message, res.status);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `prescription-${prescriptionId}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function useDownloadPrescription() {
+  return useMutation<void, DownloadPrescriptionError, { patientId: string; prescriptionId: string }>({
+    mutationFn: ({ patientId, prescriptionId }) =>
+      downloadPrescriptionPdf(patientId, prescriptionId),
+  });
+}
+
 /**
  * Error thrown by `useCreatePrescription` so callers can branch on
  * status and on the backend `code` (`VALIDATION_ERROR`, `UNPROCESSABLE_ENTITY`,

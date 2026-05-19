@@ -270,6 +270,14 @@ export interface PatientPrescription {
   id: string;
   patientId: string;
   entityId: string | null;
+  /**
+   * Origin of this prescription. `internal` prescriptions were authored in the
+   * CRM (printable, line items stored locally). `external` prescriptions were
+   * mirrored from an upstream PMS integration and cannot be printed.
+   */
+  source: "internal" | "external";
+  /** Upstream PMS reference. Populated when `source === "external"`. */
+  externalId?: string | null;
   /** Originating consultation, if the prescription was issued from one. */
   consultationId: string | null;
   /** Local `users.id` of the prescribing doctor. */

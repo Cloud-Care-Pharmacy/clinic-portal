@@ -1,11 +1,16 @@
 "use client";
 
-import { Pill } from "lucide-react";
+import { Download, Loader2, Pill } from "lucide-react";
+import { toast } from "sonner";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
-import { usePrescription } from "@/lib/hooks/use-prescriptions";
+import {
+  useDownloadPrescription,
+  usePrescription,
+} from "@/lib/hooks/use-prescriptions";
 import {
   formatPrescriptionDate,
   formatPrescriptionReference,
@@ -13,6 +18,34 @@ import {
 import type { PatientPrescription, PrescriptionMedication } from "@/types";
 
 export { formatPrescriptionReference } from "@/lib/prescriptions";
+
+/**
+ * Backend `POST /prescriptions/:id/download` returns 422 unless the prescription
+ * is internal, has medications, and the prescriber has a printable signature.
+ * Mirror the printable-status whitelist here so we don't surface a button that
+ * will reliably fail.
+ */
+const PRINTABLE_STATUSES = new Set(["pending", "issued", "sent", "active"]);
+
+function isPrintable(rx: PatientPrescription | null | undefined): {
+  ok: boolean;
+  reason?: string;
+} {
+  if (!rx) return { ok: false };
+  if (rx.source !== "internal") {
+    return {
+      ok: false,
+      reason: "External prescriptions are managed by the PMS.",
+    };
+  }
+  if (!PRINTABLE_STATUSES.has(rx.status.toLowerCase())) {
+    return { ok: false, reason: `Cannot print a ${rx.status} prescription.` };
+  }
+  if (!rx.medications || rx.medications.length === 0) {
+    return { ok: false, reason: "No medications to print." };
+  }
+  return { ok: true };
+}
 
 function MedicationCard({ med }: { med: PrescriptionMedication }) {
   return (
@@ -72,6 +105,9 @@ export function PrescriptionDetailSheet({
   const reference = stash ? formatPrescriptionReference(stash) : "";
   const detailPrescription = data?.data?.prescription ?? stash;
   const meds = detailPrescription?.medications ?? [];
+  const download = useDownloadPrescription();
+  const printable = isPrintable(detailPrescription);
+  const showDownload = detailPrescription?.source === "internal";
 
   return (
     <AppSheet
@@ -84,6 +120,30 @@ export function PrescriptionDetailSheet({
         stash
           ? `Prescription dated ${formatPrescriptionDate(stash.prescriptionDate)}`
           : ""
+      }
+      footer={
+        showDownload && stash ? (
+          <Button
+            variant="default"
+            disabled={!printable.ok || download.isPending || isLoading}
+            title={printable.reason}
+            onClick={() => {
+              download.mutate(
+                { patientId, prescriptionId: stash.id },
+                {
+                  onError: (err) => toast.error(err.message),
+                }
+              );
+            }}
+          >
+            {download.isPending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            Download PDF
+          </Button>
+        ) : null
       }
     >
       {stash ? (
