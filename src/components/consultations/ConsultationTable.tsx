@@ -289,9 +289,6 @@ export function ConsultationTable({
             </Avatar>
             <div className="flex min-w-0 flex-col leading-tight">
               <span className="truncate font-medium text-foreground">{name}</span>
-              <span className="truncate text-xs text-muted-foreground">
-                {params.row.patientId}
-              </span>
             </div>
             <Link
               href={`/patients/${params.row.patientId}`}
@@ -317,11 +314,6 @@ export function ConsultationTable({
           <span className="truncate font-medium text-foreground">
             {params.row.practitionerName}
           </span>
-          {params.row.practitionerId && (
-            <span className="truncate text-xs text-muted-foreground">
-              {params.row.practitionerId}
-            </span>
-          )}
         </div>
       ),
     },
