@@ -65,7 +65,7 @@ function IntakeFormSheet({
   const record = useLastDefined(input);
   const { user } = useUser();
   const role = (user?.publicMetadata?.role as UserRole) ?? "staff";
-  const canApprove = role === "doctor" || role === "admin";
+  const canApprove = role === "practitioner" || role === "admin";
   const approveRecord = useApproveClinicalRecord(patientId);
   const [reviewNotes, setReviewNotes] = useState("");
 
@@ -312,11 +312,11 @@ function IntakeFormSheet({
         {record && (
           <>
             <Separator />
-            <section aria-label="Doctor review" className="space-y-3">
+            <section aria-label="Practitioner review" className="space-y-3">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4  text-muted-foreground" />
                 <h4 className="text-[11px] font-medium text-muted-foreground uppercase tracking-[0.06em]">
-                  Doctor Review
+                  Practitioner Review
                 </h4>
               </div>
 
@@ -370,7 +370,7 @@ function IntakeFormSheet({
                 </div>
               ) : (
                 <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                  This submission is awaiting review by a doctor.
+                  This submission is awaiting review by a practitioner.
                 </p>
               )}
             </section>

@@ -39,14 +39,14 @@ export default function RostersLoading() {
     <div className="space-y-6">
       <PageHeader
         title="Rosters"
-        description="Weekly availability across the practice. Click a doctor to view their full week."
+        description="Weekly availability across the practice. Click a practitioner to view their full week."
       />
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value="all">
           <TabsList>
             <TabsTrigger value="all" disabled>
-              All doctors
+              All practitioners
             </TabsTrigger>
             <TabsTrigger value="available-now" disabled>
               Available now

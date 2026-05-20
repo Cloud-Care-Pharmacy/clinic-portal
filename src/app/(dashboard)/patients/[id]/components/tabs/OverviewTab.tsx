@@ -196,8 +196,8 @@ export function OverviewTab({
   // Unique care team from consultations
   const careTeamMap = new Map<string, { name: string; role: string }>();
   for (const c of consultations) {
-    if (c.doctorName && !careTeamMap.has(c.doctorId)) {
-      careTeamMap.set(c.doctorId, { name: c.doctorName, role: "Doctor" });
+    if (c.practitionerName && !careTeamMap.has(c.practitionerId)) {
+      careTeamMap.set(c.practitionerId, { name: c.practitionerName, role: "Practitioner" });
     }
   }
   const careTeam = Array.from(careTeamMap.values()).slice(0, 4);
@@ -320,7 +320,7 @@ export function OverviewTab({
                         selected: c.id,
                       })}
                       scroll={false}
-                      aria-label={`Open consultation with ${c.doctorName} from ${fmtDate(c.scheduledAt)}`}
+                      aria-label={`Open consultation with ${c.practitionerName} from ${fmtDate(c.scheduledAt)}`}
                       className={cn(
                         "flex min-h-11 gap-3 items-center py-3 transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         i === 0 && "pt-0",
@@ -337,7 +337,7 @@ export function OverviewTab({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground">
-                          {c.doctorName}{" "}
+                          {c.practitionerName}{" "}
                           <span className="font-normal text-muted-foreground capitalize">
                             · {c.type.replace("-", " ")}
                           </span>

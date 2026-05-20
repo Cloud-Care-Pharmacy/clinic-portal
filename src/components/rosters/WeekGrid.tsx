@@ -3,15 +3,15 @@
 import { useMemo } from "react";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RosterDoctor, Shift } from "@/types";
-import { DoctorAvatar } from "./DoctorAvatar";
+import type { RosterPractitioner, Shift } from "@/types";
+import { PractitionerAvatar } from "./PractitionerAvatar";
 
 interface WeekGridProps {
-  doctors: RosterDoctor[];
+  practitioners: RosterPractitioner[];
   weekStartISO: string;
-  selectedDoctorId: string | null;
+  selectedPractitionerId: string | null;
   todayIndex: number | null; // 0..6 (Mon..Sun) or null if not in this week
-  onSelectDoctor: (doctorId: string) => void;
+  onSelectPractitioner: (practitionerId: string) => void;
 }
 
 const DOW = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -32,20 +32,20 @@ function densityRowVar(): string {
 }
 
 export function WeekGrid({
-  doctors,
+  practitioners,
   weekStartISO,
-  selectedDoctorId,
+  selectedPractitionerId,
   todayIndex,
-  onSelectDoctor,
+  onSelectPractitioner,
 }: WeekGridProps) {
   const monday = useMemo(() => parseIsoDate(weekStartISO), [weekStartISO]);
 
-  // Pin "isMe" doctor at top, otherwise preserve order.
-  const orderedDoctors = useMemo(() => {
-    const me = doctors.find((d) => d.isMe);
-    if (!me) return doctors;
-    return [me, ...doctors.filter((d) => d.id !== me.id)];
-  }, [doctors]);
+  // Pin "isMe" practitioner at top, otherwise preserve order.
+  const orderedPractitioners = useMemo(() => {
+    const me = practitioners.find((d) => d.isMe);
+    if (!me) return practitioners;
+    return [me, ...practitioners.filter((d) => d.id !== me.id)];
+  }, [practitioners]);
 
   return (
     <div className="overflow-x-auto">
@@ -71,7 +71,7 @@ export function WeekGrid({
             borderColor: "var(--table-separator)",
           }}
         >
-          Doctor
+          Practitioner
         </div>
         {DOW.map((dow, i) => {
           const date = addDays(monday, i);
@@ -117,13 +117,13 @@ export function WeekGrid({
         })}
 
         {/* Data rows */}
-        {orderedDoctors.map((doctor) => (
-          <DoctorRow
-            key={doctor.id}
-            doctor={doctor}
+        {orderedPractitioners.map((practitioner) => (
+          <PractitionerRow
+            key={practitioner.id}
+            practitioner={practitioner}
             todayIndex={todayIndex}
-            isSelected={selectedDoctorId === doctor.id}
-            onSelect={() => onSelectDoctor(doctor.id)}
+            isSelected={selectedPractitionerId === practitioner.id}
+            onSelect={() => onSelectPractitioner(practitioner.id)}
           />
         ))}
       </div>
@@ -131,15 +131,15 @@ export function WeekGrid({
   );
 }
 
-interface DoctorRowProps {
-  doctor: RosterDoctor;
+interface PractitionerRowProps {
+  practitioner: RosterPractitioner;
   todayIndex: number | null;
   isSelected: boolean;
   onSelect: () => void;
 }
 
-function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps) {
-  const isMe = !!doctor.isMe;
+function PractitionerRow({ practitioner, todayIndex, isSelected, onSelect }: PractitionerRowProps) {
+  const isMe = !!practitioner.isMe;
   const cellBg = isSelected
     ? "color-mix(in srgb, var(--primary) 10%, var(--card))"
     : isMe
@@ -170,11 +170,11 @@ function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps)
           height: "var(--row-h)",
         }}
       >
-        <DoctorAvatar doctorId={doctor.id} name={doctor.name} size="md" />
+        <PractitionerAvatar practitionerId={practitioner.id} name={practitioner.name} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             <span className="truncate text-sm font-semibold text-foreground">
-              {doctor.name}
+              {practitioner.name}
             </span>
             {isMe && (
               <span
@@ -189,12 +189,12 @@ function DoctorRow({ doctor, todayIndex, isSelected, onSelect }: DoctorRowProps)
             )}
           </div>
           <div className="truncate text-xs text-muted-foreground">
-            {doctor.specialty} · {doctor.clinic}
+            {practitioner.specialty} · {practitioner.clinic}
           </div>
         </div>
       </div>
 
-      {doctor.week.map((shift, dayIdx) => (
+      {practitioner.week.map((shift, dayIdx) => (
         <DayCell
           key={dayIdx}
           shift={shift}

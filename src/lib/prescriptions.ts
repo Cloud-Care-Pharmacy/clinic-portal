@@ -28,7 +28,7 @@ export function formatPrescriptionDate(value: string): string {
 }
 
 /**
- * The clinical-decision gate lives on `consultations.outcome`. When a doctor
+ * The clinical-decision gate lives on `consultations.outcome`. When a practitioner
  * marks a consultation as rejected, the outcome is stored as the literal
  * string "reject" (case-insensitive). The backend uses the same check to
  * return 422 from the create-internal-prescription endpoint.

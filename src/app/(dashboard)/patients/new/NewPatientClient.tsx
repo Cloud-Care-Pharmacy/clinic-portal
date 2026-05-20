@@ -680,7 +680,7 @@ function Step8Consent() {
           </li>
           <li>
             If you experience any adverse effects, stop using the product and consult
-            your doctor or pharmacist immediately.
+            your practitioner or pharmacist immediately.
           </li>
           <li>
             You understand that providing false medical information may affect your

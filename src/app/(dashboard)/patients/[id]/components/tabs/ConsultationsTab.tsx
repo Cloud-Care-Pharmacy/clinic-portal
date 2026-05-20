@@ -33,8 +33,8 @@ const CONSULT_TYPE_VARIANTS: Record<ConsultationType, "info" | "accent" | "succe
 
 const consultationColumns: GridColDef<Consultation>[] = [
   {
-    field: "doctorName",
-    headerName: "Doctor",
+    field: "practitionerName",
+    headerName: "Practitioner",
     flex: 1,
     minWidth: 150,
   },

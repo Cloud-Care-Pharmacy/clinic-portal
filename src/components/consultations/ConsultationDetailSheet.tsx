@@ -315,8 +315,8 @@ export function ConsultationDetailSheet({
               </Link>
             </DetailRow>
 
-            <DetailRow icon={<Stethoscope className="size-4 " />} label="Doctor">
-              {consultation.doctorName}
+            <DetailRow icon={<Stethoscope className="size-4 " />} label="Practitioner">
+              {consultation.practitionerName}
             </DetailRow>
 
             <DetailRow icon={<CalendarDays className="size-4 " />} label="Scheduled">

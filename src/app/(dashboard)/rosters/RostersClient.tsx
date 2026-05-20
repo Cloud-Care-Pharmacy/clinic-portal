@@ -14,7 +14,7 @@ import { WeekGrid } from "@/components/rosters/WeekGrid";
 import { WeekGridSkeleton } from "@/components/rosters/WeekGridSkeleton";
 import { MonthGrid } from "@/components/rosters/MonthGrid";
 import { MonthGridSkeleton } from "@/components/rosters/MonthGridSkeleton";
-import { DoctorDrawer } from "@/components/rosters/DoctorDrawer";
+import { PractitionerDrawer } from "@/components/rosters/PractitionerDrawer";
 
 interface RostersClientProps {
   initialWeekStartISO: string;
@@ -65,7 +65,7 @@ export function RostersClient({
   const [tab, setTab] = useState<FilterTab>("all");
   const [weekStartISOOverride, setWeekStartISO] = useState<string | null>(null);
   const [monthISOOverride, setMonthISO] = useState<string | null>(null);
-  const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
+  const [selectedPractitionerId, setSelectedPractitionerId] = useState<string | null>(null);
   const weekStartISO = weekStartISOOverride ?? initialWeekStartISO;
   const monthISO = monthISOOverride ?? initialMonthISO;
 
@@ -80,7 +80,7 @@ export function RostersClient({
 
   const week: RosterWeekResponse =
     weekQuery.data ??
-    initialWeek ?? { doctors: [], weekStart: weekStartISO, weekEnd: weekStartISO };
+    initialWeek ?? { practitioners: [], weekStart: weekStartISO, weekEnd: weekStartISO };
   const month: RosterMonthResponse =
     monthQuery.data ??
     initialMonth ?? {
@@ -103,10 +103,10 @@ export function RostersClient({
     return toIsoDate(new Date());
   }, []);
 
-  // Filter doctors by tab.
-  const filteredDoctors = useMemo(() => {
-    if (tab === "all") return week.doctors;
-    return week.doctors.filter((d) => {
+  // Filter practitioners by tab.
+  const filteredPractitioners = useMemo(() => {
+    if (tab === "all") return week.practitioners;
+    return week.practitioners.filter((d) => {
       if (todayIndex === null) return false;
       const todayShift = d.week[todayIndex];
       if (!todayShift) return false;
@@ -114,25 +114,25 @@ export function RostersClient({
       if (tab === "on-leave") return todayShift.kind === "leave";
       return true;
     });
-  }, [week.doctors, tab, todayIndex]);
+  }, [week.practitioners, tab, todayIndex]);
 
   // Counts for tab chips (same logic but always against full set).
   const counts = useMemo(() => {
     let avail = 0;
     let leave = 0;
     if (todayIndex !== null) {
-      for (const d of week.doctors) {
+      for (const d of week.practitioners) {
         const s = d.week[todayIndex];
         if (s?.kind === "available") avail += 1;
         else if (s?.kind === "leave") leave += 1;
       }
     }
-    return { all: week.doctors.length, available: avail, leave };
-  }, [week.doctors, todayIndex]);
+    return { all: week.practitioners.length, available: avail, leave };
+  }, [week.practitioners, todayIndex]);
 
-  const selectedDoctor = useMemo(
-    () => week.doctors.find((d) => d.id === selectedDoctorId) ?? null,
-    [week.doctors, selectedDoctorId]
+  const selectedPractitioner = useMemo(
+    () => week.practitioners.find((d) => d.id === selectedPractitionerId) ?? null,
+    [week.practitioners, selectedPractitionerId]
   );
 
   // Range / step labels.
@@ -201,14 +201,14 @@ export function RostersClient({
     <div className="space-y-6">
       <PageHeader
         title="Rosters"
-        description="Weekly availability across the practice. Click a doctor to view their full week."
+        description="Weekly availability across the practice. Click a practitioner to view their full week."
       />
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as FilterTab)}>
           <TabsList>
             <TabsTrigger value="all">
-              All doctors <span className="count">{counts.all}</span>
+              All practitioners <span className="count">{counts.all}</span>
             </TabsTrigger>
             <TabsTrigger value="available-now">
               Available now <span className="count">{counts.available}</span>
@@ -236,13 +236,13 @@ export function RostersClient({
             isLoading={weekQuery.isPending && !weekQuery.data}
             isError={weekQuery.isError}
             onRetry={() => weekQuery.refetch()}
-            totalDoctors={week.doctors.length}
-            filteredDoctors={filteredDoctors}
+            totalPractitioners={week.practitioners.length}
+            filteredPractitioners={filteredPractitioners}
             tab={tab}
             weekStartISO={weekStartISO}
-            selectedDoctorId={selectedDoctorId}
+            selectedPractitionerId={selectedPractitionerId}
             todayIndex={todayIndex}
-            onSelectDoctor={(id) => setSelectedDoctorId(id)}
+            onSelectPractitioner={(id) => setSelectedPractitionerId(id)}
             onClearFilter={() => setTab("all")}
           />
         ) : (
@@ -258,13 +258,13 @@ export function RostersClient({
         )}
       </RosterCard>
 
-      <DoctorDrawer
-        doctor={selectedDoctor}
+      <PractitionerDrawer
+        practitioner={selectedPractitioner}
         weekStartISO={weekStartISO}
         todayIndex={todayIndex}
-        open={!!selectedDoctor}
+        open={!!selectedPractitioner}
         onOpenChange={(open) => {
-          if (!open) setSelectedDoctorId(null);
+          if (!open) setSelectedPractitionerId(null);
         }}
       />
     </div>
@@ -275,13 +275,13 @@ interface WeekViewBodyProps {
   isLoading: boolean;
   isError: boolean;
   onRetry: () => void;
-  totalDoctors: number;
-  filteredDoctors: import("@/types").RosterDoctor[];
+  totalPractitioners: number;
+  filteredPractitioners: import("@/types").RosterPractitioner[];
   tab: FilterTab;
   weekStartISO: string;
-  selectedDoctorId: string | null;
+  selectedPractitionerId: string | null;
   todayIndex: number | null;
-  onSelectDoctor: (id: string) => void;
+  onSelectPractitioner: (id: string) => void;
   onClearFilter: () => void;
 }
 
@@ -289,13 +289,13 @@ function WeekViewBody({
   isLoading,
   isError,
   onRetry,
-  totalDoctors,
-  filteredDoctors,
+  totalPractitioners,
+  filteredPractitioners,
   tab,
   weekStartISO,
-  selectedDoctorId,
+  selectedPractitionerId,
   todayIndex,
-  onSelectDoctor,
+  onSelectPractitioner,
   onClearFilter,
 }: WeekViewBodyProps) {
   if (isLoading) {
@@ -312,39 +312,39 @@ function WeekViewBody({
       />
     );
   }
-  if (totalDoctors === 0) {
+  if (totalPractitioners === 0) {
     return (
       <EmptyState
         icon={CalendarX}
-        title="No doctors rostered"
+        title="No practitioners rostered"
         description="No practitioners have shifts scheduled for this week. Try a different week, or add availability from the Profile page."
       />
     );
   }
-  if (filteredDoctors.length === 0) {
+  if (filteredPractitioners.length === 0) {
     return (
       <EmptyState
         icon={Filter}
-        title="No doctors match this filter"
+        title="No practitioners match this filter"
         description={
           tab === "available-now"
-            ? "No doctors are available right now."
+            ? "No practitioners are available right now."
             : tab === "on-leave"
-              ? "No doctors are on leave today."
-              : "No doctors match the current filter."
+              ? "No practitioners are on leave today."
+              : "No practitioners match the current filter."
         }
-        actionLabel="Show all doctors"
+        actionLabel="Show all practitioners"
         onAction={onClearFilter}
       />
     );
   }
   return (
     <WeekGrid
-      doctors={filteredDoctors}
+      practitioners={filteredPractitioners}
       weekStartISO={weekStartISO}
-      selectedDoctorId={selectedDoctorId}
+      selectedPractitionerId={selectedPractitionerId}
       todayIndex={todayIndex}
-      onSelectDoctor={onSelectDoctor}
+      onSelectPractitioner={onSelectPractitioner}
     />
   );
 }

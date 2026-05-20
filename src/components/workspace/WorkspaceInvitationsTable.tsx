@@ -35,7 +35,7 @@ import {
   WORKSPACE_ROLE_VARIANTS,
 } from "@/components/workspace/workspace-format";
 
-const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
+const ROLE_OPTIONS: UserRole[] = ["admin", "practitioner", "staff"];
 const STATUS_OPTIONS: WorkspaceInvitationStatus[] = ["invited", "revoked"];
 
 interface WorkspaceInvitationsTableProps {

@@ -149,8 +149,8 @@ export const SEARCH_COMMANDS: SearchCommandDefinition[] = [
 
 export const QUICK_FILTERS: QuickFilterDefinition[] = [
   {
-    id: "doctor-review",
-    label: "Doctor review required",
+    id: "practitioner-review",
+    label: "Practitioner review required",
     tone: "danger",
     icon: AlertTriangle,
     href: "/tasks",

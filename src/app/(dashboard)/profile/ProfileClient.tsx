@@ -27,13 +27,13 @@ import type {
 
 const ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
-  doctor: "Doctor",
+  practitioner: "Practitioner",
   staff: "Staff",
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
   admin: "bg-primary/10 text-primary border-primary/20",
-  doctor: "bg-status-info-bg text-status-info-fg border-status-info-border",
+  practitioner: "bg-status-info-bg text-status-info-fg border-status-info-border",
   staff: "bg-status-neutral-bg text-status-neutral-fg border-status-neutral-border",
 };
 
@@ -69,8 +69,8 @@ export function ProfileClient({
     (clerkUser?.publicMetadata?.role as UserRole | undefined) ??
     initialUser?.role ??
     "staff";
-  const isDoctor = role === "doctor";
-  const canEditPractitioner = isDoctor || role === "admin";
+  const isPractitioner = role === "practitioner";
+  const canEditPractitioner = isPractitioner || role === "admin";
 
   const firstName =
     profile?.firstName ?? clerkUser?.firstName ?? initialUser?.firstName ?? "";
@@ -176,10 +176,10 @@ export function ProfileClient({
 
             {/* Row 2: specialty, prescriber #, joined */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              {isDoctor && practitioner?.specialty && (
+              {isPractitioner && practitioner?.specialty && (
                 <span>{practitioner.specialty}</span>
               )}
-              {isDoctor && practitioner?.prescriberNumber && (
+              {isPractitioner && practitioner?.prescriberNumber && (
                 <span className="font-mono text-xs">
                   Prescriber #{practitioner.prescriberNumber}
                 </span>

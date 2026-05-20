@@ -112,7 +112,7 @@ export const PatientStatStrip = memo(function PatientStatStrip({
               })
             : "—"
         }
-        subText={lastConsult?.doctorName ?? "No consultations"}
+        subText={lastConsult?.practitionerName ?? "No consultations"}
       />
       <StatCell
         icon={<CalendarClock className="size-4.5 text-status-success-fg" />}
@@ -132,7 +132,7 @@ export const PatientStatStrip = memo(function PatientStatStrip({
               })
             : "—"
         }
-        subText={nextAppt?.doctorName ?? "None scheduled"}
+        subText={nextAppt?.practitionerName ?? "None scheduled"}
       />
       <StatCell
         icon={<FileText className="size-4.5 text-status-accent-fg" />}

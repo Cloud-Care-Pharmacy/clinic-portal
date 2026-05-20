@@ -197,7 +197,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (opts?.status) params.set("status", opts.status);
     if (opts?.type) params.set("type", opts.type);
-    if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+    if (opts?.practitionerId) params.set("practitionerId", opts.practitionerId);
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
     if (opts?.search) params.set("search", opts.search);
@@ -232,7 +232,7 @@ class ApiClient {
     if (opts?.status) params.set("status", opts.status);
     if (opts?.type) params.set("type", opts.type);
     if (opts?.patientId) params.set("patientId", opts.patientId);
-    if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+    if (opts?.practitionerId) params.set("practitionerId", opts.practitionerId);
     if (opts?.from) params.set("from", opts.from);
     if (opts?.to) params.set("to", opts.to);
     if (opts?.search) params.set("search", opts.search);

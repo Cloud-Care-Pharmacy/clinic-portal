@@ -32,7 +32,7 @@ export function WeekGridSkeleton({ rows = 6 }: WeekGridSkeletonProps) {
             borderColor: "var(--table-separator)",
           }}
         >
-          Doctor
+          Practitioner
         </div>
         {DOW.map((dow, i) => (
           <div

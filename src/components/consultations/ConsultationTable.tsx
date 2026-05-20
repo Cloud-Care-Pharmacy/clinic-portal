@@ -113,9 +113,9 @@ interface ConsultationTableProps {
   onStatusFiltersChange: (value: ConsultationStatus[]) => void;
   typeFilters: ConsultationType[];
   onTypeFiltersChange: (value: ConsultationType[]) => void;
-  doctorOptions: Array<{ id: string; name: string }>;
-  doctorFilters: string[];
-  onDoctorFiltersChange: (value: string[]) => void;
+  practitionerOptions: Array<{ id: string; name: string }>;
+  practitionerFilters: string[];
+  onPractitionerFiltersChange: (value: string[]) => void;
   dateRange: DateRangeFilter;
   onDateRangeChange: (value: DateRangeFilter) => void;
   paginationModel: GridPaginationModel;
@@ -152,9 +152,9 @@ export function ConsultationTable({
   onStatusFiltersChange,
   typeFilters,
   onTypeFiltersChange,
-  doctorOptions,
-  doctorFilters,
-  onDoctorFiltersChange,
+  practitionerOptions,
+  practitionerFilters,
+  onPractitionerFiltersChange,
   dateRange,
   onDateRangeChange,
   paginationModel,
@@ -164,7 +164,7 @@ export function ConsultationTable({
     Boolean(searchQuery.trim()) ||
     statusFilters.length > 0 ||
     typeFilters.length > 0 ||
-    doctorFilters.length > 0 ||
+    practitionerFilters.length > 0 ||
     Boolean(dateRange.from) ||
     Boolean(dateRange.to);
 
@@ -177,9 +177,9 @@ export function ConsultationTable({
         if (typeFilters.length > 0 && !typeFilters.includes(consultation.type)) {
           return false;
         }
-        if (doctorFilters.length > 0) {
-          const key = consultation.doctorId || consultation.doctorName;
-          if (!key || !doctorFilters.includes(key)) return false;
+        if (practitionerFilters.length > 0) {
+          const key = consultation.practitionerId || consultation.practitionerName;
+          if (!key || !practitionerFilters.includes(key)) return false;
         }
         if (dateRange.from || dateRange.to) {
           const t = new Date(consultation.scheduledAt).getTime();
@@ -197,9 +197,9 @@ export function ConsultationTable({
 
         return matchesSearchQuery(searchQuery, [
           consultation.patientName,
-          consultation.doctorName,
+          consultation.practitionerName,
           consultation.patientId,
-          consultation.doctorId,
+          consultation.practitionerId,
           consultation.id,
           consultation.status,
           consultation.status.replace("-", " "),
@@ -216,7 +216,7 @@ export function ConsultationTable({
       searchQuery,
       statusFilters,
       typeFilters,
-      doctorFilters,
+      practitionerFilters,
       dateRange.from,
       dateRange.to,
     ]
@@ -226,7 +226,7 @@ export function ConsultationTable({
     onSearchChange("");
     onStatusFiltersChange([]);
     onTypeFiltersChange([]);
-    onDoctorFiltersChange([]);
+    onPractitionerFiltersChange([]);
     onDateRangeChange({});
   };
 
@@ -247,14 +247,14 @@ export function ConsultationTable({
         onChange: (v: string[]) => onTypeFiltersChange(v as TypeFilterOption[]),
       },
     ];
-    if (doctorOptions.length > 0 || loading) {
-      const idToName = new Map(doctorOptions.map((d) => [d.id, d.name]));
+    if (practitionerOptions.length > 0 || loading) {
+      const idToName = new Map(practitionerOptions.map((d) => [d.id, d.name]));
       base.push({
-        key: "doctor",
-        label: "Doctor",
-        options: doctorOptions.map((d) => d.id),
-        value: doctorFilters,
-        onChange: onDoctorFiltersChange,
+        key: "practitioner",
+        label: "Practitioner",
+        options: practitionerOptions.map((d) => d.id),
+        value: practitionerFilters,
+        onChange: onPractitionerFiltersChange,
         formatOption: (id: string) => idToName.get(id) ?? id,
       });
     }
@@ -262,11 +262,11 @@ export function ConsultationTable({
   }, [
     onStatusFiltersChange,
     onTypeFiltersChange,
-    onDoctorFiltersChange,
+    onPractitionerFiltersChange,
     statusFilters,
     typeFilters,
-    doctorFilters,
-    doctorOptions,
+    practitionerFilters,
+    practitionerOptions,
     loading,
   ]);
 
@@ -308,18 +308,18 @@ export function ConsultationTable({
       },
     },
     {
-      field: "doctorName",
-      headerName: "Doctor",
+      field: "practitionerName",
+      headerName: "Practitioner",
       flex: 1,
       minWidth: 180,
       renderCell: (params) => (
         <div className="flex min-w-0 flex-col leading-tight py-1">
           <span className="truncate font-medium text-foreground">
-            {params.row.doctorName}
+            {params.row.practitionerName}
           </span>
-          {params.row.doctorId && (
+          {params.row.practitionerId && (
             <span className="truncate text-xs text-muted-foreground">
-              {params.row.doctorId}
+              {params.row.practitionerId}
             </span>
           )}
         </div>

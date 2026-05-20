@@ -5,11 +5,11 @@ import { CalendarPlus, Mail, User } from "lucide-react";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { DoctorAvatar } from "./DoctorAvatar";
-import type { RosterDoctor, Shift } from "@/types";
+import { PractitionerAvatar } from "./PractitionerAvatar";
+import type { RosterPractitioner, Shift } from "@/types";
 
-interface DoctorDrawerProps {
-  doctor: RosterDoctor | null;
+interface PractitionerDrawerProps {
+  practitioner: RosterPractitioner | null;
   weekStartISO: string;
   todayIndex: number | null;
   open: boolean;
@@ -36,21 +36,21 @@ function shiftDurationHours(shift: Shift): number {
   return ((eh ?? 0) * 60 + (em ?? 0) - ((sh ?? 0) * 60 + (sm ?? 0))) / 60;
 }
 
-export function DoctorDrawer({
-  doctor,
+export function PractitionerDrawer({
+  practitioner,
   weekStartISO,
   todayIndex,
   open,
   onOpenChange,
-}: DoctorDrawerProps) {
-  // Cache the most recently shown doctor so the slide-out animation
+}: PractitionerDrawerProps) {
+  // Cache the most recently shown practitioner so the slide-out animation
   // still has data to render after the parent clears its selection.
   // Conditional state update during render is the React-recommended
   // pattern for derived-from-props values (no effect required).
-  const [cachedDoctor, setCachedDoctor] = useState<RosterDoctor | null>(null);
-  const displayed = doctor ?? cachedDoctor;
-  if (doctor && doctor !== cachedDoctor) {
-    setCachedDoctor(doctor);
+  const [cachedPractitioner, setCachedPractitioner] = useState<RosterPractitioner | null>(null);
+  const displayed = practitioner ?? cachedPractitioner;
+  if (practitioner && practitioner !== cachedPractitioner) {
+    setCachedPractitioner(practitioner);
   }
 
   const monday = useMemo(() => parseIsoDate(weekStartISO), [weekStartISO]);
@@ -87,7 +87,7 @@ export function DoctorDrawer({
       {displayed ? (
         <div className="space-y-6">
           <div className="flex items-center gap-3">
-            <DoctorAvatar doctorId={displayed.id} name={displayed.name} size="lg" />
+            <PractitionerAvatar practitionerId={displayed.id} name={displayed.name} size="lg" />
             {displayed.isMe && (
               <span
                 className="inline-block rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em]"

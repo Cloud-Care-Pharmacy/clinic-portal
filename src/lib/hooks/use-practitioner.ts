@@ -35,7 +35,7 @@ async function updatePractitioner(data: UpdatePractitionerPayload) {
     if (res.status === 403) {
       throw new Error(
         err.error ??
-          "Only doctors or admins can set HPII, prescriber number, or qualifications"
+          "Only practitioners or admins can set HPII, prescriber number, or qualifications"
       );
     }
     if (res.status === 400) {
@@ -185,7 +185,7 @@ export function usePractitioners(
   return useQuery({
     queryKey: [
       "practitioners",
-      opts?.role ?? "doctor",
+      opts?.role ?? "practitioner",
       opts?.active ?? true,
       opts?.search ?? "",
     ],

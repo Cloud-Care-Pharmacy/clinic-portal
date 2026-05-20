@@ -24,7 +24,7 @@ export interface FormularyItem {
 /** Default SIG copy for a given strength, per the spreadsheet template. */
 export function defaultSigForStrength(strengthMgMl: number): string {
   if (strengthMgMl <= 0) {
-    return "Use approved therapeutic vaping product by inhalation via vaporisation as directed. Contains 0 mg/mL nicotine. Review with your doctor as scheduled. Keep out of reach of children and pets.";
+    return "Use approved therapeutic vaping product by inhalation via vaporisation as directed. Contains 0 mg/mL nicotine. Review with your practitioner as scheduled. Keep out of reach of children and pets.";
   }
   const maxMlPerDay = (80 / strengthMgMl).toFixed(2);
   return `Inhale by vaporisation using a TGA-notified therapeutic vaping product PRN to relieve cravings. Start 30-50 mg nominal nicotine daily. Max 80 mg/day. For a ${strengthMgMl} mg/mL product, max ${maxMlPerDay} mL/day. Review in 7 days.`;

@@ -27,10 +27,10 @@ export const VARIABLE_CATALOG: TemplateVariableGroup[] = [
     ],
   },
   {
-    label: "Doctor",
+    label: "Practitioner",
     variables: [
-      { path: "doctor.name", label: "Name", sample: "Dr. Priya Patel" },
-      { path: "doctor.email", label: "Email", sample: "priya@cloudcare.health" },
+      { path: "practitioner.name", label: "Name", sample: "Dr. Priya Patel" },
+      { path: "practitioner.email", label: "Email", sample: "priya@cloudcare.health" },
     ],
   },
   {

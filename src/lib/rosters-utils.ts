@@ -33,11 +33,11 @@ function hashString(s: string): number {
   return h;
 }
 
-export function getDoctorTint(doctorId: string): string {
-  return AVATAR_TINTS[hashString(doctorId) % AVATAR_TINTS.length]!;
+export function getPractitionerTint(practitionerId: string): string {
+  return AVATAR_TINTS[hashString(practitionerId) % AVATAR_TINTS.length]!;
 }
 
-export function getDoctorInitials(name: string): string {
+export function getPractitionerInitials(name: string): string {
   const parts = name
     .replace(/^Dr\.?\s+/i, "")
     .split(/\s+/)

@@ -13,7 +13,7 @@ export function FindFreeSlotsForm(props: StepFormProps<FindFreeSlotsStep>) {
         label="Practitioner user id"
         value={step.practitionerUserId ?? ""}
         onChange={(v) => onChange({ ...step, practitionerUserId: v })}
-        placeholder="{{vars.doctorId}}"
+        placeholder="{{vars.practitionerId}}"
         error={errors?.practitionerUserId}
       />
       <TemplatedField

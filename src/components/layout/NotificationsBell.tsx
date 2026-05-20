@@ -31,7 +31,7 @@ export function NotificationsBell() {
     profileData?.data?.profile?.role ??
     (clerkUser?.publicMetadata?.role as UserRole | undefined) ??
     "staff";
-  const canPrescribe = role === "doctor" || role === "admin";
+  const canPrescribe = role === "practitioner" || role === "admin";
   const practitioner = practitionerData?.data?.practitioner ?? null;
 
   const actionItems = useMemo<ActionItem[]>(() => {

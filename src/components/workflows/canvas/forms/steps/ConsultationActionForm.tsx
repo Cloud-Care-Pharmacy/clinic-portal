@@ -100,18 +100,18 @@ export function ConsultationActionForm(props: StepFormProps<ConsultationActionSt
             />
           </Field>
           <TemplatedField
-            label="Doctor id (optional)"
-            value={step.doctorId ?? ""}
-            onChange={(v) => onChange({ ...step, doctorId: v ? v : undefined })}
-            placeholder="{{vars.doctorId}}"
-            error={errors?.doctorId}
+            label="Practitioner id (optional)"
+            value={step.practitionerId ?? ""}
+            onChange={(v) => onChange({ ...step, practitionerId: v ? v : undefined })}
+            placeholder="{{vars.practitionerId}}"
+            error={errors?.practitionerId}
           />
           <TemplatedField
-            label="Doctor name (optional)"
-            value={step.doctorName ?? ""}
-            onChange={(v) => onChange({ ...step, doctorName: v ? v : undefined })}
+            label="Practitioner name (optional)"
+            value={step.practitionerName ?? ""}
+            onChange={(v) => onChange({ ...step, practitionerName: v ? v : undefined })}
             placeholder="Dr Smith"
-            error={errors?.doctorName}
+            error={errors?.practitionerName}
           />
           <Field label="Skip conflict check">
             <label className="flex items-center gap-2 text-xs">

@@ -46,7 +46,7 @@ import {
   WORKSPACE_USER_STATUS_VARIANTS,
 } from "@/components/workspace/workspace-format";
 
-const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
+const ROLE_OPTIONS: UserRole[] = ["admin", "practitioner", "staff"];
 const STATUS_OPTIONS: WorkspaceUserStatus[] = [
   "active",
   "invited",
