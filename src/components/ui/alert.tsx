@@ -51,7 +51,7 @@ function Alert({
     <div
       role="alert"
       className={cn(
-        "grid grid-cols-[16px_1fr] gap-x-2.5 rounded-[10px] border p-3 text-sm",
+        "grid grid-cols-[16px_1fr] gap-x-2.5 rounded-sm border p-3 text-sm",
         onClose && "grid-cols-[16px_1fr_14px]",
         variantStyles[variant],
         className

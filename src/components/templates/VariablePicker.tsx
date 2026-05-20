@@ -28,7 +28,7 @@ export function VariablePicker({ onInsert, className }: VariablePickerProps) {
                 type="button"
                 onClick={() => onInsert(v.path)}
                 title={v.path}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1 rounded-sm border border-border bg-muted/40 px-2 py-0.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
               >
                 <span className="text-muted-foreground">{v.label}</span>
                 <span className="font-mono text-[10px] text-muted-foreground/70">

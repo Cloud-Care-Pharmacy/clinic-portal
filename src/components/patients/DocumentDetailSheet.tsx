@@ -105,8 +105,8 @@ function MetadataItem({
   children: ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
-      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+    <div className="flex items-start gap-3 rounded-sm border border-border bg-card p-3">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -287,9 +287,9 @@ export function DocumentDetailSheet({
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-5"
           >
-            <section className="rounded-xl border border-border bg-card p-4">
+            <section className="rounded-sm border border-border bg-card p-4">
               <div className="flex items-start gap-3">
-                <div className="flex size-10  shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-bg text-status-info-fg">
+                <div className="flex size-10  shrink-0 items-center justify-center rounded-sm border border-status-info-border bg-status-info-bg text-status-info-fg">
                   <FileText className="size-5" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -334,7 +334,7 @@ export function DocumentDetailSheet({
             </section>
 
             {document.rejectionReason && (
-              <section className="rounded-xl border border-status-danger-border bg-status-danger-bg p-3">
+              <section className="rounded-sm border border-status-danger-border bg-status-danger-bg p-3">
                 <div className="flex items-start gap-3">
                   <XCircle className="mt-0.5 size-4 shrink-0 text-status-danger-fg" />
                   <div className="min-w-0">
@@ -431,7 +431,7 @@ export function DocumentDetailSheet({
               </div>
             </section>
 
-            <section className="space-y-3 rounded-xl border border-border bg-card p-4">
+            <section className="space-y-3 rounded-sm border border-border bg-card p-4">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">
                   Verification actions
@@ -467,7 +467,7 @@ export function DocumentDetailSheet({
                   </div>
 
                   {rejectOpen && (
-                    <div className="space-y-2 rounded-lg border border-status-danger-border bg-status-danger-bg p-3">
+                    <div className="space-y-2 rounded-sm border border-status-danger-border bg-status-danger-bg p-3">
                       <Label
                         htmlFor="document-rejection-reason"
                         className="text-status-danger-fg"
@@ -511,7 +511,7 @@ export function DocumentDetailSheet({
               )}
             </section>
 
-            <section className="rounded-xl border border-border bg-card p-3 text-xs text-muted-foreground">
+            <section className="rounded-sm border border-border bg-card p-3 text-xs text-muted-foreground">
               <dl className="grid gap-2">
                 <div className="flex justify-between gap-3">
                   <dt>Category</dt>

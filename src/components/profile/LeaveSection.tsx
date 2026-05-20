@@ -152,7 +152,7 @@ export function LeaveSection({ practitionerId }: LeaveSectionProps) {
           {(leaveQuery.error as Error).message}
         </p>
       ) : entries.length > 0 ? (
-        <ul className="divide-y rounded-xl border bg-card">
+        <ul className="divide-y rounded-sm border bg-card">
           {entries.map((leave) => (
             <LeaveRow key={leave.id} leave={leave} />
           ))}

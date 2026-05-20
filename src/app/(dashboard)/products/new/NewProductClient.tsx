@@ -32,7 +32,7 @@ export function NewProductClient() {
         description="Add a new item to the clinic's product catalog. Mocked locally until the backend ships."
       />
 
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-sm border border-border bg-card p-6">
         <ProductForm
           id={formId}
           form={form}

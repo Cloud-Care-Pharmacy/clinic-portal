@@ -83,13 +83,13 @@ export function ManualRxComposer({
           onKeyDown={handleSearchKey}
           placeholder="Search medication - e.g. Nicotine 20 mg/mL…"
           aria-label="Search medication"
-          className="h-9 rounded-lg border-border bg-background pl-8 pr-20 text-[13px] focus-visible:border-primary"
+          className="h-9 rounded-sm border-border bg-background pl-8 pr-20 text-[13px] focus-visible:border-primary"
         />
         <button
           type="button"
           onClick={handleSearchSubmit}
           disabled={!search.trim()}
-          className="absolute right-1.5 top-1/2 inline-flex h-6 -translate-y-1/2 items-center gap-1 rounded-md bg-primary px-2 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="absolute right-1.5 top-1/2 inline-flex h-6 -translate-y-1/2 items-center gap-1 rounded-sm bg-primary px-2 text-[11px] font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <Plus className="size-3" aria-hidden="true" />
           Add
@@ -108,7 +108,7 @@ export function ManualRxComposer({
 
       {/* (3) Medication cards (or empty state) */}
       {value.length === 0 ? (
-        <div className="rounded-[10px] border border-dashed border-border bg-popover/40 px-4 py-5 text-center text-[12.5px] text-muted-foreground">
+        <div className="rounded-sm border border-dashed border-border bg-popover/40 px-4 py-5 text-center text-[12.5px] text-muted-foreground">
           No medications added yet. Pick a nicotine strength above to start.
         </div>
       ) : (
@@ -131,7 +131,7 @@ export function ManualRxComposer({
       <button
         type="button"
         onClick={() => addMed(blankMed())}
-        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[10px] border border-dashed border-border bg-transparent px-3 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-popover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="inline-flex h-8 items-center justify-center gap-1.5 rounded-sm border border-dashed border-border bg-transparent px-3 text-[12.5px] font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-popover hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       >
         <Plus className="size-3.5" aria-hidden="true" />
         Add another medication

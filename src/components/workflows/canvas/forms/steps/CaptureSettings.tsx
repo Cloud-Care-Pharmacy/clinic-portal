@@ -61,7 +61,7 @@ export function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
   const idBase = step.id ?? step.kind;
 
   return (
-    <fieldset className="mt-4 rounded-md border border-border/60 bg-muted/20 p-3">
+    <fieldset className="mt-4 rounded-sm border border-border/60 bg-muted/20 p-3">
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Capture
       </legend>
@@ -79,7 +79,7 @@ export function CaptureSettings({ step, onChange }: CaptureSettingsProps) {
             <label
               key={opt.value}
               htmlFor={id}
-              className="flex cursor-pointer items-start gap-2 rounded-md p-1.5 hover:bg-accent/40"
+              className="flex cursor-pointer items-start gap-2 rounded-sm p-1.5 hover:bg-accent/40"
             >
               <RadioGroupItem
                 value={opt.value}

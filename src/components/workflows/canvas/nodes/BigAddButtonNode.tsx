@@ -35,7 +35,7 @@ export function BigAddButtonNode({ data, id }: NodeProps) {
         }}
         onMouseDown={(e) => e.stopPropagation()}
         style={{ width: ADD_BUTTON_SIZE, height: ADD_BUTTON_SIZE }}
-        className="pointer-events-auto grid place-items-center rounded-md border border-border bg-popover text-muted-foreground shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
+        className="pointer-events-auto grid place-items-center rounded-sm border border-border bg-popover text-muted-foreground shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"
         aria-label="Add step here"
       >
         <Plus className="size-3" />

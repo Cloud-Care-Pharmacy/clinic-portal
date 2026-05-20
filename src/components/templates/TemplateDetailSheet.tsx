@@ -340,7 +340,7 @@ function EmailPreview({
   fromEmail: string;
 }) {
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-background">
+    <div className="overflow-hidden rounded-sm border border-border bg-background">
       <div className="space-y-1 border-b border-border bg-muted/40 p-3">
         <div className="text-xs text-muted-foreground">
           From: {fromName} &lt;{fromEmail}&gt;
@@ -379,9 +379,9 @@ function EmailPreview({
 
 function SmsPreview({ senderId, body }: { senderId: string; body: string }) {
   return (
-    <div className="max-w-xs rounded-md border border-border bg-muted/40 p-3">
+    <div className="max-w-xs rounded-sm border border-border bg-muted/40 p-3">
       <div className="mb-1 text-xs font-medium text-muted-foreground">{senderId}</div>
-      <div className="whitespace-pre-wrap rounded-2xl bg-primary px-3 py-2 text-sm text-primary-foreground">
+      <div className="whitespace-pre-wrap rounded-sm bg-primary px-3 py-2 text-sm text-primary-foreground">
         {body}
       </div>
     </div>
@@ -403,7 +403,7 @@ function NotificationPreview({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-md border p-3 text-sm",
+        "flex items-start gap-3 rounded-sm border p-3 text-sm",
         SEVERITY_TONE[severity]
       )}
     >

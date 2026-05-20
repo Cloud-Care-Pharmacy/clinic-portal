@@ -117,7 +117,7 @@ export function TemplatedField({
                 });
               }}
               className={cn(
-                "absolute right-1.5 grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                "absolute right-1.5 grid size-7 place-items-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 multiline ? "top-1.5" : "top-1/2 -translate-y-1/2",
               )}
             >

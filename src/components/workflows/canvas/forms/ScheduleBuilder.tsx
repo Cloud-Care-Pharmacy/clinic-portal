@@ -407,7 +407,7 @@ export function ScheduleBuilder({ cron, onChange, error }: ScheduleBuilderProps)
       )}
 
       {supportsWeekendToggle && (
-        <div className="mb-4 flex items-center justify-between rounded-md border border-border bg-card px-3 py-2">
+        <div className="mb-4 flex items-center justify-between rounded-sm border border-border bg-card px-3 py-2">
           <div className="flex flex-col">
             <span className="text-xs font-medium">Skip weekends</span>
             <span className="text-[11px] text-muted-foreground">
@@ -438,7 +438,7 @@ export function ScheduleBuilder({ cron, onChange, error }: ScheduleBuilderProps)
 
       <div
         className={cn(
-          "mb-3 rounded-md border px-3 py-2 text-[11px]",
+          "mb-3 rounded-sm border px-3 py-2 text-[11px]",
           warnings.length > 0
             ? "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
             : "border-border bg-muted/40 text-muted-foreground"

@@ -298,7 +298,7 @@ export function TaskTable({
 
         return (
           <div className="flex min-w-0 items-start gap-2 py-2">
-            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+            <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
               <Icon className="size-3.5" />
             </span>
             <div className="min-w-0">
@@ -366,7 +366,7 @@ export function TaskTable({
       width: 132,
       renderCell: (params) => {
         if (pendingUpdates?.[params.row.taskId]?.status) {
-          return <Skeleton className="h-5 w-20 rounded-full" />;
+          return <Skeleton className="h-5 w-20 rounded-sm" />;
         }
         return (
           <StatusBadge variant={TASK_STATUS_VARIANTS[params.row.status]}>
@@ -515,7 +515,7 @@ export function TaskTable({
   return (
     <div style={{ width: "100%" }}>
       {toolbar}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         <DataGrid
           rows={visibleTasks}
           columns={columns}

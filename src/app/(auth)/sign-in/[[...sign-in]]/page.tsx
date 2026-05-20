@@ -13,7 +13,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       {deactivated && (
         <div
           role="alert"
-          className="w-full max-w-md rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          className="w-full max-w-md rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
         >
           Your account has been deactivated. Please contact your workspace
           administrator if you believe this is a mistake.
@@ -29,7 +29,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             fontFamily: "Outfit, sans-serif",
           },
           elements: {
-            card: "shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.10)] rounded-2xl bg-white",
+            card: "shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.10)] rounded-sm bg-white",
             socialButtonsBlockButton:
               "border border-border bg-white hover:bg-muted text-foreground font-medium shadow-none h-11",
             socialButtonsBlockButtonText: "font-medium",

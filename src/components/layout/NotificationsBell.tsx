@@ -66,7 +66,7 @@ export function NotificationsBell() {
     <Popover>
       <PopoverTrigger
         className={cn(
-          "relative inline-flex size-9  items-center justify-center rounded-lg border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          "relative inline-flex size-9  items-center justify-center rounded-sm border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         )}
         aria-label={
           count > 0

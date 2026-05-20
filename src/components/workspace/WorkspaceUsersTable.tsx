@@ -106,7 +106,7 @@ function UserActionsCell({ user }: { user: WorkspaceUser }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           onClick={(event) => event.stopPropagation()}
           aria-label="Open user actions"
         >
@@ -370,7 +370,7 @@ export function WorkspaceUsersTable({
   return (
     <div>
       {toolbar}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         <DataGrid
           rows={visibleUsers}
           columns={columns}

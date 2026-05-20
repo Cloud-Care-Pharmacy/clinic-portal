@@ -38,7 +38,7 @@ function TaskRow({ task }: { task: Task }) {
     <Link
       href={`/patients/${encodeURIComponent(task.patientId)}/tasks?selected=${encodeURIComponent(task.taskId)}`}
       scroll={false}
-      className="group flex min-h-11 items-center gap-3 rounded-lg -mx-2 p-2 .5 transition-colors duration-120 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group flex min-h-11 items-center gap-3 rounded-sm -mx-2 p-2 .5 transition-colors duration-120 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <span
         aria-hidden
@@ -125,17 +125,17 @@ export function PatientTasksOverviewCard({
   ).length;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5">
+    <div className="rounded-sm border border-border/60 bg-card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-[10px] border border-status-warning-border bg-status-warning-bg text-status-warning-fg">
+          <span className="flex size-8 items-center justify-center rounded-sm border border-status-warning-border bg-status-warning-bg text-status-warning-fg">
             <ClipboardCheck className="size-4" />
           </span>
           <h3 className="text-base font-semibold leading-tight tracking-[-0.01em]">
             Open tasks
           </h3>
           {total > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
+            <span className="ml-1 inline-flex items-center justify-center rounded-sm bg-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
               {total}
             </span>
           )}
@@ -144,7 +144,7 @@ export function PatientTasksOverviewCard({
           <Link
             href={`/patients/${encodeURIComponent(patientId)}/tasks?action=new`}
             scroll={false}
-            className="inline-flex min-h-9 items-center gap-1 rounded-md px-2 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="inline-flex min-h-9 items-center gap-1 rounded-sm px-2 text-[13px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <Plus className="size-3.5" />
             New
@@ -152,7 +152,7 @@ export function PatientTasksOverviewCard({
           <Link
             href={`/patients/${encodeURIComponent(patientId)}/tasks`}
             scroll={false}
-            className="inline-flex min-h-9 items-center rounded-md px-2 text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="inline-flex min-h-9 items-center rounded-sm px-2 text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             View all
           </Link>
@@ -160,7 +160,7 @@ export function PatientTasksOverviewCard({
       </div>
 
       {!isLoading && !error && tasks.length > 0 && (
-        <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5">
+        <div className="mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-sm border border-border/60 bg-muted/40 px-3 py-2.5">
           <StatPill label="Open" value={openCount} tone="warning" />
           <StatPill label="In progress" value={inProgressCount} tone="info" />
           <StatPill
@@ -180,15 +180,15 @@ export function PatientTasksOverviewCard({
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 w-full rounded-lg" />
+            <Skeleton key={index} className="h-12 w-full rounded-sm" />
           ))}
         </div>
       ) : error ? (
-        <p className="rounded-xl border border-status-warning-border bg-status-warning-bg p-3  text-sm text-status-warning-fg">
+        <p className="rounded-sm border border-status-warning-border bg-status-warning-bg p-3  text-sm text-status-warning-fg">
           Tasks could not be loaded.
         </p>
       ) : tasks.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+        <p className="rounded-sm border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
           No open tasks for this patient.
         </p>
       ) : (

@@ -21,7 +21,7 @@ export function EmptyCanvas({ onAddTrigger }: EmptyCanvasProps) {
         <button
           type="button"
           onClick={onAddTrigger}
-          className="group grid size-24 place-items-center rounded-2xl border-2 border-dashed border-input transition-colors hover:border-primary"
+          className="group grid size-24 place-items-center rounded-sm border-2 border-dashed border-input transition-colors hover:border-primary"
         >
           <Plus className="size-7 text-muted-foreground transition-colors group-hover:text-primary" />
         </button>

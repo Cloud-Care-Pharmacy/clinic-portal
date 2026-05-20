@@ -236,7 +236,7 @@ export function ProductTable({
               )
             }
             className={cn(
-              "inline-flex h-9 items-center rounded-full border px-3 text-sm font-medium transition-colors",
+              "inline-flex h-9 items-center rounded-sm border px-3 text-sm font-medium transition-colors",
               active
                 ? "border-primary/50 bg-primary/10 text-foreground"
                 : "border-border hover:bg-accent"
@@ -267,7 +267,7 @@ export function ProductTable({
           .join(" · ");
         return (
           <div className="flex min-w-0 items-center gap-3 py-1">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
               <Package className="size-4" aria-hidden="true" />
             </div>
             <div className="flex min-w-0 flex-col leading-tight">
@@ -474,7 +474,7 @@ export function ProductTable({
   return (
     <div style={{ width: "100%" }}>
       {toolbar}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
         <DataGrid
           rows={visibleProducts}
           columns={columns}

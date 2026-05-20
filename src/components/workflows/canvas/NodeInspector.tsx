@@ -53,7 +53,7 @@ function HeaderTile({ cfg }: { cfg: NodeKindConfig }) {
         color: cfg.fg,
         border: `1px solid ${cfg.border}`,
       }}
-      className="grid size-7.5 place-items-center rounded-lg"
+      className="grid size-7.5 place-items-center rounded-sm"
     >
       <Icon className="size-3.5" />
     </div>

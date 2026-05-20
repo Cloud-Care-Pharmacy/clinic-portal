@@ -172,7 +172,7 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
             color: cfg.fg,
             border: `1px solid ${cfg.border}`,
           }}
-          className="grid size-6.5 place-items-center rounded-lg shrink-0"
+          className="grid size-6.5 place-items-center rounded-sm shrink-0"
         >
           <Icon className="size-3.5" />
         </div>
@@ -199,7 +199,7 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
       </div>
 
       {hoverLabel && (
-        <div className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-0.5 font-mono text-[10px] text-muted-foreground opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
+        <div className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-sm border border-border bg-popover px-2 py-0.5 font-mono text-[10px] text-muted-foreground opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100">
           {hoverLabel}
         </div>
       )}
@@ -208,7 +208,7 @@ function WorkflowNodeImpl({ data, selected }: NodeProps) {
           final duration once terminal. Hidden on pending / trigger nodes. */}
       {(runLiveElapsedMs != null || runDurationMs != null) && (
         <div
-          className="pointer-events-none absolute -bottom-2 right-2 rounded-full border border-border bg-popover px-1.5 py-px font-mono text-[9px] tabular-nums text-muted-foreground shadow-sm"
+          className="pointer-events-none absolute -bottom-2 right-2 rounded-sm border border-border bg-popover px-1.5 py-px font-mono text-[9px] tabular-nums text-muted-foreground shadow-sm"
           aria-label="Step duration"
         >
           {fmtNodeDuration(

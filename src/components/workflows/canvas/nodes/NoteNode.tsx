@@ -90,7 +90,7 @@ export function NoteNode({ data, selected }: NodeProps) {
       />
 
       <NodeToolbar isVisible={selected} position={Position.Top} offset={8}>
-        <div className="flex items-center gap-1 rounded-full border border-border bg-popover px-2 py-1 shadow-md">
+        <div className="flex items-center gap-1 rounded-sm border border-border bg-popover px-2 py-1 shadow-md">
           {NOTE_COLOR_KEYS.map((color) => (
             <button
               key={color}
@@ -146,7 +146,7 @@ export function NoteNode({ data, selected }: NodeProps) {
           borderColor: palette.border,
         }}
         className={cn(
-          "flex h-full w-full flex-col overflow-hidden rounded-lg border p-3 shadow-sm",
+          "flex h-full w-full flex-col overflow-hidden rounded-sm border p-3 shadow-sm",
           selected && "ring-2 ring-primary/50",
           // Sticky-note-style cursor; xyflow handles the actual drag.
           editing ? "cursor-text" : "cursor-grab active:cursor-grabbing"

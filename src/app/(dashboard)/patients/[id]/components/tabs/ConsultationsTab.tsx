@@ -157,7 +157,7 @@ export function ConsultationsTab({
 
   return (
     <div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
         <DataGrid
           rows={consultations}
           columns={consultationColumns}

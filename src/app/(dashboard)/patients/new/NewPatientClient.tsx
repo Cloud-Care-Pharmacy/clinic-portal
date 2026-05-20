@@ -666,7 +666,7 @@ function Step8Consent() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border p-4 bg-secondary space-y-3 text-sm">
+      <div className="rounded-sm border p-4 bg-secondary space-y-3 text-sm">
         <p className="font-semibold">Safety Information</p>
         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
           <li>

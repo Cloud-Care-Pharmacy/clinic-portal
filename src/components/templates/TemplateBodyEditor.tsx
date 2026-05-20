@@ -154,7 +154,7 @@ function EmailEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border border-input bg-background">
+    <div className="rounded-sm border border-input bg-background">
       <div className="flex flex-wrap items-center gap-0.5 border-b p-1">
         <ToolbarButton
           active={editor.isActive("bold")}
@@ -259,7 +259,7 @@ function PlainEditor({
       placeholder={placeholder}
       style={{ minHeight }}
       className={cn(
-        "flex field-sizing-content w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm font-mono transition-colors outline-none placeholder:text-muted-foreground",
+        "flex field-sizing-content w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm font-mono transition-colors outline-none placeholder:text-muted-foreground",
         "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       )}
     />

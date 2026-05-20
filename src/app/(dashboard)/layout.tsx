@@ -27,7 +27,7 @@ export default async function DashboardLayout({
           <BreadcrumbProvider>
             <div className="flex h-screen overflow-hidden bg-sidebar">
               <Sidebar user={user} />
-              <div className="my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-2xl border-t border-border bg-background shadow-sm">
+              <div className="my-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-sm border-t border-border bg-background shadow-sm">
                 <DashboardCommandSearch entityId={entityId} />
                 <main className="flex-1 overflow-y-auto px-4 py-6">{children}</main>
               </div>

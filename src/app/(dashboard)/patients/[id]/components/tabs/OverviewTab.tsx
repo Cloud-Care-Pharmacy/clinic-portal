@@ -83,7 +83,7 @@ function SectionHead({
   onAction?: () => void;
 }) {
   const actionClassName =
-    "inline-flex min-h-11 items-center rounded-md text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+    "inline-flex min-h-11 items-center rounded-sm text-[13px] font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
   return (
     <div className="flex items-center justify-between gap-3 mb-4">
@@ -119,7 +119,7 @@ function OverviewCard({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-border/60 bg-card p-5", className)}>
+    <div className={cn("rounded-sm border border-border/60 bg-card p-5", className)}>
       {children}
     </div>
   );
@@ -275,7 +275,7 @@ export function OverviewTab({
               {conditions.map((c) => (
                 <span
                   key={c}
-                  className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-status-neutral-bg text-status-neutral-fg border border-status-neutral-border"
+                  className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-sm bg-status-neutral-bg text-status-neutral-fg border border-status-neutral-border"
                 >
                   {c}
                 </span>
@@ -322,14 +322,14 @@ export function OverviewTab({
                       scroll={false}
                       aria-label={`Open consultation with ${c.practitionerName} from ${fmtDate(c.scheduledAt)}`}
                       className={cn(
-                        "flex min-h-11 gap-3 items-center py-3 transition-colors duration-120 -mx-3 px-3 rounded-lg hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "flex min-h-11 gap-3 items-center py-3 transition-colors duration-120 -mx-3 px-3 rounded-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         i === 0 && "pt-0",
                         i === recentConsults.length - 1 && "pb-0"
                       )}
                     >
                       <div
                         className={cn(
-                          "flex size-8  shrink-0 items-center justify-center rounded-lg border",
+                          "flex size-8  shrink-0 items-center justify-center rounded-sm border",
                           config.tileClass
                         )}
                       >
@@ -382,7 +382,7 @@ export function OverviewTab({
               })}
               scroll={false}
               aria-label={`Open prescription ${formatPrescriptionReference(latestPrescription)}`}
-              className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-lg p-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-sm p-3 text-left transition-colors duration-120 hover:bg-muted -mx-3 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">
@@ -512,7 +512,7 @@ export function OverviewTab({
                       scroll={false}
                       aria-label={`Open note ${n.title}`}
                       className={cn(
-                        "block min-h-11 rounded-lg py-4 transition-colors duration-120 -mx-3 px-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "block min-h-11 rounded-sm py-4 transition-colors duration-120 -mx-3 px-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         i === 0 && "pt-0"
                       )}
                     >

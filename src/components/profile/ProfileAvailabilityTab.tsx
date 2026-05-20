@@ -450,7 +450,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 overflow-hidden rounded-xl border md:grid-cols-[240px_1fr]">
+          <div className="grid grid-cols-1 overflow-hidden rounded-sm border md:grid-cols-[240px_1fr]">
             {/* Day list */}
             <div className="bg-card md:border-r">
               {fields.map((field, idx) => {
@@ -558,7 +558,7 @@ export function ProfileAvailabilityTab({ practitioner }: ProfileAvailabilityTabP
                   type="button"
                   onClick={() => toggleConsultType(t.id)}
                   className={cn(
-                    "flex items-start gap-3 rounded-xl border p-3.5 text-left transition-colors",
+                    "flex items-start gap-3 rounded-sm border p-3.5 text-left transition-colors",
                     isOn
                       ? "border-primary bg-primary/5"
                       : "border-border bg-background hover:bg-muted"
@@ -673,7 +673,7 @@ function DayEditor({
               <div key={slotIdx} className="flex flex-col gap-1">
                 <div
                   className={cn(
-                    "flex items-center gap-2 rounded-lg",
+                    "flex items-center gap-2 rounded-sm",
                     issue?.row && "bg-destructive/5 px-2 py-1.5"
                   )}
                 >
@@ -759,7 +759,7 @@ function DayEditor({
                   return (
                     <label
                       key={d.key}
-                      className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-muted"
+                      className="flex cursor-pointer items-center gap-2 rounded-sm px-1.5 py-1 text-sm hover:bg-muted"
                     >
                       <Checkbox
                         checked={checked}

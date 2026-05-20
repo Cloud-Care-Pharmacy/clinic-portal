@@ -116,7 +116,7 @@ function PrescriptionGrid({
           description="No prescriptions on record for this patient yet."
         />
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <DataGrid
             rows={prescriptions}
             columns={prescriptionColumns}

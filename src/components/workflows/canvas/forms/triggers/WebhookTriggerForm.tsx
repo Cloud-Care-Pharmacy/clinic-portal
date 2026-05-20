@@ -28,7 +28,7 @@ export function WebhookTriggerForm({
 
   if (!trigger.token) {
     return (
-      <div className="rounded-md border border-dashed border-border bg-card p-3 text-[11px] text-muted-foreground">
+      <div className="rounded-sm border border-dashed border-border bg-card p-3 text-[11px] text-muted-foreground">
         Save the workflow to generate the link.
       </div>
     );

@@ -141,7 +141,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "my-1.5 flex items-center rounded-lg py-2.5 text-sm transition-all",
+        "my-1.5 flex items-center rounded-sm py-2.5 text-sm transition-all",
         sidebarTransition,
         isActive
           ? "bg-primary text-primary-foreground font-medium"
@@ -211,7 +211,7 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
           sidebarTransition
         )}
       >
-        <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+        <div className="flex size-8  shrink-0 items-center justify-center rounded-sm bg-sidebar-primary text-sidebar-primary-foreground">
           <Pill className="size-4 " />
         </div>
         <div
@@ -250,7 +250,7 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
         <DropdownMenu>
           <DropdownMenuTrigger
             className={cn(
-              "flex w-full items-center rounded-md p-2 text-sm transition-all hover:bg-sidebar-accent/50",
+              "flex w-full items-center rounded-sm p-2 text-sm transition-all hover:bg-sidebar-accent/50",
               sidebarTransition,
               collapsed ? "gap-0" : "gap-3"
             )}
@@ -347,7 +347,7 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Mobile sidebar (Sheet) */}
       <Sheet>
-        <SheetTrigger className="lg:hidden fixed top-3 left-3 z-40 inline-flex items-center justify-center rounded-lg p-2 hover:bg-accent">
+        <SheetTrigger className="lg:hidden fixed top-3 left-3 z-40 inline-flex items-center justify-center rounded-sm p-2 hover:bg-accent">
           <Menu className="size-5 " />
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 bg-sidebar">

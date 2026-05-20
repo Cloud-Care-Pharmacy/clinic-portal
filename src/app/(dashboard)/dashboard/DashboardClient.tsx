@@ -124,7 +124,7 @@ export function DashboardClient({
                 </CardTitle>
                 <Badge
                   variant="outline"
-                  className="gap-1 rounded-full text-xs font-medium bg-white/70 border-foreground/10"
+                  className="gap-1 rounded-sm text-xs font-medium bg-white/70 border-foreground/10"
                 >
                   {stat.trend === "up" ? (
                     <TrendingUp className="size-3 " />

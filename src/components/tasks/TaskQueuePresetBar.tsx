@@ -120,7 +120,7 @@ function PresetButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "inline-flex min-h-11 items-center gap-2 rounded-sm border px-3 text-sm font-medium transition-all duration-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         !active && "border-border bg-popover text-muted-foreground hover:bg-muted",
         active &&
           tone === "warning" &&
@@ -149,7 +149,7 @@ function PresetButton({
           countLoading ? "Loading task count" : `${count} task${count === 1 ? "" : "s"}`
         }
         className={cn(
-          "inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 font-mono text-xs font-semibold tabular-nums",
+          "inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1.5 font-mono text-xs font-semibold tabular-nums",
           !active && "bg-muted text-muted-foreground",
           active && tone === "warning" && "bg-status-warning-fg text-status-warning-bg",
           active && tone === "success" && "bg-status-success-fg text-status-success-bg",
@@ -164,7 +164,7 @@ function PresetButton({
         {countLoading ? (
           <Skeleton
             className={cn(
-              "h-2.5 w-3.5 rounded-full",
+              "h-2.5 w-3.5 rounded-sm",
               !active && "bg-muted-foreground/20",
               active && tone === "primary" && "bg-primary-foreground/50",
               active && tone !== "primary" && "bg-background/45"

@@ -127,7 +127,7 @@ export function IoPane({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex flex-wrap items-center gap-3 border-b border-border/60 px-4 py-3">
         <div
-          className="flex size-7 items-center justify-center rounded-md border"
+          className="flex size-7 items-center justify-center rounded-sm border"
           style={{
             background: config?.bg,
             color: config?.fg,
@@ -247,7 +247,7 @@ function IoSide({
 
       {isError && errorMessage ? (
         <div
-          className="rounded-md border px-3 py-2 text-sm"
+          className="rounded-sm border px-3 py-2 text-sm"
           style={{
             background: "var(--status-danger-bg)",
             color: "var(--status-danger-fg)",
@@ -263,7 +263,7 @@ function IoSide({
       ) : null}
 
       {captureDisabled ? (
-        <div className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-sm border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
           <p>Capture disabled for this step.</p>
           {editHref ? (
             <a
@@ -278,7 +278,7 @@ function IoSide({
         // New path: render directly off `WorkflowRunStep.input` / `.output`
         // returned by the gateway. Server already redacted + capped at 2 KB.
         inlineValue === null ? (
-          <div className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-sm border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
             {row.status === "running" || row.status === "waiting"
               ? "Awaiting capture…"
               : side === "output" && row.status === "success"
@@ -289,14 +289,14 @@ function IoSide({
           <>
             {truncated ? (
               <div
-                className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs"
+                className="flex items-center gap-2 rounded-sm border px-3 py-2 text-xs"
                 style={{
                   background: "var(--status-warning-bg)",
                   color: "var(--status-warning-fg)",
                   borderColor: "var(--status-warning-border)",
                 }}
               >
-                <span className="inline-flex items-center rounded-full bg-background/60 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
+                <span className="inline-flex items-center rounded-sm bg-background/60 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
                   Truncated
                 </span>
                 <span>
@@ -309,7 +309,7 @@ function IoSide({
               </div>
             ) : null}
             {inlineEnvelope ? (
-              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-border/60 bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground">
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-sm border border-border/60 bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground">
                 {inlineEnvelope.preview}
               </pre>
             ) : (
@@ -322,7 +322,7 @@ function IoSide({
           </>
         )
       ) : !row.capture ? (
-        <div className="rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
+        <div className="rounded-sm border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground">
           {row.status === "running" || row.status === "waiting"
             ? "Awaiting capture…"
             : "No capture recorded for this step."}
@@ -331,7 +331,7 @@ function IoSide({
         <>
           {legacyTruncated && captureMode === "summary" ? (
             <div
-              className="rounded-md border px-3 py-2 text-xs"
+              className="rounded-sm border px-3 py-2 text-xs"
               style={{
                 background: "var(--status-warning-bg)",
                 color: "var(--status-warning-fg)",

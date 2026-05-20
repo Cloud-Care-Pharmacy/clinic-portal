@@ -12,7 +12,7 @@ export default function SignUpPage() {
           fontFamily: "Outfit, sans-serif",
         },
         elements: {
-          card: "shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.10)] rounded-2xl bg-white",
+          card: "shadow-[0_0_0_1px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.10)] rounded-sm bg-white",
           socialButtonsBlockButton:
             "border border-border bg-white hover:bg-muted text-foreground font-medium shadow-none h-11",
           socialButtonsBlockButtonText: "font-medium",

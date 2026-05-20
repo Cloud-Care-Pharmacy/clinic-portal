@@ -174,7 +174,7 @@ export function ConsultationsClient({
       />
 
       {error ? (
-        <div className="rounded-lg border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
+        <div className="rounded-sm border border-status-danger-border bg-status-danger-bg p-4 text-status-danger-fg">
           Failed to load consultations: {error.message}
         </div>
       ) : (

@@ -260,7 +260,7 @@ export function WritePrescriptionDialog({
         {rejectedBanner && (
           <div
             role="alert"
-            className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+            className="rounded-sm border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
           >
             This consultation was clinically rejected; no prescription can be issued.
           </div>
@@ -269,7 +269,7 @@ export function WritePrescriptionDialog({
         {meds.map((med, index) => (
           <div
             key={med.id}
-            className="space-y-3 rounded-xl border border-border bg-card p-3"
+            className="space-y-3 rounded-sm border border-border bg-card p-3"
           >
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

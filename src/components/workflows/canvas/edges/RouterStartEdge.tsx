@@ -93,7 +93,7 @@ export function RouterStartEdge({
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${targetX}px, ${branchLabelY}px)`,
           }}
-          className={`nodrag nopan pointer-events-none rounded-md border px-2.5 py-1 text-xs font-semibold shadow-sm ${labelClasses}`}
+          className={`nodrag nopan pointer-events-none rounded-sm border px-2.5 py-1 text-xs font-semibold shadow-sm ${labelClasses}`}
         >
           {ed.branchLabel}
         </div>

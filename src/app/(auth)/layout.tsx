@@ -2,7 +2,7 @@ import { Stethoscope, ShieldCheck, Lock, Server } from "lucide-react";
 
 function Badge({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-3.5 py-2 text-xs font-medium text-white/90 backdrop-blur-sm">
+    <div className="inline-flex items-center gap-2 rounded-sm border border-white/12 bg-white/6 px-3.5 py-2 text-xs font-medium text-white/90 backdrop-blur-sm">
       <span className="text-(--auth-accent)">{icon}</span>
       {label}
     </div>
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Brand */}
         <div className="relative z-10 flex items-center gap-3">
-          <div className="grid size-8  place-items-center rounded-lg bg-(--auth-accent) shadow-[0_4px_14px_var(--auth-accent)/40]">
+          <div className="grid size-8  place-items-center rounded-sm bg-(--auth-accent) shadow-[0_4px_14px_var(--auth-accent)/40]">
             <Stethoscope className="size-4  text-white" />
           </div>
           <span className="text-[17px] font-semibold">

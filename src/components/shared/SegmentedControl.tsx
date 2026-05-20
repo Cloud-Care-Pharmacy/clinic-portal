@@ -32,7 +32,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-lg bg-muted p-1",
+        "inline-flex items-center gap-0.5 rounded-sm bg-muted p-1",
         className
       )}
     >
@@ -47,7 +47,7 @@ export function SegmentedControl<T extends string>({
             aria-label={opt.ariaLabel}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors",
+              "inline-flex items-center justify-center gap-1.5 rounded-sm font-medium transition-colors",
               itemHeight,
               itemPadding,
               text,

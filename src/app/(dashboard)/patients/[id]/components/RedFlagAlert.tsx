@@ -17,7 +17,7 @@ export function RedFlagAlert({ redFlags, onReview }: RedFlagAlertProps) {
   if (!redFlags.hasRedFlag || dismissed) return null;
 
   return (
-    <div className="flex gap-3 items-center rounded-2xl border border-status-danger-border bg-status-danger-bg px-5 py-4 text-status-danger-fg">
+    <div className="flex gap-3 items-center rounded-sm border border-status-danger-border bg-status-danger-bg px-5 py-4 text-status-danger-fg">
       <ShieldAlert className="size-5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-semibold">Practitioner review required</p>
@@ -36,7 +36,7 @@ export function RedFlagAlert({ redFlags, onReview }: RedFlagAlertProps) {
           <Button
             size="sm"
             onClick={onReview}
-            className="h-9 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+            className="h-9 rounded-sm bg-primary px-4 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
           >
             Review now
           </Button>

@@ -352,7 +352,7 @@ export function PatientCommandPalette({
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-foreground/45 supports-backdrop-filter:backdrop-blur-sm duration-150"
-        className="max-h-[min(640px,calc(100vh-80px))] w-[min(720px,calc(100vw-48px))] max-w-none gap-0 overflow-hidden rounded-[18px] border border-border bg-popover p-0 shadow-2xl duration-200 sm:max-w-none"
+        className="max-h-[min(640px,calc(100vh-80px))] w-[min(720px,calc(100vw-48px))] max-w-none gap-0 overflow-hidden rounded-sm border border-border bg-popover p-0 shadow-2xl duration-200 sm:max-w-none"
         onKeyDown={handlePaletteKeyDown}
       >
         <DialogHeader className="sr-only">
@@ -384,7 +384,7 @@ export function PatientCommandPalette({
             <button
               type="button"
               onClick={() => handleQueryChange("")}
-              className="grid size-5.5 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="grid size-5.5 shrink-0 place-items-center rounded-sm bg-muted text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               aria-label="Clear search"
             >
               <X className="size-3.5" aria-hidden="true" />
@@ -403,7 +403,7 @@ export function PatientCommandPalette({
                 type="button"
                 onClick={() => handleScopeChange(searchScope.id)}
                 className={cn(
-                  "inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "inline-flex min-h-8 items-center gap-1.5 rounded-sm px-2.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   active &&
                     "border border-border bg-popover text-foreground shadow-xs hover:bg-popover"
                 )}
@@ -412,7 +412,7 @@ export function PatientCommandPalette({
                 {Icon && <Icon className="size-3.5" aria-hidden="true" />}
                 <span>{searchScope.label}</span>
                 {hasQuery && (
-                  <span className="rounded-full bg-muted px-1.5 py-px font-mono text-[11px] font-medium text-muted-foreground tabular-nums">
+                  <span className="rounded-sm bg-muted px-1.5 py-px font-mono text-[11px] font-medium text-muted-foreground tabular-nums">
                     {counts[searchScope.id]}
                   </span>
                 )}
@@ -668,7 +668,7 @@ function EmptySearchState({
             );
           })
         ) : (
-          <p className="mx-1 rounded-lg border border-dashed border-border bg-background p-3  text-sm text-muted-foreground">
+          <p className="mx-1 rounded-sm border border-dashed border-border bg-background p-3  text-sm text-muted-foreground">
             Open a patient from search and they will appear here.
           </p>
         )}
@@ -701,14 +701,14 @@ function QuickFilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "inline-flex h-8 items-center gap-1.5 rounded-sm border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         quickFilterToneClasses[filter.tone]
       )}
     >
       <Icon className="size-3" aria-hidden="true" />
       <span>{filter.label}</span>
       {filter.count !== undefined && (
-        <span className="rounded-full bg-background/50 px-1.5 font-mono text-[10px] font-semibold tabular-nums">
+        <span className="rounded-sm bg-background/50 px-1.5 font-mono text-[10px] font-semibold tabular-nums">
           {filter.count}
         </span>
       )}
@@ -748,12 +748,12 @@ function QuickActions({
             onFocus={() => onActive(index)}
             onClick={() => onSelect(command)}
             className={cn(
-              "flex min-h-11 min-w-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+              "flex min-h-11 min-w-0 items-center gap-1.5 rounded-sm border border-border bg-background px-2 py-1.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               active && "bg-primary/10 shadow-[inset_2px_0_0_var(--primary)]"
             )}
             title={command.label}
           >
-            <span className="grid size-5.5 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+            <span className="grid size-5.5 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary">
               <Icon className="size-3.5" aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
@@ -857,7 +857,7 @@ function CommandMessage({
   body: string;
 }) {
   return (
-    <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background px-6 py-8 text-center">
+    <div className="flex min-h-40 flex-col items-center justify-center rounded-sm border border-dashed border-border bg-background px-6 py-8 text-center">
       <div className="mb-3 grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
         {icon}
       </div>
@@ -933,7 +933,7 @@ function PatientResultRow({
       onClick={onSelect}
       aria-label={`Open patient profile for ${label}`}
       className={cn(
-        "mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded-[10px] px-3 py-2.5 text-left transition-colors duration-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded-sm px-3 py-2.5 text-left transition-colors duration-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         active &&
           "bg-primary/10 shadow-[inset_2px_0_0_var(--primary)] hover:bg-primary/10"
       )}
@@ -1025,7 +1025,7 @@ function CommandResultRow({
       onFocus={onActive}
       onClick={onSelect}
       className={cn(
-        "mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded-[10px] px-3 py-2.5 text-left transition-colors duration-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        "mx-1 flex w-[calc(100%-0.5rem)] items-center gap-3 rounded-sm px-3 py-2.5 text-left transition-colors duration-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         active &&
           "bg-primary/10 shadow-[inset_2px_0_0_var(--primary)] hover:bg-primary/10"
       )}

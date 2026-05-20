@@ -29,7 +29,7 @@ export default function DashboardLoading() {
                 </CardTitle>
                 <Badge
                   variant="outline"
-                  className="gap-1 rounded-full border-foreground/10 bg-background/70 text-xs font-medium"
+                  className="gap-1 rounded-sm border-foreground/10 bg-background/70 text-xs font-medium"
                 >
                   <TrendingUp className="size-3 " />
                   <Skeleton className="h-3 w-10" />
@@ -78,7 +78,7 @@ function DashboardChartSkeleton() {
       {Array.from({ length: 12 }).map((_, index) => (
         <Skeleton
           key={index}
-          className="flex-1 rounded-t-md"
+          className="flex-1 rounded-t-sm"
           style={{ height: `${64 + ((index * 29) % 180)}px` }}
         />
       ))}

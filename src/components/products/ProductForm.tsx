@@ -354,8 +354,8 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
       onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-5"
     >
-      {/* Pill-style tab navigation — mirrors the product detail view */}
-      <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+      {/* Tab navigation — mirrors the product detail view */}
+      <nav className="inline-flex bg-muted rounded-sm p-1.5">
         {FORM_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
           const errorCount = tabErrorCounts[tab.id];
@@ -366,7 +366,7 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
               onClick={() => setActiveTab(tab.id)}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-sm text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -374,7 +374,7 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
             >
               {tab.label}
               {errorCount > 0 && (
-                <span className="inline-flex items-center justify-center rounded-full px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-destructive text-destructive-foreground">
+                <span className="inline-flex items-center justify-center rounded-sm px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-destructive text-destructive-foreground">
                   {errorCount}
                 </span>
               )}
@@ -560,7 +560,7 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
 
         <label
           htmlFor={`${id}-rx`}
-          className="flex items-start gap-3 rounded-lg border border-border p-3"
+          className="flex items-start gap-3 rounded-sm border border-border p-3"
         >
           <Checkbox
             id={`${id}-rx`}
@@ -720,7 +720,7 @@ export function ProductForm({ id, form, onValidSubmit }: ProductFormProps) {
 
         <label
           htmlFor={`${id}-gst`}
-          className="flex items-start gap-3 rounded-lg border border-border p-3"
+          className="flex items-start gap-3 rounded-sm border border-border p-3"
         >
           <Checkbox
             id={`${id}-gst`}

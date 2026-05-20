@@ -174,7 +174,7 @@ export function Collapsible({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="mb-4 rounded-lg border border-border/60">
+    <div className="mb-4 rounded-sm border border-border/60">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

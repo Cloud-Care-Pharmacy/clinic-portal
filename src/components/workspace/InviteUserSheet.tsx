@@ -135,7 +135,7 @@ export function InviteUserSheet({
     >
       <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {backendUnavailable ? (
-          <div className="rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
+          <div className="rounded-sm border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
             Invitation submission is disabled because the invitation endpoint is not
             currently reachable.
           </div>

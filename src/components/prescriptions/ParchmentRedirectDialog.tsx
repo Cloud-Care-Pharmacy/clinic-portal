@@ -100,7 +100,7 @@ export function ParchmentRedirectDialog({
       <DialogContent showCloseButton={!isLoading} className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
               <SquarePen className="size-5" />
             </div>
             <div className="flex flex-col gap-1">
@@ -121,7 +121,7 @@ export function ParchmentRedirectDialog({
           <div
             role="status"
             aria-live="polite"
-            className="flex flex-col items-center gap-3 rounded-lg border border-border/60 bg-muted/40 px-4 py-6 text-center"
+            className="flex flex-col items-center gap-3 rounded-sm border border-border/60 bg-muted/40 px-4 py-6 text-center"
           >
             <div className="relative flex size-12 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--primary)_12%,transparent)] text-primary">
               <SquarePen className="size-5" />

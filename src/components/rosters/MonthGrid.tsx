@@ -111,7 +111,7 @@ function MonthDayCell({
         <div className="flex flex-wrap items-center gap-1">
           {onShiftCount > 0 && (
             <span
-              className="inline-flex h-4 items-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums"
+              className="inline-flex h-4 items-center rounded-sm px-1.5 text-[10px] font-semibold tabular-nums"
               style={{
                 background: "var(--status-success-bg)",
                 color: "var(--status-success-fg)",
@@ -122,7 +122,7 @@ function MonthDayCell({
           )}
           {onLeaveCount > 0 && (
             <span
-              className="inline-flex h-4 items-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums"
+              className="inline-flex h-4 items-center rounded-sm px-1.5 text-[10px] font-semibold tabular-nums"
               style={{
                 background: "var(--status-danger-bg)",
                 color: "var(--status-danger-fg)",
@@ -139,7 +139,7 @@ function MonthDayCell({
         ))}
         {overflow > 0 && (
           <span
-            className="inline-flex h-[18px] items-center self-start rounded-md px-1.5 text-[10.5px] font-medium"
+            className="inline-flex h-[18px] items-center self-start rounded-sm px-1.5 text-[10.5px] font-medium"
             style={{
               background: "var(--muted)",
               color: "var(--muted-foreground)",
@@ -183,7 +183,7 @@ function PractitionerChip({ entry }: { entry: RosterMonthDayPractitioner }) {
 
   return (
     <span
-      className="inline-flex h-[18px] items-center gap-1.5 self-start truncate rounded-md border px-1.5 text-[10.5px] font-medium tabular-nums"
+      className="inline-flex h-[18px] items-center gap-1.5 self-start truncate rounded-sm border px-1.5 text-[10.5px] font-medium tabular-nums"
       style={{
         background: tone.bg,
         color: tone.fg,

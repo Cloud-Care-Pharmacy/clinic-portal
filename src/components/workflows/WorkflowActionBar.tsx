@@ -110,7 +110,7 @@ export function WorkflowActionBar({
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="pointer-events-auto flex h-11 items-center gap-1 overflow-hidden rounded-full border border-border bg-popover/95 p-1.5 shadow-lg backdrop-blur transition-all duration-200 supports-backdrop-filter:bg-popover/80"
+        className="pointer-events-auto flex h-11 items-center gap-1 overflow-hidden rounded-sm border border-border bg-popover/95 p-1.5 shadow-lg backdrop-blur transition-all duration-200 supports-backdrop-filter:bg-popover/80"
       >
         {/* Expanded-only group: live-runs link + canvas tools + add + save */}
         <div
@@ -121,7 +121,7 @@ export function WorkflowActionBar({
         >
           <Link
             href={`/workflows/${workflowId}/runs`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex h-8 items-center gap-1.5 rounded-sm px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Play className="size-3.5" />
             Live runs
@@ -141,7 +141,7 @@ export function WorkflowActionBar({
             size="sm"
             variant="ghost"
             onClick={onAdd}
-            className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+            className="h-8 gap-1.5 rounded-sm px-3 text-xs font-semibold"
           >
             <Plus className="size-3.5" />
             Add step
@@ -152,7 +152,7 @@ export function WorkflowActionBar({
             size="sm"
             variant="ghost"
             onClick={onAddNote}
-            className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+            className="h-8 gap-1.5 rounded-sm px-3 text-xs font-semibold"
             aria-label="Add note"
             title="Add a sticky note to the canvas"
           >
@@ -166,7 +166,7 @@ export function WorkflowActionBar({
             variant="ghost"
             onClick={onSave}
             disabled={saveDisabled}
-            className="h-8 gap-1.5 rounded-full px-3 text-xs"
+            className="h-8 gap-1.5 rounded-sm px-3 text-xs"
             aria-label="Save draft"
             title="Save draft"
           >
@@ -175,7 +175,7 @@ export function WorkflowActionBar({
           </Button>
         </div>
 
-        <div className="flex h-8 items-center gap-0.5 rounded-full bg-popover p-0.5">
+        <div className="flex h-8 items-center gap-0.5 rounded-sm bg-popover p-0.5">
           <IconButton onClick={handleZoomOut} tooltip="Zoom out">
             <Minus className="size-3.5" />
           </IconButton>
@@ -210,7 +210,7 @@ export function WorkflowActionBar({
           onClick={onTestRun}
           disabled={testRunPending}
           title="Test runs execute the real flow — emails, SMS, and HTTP calls fire. Point the workflow at non-production recipients before running."
-          className="h-8 gap-1.5 rounded-full px-3 text-xs font-semibold"
+          className="h-8 gap-1.5 rounded-sm px-3 text-xs font-semibold"
         >
           <Play className="size-3.5 fill-current" />
           {testRunPending ? "Running\u2026" : "Test run"}
@@ -224,7 +224,7 @@ export function WorkflowActionBar({
           )}
         >
           <Separator orientation="vertical" className="mx-1 h-6" />
-          <div className="flex items-center gap-2 rounded-full px-2.5 py-1">
+          <div className="flex items-center gap-2 rounded-sm px-2.5 py-1">
             <span
               className={cn(
                 "text-xs font-medium",
@@ -246,7 +246,7 @@ export function WorkflowActionBar({
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger
             type="button"
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:border focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:border focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             aria-label="Workflow actions"
             title="Workflow actions"
           >

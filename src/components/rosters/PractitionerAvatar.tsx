@@ -28,7 +28,7 @@ export function PractitionerAvatar({
     <span
       aria-hidden="true"
       className={cn(
-        "inline-grid place-items-center rounded-[10px] font-semibold text-white",
+        "inline-grid place-items-center rounded-sm font-semibold text-white",
         sizeMap[size],
         className
       )}

@@ -209,7 +209,7 @@ export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopover
     <div
       role="listbox"
       ref={listRef}
-      className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-popover p-1 text-sm shadow-md ring-1 ring-foreground/10"
+      className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-sm border border-border bg-popover p-1 text-sm shadow-md ring-1 ring-foreground/10"
       // Prevent blurring the input when clicking inside the picker.
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -241,7 +241,7 @@ export function VarPickerPopover({ inputRef, value, onChange }: VarPickerPopover
               insertLeaf(leaf);
             }}
             className={cn(
-              "flex cursor-pointer flex-col gap-0.5 rounded-md px-2 py-1.5",
+              "flex cursor-pointer flex-col gap-0.5 rounded-sm px-2 py-1.5",
               i === activeIndex && "bg-muted",
               dimmed && "opacity-60",
               (synthetic || leaf.dynamic) && "cursor-not-allowed"

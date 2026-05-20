@@ -136,7 +136,7 @@ export function PrescriptionsTab({
           description="No prescriptions on record yet. Click ‘New prescription’ to write one."
         />
       ) : (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-sm border border-border bg-card overflow-hidden">
           <DataGrid
             rows={prescriptions}
             columns={prescriptionColumns}

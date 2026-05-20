@@ -18,7 +18,7 @@ function StatCell({ icon, tileClass, label, value, subText }: StatCellProps) {
   return (
     <div className="flex flex-1 gap-3 px-5 first:pl-0 last:pr-0 not-last:border-r border-border">
       <div
-        className={`flex size-9  shrink-0 items-center justify-center rounded-[10px] border ${tileClass}`}
+        className={`flex size-9  shrink-0 items-center justify-center rounded-sm border ${tileClass}`}
       >
         {icon}
       </div>

@@ -22,7 +22,7 @@ export function RxQuickPick({ item, onAdd }: RxQuickPickProps) {
       type="button"
       onClick={() => onAdd(item)}
       className={cn(
-        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-border bg-popover px-3 text-xs font-medium text-foreground transition-colors",
+        "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm border border-border bg-popover px-3 text-xs font-medium text-foreground transition-colors",
         "hover:border-primary/40 hover:bg-muted",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       )}
@@ -32,7 +32,7 @@ export function RxQuickPick({ item, onAdd }: RxQuickPickProps) {
       <span>{item.strength}</span>
       <span
         className={cn(
-          "rounded-[4px] border px-1 py-px text-[10px] font-semibold leading-none",
+          "rounded-sm border px-1 py-px text-[10px] font-semibold leading-none",
           scheduleClass
         )}
       >

@@ -324,7 +324,7 @@ function RunListRail({
         <h3 className="text-sm font-semibold">Recent runs</h3>
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Filter runs by version"
           >
             {VERSION_FILTER_LABEL[versionFilter]}
@@ -350,7 +350,7 @@ function RunListRail({
         {loading && runs.length === 0 ? (
           <div className="space-y-2 px-2">
             {["a", "b", "c"].map((slot) => (
-              <Skeleton key={slot} className="h-14 w-full rounded-lg" />
+              <Skeleton key={slot} className="h-14 w-full rounded-sm" />
             ))}
           </div>
         ) : runs.length === 0 ? (
@@ -373,7 +373,7 @@ function RunListRail({
                     type="button"
                     onClick={() => onSelect(r.id)}
                     className={cn(
-                      "flex w-full flex-col gap-1 rounded-md px-3 py-2.5 text-left transition-colors",
+                      "flex w-full flex-col gap-1 rounded-sm px-3 py-2.5 text-left transition-colors",
                       active ? "bg-muted" : "hover:bg-muted/60"
                     )}
                   >
@@ -498,13 +498,13 @@ function RunBanners({ run, now, cancelReason }: RunBannersProps) {
   return (
     <div className="flex flex-col gap-2 px-6 py-3">
       {showError && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="rounded-sm border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <div className="font-semibold">Last error</div>
           <div className="mt-1 font-mono text-xs">{run.lastError}</div>
         </div>
       )}
       {showCancelled && !showError && (
-        <div className="rounded-xl border border-status-neutral-border bg-status-neutral-bg px-4 py-3 text-sm text-status-neutral-fg">
+        <div className="rounded-sm border border-status-neutral-border bg-status-neutral-bg px-4 py-3 text-sm text-status-neutral-fg">
           <div className="font-semibold">Run cancelled</div>
           <div className="mt-1 text-xs">
             {cancelReason
@@ -514,7 +514,7 @@ function RunBanners({ run, now, cancelReason }: RunBannersProps) {
         </div>
       )}
       {showWaiting && (
-        <div className="rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
+        <div className="rounded-sm border border-status-warning-border bg-status-warning-bg px-4 py-3 text-xs text-status-warning-fg">
           {run.nextStepAt && (
             <>
               {isOverdue(run.nextStepAt) ? (
@@ -599,7 +599,7 @@ function StepTraceHeader({
       {run && <StatusBadge status={run.status} dot className="capitalize" />}
       {showVersionChip && (
         <span
-          className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-status-warning-fg"
+          className="inline-flex items-center gap-1 rounded-sm border border-status-warning-border bg-status-warning-bg px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-status-warning-fg"
           title={`This run is pinned to v${run!.definitionVersion}; current is v${definitionVersion}.`}
         >
           Running on v{run!.definitionVersion} (current is v{definitionVersion})
@@ -607,7 +607,7 @@ function StepTraceHeader({
       )}
       {unknownVersion && (
         <span
-          className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-destructive"
+          className="inline-flex items-center gap-1 rounded-sm border border-destructive/30 bg-destructive/10 px-2 py-px text-[10px] font-semibold uppercase tracking-wider text-destructive"
           title={`Run reports v${run!.definitionVersion} but current is only v${definitionVersion}. Possible definition rollback or stale cache.`}
         >
           v? (unknown, current is v{definitionVersion})
@@ -615,7 +615,7 @@ function StepTraceHeader({
       )}
       {isLive && (
         <span
-          className="inline-flex items-center gap-1 rounded-full border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
+          className="inline-flex items-center gap-1 rounded-sm border border-status-warning-border bg-status-warning-bg px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-status-warning-fg"
           aria-label="Live stream connected"
           title="Streaming live updates"
         >

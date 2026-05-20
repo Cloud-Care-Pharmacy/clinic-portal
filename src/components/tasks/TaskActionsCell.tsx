@@ -80,7 +80,7 @@ export function TaskActionsCell({
             <Button
               size="sm"
               variant="outline"
-              className="h-11 rounded-full px-3"
+              className="h-11 rounded-sm px-3"
               disabled={pending}
               onClick={() => onClaimTask(task)}
             >
@@ -92,7 +92,7 @@ export function TaskActionsCell({
             <Button
               size="icon-sm"
               variant="outline"
-              className="size-11 rounded-full"
+              className="size-11 rounded-sm"
               disabled={pending}
               onClick={() => onManualLogTask(task)}
               aria-label="Log call outcome manually"
@@ -117,7 +117,7 @@ export function TaskActionsCell({
           {onCallTask && (
             <Button
               size="sm"
-              className="h-11 rounded-full px-3"
+              className="h-11 rounded-sm px-3"
               disabled={pending}
               onClick={() => onCallTask(task)}
             >
@@ -129,7 +129,7 @@ export function TaskActionsCell({
             <Button
               size="icon-sm"
               variant="outline"
-              className="size-11 rounded-full"
+              className="size-11 rounded-sm"
               disabled={pending}
               onClick={() => onManualLogTask(task)}
               aria-label="Log call outcome manually"
@@ -146,7 +146,7 @@ export function TaskActionsCell({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex size-11 items-center justify-center rounded-md transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="inline-flex size-11 items-center justify-center rounded-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         onClick={(event) => event.stopPropagation()}
         aria-label="Open task actions"
       >

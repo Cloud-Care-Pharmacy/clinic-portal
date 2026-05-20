@@ -14,7 +14,7 @@ export function StickyFormBar({ isDirty, isPending, onDiscard }: StickyFormBarPr
 
   return (
     <div
-      className="sticky bottom-4 z-10 flex items-center justify-between rounded-xl border bg-background px-4 py-3"
+      className="sticky bottom-4 z-10 flex items-center justify-between rounded-sm border bg-background px-4 py-3"
       style={{ boxShadow: "0 10px 30px -10px rgba(0,0,0,.15)" }}
     >
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

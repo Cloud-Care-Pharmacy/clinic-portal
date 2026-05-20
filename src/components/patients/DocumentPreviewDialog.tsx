@@ -115,7 +115,7 @@ export function DocumentPreviewDialog({
 
         <div
           className={cn(
-            "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted/30"
+            "relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted/30"
           )}
         >
           {loading && (

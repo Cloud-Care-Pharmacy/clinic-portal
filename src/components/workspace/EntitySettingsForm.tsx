@@ -156,7 +156,7 @@ export function EntitySettingsForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       {backendUnavailable ? (
-        <div className="rounded-lg border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
+        <div className="rounded-sm border border-status-warning-border bg-status-warning-bg px-3 py-2 text-sm text-status-warning-fg">
           Entity settings are shown read-only because the settings endpoint is not
           currently reachable.
         </div>

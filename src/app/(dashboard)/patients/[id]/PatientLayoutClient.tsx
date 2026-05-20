@@ -152,9 +152,9 @@ export default function PatientLayoutClient({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-40 w-full rounded-2xl" />
-        <Skeleton className="h-13 w-96 rounded-[14px]" />
-        <Skeleton className="h-64 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-sm" />
+        <Skeleton className="h-13 w-96 rounded-sm" />
+        <Skeleton className="h-64 w-full rounded-sm" />
       </div>
     );
   }
@@ -172,8 +172,8 @@ export default function PatientLayoutClient({
         {/* Red-flag alert — separate banner between header and tabs */}
         {redFlags?.hasRedFlag && <RedFlagAlert redFlags={redFlags} />}
 
-        {/* Pill-style tab navigation */}
-        <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+        {/* Tab navigation */}
+        <nav className="inline-flex bg-muted rounded-sm p-1.5">
           {TABS.map((tab) => {
             const href = tab.segment ? `${basePath}/${tab.segment}` : basePath;
             const isActive = activeSegment === tab.segment;
@@ -187,7 +187,7 @@ export default function PatientLayoutClient({
                 prefetch={false}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                  "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-sm text-sm font-medium whitespace-nowrap transition-colors",
                   isActive
                     ? "bg-card text-foreground shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
@@ -195,7 +195,7 @@ export default function PatientLayoutClient({
               >
                 {tab.label}
                 {count != null && count > 0 && (
-                  <span className="inline-flex items-center justify-center rounded-full px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
+                  <span className="inline-flex items-center justify-center rounded-sm px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
                     {count}
                   </span>
                 )}

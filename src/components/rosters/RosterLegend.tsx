@@ -37,7 +37,7 @@ export function RosterLegend({ className }: { className?: string }) {
         <span key={s.label} className="inline-flex items-center gap-1.5">
           <span
             aria-hidden="true"
-            className="inline-block size-2.5  rounded-[3px] border"
+            className="inline-block size-2.5  rounded-sm border"
             style={{ background: s.bg, borderColor: s.border }}
           />
           {s.label}

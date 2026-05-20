@@ -123,7 +123,7 @@ export const PatientHeader = memo(
 
     return (
       <>
-        <div className="rounded-2xl border border-border/60 bg-card p-5">
+        <div className="rounded-sm border border-border/60 bg-card p-5">
           {/* Identity row */}
           <div className="flex items-start gap-4">
             {/* Avatar — 56×56 */}
@@ -160,7 +160,7 @@ export const PatientHeader = memo(
                 {pmsId && (
                   <button
                     onClick={() => copyToClipboard(pmsId)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-md bg-muted px-3 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-sm bg-muted px-3 font-mono text-xs font-medium text-foreground transition-colors hover:bg-accent"
                   >
                     #{pmsId}
                     <Copy className="size-3.5 text-muted-foreground" />
@@ -190,7 +190,7 @@ export const PatientHeader = memo(
                     render={
                       <Button
                         size="sm"
-                        className="h-9 gap-2 rounded-lg bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
+                        className="h-9 gap-2 rounded-sm bg-primary px-3.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90"
                       >
                         <Zap className="size-3.5" />
                         Actions

@@ -117,7 +117,7 @@ export function TimelineColumn({
               )}
             >
               <div
-                className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md border"
+                className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-sm border"
                 style={{
                   background: config?.bg,
                   color: config?.fg,

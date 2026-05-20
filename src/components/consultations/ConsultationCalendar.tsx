@@ -59,7 +59,7 @@ function EventChip({
     <button
       onClick={onClick}
       className={cn(
-        "group w-full text-left rounded-md border-l-4 pl-2 pr-1.5 py-1 transition-colors hover:brightness-95",
+        "group w-full text-left rounded-sm border-l-4 pl-2 pr-1.5 py-1 transition-colors hover:brightness-95",
         style.bg,
         style.border,
         STATUS_OPACITY[consultation.status]
@@ -151,7 +151,7 @@ function MonthView({
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-sm overflow-hidden">
       {/* Header */}
       <div className="grid grid-cols-7 bg-muted">
         {days.map((d) => (
@@ -237,7 +237,7 @@ function WeekView({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-sm overflow-hidden">
       <div className="grid grid-cols-7">
         {weekDays.map((day) => {
           const dateStr = localDateKey(day);
@@ -448,7 +448,7 @@ function DayView({
     );
 
   return (
-    <div className="rounded-lg border p-3">
+    <div className="rounded-sm border p-3">
       {dayConsultations.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
           No consultations scheduled.

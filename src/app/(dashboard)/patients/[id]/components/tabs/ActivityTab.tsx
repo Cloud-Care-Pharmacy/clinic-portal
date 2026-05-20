@@ -111,7 +111,7 @@ function ActivityRow({ event }: { event: PatientActivityEvent }) {
     <div className="flex gap-3 border-b border-border p-4  last:border-b-0">
       <div
         className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-[10px] border",
+          "flex size-9 shrink-0 items-center justify-center rounded-sm border",
           EVENT_TILE_CLASSES[event.category]
         )}
       >
@@ -162,7 +162,7 @@ export function ActivityTab({ patientId, initialActivity }: ActivityTabProps) {
             key={opt.value}
             variant={filter === opt.value ? "default" : "outline"}
             size="sm"
-            className="min-h-11 rounded-full px-4 text-sm"
+            className="min-h-11 rounded-sm px-4 text-sm"
             onClick={() => setFilter(opt.value)}
           >
             {opt.label}
@@ -171,17 +171,17 @@ export function ActivityTab({ patientId, initialActivity }: ActivityTabProps) {
       </div>
 
       {errors.length > 0 && (
-        <div className="rounded-xl border border-status-warning-border bg-status-warning-bg px-4 py-3 text-sm text-status-warning-fg">
+        <div className="rounded-sm border border-status-warning-border bg-status-warning-bg px-4 py-3 text-sm text-status-warning-fg">
           Patient activity could not be loaded. Try refreshing this page.
         </div>
       )}
 
       {isLoading ? (
-        <div className="rounded-xl border border-border bg-card p-4">
+        <div className="rounded-sm border border-border bg-card p-4">
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex gap-3">
-                <Skeleton className="size-9 rounded-[10px]" />
+                <Skeleton className="size-9 rounded-sm" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-2/5" />
                   <Skeleton className="h-3 w-4/5" />
@@ -199,7 +199,7 @@ export function ActivityTab({ patientId, initialActivity }: ActivityTabProps) {
           dashed
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="overflow-hidden rounded-sm border border-border bg-card">
           {filteredEvents.map((event) => (
             <ActivityRow key={event.id} event={event} />
           ))}

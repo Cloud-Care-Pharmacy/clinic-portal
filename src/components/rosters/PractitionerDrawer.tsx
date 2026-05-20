@@ -90,7 +90,7 @@ export function PractitionerDrawer({
             <PractitionerAvatar practitionerId={displayed.id} name={displayed.name} size="lg" />
             {displayed.isMe && (
               <span
-                className="inline-block rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em]"
+                className="inline-block rounded-sm px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em]"
                 style={{
                   background: "var(--primary)",
                   color: "var(--primary-foreground)",
@@ -103,7 +103,7 @@ export function PractitionerDrawer({
 
           <Section title="This week">
             <div
-              className="overflow-hidden rounded-xl border"
+              className="overflow-hidden rounded-sm border"
               style={{ borderColor: "var(--border)" }}
             >
               <div className="grid" style={{ gridTemplateColumns: "80px 1fr 110px" }}>
@@ -158,7 +158,7 @@ export function PractitionerDrawer({
                   {todayShift.consultations!.map((c) => (
                     <li
                       key={c.id}
-                      className="flex items-center gap-2.5 rounded-[10px] border px-3 py-2.5"
+                      className="flex items-center gap-2.5 rounded-sm border px-3 py-2.5"
                       style={{
                         borderColor:
                           c.status === "in_progress"

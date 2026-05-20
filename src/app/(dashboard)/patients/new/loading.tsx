@@ -18,8 +18,8 @@ export default function NewPatientLoading() {
             </div>
           ))}
           <div className="flex justify-end gap-2 pt-2">
-            <Skeleton className="h-9 w-24 rounded-lg" />
-            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-24 rounded-sm" />
+            <Skeleton className="h-9 w-24 rounded-sm" />
           </div>
         </CardContent>
       </Card>

@@ -321,7 +321,7 @@ function IntakeFormSheet({
               </div>
 
               {isApproved ? (
-                <div className="space-y-2 rounded-lg border bg-muted/30 p-4 text-sm">
+                <div className="space-y-2 rounded-sm border bg-muted/30 p-4 text-sm">
                   <p>
                     <span className="text-muted-foreground">Approved by:</span>{" "}
                     <span className="font-medium">{record.reviewedBy ?? "—"}</span>
@@ -338,13 +338,13 @@ function IntakeFormSheet({
                     </p>
                   )}
                   {record.reviewNotes && (
-                    <div className="mt-2 rounded-md border bg-background p-3 whitespace-pre-wrap">
+                    <div className="mt-2 rounded-sm border bg-background p-3 whitespace-pre-wrap">
                       {record.reviewNotes}
                     </div>
                   )}
                 </div>
               ) : canApprove ? (
-                <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                <div className="space-y-3 rounded-sm border bg-muted/30 p-4">
                   <p className="text-xs text-muted-foreground">
                     Review the submission above and approve when ready. You can leave an
                     optional comment for the record.
@@ -369,7 +369,7 @@ function IntakeFormSheet({
                   </div>
                 </div>
               ) : (
-                <p className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                <p className="rounded-sm border bg-muted/30 p-4 text-sm text-muted-foreground">
                   This submission is awaiting review by a practitioner.
                 </p>
               )}
@@ -482,7 +482,7 @@ export function ClinicalHistoryTab({
 
   return (
     <>
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
         <DataGrid
           rows={records}
           columns={historyColumns}

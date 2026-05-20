@@ -35,7 +35,7 @@ export function RxFlagToggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-7 items-center gap-1.5 rounded-sm border px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-60",
         checked
           ? activeTone
           : "border-border bg-popover text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -43,7 +43,7 @@ export function RxFlagToggle({
     >
       <span
         className={cn(
-          "flex size-3.5 items-center justify-center rounded-[3px] border",
+          "flex size-3.5 items-center justify-center rounded-sm border",
           checked
             ? tone === "warning"
               ? "border-status-warning-fg/60 bg-status-warning-fg/10"

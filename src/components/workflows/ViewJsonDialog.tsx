@@ -39,7 +39,7 @@ export function ViewJsonDialog({ open, onOpenChange, data }: ViewJsonDialogProps
             Read-only export of the saved workflow record.
           </DialogDescription>
         </DialogHeader>
-        <pre className="max-h-[60vh] overflow-auto rounded-lg border border-border bg-card p-3 font-mono text-xs">
+        <pre className="max-h-[60vh] overflow-auto rounded-sm border border-border bg-card p-3 font-mono text-xs">
           {json}
         </pre>
         <DialogFooter>

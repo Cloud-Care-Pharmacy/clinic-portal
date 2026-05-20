@@ -40,7 +40,7 @@ export function JsonTreeViewer({
     return (
       <div
         className={cn(
-          "rounded-md border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground",
+          "rounded-sm border border-dashed border-border/60 bg-muted/30 px-3 py-6 text-center text-sm text-muted-foreground",
           className
         )}
       >
@@ -61,7 +61,7 @@ export function JsonTreeViewer({
 
   return (
     <div
-      className={cn("relative rounded-md border border-border/60 bg-card", className)}
+      className={cn("relative rounded-sm border border-border/60 bg-card", className)}
     >
       <div className="flex items-center justify-between border-b border-border/60 px-3 py-1.5">
         <span className="text-xs font-medium text-muted-foreground">

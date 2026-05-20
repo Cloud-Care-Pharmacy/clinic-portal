@@ -162,7 +162,7 @@ function RouterBranchEditor({
   const isUnary = condition ? isUnaryBranchOp(condition.op) : false;
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/30 p-3">
+    <div className="flex flex-col gap-2 rounded-sm border border-border/60 bg-muted/30 p-3">
       <div className="flex items-start gap-2">
         <div className="flex-1">
           <Field label={`Branch ${index + 1} name`} error={error}>
@@ -308,7 +308,7 @@ function FallbackEditor({ fallback, onToggle, onRename }: FallbackEditorProps) {
     );
   }
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-dashed border-border/60 bg-muted/20 p-3">
+    <div className="flex flex-col gap-2 rounded-sm border border-dashed border-border/60 bg-muted/20 p-3">
       <div className="flex items-start gap-2">
         <div className="flex-1">
           <Field label="Fallback branch" hint="Runs when no branch condition matches.">

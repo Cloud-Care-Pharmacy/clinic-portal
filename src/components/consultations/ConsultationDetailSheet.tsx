@@ -80,7 +80,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
         {icon}
       </div>
       <div>
@@ -187,7 +187,7 @@ export function ConsultationDetailSheet({
     <div className="flex w-full items-center justify-between gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           disabled={isPending}
           aria-label="More actions"
         >
@@ -296,7 +296,7 @@ export function ConsultationDetailSheet({
             {isRejected && isCompleted && (
               <div
                 role="alert"
-                className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+                className="rounded-sm border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
               >
                 This consultation was clinically rejected; no prescription can be
                 issued.
@@ -392,7 +392,7 @@ export function ConsultationDetailSheet({
                   No prescriptions on record for this patient.
                 </p>
               ) : (
-                <ul className="space-y-1 rounded-md border bg-muted/30 p-2 text-sm">
+                <ul className="space-y-1 rounded-sm border bg-muted/30 p-2 text-sm">
                   {recentPrescriptions.map((rx) => (
                     <li key={rx.id} className="flex items-center justify-between gap-2">
                       <span className="truncate">

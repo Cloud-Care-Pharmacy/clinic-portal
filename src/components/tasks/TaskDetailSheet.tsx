@@ -78,7 +78,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex size-8  shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <div className="flex size-8  shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground">
         {icon}
       </div>
       <div className="min-w-0">
@@ -110,7 +110,7 @@ function TaskHistory({
           <ClipboardCheck className="size-4  text-muted-foreground" />
           <p className="text-sm font-medium">Task history</p>
         </div>
-        <div className="rounded-md border bg-muted/30 p-2 text-sm">
+        <div className="rounded-sm border bg-muted/30 p-2 text-sm">
           {loading ? (
             <div className="space-y-2" aria-label="Loading task history">
               <Skeleton className="size-4 /5" />
@@ -324,7 +324,7 @@ export function TaskDetailSheet({
           <div className="flex w-full items-center justify-between gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
                 disabled={isPending}
                 aria-label="More actions"
               >

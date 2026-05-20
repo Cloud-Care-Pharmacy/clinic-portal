@@ -289,7 +289,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
         {signature && (
           <div className="space-y-2">
             <p className="text-sm font-medium">Current signature</p>
-            <div className="inline-flex items-center justify-center rounded-md border bg-muted/40 p-3">
+            <div className="inline-flex items-center justify-center rounded-sm border bg-muted/40 p-3">
               {/* eslint-disable-next-line @next/next/no-img-element -- auth-gated signature stream */}
               <img
                 src={toProxyUrl(signature.assetUrl)}
@@ -322,10 +322,10 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
             </TabsList>
 
             <TabsContent value="draw" className="space-y-3">
-              <div className="inline-block rounded-md border bg-white">
+              <div className="inline-block rounded-sm border bg-white">
                 <canvas
                   ref={canvasRef}
-                  className="block rounded-md touch-none"
+                  className="block rounded-sm touch-none"
                   aria-label="Signature pad"
                 />
               </div>
@@ -355,7 +355,7 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
             </TabsContent>
 
             <TabsContent value="upload" className="space-y-3">
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed bg-muted/30 px-4 py-8 text-center hover:bg-muted/50">
+              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-sm border border-dashed bg-muted/30 px-4 py-8 text-center hover:bg-muted/50">
                 <Upload className="size-5 text-muted-foreground" />
                 <span className="text-sm font-medium">
                   Upload a PNG, JPEG, or SVG (transparent background recommended)
@@ -378,9 +378,9 @@ export function PrescriberSignatureCard({ signature }: PrescriberSignatureCardPr
 
         {/* Pending preview + save */}
         {pendingPreview && (
-          <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-3">
+          <div className="space-y-2 rounded-sm border border-primary/40 bg-primary/5 p-3">
             <p className="text-sm font-medium">Preview</p>
-            <div className="inline-flex items-center justify-center rounded-md border bg-white p-3">
+            <div className="inline-flex items-center justify-center rounded-sm border bg-white p-3">
               {/* eslint-disable-next-line @next/next/no-img-element -- local data URL preview */}
               <img
                 src={pendingPreview.dataUrl}

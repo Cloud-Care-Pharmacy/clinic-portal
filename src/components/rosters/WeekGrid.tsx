@@ -178,7 +178,7 @@ function PractitionerRow({ practitioner, todayIndex, isSelected, onSelect }: Pra
             </span>
             {isMe && (
               <span
-                className="inline-block rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em]"
+                className="inline-block rounded-sm px-1.5 py-px text-[10px] font-semibold uppercase tracking-[0.04em]"
                 style={{
                   background: "var(--primary)",
                   color: "var(--primary-foreground)",
@@ -283,7 +283,7 @@ function ShiftBlock({ shift }: { shift: Shift }) {
   if (shift.kind === "leave") {
     return (
       <div
-        className="flex flex-1 flex-col gap-0.5 rounded-[10px] border px-2.5 py-2"
+        className="flex flex-1 flex-col gap-0.5 rounded-sm border px-2.5 py-2"
         style={{
           background: "var(--status-danger-bg)",
           color: "var(--status-danger-fg)",
@@ -311,7 +311,7 @@ function ShiftBlock({ shift }: { shift: Shift }) {
 
   return (
     <div
-      className="relative flex flex-1 flex-col gap-0.5 overflow-hidden rounded-[10px] border px-2.5 py-2"
+      className="relative flex flex-1 flex-col gap-0.5 overflow-hidden rounded-sm border px-2.5 py-2"
       style={{ background: tokenBg, color: tokenFg, borderColor: tokenBorder }}
     >
       {isBusy && (

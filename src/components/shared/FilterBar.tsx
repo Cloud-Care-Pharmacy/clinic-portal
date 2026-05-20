@@ -137,7 +137,7 @@ function FilterPill({ filter }: { filter: FilterDefinition }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
+          "inline-flex items-center gap-1.5 rounded-sm border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
           value.length > 0 ? "border-primary/50 bg-primary/5" : "border-border"
         )}
       >
@@ -146,7 +146,7 @@ function FilterPill({ filter }: { filter: FilterDefinition }) {
         {value.length > 0 && (
           <Badge
             variant="outline"
-            className="ml-1 rounded-md px-1.5 py-0 text-xs font-normal bg-primary/10 border-primary/20"
+            className="ml-1 rounded-sm px-1.5 py-0 text-xs font-normal bg-primary/10 border-primary/20"
           >
             {value.length}
           </Badge>

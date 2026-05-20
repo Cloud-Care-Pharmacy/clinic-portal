@@ -32,7 +32,7 @@ export function MeModeToggle({
       disabled={disabled}
       onClick={() => onToggle(!active)}
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-full border px-2.5 pr-3 text-sm font-medium transition-colors",
+        "inline-flex h-9 items-center gap-2 rounded-sm border px-2.5 pr-3 text-sm font-medium transition-colors",
         "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         "disabled:cursor-not-allowed disabled:opacity-50",
         active

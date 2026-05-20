@@ -79,7 +79,7 @@ export function SimpleEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border border-input bg-background">
+    <div className="rounded-sm border border-input bg-background">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 border-b p-1 ">
         <ToolbarButton

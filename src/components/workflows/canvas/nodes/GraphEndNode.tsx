@@ -21,7 +21,7 @@ export function GraphEndNode({ data }: NodeProps) {
           style={{
             transform: "translate(-50%, 8px)",
           }}
-          className="pointer-events-none absolute left-0 top-0 inline-flex items-center gap-1 rounded-md border border-border bg-popover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shadow-sm"
+          className="pointer-events-none absolute left-0 top-0 inline-flex items-center gap-1 rounded-sm border border-border bg-popover px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground shadow-sm"
         >
           <Flag className="size-2.5" />
           End

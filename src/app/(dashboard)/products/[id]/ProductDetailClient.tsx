@@ -235,7 +235,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
     <div className="flex items-center gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           aria-label="More actions"
         >
           <MoreHorizontal className="size-4" aria-hidden="true" />
@@ -343,7 +343,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
       </div>
 
       {isEditing ? (
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-sm border border-border bg-card p-6">
           <ProductForm
             id={formId}
             form={form}
@@ -356,8 +356,8 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
         </div>
       ) : (
         <>
-          {/* Pill-style tab navigation */}
-          <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+          {/* Tab navigation */}
+          <nav className="inline-flex bg-muted rounded-sm p-1.5">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               const count = tabCounts[tab.id];
@@ -368,7 +368,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                   onClick={() => setActiveTab(tab.id)}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                    "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-sm text-sm font-medium whitespace-nowrap transition-colors",
                     isActive
                       ? "bg-card text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -376,7 +376,7 @@ export function ProductDetailClient({ productId }: ProductDetailClientProps) {
                 >
                   {tab.label}
                   {count != null && count > 0 && (
-                    <span className="inline-flex items-center justify-center rounded-full px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
+                    <span className="inline-flex items-center justify-center rounded-sm px-1.5 text-[11px] font-semibold min-w-5 h-5 bg-[color-mix(in_srgb,currentColor_12%,transparent)]">
                       {count}
                     </span>
                   )}
@@ -442,7 +442,7 @@ function OverviewTab({
           {warnings.map((w) => (
             <div
               key={w.text}
-              className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
+              className={`flex items-start gap-2 rounded-sm border px-3 py-2 text-sm ${
                 w.tone === "danger"
                   ? "border-status-danger-border bg-status-danger-bg text-status-danger-fg"
                   : "border-status-warning-border bg-status-warning-bg text-status-warning-fg"
@@ -455,7 +455,7 @@ function OverviewTab({
         </div>
       )}
 
-      <section className="space-y-3 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-3 rounded-sm border border-border bg-card p-6">
         <div className="flex flex-wrap gap-2">
           <Badge variant="outline">{PRODUCT_CATEGORY_LABELS[product.category]}</Badge>
           <Badge variant="outline">{PRODUCT_FORM_LABELS[product.form]}</Badge>
@@ -510,7 +510,7 @@ function OverviewTab({
 
 function SummaryStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-sm border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
@@ -524,7 +524,7 @@ function SummaryStat({ label, value }: { label: string; value: string }) {
 function DetailsTab({ product }: { product: Product }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Identification</h2>
         <div className="grid grid-cols-2 gap-4">
           <DetailRow label="Name">{product.name}</DetailRow>
@@ -542,7 +542,7 @@ function DetailsTab({ product }: { product: Product }) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Codes & regulatory</h2>
         <div className="grid grid-cols-2 gap-4">
           <DetailRow label="SKU">{product.sku}</DetailRow>
@@ -561,7 +561,7 @@ function DetailsTab({ product }: { product: Product }) {
       </section>
 
       {product.description && (
-        <section className="space-y-2 rounded-xl border border-border bg-card p-6 lg:col-span-2">
+        <section className="space-y-2 rounded-sm border border-border bg-card p-6 lg:col-span-2">
           <h2 className="text-sm font-semibold text-foreground">Description</h2>
           <p className="text-sm text-muted-foreground whitespace-pre-line">
             {product.description}
@@ -593,7 +593,7 @@ function StockTab({ product }: { product: Product }) {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Inventory levels</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <DetailRow label="In stock">
@@ -628,7 +628,7 @@ function StockTab({ product }: { product: Product }) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Adjust stock</h2>
           {isControlled && (
@@ -663,7 +663,7 @@ function StockTab({ product }: { product: Product }) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Storage & expiry</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DetailRow label="Storage requirement">
@@ -690,7 +690,7 @@ function StockTab({ product }: { product: Product }) {
           </DetailRow>
         </div>
         {product.schedule === "S8" && product.storage !== "controlled" && (
-          <div className="flex items-start gap-2 rounded-lg border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">
+          <div className="flex items-start gap-2 rounded-sm border border-status-danger-border bg-status-danger-bg px-3 py-2 text-sm text-status-danger-fg">
             <AlertTriangle className="size-4 mt-0.5 shrink-0" aria-hidden="true" />
             <span>S8 controlled drug must be stored in a controlled-drug safe.</span>
           </div>
@@ -712,7 +712,7 @@ function PricingTab({ product }: { product: Product }) {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Prices</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <DetailRow label="Cost price">
@@ -728,7 +728,7 @@ function PricingTab({ product }: { product: Product }) {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-4 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Tax & PBS</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DetailRow label="GST">
@@ -747,7 +747,7 @@ function PricingTab({ product }: { product: Product }) {
 function ActivityTab({ product }: { product: Product }) {
   return (
     <div className="space-y-6">
-      <section className="space-y-3 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-3 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Metadata</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 text-sm">
           <DetailRow label="Created">
@@ -762,7 +762,7 @@ function ActivityTab({ product }: { product: Product }) {
         </div>
       </section>
 
-      <section className="space-y-3 rounded-xl border border-border bg-card p-6">
+      <section className="space-y-3 rounded-sm border border-border bg-card p-6">
         <h2 className="text-sm font-semibold text-foreground">Activity history</h2>
         <EmptyState
           icon={Package}

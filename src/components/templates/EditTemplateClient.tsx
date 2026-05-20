@@ -44,7 +44,7 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
           title="Loading template…"
           breadcrumbs={[{ label: "Templates", href: "/templates" }, { label: "Edit" }]}
         />
-        <div className="h-64 animate-pulse rounded-md border border-border bg-muted/30" />
+        <div className="h-64 animate-pulse rounded-sm border border-border bg-muted/30" />
       </div>
     );
   }
@@ -83,15 +83,15 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
           { label: template.name },
         ]}
         actions={
-          <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-2 rounded-sm border border-border px-3 py-1 text-xs text-muted-foreground">
             <TypeIcon className="size-3.5" />
             {TYPE_LABEL[template.type]}
           </span>
         }
       />
 
-      {/* Pill-style tab navigation */}
-      <nav className="inline-flex bg-muted rounded-[14px] p-1.5">
+      {/* Tab navigation */}
+      <nav className="inline-flex bg-muted rounded-sm p-1.5">
         {TABS.map((tab) => {
           const isActive = activeSection === tab.value;
           return (
@@ -101,7 +101,7 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
               onClick={() => setActiveSection(tab.value)}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-[10px] text-sm font-medium whitespace-nowrap transition-colors",
+                "inline-flex items-center justify-center gap-1.5 h-10 px-4.5 rounded-sm text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
                   ? "bg-card text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -113,7 +113,7 @@ export function EditTemplateClient({ id }: EditTemplateClientProps) {
         })}
       </nav>
 
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="rounded-sm border border-border bg-card p-4">
         <TemplateForm
           template={template}
           surface="page"

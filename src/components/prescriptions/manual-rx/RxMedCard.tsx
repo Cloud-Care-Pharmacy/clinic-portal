@@ -31,7 +31,7 @@ const SUB_LABEL_CLASS =
   "text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground";
 
 const INPUT_CLASS =
-  "h-9 rounded-lg border-border bg-background text-[13px] focus-visible:border-primary";
+  "h-9 rounded-sm border-border bg-background text-[13px] focus-visible:border-primary";
 
 /**
  * Single medication row. Renders a compact summary by default; expands inline
@@ -114,7 +114,7 @@ export function RxMedCard({
             type="button"
             onClick={onOpen}
             aria-label="Edit medication"
-            className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
           >
             <Pencil className="size-3.5" />
           </button>
@@ -126,7 +126,7 @@ export function RxMedCard({
             onRemove();
           }}
           aria-label="Remove medication"
-          className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <Trash2 className="size-3.5" />
         </button>
@@ -137,7 +137,7 @@ export function RxMedCard({
   return (
     <div
       className={cn(
-        "rounded-[10px] border bg-popover transition-colors",
+        "rounded-sm border bg-popover transition-colors",
         editing
           ? "border-primary/45 shadow-[0_0_0_3px_color-mix(in_srgb,var(--primary)_12%,transparent)]"
           : "border-border hover:bg-muted/40"
@@ -216,7 +216,7 @@ export function RxMedCard({
                 value={med.sig}
                 onChange={(event) => onChange({ ...med, sig: event.target.value })}
                 placeholder="Patient instructions"
-                className="min-h-[60px] resize-y rounded-lg border-border bg-background text-[13px] leading-snug focus-visible:border-primary"
+                className="min-h-[60px] resize-y rounded-sm border-border bg-background text-[13px] leading-snug focus-visible:border-primary"
                 aria-invalid={!med.sig.trim()}
               />
             </Field>
@@ -231,7 +231,7 @@ export function RxMedCard({
                       sig: appendSig(med.sig, phrase),
                     })
                   }
-                  className="inline-flex h-7 items-center rounded-full border border-border bg-popover px-2.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                  className="inline-flex h-7 items-center rounded-sm border border-border bg-popover px-2.5 text-[11.5px] font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
                 >
                   + {phrase}
                 </button>
@@ -314,7 +314,7 @@ export function RxMedCard({
               variant="ghost"
               size="sm"
               onClick={onRemove}
-              className="h-8 rounded-full px-3 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              className="h-8 rounded-sm px-3 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
             >
               <Trash2 className="size-3.5" />
               Remove
@@ -325,7 +325,7 @@ export function RxMedCard({
                 variant="outline"
                 size="sm"
                 onClick={onClose}
-                className="h-8 rounded-full px-3 text-xs font-medium"
+                className="h-8 rounded-sm px-3 text-xs font-medium"
               >
                 Cancel
               </Button>
@@ -333,7 +333,7 @@ export function RxMedCard({
                 type="button"
                 size="sm"
                 onClick={onClose}
-                className="h-8 rounded-full px-3 text-xs font-medium"
+                className="h-8 rounded-sm px-3 text-xs font-medium"
               >
                 Save changes
               </Button>
@@ -364,7 +364,7 @@ function ChipTag({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[4px] border border-border bg-muted px-1.5 py-px text-[10.5px] font-medium uppercase leading-none tracking-wide text-muted-foreground",
+        "inline-flex items-center rounded-sm border border-border bg-muted px-1.5 py-px text-[10.5px] font-medium uppercase leading-none tracking-wide text-muted-foreground",
         className
       )}
     >

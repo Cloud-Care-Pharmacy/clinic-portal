@@ -363,7 +363,7 @@ export function TaskCallDialog({
       <button
         type="button"
         onClick={() => setMinimized(false)}
-        className="fixed right-6 bottom-6 z-60 flex h-14 min-w-60 items-center gap-3 rounded-full border border-border bg-popover px-4 text-left shadow-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="fixed right-6 bottom-6 z-60 flex h-14 min-w-60 items-center gap-3 rounded-sm border border-border bg-popover px-4 text-left shadow-lg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <LiveStatusDot />
         <span className="flex size-8 items-center justify-center rounded-full bg-status-accent-bg text-xs font-semibold text-status-accent-fg">
@@ -396,7 +396,7 @@ export function TaskCallDialog({
               <DialogHeader className="border-b border-border px-5 py-2.5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-(--feedback-success) text-xs font-bold text-(--feedback-success-foreground)">
+                    <span className="flex size-8 items-center justify-center rounded-sm bg-(--feedback-success) text-xs font-bold text-(--feedback-success-foreground)">
                       AC
                     </span>
                     <div>
@@ -411,7 +411,7 @@ export function TaskCallDialog({
                   <Button
                     variant="outline"
                     size="icon-sm"
-                    className="rounded-lg bg-background focus-visible:border-border focus-visible:ring-2 focus-visible:ring-border/60"
+                    className="rounded-sm bg-background focus-visible:border-border focus-visible:ring-2 focus-visible:ring-border/60"
                     onClick={() => setMinimized(true)}
                     aria-label="Minimize call"
                   >
@@ -481,7 +481,7 @@ export function TaskCallDialog({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="rounded-full px-3 text-muted-foreground"
+                      className="rounded-sm px-3 text-muted-foreground"
                       onClick={() => insertSnippet(label)}
                     >
                       +{label}
@@ -493,13 +493,13 @@ export function TaskCallDialog({
               <DialogFooter className="mx-0 mb-0 items-center justify-between gap-2 rounded-none bg-card px-5 py-3 sm:flex-row">
                 <Button
                   variant="outline"
-                  className="h-9 rounded-xl px-4 text-sm"
+                  className="h-9 rounded-sm px-4 text-sm"
                   onClick={requestCancel}
                 >
                   Cancel call
                 </Button>
                 <Button
-                  className="h-9 rounded-xl px-4 text-sm"
+                  className="h-9 rounded-sm px-4 text-sm"
                   onClick={() =>
                     hangUpAction({ durationSeconds: seconds, durationLabel, notes })
                   }
@@ -788,7 +788,7 @@ function LatestDocumentSection({
         <button
           type="button"
           onClick={() => setPreviewOpen(true)}
-          className="mt-2 flex w-full items-center gap-2 rounded-md text-left text-sm text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="mt-2 flex w-full items-center gap-2 rounded-sm text-left text-sm text-foreground transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           title={`Preview ${latestDocument.filename}`}
         >
           <FileText className="size-4 shrink-0 text-muted-foreground" />
@@ -1035,7 +1035,7 @@ export function TaskOutcomeDialog({
                 href={profileHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-sm border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label="Open patient profile in new tab"
                 title="Open patient profile"
               >
@@ -1074,7 +1074,7 @@ export function TaskOutcomeDialog({
                         type="button"
                         onClick={() => setSelected(item.id)}
                         className={cn(
-                          "flex w-full items-start gap-2.5 rounded-md border px-2.5 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                          "flex w-full items-start gap-2.5 rounded-sm border px-2.5 py-2 text-left transition-all duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                           active
                             ? "border-primary bg-card"
                             : "border-transparent hover:bg-muted"
@@ -1231,14 +1231,14 @@ export function TaskOutcomeDialog({
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 variant="outline"
-                className="h-9 rounded-lg px-3.5 text-sm"
+                className="h-9 rounded-sm px-3.5 text-sm"
                 onClick={handleCancel}
                 disabled={submitInFlight}
               >
                 {isManual ? "Cancel" : "Back to call"}
               </Button>
               <Button
-                className="h-9 rounded-lg px-3.5 text-sm"
+                className="h-9 rounded-sm px-3.5 text-sm"
                 onClick={handleSubmit}
                 disabled={isInvalid || submitInFlight}
               >
@@ -1309,7 +1309,7 @@ function DecisionRadioPill({
       disabled={disabled}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex h-9 items-center gap-2 rounded-sm border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
         active
           ? activeTone
           : "border-input bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -1366,7 +1366,7 @@ function PrescriptionSegmentedToggle({
       role="radiogroup"
       aria-label="Prescription delivery"
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted p-1 text-xs font-medium",
+        "inline-flex items-center gap-0.5 rounded-sm border border-border bg-muted p-1 text-xs font-medium",
         disabled && "opacity-60"
       )}
     >
@@ -1384,7 +1384,7 @@ function PrescriptionSegmentedToggle({
             disabled={segmentDisabled}
             onClick={() => onChange(segment.value)}
             className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-md px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
+              "inline-flex h-7 items-center gap-1.5 rounded-sm px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed",
               active
                 ? "bg-background text-foreground shadow-xs ring-1 ring-border/60"
                 : "text-muted-foreground hover:text-foreground"
@@ -1414,10 +1414,10 @@ function InternalRxSummaryCard({
       ? `${count} medication${count === 1 ? "" : "s"} added · finish required fields in the side panel.`
       : `${count} medication${count === 1 ? "" : "s"} ready to save with this consultation.`;
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+    <div className="flex items-start gap-3 rounded-sm border border-border bg-muted/40 px-4 py-3">
       <span
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-md",
+          "flex size-10 shrink-0 items-center justify-center rounded-sm",
           empty || incomplete
             ? "bg-muted text-muted-foreground"
             : "bg-primary/10 text-primary"
@@ -1455,7 +1455,7 @@ function PrescriptionActionCard({
               type="button"
               variant="outline"
               size="sm"
-              className="h-8 rounded-md px-3 text-sm"
+              className="h-8 rounded-sm px-3 text-sm"
               onClick={onOpenParchment}
               disabled={disabled}
             >
@@ -1478,10 +1478,10 @@ function PrescriptionActionCard({
 
   const { Icon, iconTone, title, body, action } = config;
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+    <div className="flex items-start gap-3 rounded-sm border border-border bg-muted/40 px-4 py-3">
       <span
         className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-md",
+          "flex size-10 shrink-0 items-center justify-center rounded-sm",
           iconTone
         )}
       >

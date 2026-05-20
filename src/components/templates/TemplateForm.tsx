@@ -330,7 +330,7 @@ export function TemplateForm({
                   type="button"
                   onClick={() => update("type", t)}
                   className={cn(
-                    "flex flex-col items-start gap-1 rounded-md border p-2.5 text-left text-sm transition-colors",
+                    "flex flex-col items-start gap-1 rounded-sm border p-2.5 text-left text-sm transition-colors",
                     active
                       ? "border-primary bg-primary/5"
                       : "border-input hover:bg-muted"
@@ -365,7 +365,7 @@ export function TemplateForm({
               />
             </Field>
             <Field label="Status">
-              <div className="flex h-10 items-center gap-2 rounded-lg border border-input px-3">
+              <div className="flex h-10 items-center gap-2 rounded-sm border border-input px-3">
                 <Switch
                   checked={form.active}
                   onCheckedChange={(c) => update("active", !!c)}
@@ -389,7 +389,7 @@ export function TemplateForm({
 
       {/* Type-specific fields */}
       {showSettings && form.type === "email" && (
-        <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+        <section className="space-y-3 rounded-sm border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Email settings
           </h3>
@@ -449,7 +449,7 @@ export function TemplateForm({
           >
             <Input value={form.bcc} onChange={(e) => update("bcc", e.target.value)} />
           </Field>
-          <div className="flex items-center justify-between rounded-md border border-input bg-background px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm border border-input bg-background px-3 py-2">
             <div>
               <p className="text-sm font-medium">Allow attachments</p>
               <p className="text-xs text-muted-foreground">
@@ -465,7 +465,7 @@ export function TemplateForm({
       )}
 
       {showSettings && form.type === "sms" && (
-        <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+        <section className="space-y-3 rounded-sm border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             SMS settings
           </h3>
@@ -494,7 +494,7 @@ export function TemplateForm({
               aria-invalid={!!err("maxSegments")}
             />
           </Field>
-          <div className="flex items-center justify-between rounded-md border border-input bg-background px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm border border-input bg-background px-3 py-2">
             <div>
               <p className="text-sm font-medium">Append opt-out footer</p>
               <p className="text-xs text-muted-foreground">
@@ -510,7 +510,7 @@ export function TemplateForm({
       )}
 
       {showSettings && form.type === "notification" && (
-        <section className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
+        <section className="space-y-3 rounded-sm border border-border bg-muted/20 p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Notification settings
           </h3>
@@ -610,7 +610,7 @@ export function TemplateForm({
               aria-invalid={!!err("autoDismissSeconds")}
             />
           </Field>
-          <div className="flex items-center justify-between rounded-md border border-input bg-background px-3 py-2">
+          <div className="flex items-center justify-between rounded-sm border border-input bg-background px-3 py-2">
             <div>
               <p className="text-sm font-medium">Persist in notifications bell</p>
               <p className="text-xs text-muted-foreground">
@@ -692,7 +692,7 @@ export function TemplateForm({
             placeholder={
               form.body ? htmlToText(form.body) : "Plain-text version of the email"
             }
-            className="flex field-sizing-content w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm font-mono transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex field-sizing-content w-full rounded-sm border border-input bg-transparent px-3 py-2 text-sm font-mono transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             style={{ minHeight: 120 }}
           />
         </section>

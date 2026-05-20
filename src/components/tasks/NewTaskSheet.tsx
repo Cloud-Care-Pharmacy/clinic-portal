@@ -242,7 +242,7 @@ export function NewTaskSheet({
               }}
             />
             {shouldShowPatientSearch && (
-              <div className="rounded-lg border bg-popover p-1 shadow-sm">
+              <div className="rounded-sm border bg-popover p-1 shadow-sm">
                 {searchingPatients ? (
                   <p className="px-3 py-2 text-sm text-muted-foreground">
                     Searching patients…
@@ -254,7 +254,7 @@ export function NewTaskSheet({
                       <button
                         type="button"
                         key={patient.id}
-                        className="flex min-h-11 w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="flex min-h-11 w-full flex-col items-start rounded-sm px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                         onClick={() => {
                           setSelectedPatient(patient);
                           form.setValue("patientName", label, {

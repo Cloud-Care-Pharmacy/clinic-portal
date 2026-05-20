@@ -296,7 +296,7 @@ export function ConsultationTable({
               rel="noopener noreferrer"
               aria-label={`Open ${name} in new tab`}
               onClick={(e) => e.stopPropagation()}
-              className="ml-1 inline-flex size-6  items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-hover/patient:opacity-100"
+              className="ml-1 inline-flex size-6  items-center justify-center rounded-sm text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 group-hover/patient:opacity-100"
             >
               <ExternalLink className="size-3.5 " />
             </Link>
@@ -415,7 +415,7 @@ export function ConsultationTable({
   return (
     <div style={{ width: "100%" }}>
       {toolbar}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-sm border border-border bg-card overflow-hidden">
         <DataGrid
           rows={visibleConsultations}
           columns={columns}
@@ -475,7 +475,7 @@ function DateRangePill({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
+          "inline-flex items-center gap-1.5 rounded-sm border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent",
           isActive ? "border-primary/50 bg-primary/5" : "border-border"
         )}
       >

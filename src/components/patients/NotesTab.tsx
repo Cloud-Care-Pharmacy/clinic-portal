@@ -199,7 +199,7 @@ function AddNoteSheet({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-sm border bg-muted/30 p-4">
           <div className="space-y-0.5">
             <p className="text-sm font-semibold">Pin this note</p>
             <p className="text-xs text-muted-foreground">
@@ -348,7 +348,7 @@ function EditNoteSheet({
             </p>
           )}
         </div>
-        <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/30 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-sm border bg-muted/30 p-4">
           <div className="space-y-0.5">
             <p className="text-sm font-semibold">Pin this note</p>
             <p className="text-xs text-muted-foreground">
@@ -709,7 +709,7 @@ export function NotesTab({
           {pinnedNotes.length > 0 && (
             <div className="space-y-3">
               <div className="flex justify-center">
-                <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
+                <Badge variant="outline" className="text-xs px-3 py-1 rounded-sm">
                   <Pin className="mr-1.5 size-3 " />
                   Pinned
                 </Badge>
@@ -735,7 +735,7 @@ export function NotesTab({
           {groupNotesByMonth(unpinnedNotes).map((group) => (
             <div key={group.label} className="space-y-3">
               <div className="flex justify-center">
-                <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
+                <Badge variant="outline" className="text-xs px-3 py-1 rounded-sm">
                   {group.label}
                 </Badge>
               </div>

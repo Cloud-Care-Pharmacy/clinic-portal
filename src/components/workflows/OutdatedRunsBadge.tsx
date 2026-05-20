@@ -50,8 +50,8 @@ export function OutdatedRunsBadge({
       className={cn(
         "inline-flex items-center gap-1 border border-status-warning-border bg-status-warning-bg text-status-warning-fg",
         variant === "inline"
-          ? "rounded-full px-2 py-0.5 text-[11px] font-medium"
-          : "rounded-md px-2.5 py-1 text-xs font-medium",
+          ? "rounded-sm px-2 py-0.5 text-[11px] font-medium"
+          : "rounded-sm px-2.5 py-1 text-xs font-medium",
         className
       )}
     >

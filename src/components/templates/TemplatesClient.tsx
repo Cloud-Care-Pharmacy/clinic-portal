@@ -301,7 +301,7 @@ function TemplateTypePanel({
   return (
     <div>
       {toolbar}
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-hidden rounded-sm border border-border bg-card">
         <DataGrid
           rows={filteredRows}
           columns={columns}

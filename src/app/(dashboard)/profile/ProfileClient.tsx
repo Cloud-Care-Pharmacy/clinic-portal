@@ -113,7 +113,7 @@ export function ProfileClient({
             <div className="flex items-center gap-3">
               <Skeleton className="size-10  rounded-full" />
               <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-sm" />
             </div>
           </CardContent>
         </Card>
@@ -154,7 +154,7 @@ export function ProfileClient({
               </h2>
               <Badge
                 variant="outline"
-                className={`${ROLE_COLORS[role]} h-9 rounded-full px-4 text-sm font-medium`}
+                className={`${ROLE_COLORS[role]} h-9 rounded-sm px-4 text-sm font-medium`}
               >
                 {ROLE_LABELS[role]}
               </Badge>

@@ -127,7 +127,7 @@ export function NodePalette({
                   <button
                     type="button"
                     onClick={it.onClick}
-                    className="flex w-full items-center gap-2.5 rounded-lg p-2 text-left transition-colors hover:bg-muted"
+                    className="flex w-full items-center gap-2.5 rounded-sm p-2 text-left transition-colors hover:bg-muted"
                   >
                     <span
                       style={{
@@ -135,7 +135,7 @@ export function NodePalette({
                         color: it.cfg.fg,
                         border: `1px solid ${it.cfg.border}`,
                       }}
-                      className="grid size-8 place-items-center rounded-lg shrink-0"
+                      className="grid size-8 place-items-center rounded-sm shrink-0"
                     >
                       <Icon className="size-4" />
                     </span>

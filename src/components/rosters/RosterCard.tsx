@@ -33,7 +33,7 @@ export function RosterCard({
 }: RosterCardProps) {
   return (
     <div
-      className="overflow-hidden rounded-2xl border bg-card"
+      className="overflow-hidden rounded-sm border bg-card"
       style={{ borderColor: "var(--border)" }}
     >
       <div
@@ -50,19 +50,19 @@ export function RosterCard({
             variant="outline"
             size="sm"
             onClick={onToday}
-            className="h-8 rounded-[10px]"
+            className="h-8 rounded-sm"
           >
             Today
           </Button>
           <div
-            className="inline-flex items-center rounded-[10px] border bg-background p-0.5"
+            className="inline-flex items-center rounded-sm border bg-background p-0.5"
             style={{ borderColor: "var(--border)" }}
           >
             <button
               type="button"
               onClick={onPrev}
               aria-label="Previous"
-              className="inline-flex size-7  items-center justify-center rounded-lg hover:bg-muted"
+              className="inline-flex size-7  items-center justify-center rounded-sm hover:bg-muted"
             >
               <ChevronLeft className="size-3.5 " />
             </button>
@@ -73,7 +73,7 @@ export function RosterCard({
               type="button"
               onClick={onNext}
               aria-label="Next"
-              className="inline-flex size-7  items-center justify-center rounded-lg hover:bg-muted"
+              className="inline-flex size-7  items-center justify-center rounded-sm hover:bg-muted"
             >
               <ChevronRight className="size-3.5 " />
             </button>

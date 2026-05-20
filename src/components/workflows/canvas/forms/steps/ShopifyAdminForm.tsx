@@ -698,7 +698,7 @@ export function ShopifyAdminForm(props: StepFormProps<ShopifyAdminStep>) {
 
 function OperationDescription({ text }: { text: string }) {
   return (
-    <div className="mb-4 flex gap-2 rounded-md border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+    <div className="mb-4 flex gap-2 rounded-sm border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
       <Info className="mt-0.5 size-3.5 shrink-0" />
       <p>{text}</p>
     </div>
@@ -720,7 +720,7 @@ function FindCustomerFields({
 }) {
   return (
     <>
-      <div className="mb-4 rounded-md border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+      <div className="mb-4 rounded-sm border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
         <p className="mb-1.5 font-medium text-foreground">
           Provide at least one identifier
         </p>

@@ -520,7 +520,7 @@ export function NewConsultationSheet({
               Patient <span className="text-destructive">*</span>
             </Label>
             {selectedPatient || isEditing || defaultPatientName ? (
-              <div className="flex h-10 items-center gap-2 rounded-lg border border-input bg-transparent px-3 text-sm">
+              <div className="flex h-10 items-center gap-2 rounded-sm border border-input bg-transparent px-3 text-sm">
                 <UserIcon
                   className="size-4  text-muted-foreground"
                   aria-hidden="true"
@@ -554,7 +554,7 @@ export function NewConsultationSheet({
               />
             )}
             {shouldShowPatientSearch && (
-              <div className="rounded-lg border bg-popover p-1 shadow-sm">
+              <div className="rounded-sm border bg-popover p-1 shadow-sm">
                 {searchingPatients ? (
                   <p className="px-3 py-2 text-sm text-muted-foreground">
                     Searching patients…
@@ -570,7 +570,7 @@ export function NewConsultationSheet({
                       <button
                         type="button"
                         key={patient.id}
-                        className="flex min-h-11 w-full flex-col items-start rounded-md px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="flex min-h-11 w-full flex-col items-start rounded-sm px-3 py-2 text-left text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                         onClick={() => {
                           setSelectedPatient(patient);
                           form.setValue("patientName", label, {
@@ -609,7 +609,7 @@ export function NewConsultationSheet({
               Practitioner <span className="text-destructive">*</span>
             </Label>
             {practitionersQuery.isLoading ? (
-              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-sm" />
             ) : (
               <UISelect
                 value={practitionerIdValue || ""}
@@ -680,7 +680,7 @@ export function NewConsultationSheet({
                       });
                     }}
                     className={cn(
-                      "flex flex-col items-start gap-1 rounded-lg border bg-transparent p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      "flex flex-col items-start gap-1 rounded-sm border bg-transparent p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                       selected
                         ? "border-primary ring-1 ring-primary"
                         : "border-input hover:border-foreground/30"
@@ -715,7 +715,7 @@ export function NewConsultationSheet({
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger
                   className={cn(
-                    "flex h-10 min-w-0 flex-1 items-center justify-between rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                    "flex h-10 min-w-0 flex-1 items-center justify-between rounded-sm border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
                     !displayValue && "text-muted-foreground",
                     form.formState.errors.scheduledAt &&
                       "border-destructive ring-3 ring-destructive/20"
@@ -829,7 +829,7 @@ export function NewConsultationSheet({
                       type="button"
                       onClick={() => handleFreeSlotSelect(slot.startsAt)}
                       className={cn(
-                        "rounded-full border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "rounded-sm border px-3 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                         isActive
                           ? "border-primary text-primary"
                           : "border-input text-foreground hover:border-foreground/30"
@@ -965,7 +965,7 @@ export function NewConsultationSheet({
               that overlap this time slot.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <ul className="space-y-1 rounded-md border bg-muted/40 p-3 text-sm">
+          <ul className="space-y-1 rounded-sm border bg-muted/40 p-3 text-sm">
             {conflictPending?.conflicts.map((c) => {
               const start = new Date(c.scheduledAt);
               const end = new Date(start.getTime() + (c.duration ?? 30) * 60_000);

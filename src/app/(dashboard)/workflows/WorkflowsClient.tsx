@@ -124,7 +124,7 @@ function ActionsCell({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex items-center justify-center rounded-md size-8 hover:bg-accent transition-colors"
+        className="inline-flex items-center justify-center rounded-sm size-8 hover:bg-accent transition-colors"
         onClick={(e) => e.stopPropagation()}
       >
         <MoreHorizontal className="size-4 text-muted-foreground" />
@@ -351,7 +351,7 @@ export function WorkflowsClient({ entityId, initialWorkflows }: WorkflowsClientP
       trailing={
         <>
           <DropdownMenu open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
-            <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-full border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
+            <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-sm border border-border px-3 h-9 text-sm font-medium transition-colors hover:bg-accent">
               <SlidersHorizontal className="size-4 text-muted-foreground" />
               View
             </DropdownMenuTrigger>
@@ -414,7 +414,7 @@ export function WorkflowsClient({ entityId, initialWorkflows }: WorkflowsClientP
               dashed
             />
           ) : (
-            <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="overflow-hidden rounded-sm border border-border bg-card">
               <DataGrid
                 rows={visibleWorkflows}
                 columns={visibleColumns}

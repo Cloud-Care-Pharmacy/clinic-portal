@@ -17,7 +17,7 @@ export function LoopOnItemsForm(props: StepFormProps<LoopOnItemsStep>) {
         placeholder="{{vars.patients}}"
         error={errors?.items}
       />
-      <div className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+      <div className="rounded-sm border border-dashed border-border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
         Inside the loop body, use{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono">
           {"{{loop.item}}"}

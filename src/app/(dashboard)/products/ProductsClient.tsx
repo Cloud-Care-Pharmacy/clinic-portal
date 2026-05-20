@@ -32,7 +32,7 @@ function Stat({
         ? "text-status-warning-fg"
         : "text-foreground";
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-sm border border-border bg-card p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
@@ -76,7 +76,7 @@ export function ProductsClient() {
         actions={
           <Link
             href="/products/new"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex h-9 items-center gap-1.5 rounded-sm bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="size-4" aria-hidden="true" />
             Add product
