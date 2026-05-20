@@ -51,6 +51,7 @@ import type {
   BulkTaskResult,
   ConsultationType,
   Task,
+  TaskStatus,
   TaskQueuePresetDef,
   TasksListResponse,
 } from "@/types";
@@ -62,6 +63,7 @@ interface TasksClientProps {
 
 const EMPTY_TASKS: Task[] = [];
 const EMPTY_STRING_ARRAY: string[] = [];
+const ACTIVE_TASK_STATUSES = ["open", "in_progress"] satisfies TaskStatus[];
 
 function pluralizeTask(count: number) {
   return `task${count === 1 ? "" : "s"}`;
@@ -250,9 +252,16 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
       if (preset.id === "all") return [];
       if (preset.id === "mine_active") return [{ ...preset, label: "Claimed" }];
       if (preset.id === "unassigned") {
-        // Unassigned should surface every unassigned task regardless of status.
-        const { status: _status, ...rest } = preset.filter as Record<string, unknown>;
-        return [{ ...preset, filter: rest }];
+        return [
+          {
+            ...preset,
+            filter: {
+              ...preset.filter,
+              assignedUserId: null,
+              status: ACTIVE_TASK_STATUSES,
+            },
+          },
+        ];
       }
       return [preset];
     });
