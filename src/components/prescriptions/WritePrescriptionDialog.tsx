@@ -160,7 +160,7 @@ interface WritePrescriptionDialogProps {
   patientId: string;
   /** Optional consultation context. When provided, server enforces the clinical-decision gate. */
   consultationId?: string;
-  /** Optional doctor override (admins only — doctor callers may not change it). */
+  /** Optional practitioner override (admins only — practitioner callers may not change it). */
   prescriberId?: string | null;
   onCreated?: () => void;
 }
@@ -242,8 +242,8 @@ export function WritePrescriptionDialog({
       title="Write Prescription"
       description={
         consultationId
-          ? "Doctor-authored prescription tied to this consultation."
-          : "Doctor-authored prescription for this patient."
+          ? "Practitioner-authored prescription tied to this consultation."
+          : "Practitioner-authored prescription for this patient."
       }
       footer={
         <div className="flex w-full items-center justify-end gap-2">

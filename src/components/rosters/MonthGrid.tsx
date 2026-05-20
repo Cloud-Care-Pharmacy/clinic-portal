@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import type { RosterMonthDay, RosterMonthDayDoctor } from "@/types";
+import type { RosterMonthDay, RosterMonthDayPractitioner } from "@/types";
 
 interface MonthGridProps {
   days: RosterMonthDay[];
@@ -135,7 +135,7 @@ function MonthDayCell({
       </div>
       <div className="flex flex-col gap-1">
         {visible.map((entry) => (
-          <DoctorChip key={entry.doctorId} entry={entry} />
+          <PractitionerChip key={entry.practitionerId} entry={entry} />
         ))}
         {overflow > 0 && (
           <span
@@ -153,7 +153,7 @@ function MonthDayCell({
   );
 }
 
-function DoctorChip({ entry }: { entry: RosterMonthDayDoctor }) {
+function PractitionerChip({ entry }: { entry: RosterMonthDayPractitioner }) {
   const { shift, initials } = entry;
   const tone =
     shift.kind === "leave"

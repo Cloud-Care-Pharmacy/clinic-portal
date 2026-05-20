@@ -15,7 +15,7 @@ type ViewMode = "table" | "calendar";
 const EMPTY_CONSULTATIONS: Consultation[] = [];
 const EMPTY_STATUS_FILTERS: ConsultationStatus[] = [];
 const EMPTY_TYPE_FILTERS: ConsultationType[] = [];
-const EMPTY_DOCTOR_FILTERS: string[] = [];
+const EMPTY_PRACTITIONER_FILTERS: string[] = [];
 const EMPTY_DATE_RANGE: DateRangeFilter = {};
 
 export default function ConsultationsLoading() {
@@ -68,9 +68,9 @@ export default function ConsultationsLoading() {
         onStatusFiltersChange={() => undefined}
         typeFilters={EMPTY_TYPE_FILTERS}
         onTypeFiltersChange={() => undefined}
-        doctorOptions={[]}
-        doctorFilters={EMPTY_DOCTOR_FILTERS}
-        onDoctorFiltersChange={() => undefined}
+        practitionerOptions={[]}
+        practitionerFilters={EMPTY_PRACTITIONER_FILTERS}
+        onPractitionerFiltersChange={() => undefined}
         dateRange={EMPTY_DATE_RANGE}
         onDateRangeChange={() => undefined}
         paginationModel={paginationModel}

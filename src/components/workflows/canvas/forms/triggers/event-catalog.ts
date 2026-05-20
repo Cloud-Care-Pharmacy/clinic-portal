@@ -94,7 +94,7 @@ export const EVENT_ENTITIES: EventEntity[] = [
       {
         eventType: "consultation.scheduled",
         label: "Consultation scheduled",
-        description: "A consultation is booked with a doctor.",
+        description: "A consultation is booked with a practitioner.",
       },
       {
         eventType: "consultation.updated",
@@ -104,7 +104,7 @@ export const EVENT_ENTITIES: EventEntity[] = [
       {
         eventType: "consultation.completed",
         label: "Consultation completed",
-        description: "A doctor marks a consultation as complete.",
+        description: "A practitioner marks a consultation as complete.",
       },
       {
         eventType: "consultation.cancelled",

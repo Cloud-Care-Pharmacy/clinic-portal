@@ -388,11 +388,11 @@ export function ConsultationCalendar({
 
         <div className="flex items-center gap-3">
           <span className="hidden lg:inline text-sm text-muted-foreground">
-            Showing all doctors
+            Showing all practitioners
           </span>
           <Button variant="outline" size="sm" className="h-8 gap-1.5 border-dashed">
             <Users className="size-4 " />
-            Doctors
+            Practitioners
           </Button>
           <SegmentedControl
             value={view}

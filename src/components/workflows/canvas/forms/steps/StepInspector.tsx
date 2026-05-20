@@ -172,7 +172,7 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
     case "check_consultation_conflicts":
       return {
         kind: "check_consultation_conflicts",
-        doctorId: "",
+        practitionerId: "",
         scheduledAt: "",
         durationMinutes: 30,
         storeAs: "conflicts",

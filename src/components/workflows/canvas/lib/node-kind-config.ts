@@ -178,7 +178,7 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
   check_consultation_conflicts: fam("tool", {
     label: "Check conflicts",
     shortLabel: "Conflicts",
-    description: "Check a doctor's calendar for conflicting consultations",
+    description: "Check a practitioner's calendar for conflicting consultations",
     icon: CalendarX,
   }),
   consultation_action: fam("tool", {

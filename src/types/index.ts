@@ -280,7 +280,7 @@ export interface PatientPrescription {
   externalId?: string | null;
   /** Originating consultation, if the prescription was issued from one. */
   consultationId: string | null;
-  /** Local `users.id` of the prescribing doctor. */
+  /** Local `users.id` of the prescribing practitioner. */
   prescriberId: string | null;
   prescriptionDate: string; // ISO datetime
   prescriberName: string | null;
@@ -349,7 +349,7 @@ export interface CreatePrescriptionMedicationInput {
 export interface CreatePrescriptionRequest {
   /** Originating consultation, when the prescription is issued from one. */
   consultationId?: string | null;
-  /** Optional doctor override. Doctor callers may not pin a different prescriber. */
+  /** Optional practitioner override. Practitioner callers may not pin a different prescriber. */
   prescriberId?: string | null;
   medications: CreatePrescriptionMedicationInput[];
 }
@@ -392,7 +392,7 @@ export interface ClinicalDataRecord {
   safetyAcknowledgment: string;
   reviewStatus?: "pending" | "approved";
   reviewedBy?: string | null;
-  reviewedByRole?: "admin" | "doctor" | null;
+  reviewedByRole?: "admin" | "practitioner" | null;
   reviewedAt?: string | null;
   reviewNotes?: string | null;
   submittedAt: string;
@@ -587,7 +587,7 @@ export interface ConsultationsQuery {
   status?: ConsultationStatus;
   type?: ConsultationType;
   patientId?: string;
-  doctorId?: string;
+  practitionerId?: string;
   from?: string;
   to?: string;
   search?: string;
@@ -601,8 +601,8 @@ export interface Consultation {
   id: string;
   patientId: string;
   patientName: string;
-  doctorId: string;
-  doctorName: string;
+  practitionerId: string;
+  practitionerName: string;
   scheduledAt: string;
   completedAt?: string | null;
   type: ConsultationType;
@@ -645,7 +645,7 @@ export interface ConsultationConflictsResponse {
 }
 
 // ---- Facets ----
-export interface ConsultationDoctorFacet {
+export interface ConsultationPractitionerFacet {
   id: string;
   name: string;
   consultationCount: number;
@@ -654,7 +654,7 @@ export interface ConsultationDoctorFacet {
 export interface ConsultationFacetsResponse {
   success: boolean;
   data: {
-    doctors: ConsultationDoctorFacet[];
+    practitioners: ConsultationPractitionerFacet[];
     statuses: Array<{ value: ConsultationStatus; count: number }>;
     types: Array<{ value: ConsultationType; count: number }>;
   };
@@ -676,7 +676,7 @@ export interface ConsultationTypesResponse {
 export type ConsultationErrorCode =
   | "INVALID_STATUS_TRANSITION"
   | "CONSULTATION_CONFLICT"
-  | "FORBIDDEN_DOCTOR_ASSIGNMENT";
+  | "FORBIDDEN_PRACTITIONER_ASSIGNMENT";
 
 export interface ConsultationApiErrorBody {
   success: false;
@@ -1131,7 +1131,7 @@ export interface DashboardActivityItem {
   patientInitials: string;
   action: string;
   by: string;
-  actorRole: "admin" | "doctor" | "staff" | "system";
+  actorRole: "admin" | "practitioner" | "staff" | "system";
   timestamp: string;
   type: ActivityEventType;
   category: ActivityEventCategory;
@@ -1195,7 +1195,7 @@ export interface PatientNote {
   category: NoteCategory;
   isPinned: boolean;
   authorName: string;
-  authorRole: "admin" | "doctor" | "staff";
+  authorRole: "admin" | "practitioner" | "staff";
   createdAt: string;
   updatedAt: string;
 }
@@ -1267,7 +1267,7 @@ export interface PatientActivityEvent {
   description: string | null;
   actorId?: string | null;
   actorName: string;
-  actorRole: "admin" | "doctor" | "staff" | "system";
+  actorRole: "admin" | "practitioner" | "staff" | "system";
   entityType: ActivityEntityType;
   entityId: string | null;
   createdAt: string;
@@ -1553,7 +1553,7 @@ export interface UpdatePractitionerSignaturePayload {
 // Practitioner directory + scheduling (GET /api/practitioners*)
 // ============================================
 
-/** Entry from `GET /api/practitioners`. `userId` matches `consultations.doctorId`. */
+/** Entry from `GET /api/practitioners`. `userId` matches `consultations.practitionerId`. */
 export interface PractitionerDirectoryEntry {
   userId: string;
   firstName: string | null;
@@ -1652,7 +1652,7 @@ export interface PractitionerLeaveResponse {
 // Session types
 // ============================================
 
-export type UserRole = "admin" | "doctor" | "staff";
+export type UserRole = "admin" | "practitioner" | "staff";
 
 export interface UserSession {
   name: string;
@@ -1703,7 +1703,7 @@ export interface Shift {
   segments?: { start: string; end: string }[];
 }
 
-export interface RosterDoctor {
+export interface RosterPractitioner {
   id: string;
   name: string;
   specialty: RosterSpecialty;
@@ -1716,13 +1716,13 @@ export interface RosterDoctor {
 }
 
 export interface RosterWeekResponse {
-  doctors: RosterDoctor[];
+  practitioners: RosterPractitioner[];
   weekStart: string; // ISO date (Mon)
   weekEnd: string; // ISO date (Sun)
 }
 
-export interface RosterMonthDayDoctor {
-  doctorId: string;
+export interface RosterMonthDayPractitioner {
+  practitionerId: string;
   initials: string;
   shift: Shift;
 }
@@ -1730,7 +1730,7 @@ export interface RosterMonthDayDoctor {
 export interface RosterMonthDay {
   date: string; // ISO date
   inMonth: boolean;
-  shifts: RosterMonthDayDoctor[];
+  shifts: RosterMonthDayPractitioner[];
 }
 
 export interface RosterMonthResponse {
@@ -1822,7 +1822,7 @@ export type WorkflowStepKind =
  */
 export const WORKFLOW_STEP_ACTOR_ROLES = [
   "admin",
-  "doctor",
+  "practitioner",
   "staff",
   "system",
 ] as const;
@@ -2158,7 +2158,7 @@ export interface LookupConsultationStep extends WorkflowStepBase {
 
 /**
  * Lists a patient's consultations, optionally filtered by status, type,
- * doctor or date range, and stores the result under `vars.<storeAs>` as
+ * practitioner or date range, and stores the result under `vars.<storeAs>` as
  * `{ patientId, total, limit, offset, consultations[] }`.
  */
 export interface LookupPatientConsultationsStep extends WorkflowStepBase {
@@ -2167,7 +2167,7 @@ export interface LookupPatientConsultationsStep extends WorkflowStepBase {
   storeAs: string;
   status?: string;
   type?: string;
-  doctorId?: string;
+  practitionerId?: string;
   from?: string;
   to?: string;
   sort?: string;
@@ -2190,13 +2190,13 @@ export interface FindFreeSlotsStep extends WorkflowStepBase {
 }
 
 /**
- * Checks the doctor's calendar for conflicts against the proposed slot.
- * Stores `{ doctorId, scheduledAt, durationMinutes, hasConflict, count,
+ * Checks the practitioner's calendar for conflicts against the proposed slot.
+ * Stores `{ practitionerId, scheduledAt, durationMinutes, hasConflict, count,
  * conflicts[] }` under `vars.<storeAs>`.
  */
 export interface CheckConsultationConflictsStep extends WorkflowStepBase {
   kind: "check_consultation_conflicts";
-  doctorId: string;
+  practitionerId: string;
   scheduledAt: string;
   durationMinutes: number;
   storeAs: string;
@@ -2216,8 +2216,8 @@ export interface ConsultationActionStep extends WorkflowStepBase {
   scheduledAt?: string;
   /** Optional for `reschedule`. */
   durationMinutes?: number;
-  doctorId?: string;
-  doctorName?: string;
+  practitionerId?: string;
+  practitionerName?: string;
   skipConflictCheck?: boolean;
   /** Optional for `complete`. */
   outcome?: string;
@@ -2902,7 +2902,7 @@ export type TemplateType = "email" | "sms" | "notification";
 
 export type TemplateSeverity = "info" | "success" | "warning" | "error";
 
-export type TemplateAudience = "all" | "admin" | "doctor" | "staff";
+export type TemplateAudience = "all" | "admin" | "practitioner" | "staff";
 
 /** Common fields shared by every template type. */
 export interface BaseTemplate {

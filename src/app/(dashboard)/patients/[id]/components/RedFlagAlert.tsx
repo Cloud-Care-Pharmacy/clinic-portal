@@ -20,7 +20,7 @@ export function RedFlagAlert({ redFlags, onReview }: RedFlagAlertProps) {
     <div className="flex gap-3 items-center rounded-2xl border border-status-danger-border bg-status-danger-bg px-5 py-4 text-status-danger-fg">
       <ShieldAlert className="size-5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-semibold">Doctor review required</p>
+        <p className="text-[14px] font-semibold">Practitioner review required</p>
         <p className="text-[13px] leading-[1.5] opacity-90 mt-0.5">
           {redFlags.triggers.join(". ")}
         </p>

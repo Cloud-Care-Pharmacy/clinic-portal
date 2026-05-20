@@ -20,7 +20,7 @@ import { useCreateWorkspaceInvitation } from "@/lib/hooks/use-workspace";
 import type { UserRole } from "@/types";
 import { WORKSPACE_ROLE_LABELS } from "@/components/workspace/workspace-format";
 
-const ROLE_OPTIONS = ["staff", "doctor", "admin"] as const;
+const ROLE_OPTIONS = ["staff", "practitioner", "admin"] as const;
 
 const schema = z.object({
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email"),

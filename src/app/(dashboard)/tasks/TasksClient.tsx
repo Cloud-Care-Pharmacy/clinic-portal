@@ -238,7 +238,7 @@ function toCallApiMed(m: ManualRxMedication): CreatePrescriptionMedicationInput 
 export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
   const { user } = useUser();
   const queryClient = useQueryClient();
-  // Internal `users.id` (NOT Clerk's authId) — required for consultations.doctorId.
+  // Internal `users.id` (NOT Clerk's authId) — required for consultations.practitionerId.
   const profileQuery = useProfile();
   const currentInternalUserId = profileQuery.data?.data?.profile?.id;
 
@@ -466,10 +466,10 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
         // Attribute the consultation to the user assigned to the task. Falls back
         // to the current user (e.g. admin completing on someone's behalf, or an
         // unassigned task being completed inline).
-        const doctorId = task.assignedUserId ?? currentInternalUserId;
+        const practitionerId = task.assignedUserId ?? currentInternalUserId;
         const consultation = await createConsultationMutation.mutateAsync({
           patientId: task.patientId,
-          doctorId,
+          practitionerId,
           scheduledAt: new Date().toISOString(),
           type: taskConsultationType(task),
           duration: submission.durationSeconds,
@@ -506,7 +506,7 @@ export function TasksClient({ entityId, initialTasks }: TasksClientProps) {
           try {
             await createPrescription(task.patientId, {
               consultationId: consultation.data.consultation.id,
-              prescriberId: doctorId,
+              prescriberId: practitionerId,
               medications: submission.prescriptionMeds.map(toCallApiMed),
             });
             queryClient.invalidateQueries({

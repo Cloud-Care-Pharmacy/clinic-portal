@@ -53,7 +53,7 @@ export function ConsultationsClient({
   const [searchQuery, setSearchQueryRaw] = useState("");
   const [statusFilters, setStatusFiltersRaw] = useState<ConsultationStatus[]>([]);
   const [typeFilters, setTypeFiltersRaw] = useState<ConsultationType[]>([]);
-  const [doctorFilters, setDoctorFiltersRaw] = useState<string[]>([]);
+  const [practitionerFilters, setPractitionerFiltersRaw] = useState<string[]>([]);
   const [dateRange, setDateRangeRaw] = useState<DateRangeFilter>({});
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -81,8 +81,8 @@ export function ConsultationsClient({
     setTypeFiltersRaw(value);
     resetToFirstPage();
   }
-  function setDoctorFilters(value: string[]) {
-    setDoctorFiltersRaw(value);
+  function setPractitionerFilters(value: string[]) {
+    setPractitionerFiltersRaw(value);
     resetToFirstPage();
   }
   function setDateRange(value: DateRangeFilter) {
@@ -96,7 +96,7 @@ export function ConsultationsClient({
     search: searchQuery.trim() || undefined,
     status: statusFilters.length === 1 ? statusFilters[0] : undefined,
     type: typeFilters.length === 1 ? typeFilters[0] : undefined,
-    doctorId: doctorFilters.length === 1 ? doctorFilters[0] : undefined,
+    practitionerId: practitionerFilters.length === 1 ? practitionerFilters[0] : undefined,
     from: dateRange.from ? startOfDayIso(dateRange.from) : undefined,
     to: dateRange.to ? endOfDayIso(dateRange.to) : undefined,
     sort: "scheduledAt" as const,
@@ -115,19 +115,19 @@ export function ConsultationsClient({
     from: query.from,
     to: query.to,
   });
-  const doctorOptions = useMemo(() => {
-    const facetDoctors = facetsQuery.data?.data?.doctors;
-    if (facetDoctors && facetDoctors.length > 0) {
-      return facetDoctors
+  const practitionerOptions = useMemo(() => {
+    const facetPractitioners = facetsQuery.data?.data?.practitioners;
+    if (facetPractitioners && facetPractitioners.length > 0) {
+      return facetPractitioners
         .map((d) => ({ id: d.id, name: d.name }))
         .sort((a, b) => a.name.localeCompare(b.name));
     }
     // Fallback: derive from current page until facets load.
     const seen = new Map<string, string>();
     for (const c of consultations) {
-      const id = c.doctorId || c.doctorName;
+      const id = c.practitionerId || c.practitionerName;
       if (id && !seen.has(id)) {
-        seen.set(id, c.doctorName || id);
+        seen.set(id, c.practitionerName || id);
       }
     }
     return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
@@ -192,9 +192,9 @@ export function ConsultationsClient({
               onStatusFiltersChange={setStatusFilters}
               typeFilters={typeFilters}
               onTypeFiltersChange={setTypeFilters}
-              doctorOptions={doctorOptions}
-              doctorFilters={doctorFilters}
-              onDoctorFiltersChange={setDoctorFilters}
+              practitionerOptions={practitionerOptions}
+              practitionerFilters={practitionerFilters}
+              onPractitionerFiltersChange={setPractitionerFilters}
               dateRange={dateRange}
               onDateRangeChange={setDateRange}
               total={data?.data?.pagination?.total}

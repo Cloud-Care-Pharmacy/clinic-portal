@@ -7,13 +7,13 @@ import type {
 
 export const WORKSPACE_ROLE_LABELS: Record<UserRole, string> = {
   admin: "Administrator",
-  doctor: "Doctor",
+  practitioner: "Practitioner",
   staff: "Staff",
 };
 
 export const WORKSPACE_ROLE_VARIANTS = {
   admin: "accent",
-  doctor: "info",
+  practitioner: "info",
   staff: "neutral",
 } as const;
 

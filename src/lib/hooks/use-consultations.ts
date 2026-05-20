@@ -92,7 +92,7 @@ async function fetchConsultations(
   params.set("offset", String(opts?.offset ?? 0));
   if (opts?.status) params.set("status", opts.status);
   if (opts?.type) params.set("type", opts.type);
-  if (opts?.doctorId) params.set("doctorId", opts.doctorId);
+  if (opts?.practitionerId) params.set("practitionerId", opts.practitionerId);
   if (opts?.from) params.set("from", opts.from);
   if (opts?.to) params.set("to", opts.to);
   if (opts?.search) params.set("search", opts.search);
@@ -117,7 +117,7 @@ export interface CreateConsultationInput {
   patientId: string;
   scheduledAt: string;
   type: ConsultationType;
-  doctorId?: string;
+  practitionerId?: string;
   duration?: number;
   notes?: string | null;
   /** Admin-only: skip server-side conflict check. Ignored for non-admins. */
@@ -150,7 +150,7 @@ export interface UpdateConsultationInput {
   scheduledAt?: string;
   duration?: number | null;
   type?: ConsultationType;
-  doctorId?: string;
+  practitionerId?: string;
   /** Admin-only: skip server-side conflict check. Ignored for non-admins. */
   force?: boolean;
 }
@@ -183,13 +183,13 @@ async function deleteConsultationApi(
 }
 
 async function fetchConsultationConflicts(params: {
-  doctorId: string;
+  practitionerId: string;
   scheduledAt: string;
   duration: number;
   excludeId?: string;
 }): Promise<ConsultationConflict[]> {
   const qs = new URLSearchParams({
-    doctorId: params.doctorId,
+    practitionerId: params.practitionerId,
     scheduledAt: params.scheduledAt,
     duration: String(params.duration),
   });
@@ -234,7 +234,7 @@ export function consultationsQueryOptions(
           opts?.offset ?? 0,
           opts?.status ?? "",
           opts?.type ?? "",
-          opts?.doctorId ?? "",
+          opts?.practitionerId ?? "",
           opts?.from ?? "",
           opts?.to ?? "",
           opts?.search ?? "",
@@ -247,9 +247,8 @@ export function consultationsQueryOptions(
           opts?.offset ?? 0,
           opts?.status ?? "",
           opts?.type ?? "",
-          opts?.doctorId ?? "",
-          opts?.from ?? "",
-          opts?.to ?? "",
+          opts?.practitionerId ?? "",
+          opts?.from ?? "",          opts?.to ?? "",
           opts?.search ?? "",
           opts?.sort ?? "",
           opts?.order ?? "",
@@ -328,7 +327,7 @@ export function useDeleteConsultation() {
  */
 export function useConsultationConflicts(
   params: {
-    doctorId?: string;
+    practitionerId?: string;
     scheduledAt?: string;
     duration?: number;
     excludeId?: string;
@@ -337,21 +336,21 @@ export function useConsultationConflicts(
 ) {
   const ready =
     enabled &&
-    Boolean(params.doctorId) &&
+    Boolean(params.practitionerId) &&
     Boolean(params.scheduledAt) &&
     typeof params.duration === "number" &&
     params.duration > 0;
   return useQuery({
     queryKey: [
       "consultation-conflicts",
-      params.doctorId ?? "",
+      params.practitionerId ?? "",
       params.scheduledAt ?? "",
       params.duration ?? 0,
       params.excludeId ?? "",
     ],
     queryFn: () =>
       fetchConsultationConflicts({
-        doctorId: params.doctorId!,
+        practitionerId: params.practitionerId!,
         scheduledAt: params.scheduledAt!,
         duration: params.duration!,
         excludeId: params.excludeId,

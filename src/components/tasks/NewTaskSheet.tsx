@@ -44,7 +44,7 @@ const TASK_TYPE_OPTIONS = [
 ] as const;
 
 const PRIORITY_OPTIONS = ["low", "normal", "high", "urgent"] as const;
-const ROLE_OPTIONS = ["unassigned", "staff", "doctor", "admin"] as const;
+const ROLE_OPTIONS = ["unassigned", "staff", "practitioner", "admin"] as const;
 
 const schema = z.object({
   patientName: z.string().min(1, "Patient is required"),
@@ -374,7 +374,7 @@ export function NewTaskSheet({
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   <SelectItem value="staff">Staff queue</SelectItem>
-                  <SelectItem value="doctor">Doctor queue</SelectItem>
+                  <SelectItem value="practitioner">Practitioner queue</SelectItem>
                   <SelectItem value="admin">Admin queue</SelectItem>
                 </SelectContent>
               </Select>

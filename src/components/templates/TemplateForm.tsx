@@ -98,7 +98,7 @@ type FormState = {
 };
 
 const SEVERITIES: TemplateSeverity[] = ["info", "success", "warning", "error"];
-const AUDIENCES: TemplateAudience[] = ["all", "admin", "doctor", "staff"];
+const AUDIENCES: TemplateAudience[] = ["all", "admin", "practitioner", "staff"];
 
 const TYPE_META: Record<TemplateType, { label: string; icon: LucideIcon }> = {
   email: { label: "Email template", icon: Mail },

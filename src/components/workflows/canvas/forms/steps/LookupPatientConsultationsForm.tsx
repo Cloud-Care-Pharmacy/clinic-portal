@@ -48,11 +48,11 @@ export function LookupPatientConsultationsForm(
           error={errors?.type}
         />
         <TemplatedField
-          label="Doctor id"
-          value={step.doctorId ?? ""}
-          onChange={(v) => onChange({ ...step, doctorId: v ? v : undefined })}
-          placeholder="{{vars.doctorId}}"
-          error={errors?.doctorId}
+          label="Practitioner id"
+          value={step.practitionerId ?? ""}
+          onChange={(v) => onChange({ ...step, practitionerId: v ? v : undefined })}
+          placeholder="{{vars.practitionerId}}"
+          error={errors?.practitionerId}
         />
         <TemplatedField
           label="From (ISO date)"

@@ -58,7 +58,7 @@ const TYPE_OPTIONS: TaskType[] = [
   "clinical_follow_up",
   "manual",
 ];
-const ROLE_OPTIONS: UserRole[] = ["admin", "doctor", "staff"];
+const ROLE_OPTIONS: UserRole[] = ["admin", "practitioner", "staff"];
 const ASSIGNMENT_OPTIONS = ["mine", "unassigned"] as const;
 
 export type TaskAssignmentFilter = (typeof ASSIGNMENT_OPTIONS)[number];

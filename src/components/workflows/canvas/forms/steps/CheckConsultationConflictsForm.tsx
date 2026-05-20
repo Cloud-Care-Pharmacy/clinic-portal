@@ -12,11 +12,11 @@ export function CheckConsultationConflictsForm(
   return (
     <>
       <TemplatedField
-        label="Doctor id"
-        value={step.doctorId ?? ""}
-        onChange={(v) => onChange({ ...step, doctorId: v })}
-        placeholder="{{vars.doctorId}}"
-        error={errors?.doctorId}
+        label="Practitioner id"
+        value={step.practitionerId ?? ""}
+        onChange={(v) => onChange({ ...step, practitionerId: v })}
+        placeholder="{{vars.practitionerId}}"
+        error={errors?.practitionerId}
       />
       <TemplatedField
         label="Scheduled at"

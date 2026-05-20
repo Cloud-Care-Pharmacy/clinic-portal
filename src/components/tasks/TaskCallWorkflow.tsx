@@ -94,13 +94,13 @@ export type ClinicalDecision = "approve" | "reject";
 export interface TaskOutcomeSubmission {
   outcomeId: TaskOutcomeId;
   /**
-   * How the doctor issued the prescription — via ERX (electronic
+   * How the practitioner issued the prescription — via ERX (electronic
    * prescription) or internally (composed in this dialog). Only meaningful
    * when the outcome creates a consultation (i.e. `reached`).
    */
   prescriptionChoice?: PrescriptionChoice;
   /**
-   * Doctor's decision on the clinical record at finalisation time.
+   * Practitioner's decision on the clinical record at finalisation time.
    * `approve` triggers the approve mutation; `reject` is recorded in the
    * audit note only (there is no backend reject endpoint).
    */
@@ -828,7 +828,7 @@ export function TaskOutcomeDialog({
   /**
    * When the user goes back to the call (hangup mode), we hand back the
    * latest TaskCallData so the call dialog can resume the timer and keep the
-   * notes the doctor just edited. The argument is omitted in manual mode.
+   * notes the practitioner just edited. The argument is omitted in manual mode.
    */
   cancelAction: (resumeWith?: TaskCallData) => void;
   submitAction: (submission: TaskOutcomeSubmission) => void;
@@ -864,10 +864,10 @@ export function TaskOutcomeDialog({
 
   const effectiveStatus: TaskStatus = outcome.status;
   const requiresReason = selected === "abandoned";
-  // Manual mode requires the doctor to type notes when they reached the patient.
+  // Manual mode requires the practitioner to type notes when they reached the patient.
   const requiresManualNotes = isManual && selected === "reached";
   // Manual script must have at least one fully-valid medication card before we
-  // let the doctor finalise. Other prescription choices skip this gate.
+  // let the practitioner finalise. Other prescription choices skip this gate.
   const requiresValidRxMeds =
     selected === "reached" && prescriptionChoice === "internal";
   const isInvalid =
@@ -882,7 +882,7 @@ export function TaskOutcomeDialog({
   const readinessLoading = patientQuery.isLoading || clinicalQuery.isLoading;
   const willCreateConsultation = effectiveStatus === "completed";
   // Effective clinical outcome after the user's decision is applied at
-  // finalisation: approved if already approved server-side, or if the doctor
+  // finalisation: approved if already approved server-side, or if the practitioner
   // chose Approve in this dialog.
   const effectiveClinicalApproved =
     clinicalAlreadyApproved || clinicalDecision === "approve";
@@ -891,7 +891,7 @@ export function TaskOutcomeDialog({
 
   // Rejecting the clinical record auto-selects "None" for prescription
   // (you can't prescribe against a rejected record). Step 3 stays
-  // interactive in case the doctor changes their mind.
+  // interactive in case the practitioner changes their mind.
   function handleClinicalDecisionChange(next: ClinicalDecision) {
     setClinicalDecision(next);
     if (next === "reject") {

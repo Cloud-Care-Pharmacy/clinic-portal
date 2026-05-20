@@ -1,10 +1,10 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { getDoctorTint, getDoctorInitials } from "@/lib/rosters-utils";
+import { getPractitionerTint, getPractitionerInitials } from "@/lib/rosters-utils";
 
-interface DoctorAvatarProps {
-  doctorId: string;
+interface PractitionerAvatarProps {
+  practitionerId: string;
   name: string;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -16,14 +16,14 @@ const sizeMap = {
   lg: "size-11  text-[15px]",
 };
 
-export function DoctorAvatar({
-  doctorId,
+export function PractitionerAvatar({
+  practitionerId,
   name,
   size = "md",
   className,
-}: DoctorAvatarProps) {
-  const tint = getDoctorTint(doctorId);
-  const initials = getDoctorInitials(name);
+}: PractitionerAvatarProps) {
+  const tint = getPractitionerTint(practitionerId);
+  const initials = getPractitionerInitials(name);
   return (
     <span
       aria-hidden="true"

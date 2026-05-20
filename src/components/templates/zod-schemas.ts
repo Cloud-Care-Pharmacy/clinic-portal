@@ -112,7 +112,7 @@ export const notificationTemplateSchema = z.object({
     .refine((v) => !v || v.startsWith("/"), {
       message: "Action URL must start with /",
     }),
-  audienceRole: z.enum(["all", "admin", "doctor", "staff"]),
+  audienceRole: z.enum(["all", "admin", "practitioner", "staff"]),
   autoDismissSeconds: z
     .union([z.number(), z.string()])
     .optional()
