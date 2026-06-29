@@ -45,6 +45,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppSheet } from "@/components/shared/AppSheet";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import {
+  TaskAssignButton,
+  type TaskAssignTarget,
+} from "@/components/tasks/TaskAssignButton";
 import { useCompleteTask, useTask, useUpdateTask } from "@/lib/hooks/use-tasks";
 import { useLastDefined } from "@/lib/hooks/use-last-defined";
 import { useProfile } from "@/lib/hooks/use-profile";
@@ -167,6 +171,7 @@ export function TaskDetailSheet({
   const [cancelOpen, setCancelOpen] = useState(false);
   const profileQuery = useProfile();
   const currentInternalUserId = profileQuery.data?.data?.profile?.id;
+  const entityId = profileQuery.data?.data?.profile?.entityId;
   const updateTask = useUpdateTask();
   const completeTask = useCompleteTask();
   const taskQuery = useTask(task?.taskId, buildInitialResponse(task));
@@ -194,8 +199,7 @@ export function TaskDetailSheet({
   const canAction =
     activeTask.status !== "completed" && activeTask.status !== "cancelled";
   const isAssignedToMe =
-    !!currentInternalUserId &&
-    activeTask.assignedUserId === currentInternalUserId;
+    !!currentInternalUserId && activeTask.assignedUserId === currentInternalUserId;
   const canCall = Boolean(activeTask.patientId) && Boolean(onCallTask);
   const assignedToLabel =
     activeTask.assignedUserName ||
@@ -255,6 +259,18 @@ export function TaskDetailSheet({
         note: "Task claimed and started",
       },
       "Task claimed and started"
+    );
+  }
+
+  function handleAssign(target: TaskAssignTarget) {
+    handleUpdate(
+      {
+        taskId: activeTask.taskId,
+        assignedUserId: target.id,
+        assignedRole: null,
+        note: `Assigned to ${target.name}`,
+      },
+      "Task assigned"
     );
   }
 
@@ -334,10 +350,7 @@ export function TaskDetailSheet({
                 {canAction && (
                   <>
                     {isAssignedToMe && activeTask.status !== "in_progress" && (
-                      <DropdownMenuItem
-                        disabled={isPending}
-                        onClick={handleComplete}
-                      >
+                      <DropdownMenuItem disabled={isPending} onClick={handleComplete}>
                         <CheckCircle2 className="size-4 " />
                         Mark completed
                       </DropdownMenuItem>
@@ -352,9 +365,7 @@ export function TaskDetailSheet({
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem
-                      disabled={
-                        !activeTask.assignedUserId && !activeTask.assignedRole
-                      }
+                      disabled={!activeTask.assignedUserId && !activeTask.assignedRole}
                       onClick={handleUnassign}
                     >
                       <UserMinus className="size-4 " />
@@ -418,11 +429,7 @@ export function TaskDetailSheet({
                   </DropdownMenu>
                 </div>
               ) : activeTask.status === "open" ? (
-                <Button
-                  onClick={handleStart}
-                  disabled={isPending}
-                  className="gap-1.5"
-                >
+                <Button onClick={handleStart} disabled={isPending} className="gap-1.5">
                   <Play className="size-4 " />
                   {updateTask.isPending ? "Starting…" : "Start"}
                 </Button>
@@ -451,10 +458,7 @@ export function TaskDetailSheet({
                       <ChevronDown className="size-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" side="top" className="w-48">
-                      <DropdownMenuItem
-                        disabled={isPending}
-                        onClick={handleComplete}
-                      >
+                      <DropdownMenuItem disabled={isPending} onClick={handleComplete}>
                         <CheckCircle2 className="size-4 " />
                         Mark completed
                       </DropdownMenuItem>
@@ -515,7 +519,22 @@ export function TaskDetailSheet({
           </DetailRow>
 
           <DetailRow icon={<UserCheck className="size-4 " />} label="Assigned to">
-            {assignedToLabel}
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{assignedToLabel}</span>
+              {canAction && (
+                <TaskAssignButton
+                  entityId={entityId}
+                  assignedUserId={activeTask.assignedUserId}
+                  disabled={isPending}
+                  label={
+                    activeTask.assignedUserId || activeTask.assignedRole
+                      ? "Reassign"
+                      : "Assign"
+                  }
+                  onAssign={handleAssign}
+                />
+              )}
+            </div>
           </DetailRow>
 
           <DetailRow icon={<Inbox className="size-4 " />} label="Source">
