@@ -26,17 +26,21 @@ interface TaskAssignButtonProps {
   /** Currently assigned internal user id, marked as the active selection. */
   assignedUserId?: string | null;
   disabled?: boolean;
+  /** Visible button text. Defaults to "Assign". */
+  label?: string;
   onAssign: (target: TaskAssignTarget) => void;
 }
 
 /**
- * Footer action that reassigns a task to another staff member. The staff list
- * is only fetched once the popover opens, so opening a task drawer stays cheap.
+ * Inline action that assigns/reassigns a task to another staff member. The
+ * staff list is only fetched once the popover opens, so opening a task drawer
+ * stays cheap.
  */
 export function TaskAssignButton({
   entityId,
   assignedUserId,
   disabled,
+  label = "Assign",
   onAssign,
 }: TaskAssignButtonProps) {
   const [open, setOpen] = useState(false);
@@ -52,16 +56,17 @@ export function TaskAssignButton({
         render={
           <Button
             type="button"
-            variant="ghost"
-            size="icon-lg"
-            aria-label="Assign task to another staff member"
+            variant="outline"
+            size="sm"
+            aria-label={`${label} task to another staff member`}
             disabled={disabled}
           />
         }
       >
-        <UserPlus className="size-4" />
+        <UserPlus />
+        {label}
       </PopoverTrigger>
-      <PopoverContent align="start" side="top" className="w-72 gap-0 p-0">
+      <PopoverContent align="start" side="bottom" className="w-72 gap-0 p-0">
         {/*
          * Rendered unconditionally: base-ui's Portal unmounts this subtree while
          * the popover is closed (keepMounted defaults to false), so the staff

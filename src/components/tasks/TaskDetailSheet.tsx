@@ -338,72 +338,59 @@ export function TaskDetailSheet({
         }
         footer={
           <div className="flex w-full items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
-                  disabled={isPending}
-                  aria-label="More actions"
-                >
-                  <MoreHorizontal className="size-4 " />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="top" className="w-56">
-                  {canAction && (
-                    <>
-                      {isAssignedToMe && activeTask.status !== "in_progress" && (
-                        <DropdownMenuItem disabled={isPending} onClick={handleComplete}>
-                          <CheckCircle2 className="size-4 " />
-                          Mark completed
-                        </DropdownMenuItem>
-                      )}
-                      {activeTask.status === "open" && !isAssignedToMe && (
-                        <DropdownMenuItem
-                          disabled={!activeTask.assignedUserId}
-                          onClick={handleStart}
-                        >
-                          <Play className="size-4 " />
-                          Start
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem
-                        disabled={
-                          !activeTask.assignedUserId && !activeTask.assignedRole
-                        }
-                        onClick={handleUnassign}
-                      >
-                        <UserMinus className="size-4 " />
-                        Unassign
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="inline-flex size-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+                disabled={isPending}
+                aria-label="More actions"
+              >
+                <MoreHorizontal className="size-4 " />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-56">
+                {canAction && (
+                  <>
+                    {isAssignedToMe && activeTask.status !== "in_progress" && (
+                      <DropdownMenuItem disabled={isPending} onClick={handleComplete}>
+                        <CheckCircle2 className="size-4 " />
+                        Mark completed
                       </DropdownMenuItem>
-                      {onScheduleConsultation && (
-                        <DropdownMenuItem
-                          onClick={() => onScheduleConsultation(activeTask)}
-                        >
-                          <CalendarPlus className="size-4 " />
-                          Schedule consultation
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
+                    )}
+                    {activeTask.status === "open" && !isAssignedToMe && (
                       <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setCancelOpen(true)}
+                        disabled={!activeTask.assignedUserId}
+                        onClick={handleStart}
                       >
-                        <XCircle className="size-4 " />
-                        Cancel task
+                        <Play className="size-4 " />
+                        Start
                       </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {canAction && (
-                <TaskAssignButton
-                  entityId={entityId}
-                  assignedUserId={activeTask.assignedUserId}
-                  disabled={isPending}
-                  onAssign={handleAssign}
-                />
-              )}
-            </div>
+                    )}
+                    <DropdownMenuItem
+                      disabled={!activeTask.assignedUserId && !activeTask.assignedRole}
+                      onClick={handleUnassign}
+                    >
+                      <UserMinus className="size-4 " />
+                      Unassign
+                    </DropdownMenuItem>
+                    {onScheduleConsultation && (
+                      <DropdownMenuItem
+                        onClick={() => onScheduleConsultation(activeTask)}
+                      >
+                        <CalendarPlus className="size-4 " />
+                        Schedule consultation
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => setCancelOpen(true)}
+                    >
+                      <XCircle className="size-4 " />
+                      Cancel task
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {canAction ? (
               !isAssignedToMe ? (
@@ -532,7 +519,22 @@ export function TaskDetailSheet({
           </DetailRow>
 
           <DetailRow icon={<UserCheck className="size-4 " />} label="Assigned to">
-            {assignedToLabel}
+            <div className="flex flex-wrap items-center gap-2">
+              <span>{assignedToLabel}</span>
+              {canAction && (
+                <TaskAssignButton
+                  entityId={entityId}
+                  assignedUserId={activeTask.assignedUserId}
+                  disabled={isPending}
+                  label={
+                    activeTask.assignedUserId || activeTask.assignedRole
+                      ? "Reassign"
+                      : "Assign"
+                  }
+                  onAssign={handleAssign}
+                />
+              )}
+            </div>
           </DetailRow>
 
           <DetailRow icon={<Inbox className="size-4 " />} label="Source">
