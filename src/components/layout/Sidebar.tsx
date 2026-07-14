@@ -17,6 +17,7 @@ import {
   User,
   Building2,
   Package,
+  Boxes,
   ShoppingCart,
   Workflow,
   Mail,
@@ -89,6 +90,11 @@ const catalogNav: NavItem[] = [
     label: "Products",
     href: "/products",
     icon: <Package className="size-5 " />,
+  },
+  {
+    label: "Inventory",
+    href: "/inventory",
+    icon: <Boxes className="size-5 " />,
   },
   {
     label: "Orders",
