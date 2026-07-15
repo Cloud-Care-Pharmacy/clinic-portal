@@ -18,6 +18,7 @@ import {
   Building2,
   Package,
   ShoppingCart,
+  ClipboardList,
   Workflow,
   Mail,
 } from "lucide-react";
@@ -94,6 +95,11 @@ const catalogNav: NavItem[] = [
     label: "Orders",
     href: "/orders",
     icon: <ShoppingCart className="size-5 " />,
+  },
+  {
+    label: "Stocktakes",
+    href: "/stocktakes",
+    icon: <ClipboardList className="size-5 " />,
   },
 ];
 

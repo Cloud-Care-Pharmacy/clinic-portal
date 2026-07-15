@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckSquare,
+  ClipboardList,
   Command,
   Grid3X3,
   History,
@@ -90,6 +91,22 @@ export const SEARCH_COMMANDS: SearchCommandDefinition[] = [
     keywords: ["todo", "follow up", "work queue"],
   },
   {
+    id: "new-order",
+    label: "Add order",
+    group: "Actions",
+    icon: ShoppingCart,
+    href: "/orders/new",
+    keywords: ["sale", "customer", "checkout", "purchase"],
+  },
+  {
+    id: "new-stocktake",
+    label: "New stocktake",
+    group: "Actions",
+    icon: ClipboardList,
+    href: "/stocktakes/new",
+    keywords: ["count", "inventory", "reconcile", "audit", "stock"],
+  },
+  {
     id: "go-dashboard",
     label: "Go to Dashboard",
     group: "Navigate",
@@ -144,6 +161,14 @@ export const SEARCH_COMMANDS: SearchCommandDefinition[] = [
     icon: ShoppingCart,
     href: "/orders",
     keywords: ["sales", "purchases", "checkout"],
+  },
+  {
+    id: "go-stocktakes",
+    label: "Go to Stocktakes",
+    group: "Navigate",
+    icon: ClipboardList,
+    href: "/stocktakes",
+    keywords: ["count", "inventory", "reconcile", "audit"],
   },
 ];
 
