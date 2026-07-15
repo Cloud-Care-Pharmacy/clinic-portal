@@ -270,3 +270,76 @@ export interface OrdersSummary {
   revenuePaidCents: number;
   cancelled: number;
 }
+
+/** Payload for POST /api/orders. The gateway snapshots price/GST/Rx per line. */
+export interface CreateOrderLineInput {
+  productId: string;
+  qty: number;
+}
+export interface CreateOrderPayload {
+  customerName: string;
+  channel: OrderChannel;
+  customerEmail?: string;
+  customerPhone?: string;
+  note?: string;
+  lines: CreateOrderLineInput[];
+}
+
+// --- Stocktakes ---
+
+export type StocktakeStatus = "in_progress" | "completed" | "cancelled";
+
+export interface StocktakeLine {
+  id: string;
+  productId: string;
+  name: string;
+  sku: string | null;
+  expectedQty: number;
+  countedQty: number | null;
+  variance: number | null;
+  note: string | null;
+}
+
+export interface StocktakeSummary {
+  id: string;
+  displayId: string;
+  status: StocktakeStatus;
+  locationId: string;
+  startedAt: string;
+  completedAt: string | null;
+  lineCount: number;
+  countedCount: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface StocktakeDetail {
+  id: string;
+  entityId: string;
+  displayId: string;
+  locationId: string;
+  status: StocktakeStatus;
+  startedAt: string;
+  completedAt: string | null;
+  note: string | null;
+  lines: StocktakeLine[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StocktakesListResponse {
+  success: true;
+  data: { stocktakes: StocktakeSummary[]; total: number };
+}
+
+/** Payload for POST /api/stocktakes — opens an in-progress count session. */
+export interface CreateStocktakePayload {
+  note?: string;
+  productIds?: string[];
+}
+
+/** Payload for POST /api/stocktakes/{id}/complete — records counts + reconciles. */
+export interface CompleteStocktakePayload {
+  counts: { productId: string; countedQty: number }[];
+  note?: string;
+}
