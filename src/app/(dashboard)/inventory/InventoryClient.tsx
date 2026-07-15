@@ -250,6 +250,7 @@ export function InventoryClient() {
         actions={
           <button
             type="button"
+            onClick={() => push("/inventory/stocktake/new")}
             className="inline-flex h-9 items-center gap-1.5 rounded-sm bg-primary px-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <Plus className="size-4" aria-hidden="true" />

@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type {
+  CreateOrderPayload,
   OrderDetail,
   OrdersListResponse,
   OrdersSummary,
@@ -35,6 +36,16 @@ async function fetchOrdersSummary(): Promise<{ data: { summary: OrdersSummary } 
 async function fetchOrder(orderId: string): Promise<{ data: { order: OrderDetail } }> {
   const res = await fetch(`/api/proxy/orders/${encodeURIComponent(orderId)}`);
   if (!res.ok) throw new Error(await errorMessage(res, "Failed to load order"));
+  return res.json();
+}
+
+async function createOrder(body: CreateOrderPayload): Promise<{ data: { order: OrderDetail } }> {
+  const res = await fetch(`/api/proxy/orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await errorMessage(res, "Failed to create order"));
   return res.json();
 }
 
@@ -70,6 +81,17 @@ async function recordPayment({ orderId, ...body }: RecordPaymentPayload) {
   });
   if (!res.ok) throw new Error(await errorMessage(res, "Failed to record payment"));
   return res.json() as Promise<{ data: { order: OrderDetail } }>;
+}
+
+export function useCreateOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createOrder,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["orders-summary"] });
+    },
+  });
 }
 
 export function useOrders() {
