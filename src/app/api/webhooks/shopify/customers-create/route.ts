@@ -181,6 +181,9 @@ export async function POST(req: NextRequest) {
     email,
     firstName: clean(customer.first_name) ?? "",
     lastName: clean(customer.last_name) ?? "",
+    // The templates greet by first name, which Shopify signups often lack, and
+    // the renderer has no default filter — so the fallback is resolved here.
+    greetingName: clean(customer.first_name) ?? "there",
     shopifyCustomerId: customer.id ?? null,
   });
 
