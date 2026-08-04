@@ -1,0 +1,134 @@
+{
+  "entityId": "aded0afd-47f8-411e-ba99-9684571caaf8",
+  "name": "Shopify Signup → New Patient",
+  "description": "Runs when Shopify posts a customers/create webhook. Looks the customer up by email, creates the patient record when they are new, sends the welcome email, and logs the signup on the patient timeline. Customers without an email, and customers who already exist, are skipped.",
+  "status": "draft",
+  "triggers": [
+    {
+      "kind": "webhook",
+      "name": "Shopify customer created"
+    }
+  ],
+  "definition": {
+    "version": 1,
+    "steps": [
+      {
+        "kind": "http_call",
+        "id": "lookup_existing_patient",
+        "name": "Look up existing patient by email",
+        "method": "GET",
+        "url": "__API_URL__/api/entities/aded0afd-47f8-411e-ba99-9684571caaf8/patients",
+        "queryParams": {
+          "search": "{{event.payload.body.email}}",
+          "limit": "1"
+        },
+        "headers": {
+          "X-API-Key": "__API_SECRET__"
+        },
+        "timeoutMs": 10000,
+        "failureMode": "throw",
+        "storeAs": "existing",
+        "sensitive": true,
+        "retry": {
+          "maxAttempts": 3,
+          "initialDelayMs": 2000,
+          "backoff": "exponential"
+        }
+      },
+      {
+        "kind": "router",
+        "id": "signup_router",
+        "name": "New Shopify signup?",
+        "executionType": "first_match",
+        "branches": [
+          {
+            "name": "no-email",
+            "conditions": [
+              [
+                {
+                  "left": "{{event.payload.body.email}}",
+                  "op": "falsy"
+                }
+              ]
+            ],
+            "steps": []
+          },
+          {
+            "name": "new-signup",
+            "conditions": [
+              [
+                {
+                  "left": "{{vars.existing.body.data.pagination.total}}",
+                  "op": "eq",
+                  "right": "0"
+                }
+              ]
+            ],
+            "steps": [
+              {
+                "kind": "http_call",
+                "id": "create_patient",
+                "name": "Create patient record",
+                "method": "POST",
+                "url": "__API_URL__/api/patients",
+                "headers": {
+                  "X-API-Key": "__API_SECRET__",
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "entityId": "aded0afd-47f8-411e-ba99-9684571caaf8",
+                  "originalEmail": "{{event.payload.body.email}}",
+                  "firstName": "{{event.payload.body.first_name}}",
+                  "lastName": "{{event.payload.body.last_name}}",
+                  "mobile": "{{event.payload.body.phone}}",
+                  "streetAddress": "{{event.payload.body.default_address.address1}}",
+                  "city": "{{event.payload.body.default_address.city}}",
+                  "state": "{{event.payload.body.default_address.province}}",
+                  "postcode": "{{event.payload.body.default_address.zip}}",
+                  "country": "{{event.payload.body.default_address.country}}",
+                  "introSource": "shopify"
+                },
+                "timeoutMs": 15000,
+                "failureMode": "throw",
+                "storeAs": "patient",
+                "sensitive": true,
+                "retry": {
+                  "maxAttempts": 3,
+                  "initialDelayMs": 2000,
+                  "backoff": "exponential"
+                }
+              },
+              {
+                "kind": "send_email",
+                "id": "send_welcome_email",
+                "name": "Send welcome email",
+                "to": "{{event.payload.body.email}}",
+                "from": "info@notification.quity.com.au",
+                "fromName": "Quity",
+                "subject": "Welcome to Quity, {{event.payload.body.first_name}}",
+                "html": "<p>Hi {{event.payload.body.first_name}},</p><p>Thanks for signing up with Quity. Your account is set up and we&rsquo;ll be in touch with your next steps shortly.</p><p>&mdash; The Quity team</p>",
+                "text": "Hi {{event.payload.body.first_name}},\n\nThanks for signing up with Quity. Your account is set up and we'll be in touch with your next steps shortly.\n\n— The Quity team",
+                "idempotencyKeySuffix": "shopify-signup-welcome"
+              },
+              {
+                "kind": "record_activity",
+                "id": "log_signup",
+                "name": "Log signup on patient timeline",
+                "patientId": "{{vars.patient.body.data.id}}",
+                "type": "patient-created",
+                "entityType": "patient",
+                "entityId": "{{vars.patient.body.data.id}}",
+                "title": "Created from Shopify signup",
+                "description": "Shopify customer {{event.payload.body.id}} signed up; patient record and welcome email created automatically."
+              }
+            ]
+          }
+        ],
+        "fallback": {
+          "name": "already-a-patient",
+          "steps": []
+        }
+      }
+    ]
+  }
+}
