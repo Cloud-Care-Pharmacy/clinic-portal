@@ -11,6 +11,7 @@ export { LookupConsultationForm } from "./LookupConsultationForm";
 export { LookupPatientConsultationsForm } from "./LookupPatientConsultationsForm";
 export { LookupPatientForm } from "./LookupPatientForm";
 export { LoopOnItemsForm } from "./LoopOnItemsForm";
+export { PatientActionForm } from "./PatientActionForm";
 export { RecordActivityForm } from "./RecordActivityForm";
 export { RetrySettings } from "./RetrySettings";
 export { RouterForm } from "./RouterForm";
