@@ -5,6 +5,7 @@ export { CheckConsultationConflictsForm } from "./CheckConsultationConflictsForm
 export { ConsultationActionForm } from "./ConsultationActionForm";
 export { FindFreeSlotsForm } from "./FindFreeSlotsForm";
 export { GetPractitionerAvailabilityForm } from "./GetPractitionerAvailabilityForm";
+export { HasClinicalRecordForm } from "./HasClinicalRecordForm";
 export { HttpCallForm } from "./HttpCallForm";
 export { IsPractitionerOnLeaveForm } from "./IsPractitionerOnLeaveForm";
 export { LookupConsultationForm } from "./LookupConsultationForm";

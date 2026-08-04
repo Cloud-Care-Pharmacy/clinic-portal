@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   BRANCH_OP_VALUES,
+  CLINICAL_REVIEW_STATUSES,
   CONSULTATION_ACTION_OPERATIONS,
   PATIENT_ACTION_FIELD_KEYS,
   PATIENT_ACTION_OPERATIONS,
@@ -471,6 +472,14 @@ const patientActionStep = z
     }
   });
 
+const hasClinicalRecordStep = z.object({
+  ...baseStep,
+  kind: z.literal("has_clinical_record"),
+  patientId: templateString,
+  reviewStatus: z.enum(CLINICAL_REVIEW_STATUSES).optional(),
+  storeAs: stepIdRefinement,
+});
+
 const isPractitionerOnLeaveStep = z.object({
   ...baseStep,
   kind: z.literal("is_practitioner_on_leave"),
@@ -718,6 +727,7 @@ export const stepSchema = z.discriminatedUnion("kind", [
   checkConsultationConflictsStep,
   consultationActionStep,
   patientActionStep,
+  hasClinicalRecordStep,
   isPractitionerOnLeaveStep,
   getPractitionerAvailabilityStep,
   recordActivityStep,

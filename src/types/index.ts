@@ -1808,6 +1808,7 @@ export type WorkflowStepKind =
   | "check_consultation_conflicts"
   | "consultation_action"
   | "patient_action"
+  | "has_clinical_record"
   | "is_practitioner_on_leave"
   | "get_practitioner_availability"
   | "record_activity"
@@ -2356,6 +2357,37 @@ export interface PatientActionStep
 }
 
 /**
+ * Review states of a clinical-data (intake) submission. Mirrors
+ * `ClinicalReviewStatus` server-side.
+ */
+export const CLINICAL_REVIEW_STATUSES = [
+  "pending",
+  "approved",
+  "rejected",
+] as const;
+export type ClinicalReviewStatus = (typeof CLINICAL_REVIEW_STATUSES)[number];
+
+/**
+ * Gates on whether a patient has submitted a clinical record (intake).
+ *
+ * A submission row exists only once the patient has submitted, so existence
+ * is submission. `reviewStatus` narrows which submissions count — omit it
+ * for "have they submitted at all?", or set `approved` to gate on a
+ * reviewed intake.
+ *
+ * Stores `{ patientId, hasSubmitted, total, reviewStatus, latest }` under
+ * `vars.<storeAs>`. `latest` is review metadata only (record id, status,
+ * timestamps, reviewer, notes) — never the clinical answers.
+ */
+export interface HasClinicalRecordStep extends WorkflowStepBase {
+  kind: "has_clinical_record";
+  patientId: string;
+  storeAs: string;
+  /** Only count submissions in this review state. Omit for any. */
+  reviewStatus?: ClinicalReviewStatus;
+}
+
+/**
  * Checks whether the practitioner is on leave for a given date. Stores
  * `{ practitionerUserId, date, isOnLeave, leaves[] }` under
  * `vars.<storeAs>`.
@@ -2544,6 +2576,7 @@ export type WorkflowStep =
   | CheckConsultationConflictsStep
   | ConsultationActionStep
   | PatientActionStep
+  | HasClinicalRecordStep
   | IsPractitionerOnLeaveStep
   | GetPractitionerAvailabilityStep
   | RecordActivityStep
