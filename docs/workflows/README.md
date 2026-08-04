@@ -4,99 +4,113 @@ Automation for the marketing funnel: when someone signs up as a customer in
 Shopify, create the matching patient record in the clinic and send them a
 welcome email.
 
-The workflow itself lives in the gateway (`/workflows`), not in this repo.
-`shopify-signup-to-patient.json` is the exact payload it was created from, kept
-here so the definition is reviewable and reproducible.
+```
+Shopify customers/create webhook
+   │
+   ▼
+POST /api/webhooks/shopify/customers-create   ← this app
+   │   verify Shopify HMAC → look up by email → POST /api/patients
+   ▼
+"Shopify Signup → New Patient" workflow (webhook trigger)
+       └─ router "Has email?"
+            ├─ send-welcome ..... welcome email + timeline entry
+            └─ no-email ......... skip
+```
 
 | | |
 |---|---|
 | Workflow ID | `019fce63-5b36-71dc-980c-ffcf8d7ab8d2` |
 | Entity | `aded0afd-47f8-411e-ba99-9684571caaf8` (Quity) |
 | Status | `draft` — **not live** |
-| Trigger | Webhook (token is shown in the workflow editor's trigger panel) |
+| Trigger link | Shown on the trigger node in the workflow editor |
 
-## Shape
+`shopify-signup-to-patient.json` is the payload the workflow was created from,
+kept here so the definition is reviewable and re-appliable.
 
-```
-Shopify customers/create  ──▶  webhook trigger
-   │
-   ├─ http_call   look up existing patient by email  (search, limit 1)
-   └─ router      "New Shopify signup?"  (first match wins)
-        ├─ no-email ............. customer has no email → skip
-        ├─ new-signup ........... search returned 0 matches
-        │     ├─ http_call ...... POST /api/patients
-        │     ├─ send_email ..... welcome email
-        │     └─ record_activity  log the signup on the patient timeline
-        └─ already-a-patient .... fallback, skip (covers Shopify webhook retries)
-```
+## Why the create step isn't in the workflow
 
-Shopify's `customers/create` body lands at `{{event.payload.body.*}}` — the
-webhook trigger wraps the POST as `{ headers, query, params, body, webhookUrl,
-executionMode }`. `http_call` responses are stored as
-`{ status, ok, body }`, so the parsed JSON of a call stored as `existing` is at
-`{{vars.existing.body.…}}`.
+The obvious shape — one workflow doing lookup, create, and email via `http_call`
+— doesn't run. Verified by test run:
 
-## Blocked: the engine cannot call our own API
+- `http_call` to `https://api.quity.com.au` returns **522** from inside the
+  engine, while the same request succeeds from anywhere else. Calls to
+  third-party hosts work (`https://example.com` → 200), so this is the gateway
+  being unable to reach its own Cloudflare-fronted hostname, not egress in
+  general.
+- There is no native patient-creating step — `create_patient` is rejected by the
+  definition validator, and the step catalog has no equivalent.
 
-The two `http_call` steps target `https://api.quity.com.au`. Verified by test
-run: **that call returns 522 from inside the workflow engine**, while the same
-request from anywhere else succeeds. `http_call` to third-party hosts works
-normally (`https://example.com` → 200), so this is specific to the gateway
-calling its own Cloudflare-fronted hostname, not general egress.
+So the create happens in the route handler, which can reach the API. That also
+keeps `API_SECRET` server-side instead of stored in the workflow definition
+where anyone who can open the editor could read it.
 
-The engine has no native patient-creating step either — `create_patient` is
-rejected by the definition validator, and the step catalog exposes no
-equivalent.
+If the gateway later gains a `create_patient` step (or the engine can reach the
+API), the lookup and create can move back into the workflow and the route can go
+away.
 
-So the workflow is correct but cannot run end to end until the patient-creation
-hop is provided by one of:
+## Configuration
 
-1. **Gateway change** — make the API reachable from the engine (service binding
-   or an unproxied internal hostname), or add a `create_patient` step kind.
-   The definition here then works unchanged.
-2. **An ingest route in this app** — a Shopify-HMAC-verified route handler that
-   creates the patient with the server-side `API_SECRET`, letting the resulting
-   `patient.created` event drive the welcome-email workflow.
-3. **An external caller** (e.g. Shopify Flow's HTTP action) posting to
-   `POST /api/patients` with the API key.
+Set in Vercel (and `.env.local` for local work):
+
+| Variable | Value |
+|---|---|
+| `SHOPIFY_WEBHOOK_SECRET` | signing secret from the Shopify webhook subscription |
+| `SHOPIFY_SIGNUP_ENTITY_ID` | `aded0afd-47f8-411e-ba99-9684571caaf8` |
+| `SHOPIFY_SIGNUP_WORKFLOW_URL` | the workflow's trigger link |
+
+The route returns 503 while any of these (or `API_SECRET`) are unset — it fails
+closed rather than accepting unverified callers.
+
+In Shopify: Settings → Notifications → Webhooks → add `customers/create`
+pointing at `https://<portal-domain>/api/webhooks/shopify/customers-create`.
+
+## Behaviour
+
+| Situation | Result |
+|---|---|
+| Valid signature, new customer | patient created, welcome email sent, `200` |
+| Signature missing or wrong | `401`, nothing called |
+| Customer already has a patient | skipped, no duplicate and no second email |
+| Customer has no email | skipped (nothing to key the record on) |
+| Another topic posted to the URL | skipped |
+| Gateway lookup/create fails | `502`, so Shopify retries the delivery |
+
+Shopify's payload is mapped to the patient record as `email → originalEmail`
+(lower-cased, matching every existing record), `first_name`/`last_name`,
+`phone` (falling back to the default address phone), `default_address.*` →
+street/city/state/postcode/country, plus `introSource: "shopify"`. Blank values
+are omitted rather than written as empty strings.
 
 ## Before going live
 
-- [ ] Provide the patient-creation hop (above).
-- [ ] Swap the placeholder welcome email for the real template: set
-      `templateId` (+ `variables`) on the `send_welcome_email` step and drop the
-      inline `subject`/`html`/`text`.
-- [ ] Confirm the Shopify field names against a real delivery. This assumes the
-      REST webhook shape (`first_name`, `last_name`, `phone`,
-      `default_address.*`).
-- [ ] In Shopify: Settings → Notifications → Webhooks, add a `customers/create`
-      webhook pointing at the trigger URL from the workflow editor, and store
-      its signing secret under Workspace → Integrations → Shopify.
-- [ ] Decide whether to gate the email on `email_marketing_consent.state`.
-- [ ] Test-run with a payload whose email already exists — that path performs no
-      writes and sends nothing.
-- [ ] Activate (`POST /workflows/{id}/activate`, or the button in the editor).
+- [ ] Swap the placeholder welcome email for the real template: set `templateId`
+      (+ `variables`) on the `send_welcome_email` step and drop the inline
+      `subject`/`html`/`text`.
+- [ ] Set the three variables above in Vercel and register the Shopify webhook.
+- [ ] Test-run the workflow from the editor with your own address in
+      `body.email` to check the email renders.
+- [ ] Activate the workflow (button in the editor, or
+      `POST /workflows/{id}/activate`).
 
-## Applying the definition
+Every customer who signs up gets the welcome email — it is not gated on
+`email_marketing_consent`. If that should change, add a condition on
+`{{event.payload.body.marketingConsent}}` and pass the flag through from the
+route.
 
-The JSON keeps `__API_URL__` / `__API_SECRET__` placeholders so no credential is
-committed. To re-apply after editing:
+## Re-applying the definition
 
 ```bash
 python3 - <<'PY'
 import json, os, subprocess
 api, key = os.environ["NEXT_PUBLIC_API_URL"].rstrip("/"), os.environ["API_SECRET"]
-body = (open("docs/workflows/shopify-signup-to-patient.json").read()
-        .replace("__API_URL__", api).replace("__API_SECRET__", key))
-payload = json.loads(body); payload.pop("entityId", None)   # PATCH ignores entityId
+payload = json.load(open("docs/workflows/shopify-signup-to-patient.json"))
+payload.pop("entityId", None)     # PATCH ignores it
+payload.pop("triggers", None)     # sending triggers re-issues the webhook token
 subprocess.run(["curl", "-sS", "-X", "PATCH", "-H", f"X-API-Key: {key}",
                 "-H", "Content-Type: application/json", "-d", json.dumps(payload),
                 f"{api}/workflows/019fce63-5b36-71dc-980c-ffcf8d7ab8d2"])
 PY
 ```
 
-> The definition stores the entity API key in the `http_call` headers — the only
-> way for a step to authenticate against our API today. Both steps are marked
-> `sensitive: true` so run captures omit their inputs and outputs, but the key is
-> still readable by anyone who can open the workflow in the editor or read
-> `GET /workflows/{id}`. Option 1 or 2 above removes the need for it entirely.
+> Sending `triggers` on a PATCH re-issues the webhook token and invalidates the
+> old trigger link, so `SHOPIFY_SIGNUP_WORKFLOW_URL` would need updating.

@@ -1,7 +1,13 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+// The Shopify webhook has no Clerk session — it authenticates with an HMAC
+// signature the route handler verifies itself.
+const isPublicRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/api/webhooks/shopify/(.*)",
+]);
 
 export const proxy = clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl;
