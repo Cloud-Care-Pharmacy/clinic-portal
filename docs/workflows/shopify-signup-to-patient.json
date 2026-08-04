@@ -1,7 +1,7 @@
 {
   "entityId": "aded0afd-47f8-411e-ba99-9684571caaf8",
   "name": "Shopify Signup → New Patient",
-  "description": "Sends the welcome email to a customer who just signed up in Shopify. Called by the portal's /api/webhooks/shopify/customers-create route, which verifies the Shopify signature and creates the patient record first, then posts { patientId, email, firstName, lastName, shopifyCustomerId } here.",
+  "description": "Creates the patient record for a customer who just signed up in Shopify and sends them the welcome email. Called by the portal's /api/webhooks/shopify/customers-create route, which verifies the Shopify signature and skips customers who already have a record, then posts the mapped customer fields here.",
   "status": "draft",
   "triggers": [
     {
@@ -19,7 +19,7 @@
         "executionType": "first_match",
         "branches": [
           {
-            "name": "send-welcome",
+            "name": "create-and-welcome",
             "conditions": [
               [
                 {
@@ -29,6 +29,29 @@
               ]
             ],
             "steps": [
+              {
+                "kind": "patient_action",
+                "id": "create_patient",
+                "name": "Create patient",
+                "operation": "create",
+                "storeAs": "newPatient",
+                "entityId": "aded0afd-47f8-411e-ba99-9684571caaf8",
+                "originalEmail": "{{event.payload.body.email}}",
+                "firstName": "{{event.payload.body.firstName}}",
+                "lastName": "{{event.payload.body.lastName}}",
+                "mobile": "{{event.payload.body.mobile}}",
+                "streetAddress": "{{event.payload.body.streetAddress}}",
+                "city": "{{event.payload.body.city}}",
+                "state": "{{event.payload.body.state}}",
+                "postcode": "{{event.payload.body.postcode}}",
+                "country": "{{event.payload.body.country}}",
+                "source": "shopify",
+                "retry": {
+                  "maxAttempts": 3,
+                  "initialDelayMs": 2000,
+                  "backoff": "exponential"
+                }
+              },
               {
                 "kind": "send_email",
                 "id": "send_welcome_email",
@@ -48,10 +71,10 @@
                 "kind": "record_activity",
                 "id": "log_signup",
                 "name": "Log signup on patient timeline",
-                "patientId": "{{event.payload.body.patientId}}",
+                "patientId": "{{vars.newPatient.patientId}}",
                 "type": "patient-created",
                 "entityType": "patient",
-                "entityId": "{{event.payload.body.patientId}}",
+                "entityId": "{{vars.newPatient.patientId}}",
                 "title": "Created from Shopify signup",
                 "description": "Shopify customer {{event.payload.body.shopifyCustomerId}} signed up; patient record and welcome email created automatically."
               }

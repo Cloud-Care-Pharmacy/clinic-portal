@@ -11,14 +11,17 @@ const ENTITY_ID = process.env.SHOPIFY_SIGNUP_ENTITY_ID ?? "";
 const WORKFLOW_URL = process.env.SHOPIFY_SIGNUP_WORKFLOW_URL ?? "";
 
 /**
- * Shopify `customers/create` webhook: creates the matching patient record, then
- * hands off to the "Shopify Signup → New Patient" workflow, which sends the
- * welcome email.
+ * Shopify `customers/create` webhook: verifies the delivery, then hands the
+ * customer off to the "Shopify Signup → New Patient" workflow, which creates
+ * the patient record (`patient_action`) and sends the welcome email.
  *
- * The workflow engine can't do the create itself — an `http_call` step aimed at
- * our own API comes back 522 (the gateway can't reach its own Cloudflare-fronted
- * hostname), and the engine has no `create_patient` step. Doing it here also
- * keeps `API_SECRET` server-side instead of stored in the workflow definition.
+ * What stays here rather than moving into the workflow:
+ *  - the HMAC check, which is the only thing separating a real Shopify
+ *    delivery from anyone who has learned the trigger URL;
+ *  - the "already a patient" lookup, because `patient_action` rejects a
+ *    duplicate email outright and Shopify re-delivers until it gets a 2xx —
+ *    without this, every retry would leave a failed run behind. The engine has
+ *    no lookup-by-email step to do it with.
  *
  * Public route — authenticated by the Shopify HMAC signature, not by Clerk. See
  * `isPublicRoute` in `src/proxy.ts`.
@@ -59,39 +62,39 @@ function clean(value: unknown): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function toPatientPayload(customer: ShopifyCustomer, email: string) {
+/**
+ * Flattens the Shopify customer into the shape the workflow's `patient_action`
+ * step reads. Blank values are sent as empty strings, which is what an
+ * unresolved template would produce anyway.
+ */
+function toWorkflowPayload(customer: ShopifyCustomer, email: string) {
   const address = customer.default_address ?? {};
-  const payload: Record<string, string> = {
-    entityId: ENTITY_ID,
-    originalEmail: email,
-    introSource: "shopify",
+  return {
+    email,
+    firstName: clean(customer.first_name) ?? "",
+    lastName: clean(customer.last_name) ?? "",
+    // The templates greet by first name, which Shopify signups often lack, and
+    // the renderer has no default filter — so the fallback is resolved here.
+    greetingName: clean(customer.first_name) ?? "there",
+    mobile: clean(customer.phone) ?? clean(address.phone) ?? "",
+    streetAddress: clean(address.address1) ?? "",
+    city: clean(address.city) ?? "",
+    state: clean(address.province) ?? "",
+    postcode: clean(address.zip) ?? "",
+    country: clean(address.country) ?? "",
+    shopifyCustomerId: customer.id ?? null,
   };
-  const optional: Record<string, string | undefined> = {
-    firstName: clean(customer.first_name),
-    lastName: clean(customer.last_name),
-    mobile: clean(customer.phone) ?? clean(address.phone),
-    streetAddress: clean(address.address1),
-    city: clean(address.city),
-    state: clean(address.province),
-    postcode: clean(address.zip),
-    country: clean(address.country),
-  };
-  for (const [key, value] of Object.entries(optional)) {
-    if (value) payload[key] = value;
-  }
-  return payload;
 }
 
 /**
- * Starts the welcome-email workflow. Failures are logged rather than surfaced:
- * the patient already exists at this point, and a non-2xx would make Shopify
- * retry into the "already a patient" branch, which skips instead of retrying
- * the email.
+ * Starts the workflow that creates the patient and sends the welcome email.
+ * Nothing has been written at this point, so a failure is worth reporting back
+ * to Shopify — its retry re-runs the whole thing safely.
  */
-async function startWelcomeWorkflow(body: Record<string, unknown>): Promise<void> {
+async function startSignupWorkflow(body: Record<string, unknown>): Promise<boolean> {
   if (!WORKFLOW_URL) {
     console.error("shopify/customers-create: SHOPIFY_SIGNUP_WORKFLOW_URL unset");
-    return;
+    return false;
   }
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
@@ -101,7 +104,7 @@ async function startWelcomeWorkflow(body: Record<string, unknown>): Promise<void
         body: JSON.stringify(body),
         cache: "no-store",
       });
-      if (res.ok) return;
+      if (res.ok) return true;
       console.error(
         `shopify/customers-create: workflow trigger returned ${res.status} (attempt ${attempt})`
       );
@@ -112,6 +115,7 @@ async function startWelcomeWorkflow(body: Record<string, unknown>): Promise<void
       );
     }
   }
+  return false;
 }
 
 export async function POST(req: NextRequest) {
@@ -164,28 +168,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "already a patient" });
   }
 
-  const created = await fetch(`${API_URL}/api/patients`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(toPatientPayload(customer, email)),
-    cache: "no-store",
-  });
-  if (!created.ok) {
-    console.error(`shopify/customers-create: patient create returned ${created.status}`);
-    return NextResponse.json({ error: "Create failed" }, { status: 502 });
+  const started = await startSignupWorkflow(toWorkflowPayload(customer, email));
+  if (!started) {
+    return NextResponse.json({ error: "Workflow trigger failed" }, { status: 502 });
   }
-  const patientId = (await created.json())?.data?.id;
 
-  await startWelcomeWorkflow({
-    patientId,
-    email,
-    firstName: clean(customer.first_name) ?? "",
-    lastName: clean(customer.last_name) ?? "",
-    // The templates greet by first name, which Shopify signups often lack, and
-    // the renderer has no default filter — so the fallback is resolved here.
-    greetingName: clean(customer.first_name) ?? "there",
-    shopifyCustomerId: customer.id ?? null,
-  });
-
-  return NextResponse.json({ ok: true, patientId });
+  return NextResponse.json({ ok: true, triggered: true });
 }

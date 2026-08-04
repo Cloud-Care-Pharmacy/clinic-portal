@@ -9,11 +9,14 @@ Shopify customers/create webhook
    │
    ▼
 POST /api/webhooks/shopify/customers-create   ← this app
-   │   verify Shopify HMAC → look up by email → POST /api/patients
+   │   verify Shopify HMAC → skip if already a patient → hand off
    ▼
 "Shopify Signup → New Patient" workflow (webhook trigger)
        └─ router "Has email?"
-            ├─ send-welcome ..... welcome email + timeline entry
+            ├─ create-and-welcome
+            │     ├─ patient_action ... create the patient record
+            │     ├─ send_email ....... welcome email
+            │     └─ record_activity .. timeline entry
             └─ no-email ......... skip
 ```
 
@@ -27,26 +30,28 @@ POST /api/webhooks/shopify/customers-create   ← this app
 `shopify-signup-to-patient.json` is the payload the workflow was created from,
 kept here so the definition is reviewable and re-appliable.
 
-## Why the create step isn't in the workflow
+## Why there's still a route in front of the workflow
 
-The obvious shape — one workflow doing lookup, create, and email via `http_call`
-— doesn't run. Verified by test run:
+The create lives in the workflow, on the `patient_action` node. Two things stay
+in the route because the engine can't do them:
 
-- `http_call` to `https://api.quity.com.au` returns **522** from inside the
-  engine, while the same request succeeds from anywhere else. Calls to
-  third-party hosts work (`https://example.com` → 200), so this is the gateway
-  being unable to reach its own Cloudflare-fronted hostname, not egress in
-  general.
-- There is no native patient-creating step — `create_patient` is rejected by the
-  definition validator, and the step catalog has no equivalent.
+- **The Shopify signature check.** Without it the trigger URL is the only
+  secret, and anyone who learns it could create patients and send mail.
+- **The "already a patient?" lookup.** `patient_action` rejects a duplicate
+  email outright, and Shopify re-delivers until it gets a 2xx — so without this
+  every retry would leave a failed run behind. The engine has no
+  lookup-by-email step to do it with (`lookup_patient` takes an id), and it
+  can't call our API to improvise one: `http_call` to `api.quity.com.au`
+  returns **522** from inside the engine while succeeding from everywhere else,
+  and calls to third-party hosts work fine (`https://example.com` → 200).
 
-So the create happens in the route handler, which can reach the API. That also
-keeps `API_SECRET` server-side instead of stored in the workflow definition
-where anyone who can open the editor could read it.
+Because the route no longer writes anything before handing off, a failed
+handoff returns 502 and Shopify's retry safely re-runs the whole delivery.
 
-If the gateway later gains a `create_patient` step (or the engine can reach the
-API), the lookup and create can move back into the workflow and the route can go
-away.
+The trade-off of moving the create into the workflow: the route acknowledges
+Shopify as soon as the workflow starts, so a failure *inside* the workflow no
+longer reaches Shopify's retry machinery. It shows up as a failed run instead.
+The create node retries three times with backoff to cover transient errors.
 
 ## Configuration
 
@@ -68,18 +73,26 @@ pointing at `https://<portal-domain>/api/webhooks/shopify/customers-create`.
 
 | Situation | Result |
 |---|---|
-| Valid signature, new customer | patient created, welcome email sent, `200` |
+| Valid signature, new customer | workflow starts: patient created, welcome email sent, `200` |
 | Signature missing or wrong | `401`, nothing called |
-| Customer already has a patient | skipped, no duplicate and no second email |
+| Customer already has a patient | skipped, so the create node never runs |
 | Customer has no email | skipped (nothing to key the record on) |
 | Another topic posted to the URL | skipped |
-| Gateway lookup/create fails | `502`, so Shopify retries the delivery |
+| Gateway lookup or workflow trigger fails | `502`, so Shopify retries the delivery |
 
-Shopify's payload is mapped to the patient record as `email → originalEmail`
-(lower-cased, matching every existing record), `first_name`/`last_name`,
-`phone` (falling back to the default address phone), `default_address.*` →
-street/city/state/postcode/country, plus `introSource: "shopify"`. Blank values
-are omitted rather than written as empty strings.
+The route flattens Shopify's customer into the payload the create node reads:
+`email` (lower-cased, matching every existing record),
+`first_name`/`last_name`, `phone` (falling back to the default address phone),
+and `default_address.*` → street/city/state/postcode/country. Absent values are
+sent as empty strings, which is what an unresolved template would produce
+anyway.
+
+Provenance is `source: "shopify"` on the node, which the gateway stamps onto the
+audit row and the `patient.created` event. Note this replaced the
+`introSource: "shopify"` column the route used to write — `patient_action`
+can't write that column (`PATIENT_ACTION_FIELD_KEYS` has only
+`introSourceDate` / `introSourceComments`). Nothing reads it today; every
+existing patient has it null.
 
 ## Templates
 
