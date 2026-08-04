@@ -60,7 +60,7 @@
                 "from": "info@notification.quity.com.au",
                 "fromName": "Quity",
                 "replyTo": "support@quity.com.au",
-                "templateId": "019fce9f-d890-76cd-8a07-ff7269c0af0e",
+                "templateId": "019fceb6-614d-7309-be6c-d721291a8151",
                 "variables": {
                   "patient.firstName": "{{event.payload.body.greetingName}}",
                   "patient.email": "{{event.payload.body.email}}"

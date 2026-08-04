@@ -96,23 +96,40 @@ existing patient has it null.
 
 ## Templates
 
-The **signup · assessment not started** sequence — three email templates under
-category `signup`:
+Four email templates under category `signup`, in two tracks.
 
-| # | Template | Subject | Timing | ID |
-|---|---|---|---|---|
-| 1 | Signup 1 · Welcome | You're all set up - ready to begin? | ~1 day after sign-up | `019fce9f-d890-76cd-8a07-ff7269c0af0e` |
-| 2 | Signup 2 · Still waiting | Your assessment is waiting | +2 days after email 1 | `019fcea0-3d21-73da-b284-6728b9fe852b` |
-| 3 | Signup 3 · Last nudge | Still thinking it over? | +4 days after email 2 | `019fcea0-41fc-739c-aef1-c445b15e2741` |
+**Day 0 — on account creation.** This is what the workflow sends.
 
-Only #1 is wired up, and the workflow sends it **immediately** on signup rather
-than at the sequence's ~1 day. Add a `wait` step before `send_welcome_email` if
-the design's timing is what's wanted. Day numbers live in the template
-descriptions rather than their names, so re-timing the sequence doesn't leave a
-stale name behind.
+| Template | Subject | ID |
+|---|---|---|
+| Signup 0 · Welcome to Quity | Welcome to Quity | `019fceb6-614d-7309-be6c-d721291a8151` |
 
-The `send_welcome_email` step carries no inline subject, so each template's
-subject is what goes out — editing it in the editor is enough.
+**Signup · assessment not started** — the follow-up sequence, none of it wired
+to a workflow yet:
+
+| # | Template | Subject | Timing |
+|---|---|---|---|
+| 1 | Signup 1 · Welcome | You're all set up - ready to begin? | ~1 day after sign-up |
+| 2 | Signup 2 · Still waiting | Your assessment is waiting | +2 days after email 1 |
+| 3 | Signup 3 · Last nudge | Still thinking it over? | +4 days after email 2 |
+
+IDs: `019fce9f-d890-76cd-8a07-ff7269c0af0e`,
+`019fcea0-3d21-73da-b284-6728b9fe852b`, `019fcea0-41fc-739c-aef1-c445b15e2741`.
+
+Day numbers live in the descriptions rather than the names, so re-timing the
+sequence doesn't leave a stale name behind. The `send_welcome_email` step
+carries no inline subject, so each template's own subject is what goes out —
+editing it in the editor is enough.
+
+The day-0 template needs none of the fixes the other three did: it arrived with
+real preheader copy, no Django syntax, and no placeholders. It also carries no
+`{{ }}` tokens at all, so it renders identically for everyone. The step still
+passes `patient.firstName` / `patient.email`, which costs nothing and means the
+template works as soon as anyone adds personalisation to it.
+
+It has no unsubscribe link, which is right for a transactional
+account-creation email and matches the other system templates. The three
+follow-ups do carry one, since they're promotional.
 
 The renderer only understands `{{ dotted.path }}` — see `TOKEN_RE` in
 `src/lib/templates/variables.ts` — and leaves anything else in the body as
