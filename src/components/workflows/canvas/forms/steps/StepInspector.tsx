@@ -13,6 +13,7 @@ import type {
   LookupPatientConsultationsStep,
   LookupPatientStep,
   LoopOnItemsStep,
+  PatientActionStep,
   RecordActivityStep,
   RouterStep,
   SendEmailStep,
@@ -36,6 +37,7 @@ import { LookupConsultationForm } from "./LookupConsultationForm";
 import { LookupPatientConsultationsForm } from "./LookupPatientConsultationsForm";
 import { LookupPatientForm } from "./LookupPatientForm";
 import { LoopOnItemsForm } from "./LoopOnItemsForm";
+import { PatientActionForm } from "./PatientActionForm";
 import { RecordActivityForm } from "./RecordActivityForm";
 import { RouterForm } from "./RouterForm";
 import { SendEmailForm } from "./SendEmailForm";
@@ -102,6 +104,8 @@ function StepKindForm(props: StepInspectorProps) {
       return (
         <ConsultationActionForm {...(props as StepFormProps<ConsultationActionStep>)} />
       );
+    case "patient_action":
+      return <PatientActionForm {...(props as StepFormProps<PatientActionStep>)} />;
     case "is_practitioner_on_leave":
       return (
         <IsPractitionerOnLeaveForm
@@ -183,6 +187,13 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
         operation: "complete",
         consultationId: "",
         storeAs: "result",
+      };
+    case "patient_action":
+      return {
+        kind: "patient_action",
+        operation: "update",
+        patientId: "",
+        storeAs: "patientResult",
       };
     case "is_practitioner_on_leave":
       return {

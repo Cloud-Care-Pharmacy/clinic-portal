@@ -2,6 +2,10 @@ import { z } from "zod";
 import {
   BRANCH_OP_VALUES,
   CONSULTATION_ACTION_OPERATIONS,
+  PATIENT_ACTION_FIELD_KEYS,
+  PATIENT_ACTION_OPERATIONS,
+  PATIENT_ACTION_PROFILE_TYPES,
+  PATIENT_ACTION_STATUSES,
   RECORD_ACTIVITY_STEP_ENTITY_TYPES,
   RECORD_ACTIVITY_STEP_TYPES,
   SHOPIFY_ADMIN_OPERATIONS,
@@ -388,6 +392,85 @@ const consultationActionStep = z
     }
   });
 
+/**
+ * `patient_action` — create / update / archive a patient.
+ *
+ * One flat object rather than three, because `z.discriminatedUnion` keys
+ * on `kind` alone and cannot hold three members sharing one literal. The
+ * per-operation required-field matrix is enforced in `superRefine`, the
+ * same way `consultation_action` handles `reschedule`.
+ */
+const patientActionStep = z
+  .object({
+    ...baseStep,
+    kind: z.literal("patient_action"),
+    operation: z.enum(PATIENT_ACTION_OPERATIONS),
+    storeAs: stepIdRefinement,
+    /** Required for `create`. */
+    originalEmail: templateString.optional(),
+    entityId: templateString.optional(),
+    /** Required for `update` / `archive`. */
+    patientId: templateString.optional(),
+    namePrefix: templateString.optional(),
+    firstName: templateString.optional(),
+    lastName: templateString.optional(),
+    dateOfBirth: templateString.optional(),
+    gender: templateString.optional(),
+    mobile: templateString.optional(),
+    streetAddress: templateString.optional(),
+    city: templateString.optional(),
+    state: templateString.optional(),
+    postcode: templateString.optional(),
+    country: templateString.optional(),
+    medicareNumber: templateString.optional(),
+    medicareIrn: templateString.optional(),
+    medicareExpiry: templateString.optional(),
+    forwardEmail: templateString.optional(),
+    pbsPatientId: templateString.optional(),
+    introSourceDate: templateString.optional(),
+    introSourceComments: templateString.optional(),
+    patientStatus: z.enum(PATIENT_ACTION_STATUSES).optional(),
+    profileType: z.enum(PATIENT_ACTION_PROFILE_TYPES).optional(),
+    deceased: z.boolean().optional(),
+    clearFields: z.array(z.enum(PATIENT_ACTION_FIELD_KEYS)).min(1).optional(),
+    restore: z.boolean().optional(),
+    source: z.string().min(1).max(64).optional(),
+    actor: actorSchema,
+  })
+  .superRefine((step, ctx) => {
+    if (step.operation === "create") {
+      if (!step.originalEmail) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["originalEmail"],
+          message: "originalEmail is required to create a patient",
+        });
+      }
+      return;
+    }
+
+    if (!step.patientId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["patientId"],
+        message: `patientId is required to ${step.operation} a patient`,
+      });
+    }
+
+    if (step.operation === "update") {
+      const hasField = PATIENT_ACTION_FIELD_KEYS.some(
+        (k) => step[k] !== undefined
+      );
+      if (!hasField && !step.clearFields?.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["firstName"],
+          message: "Set or clear at least one field",
+        });
+      }
+    }
+  });
+
 const isPractitionerOnLeaveStep = z.object({
   ...baseStep,
   kind: z.literal("is_practitioner_on_leave"),
@@ -634,6 +717,7 @@ export const stepSchema = z.discriminatedUnion("kind", [
   findFreeSlotsStep,
   checkConsultationConflictsStep,
   consultationActionStep,
+  patientActionStep,
   isPractitionerOnLeaveStep,
   getPractitionerAvailabilityStep,
   recordActivityStep,

@@ -1807,6 +1807,7 @@ export type WorkflowStepKind =
   | "find_free_slots"
   | "check_consultation_conflicts"
   | "consultation_action"
+  | "patient_action"
   | "is_practitioner_on_leave"
   | "get_practitioner_availability"
   | "record_activity"
@@ -1842,6 +1843,65 @@ export const CONSULTATION_ACTION_OPERATIONS = [
 ] as const;
 export type ConsultationActionOperation =
   (typeof CONSULTATION_ACTION_OPERATIONS)[number];
+
+/**
+ * Operations supported by the `patient_action` step.
+ *
+ * There is deliberately no `delete` — hard delete is irreversible and is
+ * not reachable from a workflow. Use `archive` (reversible, preserves
+ * clinical history) instead. Mirrors the server-side union in
+ * `src/modules/workflows/workflow-schema.ts`.
+ */
+export const PATIENT_ACTION_OPERATIONS = ["create", "update", "archive"] as const;
+export type PatientActionOperation = (typeof PATIENT_ACTION_OPERATIONS)[number];
+
+/**
+ * Patient columns a `patient_action` step may write. Mirrors
+ * `PATIENT_FIELD_KEYS` server-side (itself a mirror of
+ * `PATCHABLE_COLUMNS` in the persistence layer).
+ */
+export const PATIENT_ACTION_FIELD_KEYS = [
+  "namePrefix",
+  "firstName",
+  "lastName",
+  "dateOfBirth",
+  "gender",
+  "mobile",
+  "streetAddress",
+  "city",
+  "state",
+  "postcode",
+  "country",
+  "medicareNumber",
+  "medicareIrn",
+  "medicareExpiry",
+  "forwardEmail",
+  "pbsPatientId",
+  "patientStatus",
+  "deceased",
+  "introSourceDate",
+  "introSourceComments",
+  "profileType",
+] as const;
+export type PatientActionFieldKey = (typeof PATIENT_ACTION_FIELD_KEYS)[number];
+
+/** Closed vocabularies the `patient_action` form renders as pickers. */
+export const PATIENT_ACTION_STATUSES = [
+  "current",
+  "claimant",
+  "contact",
+  "inactive",
+  "deceased",
+] as const;
+export type PatientActionStatus = (typeof PATIENT_ACTION_STATUSES)[number];
+
+export const PATIENT_ACTION_PROFILE_TYPES = [
+  "full",
+  "dependant",
+  "contact only",
+] as const;
+export type PatientActionProfileType =
+  (typeof PATIENT_ACTION_PROFILE_TYPES)[number];
 
 /**
  * Supported Shopify Admin operations. Mirrors the server-side enum in
@@ -2226,6 +2286,76 @@ export interface ConsultationActionStep extends WorkflowStepBase {
 }
 
 /**
+ * Free-text patient columns a `patient_action` step can set. Each value is
+ * a template — `{{event.payload.firstName}}` and friends.
+ *
+ * On `update`, a template that resolves to an empty string is **skipped**,
+ * not written: a missing var can never blank patient data by accident. Use
+ * `clearFields` to null a column on purpose.
+ */
+interface PatientActionTemplatedFields {
+  namePrefix?: string;
+  firstName?: string;
+  lastName?: string;
+  /** `YYYY-MM-DD`. */
+  dateOfBirth?: string;
+  gender?: string;
+  mobile?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  medicareNumber?: string;
+  medicareIrn?: string;
+  medicareExpiry?: string;
+  forwardEmail?: string;
+  pbsPatientId?: string;
+  /** ISO datetime. */
+  introSourceDate?: string;
+  introSourceComments?: string;
+}
+
+/**
+ * Create / update / archive a patient. The required additional fields
+ * depend on `operation` — the Zod schema enforces the matrix:
+ *
+ *  - `create`  → `originalEmail` required; `id`, `displayId` and the
+ *                generated mailbox address are server-side.
+ *  - `update`  → `patientId` required, plus at least one field to set or
+ *                clear.
+ *  - `archive` → `patientId` required; `restore: true` un-archives.
+ *
+ * Stores `{ operation, patientId, patient, ... }` under `vars.<storeAs>`.
+ */
+export interface PatientActionStep
+  extends WorkflowStepBase,
+    PatientActionTemplatedFields {
+  kind: "patient_action";
+  operation: PatientActionOperation;
+  storeAs: string;
+  /** Required when `operation === "create"`. */
+  originalEmail?: string;
+  /** Optional on `create`. Patients without an entity get no workflow
+   *  dispatch, so set it when the new patient should trigger flows. */
+  entityId?: string;
+  /** Required when `operation` is `"update"` or `"archive"`. */
+  patientId?: string;
+  /** Closed vocabularies — literals, not templates. */
+  patientStatus?: PatientActionStatus;
+  profileType?: PatientActionProfileType;
+  deceased?: boolean;
+  /** `update` only — columns to explicitly set to NULL. */
+  clearFields?: PatientActionFieldKey[];
+  /** `archive` only — un-archive instead of archiving. */
+  restore?: boolean;
+  /** Provenance stamped on the audit row + event payload. Defaults to
+   *  `"workflow"` server-side. */
+  source?: string;
+  actor?: WorkflowStepActor;
+}
+
+/**
  * Checks whether the practitioner is on leave for a given date. Stores
  * `{ practitionerUserId, date, isOnLeave, leaves[] }` under
  * `vars.<storeAs>`.
@@ -2413,6 +2543,7 @@ export type WorkflowStep =
   | FindFreeSlotsStep
   | CheckConsultationConflictsStep
   | ConsultationActionStep
+  | PatientActionStep
   | IsPractitionerOnLeaveStep
   | GetPractitionerAvailabilityStep
   | RecordActivityStep
