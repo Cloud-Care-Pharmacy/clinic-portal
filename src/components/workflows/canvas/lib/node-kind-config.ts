@@ -20,6 +20,7 @@ import {
   CalendarDays,
   UserMinus,
   UserPlus,
+  ClipboardCheck,
   Activity,
   PhoneOutgoing,
   ShoppingBag,
@@ -194,6 +195,12 @@ export const STEP_KIND_CONFIG: Record<WorkflowStepKind, NodeKindConfig> = {
     description: "Create, update or archive a patient record",
     icon: UserPlus,
   }),
+  has_clinical_record: fam("tool", {
+    label: "Has clinical record?",
+    shortLabel: "Intake?",
+    description: "Check whether a patient has submitted their intake",
+    icon: ClipboardCheck,
+  }),
   is_practitioner_on_leave: fam("tool", {
     label: "Practitioner on leave?",
     shortLabel: "On leave",
@@ -275,6 +282,7 @@ export const STEP_KINDS: WorkflowStepKind[] = [
   "check_consultation_conflicts",
   "consultation_action",
   "patient_action",
+  "has_clinical_record",
   "is_practitioner_on_leave",
   "get_practitioner_availability",
   "record_activity",
@@ -372,6 +380,13 @@ export function stepLabel(
       return {
         label: named || "Patient action",
         sub: s.operation ? `${s.operation} · ${s.storeAs || fallback}` : fallback,
+      };
+    case "has_clinical_record":
+      return {
+        label: named || "Has clinical record?",
+        sub: s.reviewStatus
+          ? `${s.reviewStatus} · ${s.storeAs || fallback}`
+          : s.storeAs || fallback,
       };
     case "is_practitioner_on_leave":
       return {

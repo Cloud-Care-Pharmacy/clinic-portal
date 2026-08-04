@@ -7,6 +7,7 @@ import type {
   ConsultationActionStep,
   FindFreeSlotsStep,
   GetPractitionerAvailabilityStep,
+  HasClinicalRecordStep,
   HttpCallStep,
   IsPractitionerOnLeaveStep,
   LookupConsultationStep,
@@ -31,6 +32,7 @@ import { CheckConsultationConflictsForm } from "./CheckConsultationConflictsForm
 import { ConsultationActionForm } from "./ConsultationActionForm";
 import { FindFreeSlotsForm } from "./FindFreeSlotsForm";
 import { GetPractitionerAvailabilityForm } from "./GetPractitionerAvailabilityForm";
+import { HasClinicalRecordForm } from "./HasClinicalRecordForm";
 import { HttpCallForm } from "./HttpCallForm";
 import { IsPractitionerOnLeaveForm } from "./IsPractitionerOnLeaveForm";
 import { LookupConsultationForm } from "./LookupConsultationForm";
@@ -106,6 +108,12 @@ function StepKindForm(props: StepInspectorProps) {
       );
     case "patient_action":
       return <PatientActionForm {...(props as StepFormProps<PatientActionStep>)} />;
+    case "has_clinical_record":
+      return (
+        <HasClinicalRecordForm
+          {...(props as StepFormProps<HasClinicalRecordStep>)}
+        />
+      );
     case "is_practitioner_on_leave":
       return (
         <IsPractitionerOnLeaveForm
@@ -194,6 +202,12 @@ export function blankStep(kind: WorkflowStepKind): WorkflowStep {
         operation: "update",
         patientId: "",
         storeAs: "patientResult",
+      };
+    case "has_clinical_record":
+      return {
+        kind: "has_clinical_record",
+        patientId: "",
+        storeAs: "intake",
       };
     case "is_practitioner_on_leave":
       return {
