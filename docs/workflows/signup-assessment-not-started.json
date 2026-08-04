@@ -1,0 +1,178 @@
+{
+  "entityId": "aded0afd-47f8-411e-ba99-9684571caaf8",
+  "name": "Signup → Assessment Not Started",
+  "description": "Follow-up sequence for a new patient who has not submitted their intake. Runs on patient.created, then checks for a clinical record before each send — day 1, day 3, day 7. Once the patient submits, every remaining send is skipped.",
+  "status": "draft",
+  "triggerEventType": "patient.created",
+  "triggers": [
+    {
+      "kind": "event",
+      "name": "Patient created",
+      "eventType": "patient.created"
+    }
+  ],
+  "definition": {
+    "version": 1,
+    "steps": [
+      {
+        "kind": "wait",
+        "id": "wait_to_day_1",
+        "name": "Wait 1 day",
+        "seconds": 86400
+      },
+      {
+        "kind": "has_clinical_record",
+        "id": "check_day_1",
+        "name": "Submitted their intake?",
+        "patientId": "{{event.payload.patientId}}",
+        "storeAs": "intakeDay1"
+      },
+      {
+        "kind": "router",
+        "id": "nudge_day_1",
+        "name": "Still nothing? (day 1)",
+        "executionType": "first_match",
+        "branches": [
+          {
+            "name": "not-submitted",
+            "conditions": [
+              [
+                {
+                  "left": "{{vars.intakeDay1.hasSubmitted}}",
+                  "op": "falsy"
+                }
+              ]
+            ],
+            "steps": [
+              {
+                "kind": "send_email",
+                "id": "send_nudge_1",
+                "name": "Send 'ready to begin?'",
+                "to": "{{event.payload.patientEmail}}",
+                "from": "info@notification.quity.com.au",
+                "fromName": "Quity",
+                "replyTo": "support@quity.com.au",
+                "templateId": "019fce9f-d890-76cd-8a07-ff7269c0af0e",
+                "variables": {
+                  "patient.firstName": "{{event.payload.patientFirstName}}",
+                  "patient.email": "{{event.payload.patientEmail}}"
+                },
+                "idempotencyKeySuffix": "signup-not-started-1"
+              }
+            ]
+          }
+        ],
+        "fallback": {
+          "name": "submitted",
+          "steps": []
+        }
+      },
+      {
+        "kind": "wait",
+        "id": "wait_to_day_3",
+        "name": "Wait 2 more days",
+        "seconds": 172800
+      },
+      {
+        "kind": "has_clinical_record",
+        "id": "check_day_3",
+        "name": "Submitted their intake?",
+        "patientId": "{{event.payload.patientId}}",
+        "storeAs": "intakeDay3"
+      },
+      {
+        "kind": "router",
+        "id": "nudge_day_3",
+        "name": "Still nothing? (day 3)",
+        "executionType": "first_match",
+        "branches": [
+          {
+            "name": "not-submitted",
+            "conditions": [
+              [
+                {
+                  "left": "{{vars.intakeDay3.hasSubmitted}}",
+                  "op": "falsy"
+                }
+              ]
+            ],
+            "steps": [
+              {
+                "kind": "send_email",
+                "id": "send_nudge_2",
+                "name": "Send 'your assessment is waiting'",
+                "to": "{{event.payload.patientEmail}}",
+                "from": "info@notification.quity.com.au",
+                "fromName": "Quity",
+                "replyTo": "support@quity.com.au",
+                "templateId": "019fcea0-3d21-73da-b284-6728b9fe852b",
+                "variables": {
+                  "patient.firstName": "{{event.payload.patientFirstName}}",
+                  "patient.email": "{{event.payload.patientEmail}}"
+                },
+                "idempotencyKeySuffix": "signup-not-started-2"
+              }
+            ]
+          }
+        ],
+        "fallback": {
+          "name": "submitted",
+          "steps": []
+        }
+      },
+      {
+        "kind": "wait",
+        "id": "wait_to_day_7",
+        "name": "Wait 4 more days",
+        "seconds": 345600
+      },
+      {
+        "kind": "has_clinical_record",
+        "id": "check_day_7",
+        "name": "Submitted their intake?",
+        "patientId": "{{event.payload.patientId}}",
+        "storeAs": "intakeDay7"
+      },
+      {
+        "kind": "router",
+        "id": "nudge_day_7",
+        "name": "Still nothing? (day 7)",
+        "executionType": "first_match",
+        "branches": [
+          {
+            "name": "not-submitted",
+            "conditions": [
+              [
+                {
+                  "left": "{{vars.intakeDay7.hasSubmitted}}",
+                  "op": "falsy"
+                }
+              ]
+            ],
+            "steps": [
+              {
+                "kind": "send_email",
+                "id": "send_nudge_3",
+                "name": "Send 'still thinking it over?'",
+                "to": "{{event.payload.patientEmail}}",
+                "from": "info@notification.quity.com.au",
+                "fromName": "Quity",
+                "replyTo": "support@quity.com.au",
+                "templateId": "019fcea0-41fc-739c-aef1-c445b15e2741",
+                "variables": {
+                  "patient.firstName": "{{event.payload.patientFirstName}}",
+                  "patient.email": "{{event.payload.patientEmail}}"
+                },
+                "idempotencyKeySuffix": "signup-not-started-3"
+              }
+            ]
+          }
+        ],
+        "fallback": {
+          "name": "submitted",
+          "steps": []
+        }
+      }
+    ]
+  }
+}

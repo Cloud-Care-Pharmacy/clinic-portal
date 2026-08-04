@@ -104,8 +104,7 @@ Four email templates under category `signup`, in two tracks.
 |---|---|---|
 | Signup 0 · Welcome to Quity | Welcome to Quity | `019fceb6-614d-7309-be6c-d721291a8151` |
 
-**Signup · assessment not started** — the follow-up sequence, none of it wired
-to a workflow yet:
+**Signup · assessment not started** — driven by the second workflow below:
 
 | # | Template | Subject | Timing |
 |---|---|---|---|
@@ -146,27 +145,79 @@ literal text. The supplied HTML used Django-style syntax, so on the way in:
 - The hidden preheader div shipped the literal string `undefined` as inbox
   preview text; each template now carries real preview copy.
 
-Subjects weren't supplied, so they mirror each email's headline
-("Welcome in, {{patient.firstName}} — here's your next step").
+Names and subjects come from the sequence design.
 
 ## Before going live
 
-- [ ] **Supply the registered business address.** The footer currently renders
-      `{{clinic.address}}` verbatim. Add it to the `send_welcome_email` step's
-      `variables`, or hard-code it in the three template bodies.
+- [ ] **Supply the registered business address.** Blocks the *follow-up*
+      sequence only — its three templates render `{{clinic.address}}` verbatim
+      in the footer. Add it to each `send_email` step's `variables`, or
+      hard-code it in the bodies. The day-0 welcome has no such token.
 - [ ] Set the three variables above in Vercel and register the Shopify webhook.
 - [ ] Test-run the workflow from the editor with your own address in
       `body.email` to check the email renders.
 - [ ] Activate the workflow (button in the editor, or
       `POST /workflows/{id}/activate`).
 
-Emails 2 and 3 have no workflow. The schedule is settled (+2 days, then +4), so
-what's left is the exit condition: each send has to be skipped once the patient
-has actually started their assessment. The engine can't query our API to check
-(see above) and has no lookup-by-email step, so that signal has to come from the
-gateway — either a `patient.intake.submitted` event the sequence can wait on
-(`wait_for_event`), or an intake flag exposed on a step the sequence can branch
-against.
+---
+
+# Signup → Assessment Not Started
+
+The follow-up sequence for someone who signed up but never submitted their
+intake. `signup-assessment-not-started.json` is the payload it was
+created from.
+
+| | |
+|---|---|
+| Workflow ID | `019fcec9-3184-770e-beff-0104dd5df289` |
+| Status | `draft` — **not live** |
+| Trigger | Event, `patient.created` |
+
+```
+patient.created
+   ├─ wait 1 day  → has_clinical_record → no record? → "You're all set up"
+   ├─ wait 2 days → has_clinical_record → no record? → "Your assessment is waiting"
+   └─ wait 4 days → has_clinical_record → no record? → "Still thinking it over?"
+```
+
+Each gate re-checks, so the moment someone submits their intake every remaining
+send is skipped. A submission row exists only once the patient has submitted, so
+`hasSubmitted` is the whole test — no `reviewStatus` filter, since a pending
+intake still counts as started.
+
+## Notes on the shape
+
+**It runs for every new patient, not only Shopify signups.** Patients created by
+intake have a clinical record within the first day, so they fall straight
+through all three gates without being emailed. Narrowing it to Shopify alone
+would mean ANDing `{{event.payload.source}}` onto each gate, and the editor
+stores only the first condition per branch (`WorkflowRouterBranch.condition`) —
+so a second condition would be silently dropped the first time someone saves
+from the canvas. The clinical-record check is the condition that actually
+matters, so it stands alone.
+
+**The run always walks all nine steps.** Routers can't nest and steps after one
+run unconditionally, so there's no early exit — a patient who submits on day 1
+still has a run sitting in `waiting` until day 7, skipping each send. Harmless,
+but it means one run per new patient for a week.
+
+**`has_clinical_record` fails the run if the patient is gone.** Verified: an
+unknown id returns "Patient not found" rather than `hasSubmitted: false`. Over a
+7-day window a hard-deleted patient will fail its run rather than quietly
+skipping.
+
+## Verified
+
+- The full sequence was dry-run end to end on a throwaway copy with 1-second
+  waits, against a patient who already had a record: all three gates read
+  `hasSubmitted: true`, all three routers fell back to `submitted`, zero emails.
+- Boolean handling was checked separately, because a `false` that stringified to
+  `"false"` would read as truthy and silently prevent every nudge:
+  `false`+`falsy` matches, `true`+`falsy` doesn't.
+- The send path itself is unproven against a real recipient — no patient in the
+  system currently lacks a clinical record, so the matching branch has never
+  been executed with its `send_email` attached. Worth one live test before
+  activating.
 
 Every customer who signs up gets the welcome email — it is not gated on
 `email_marketing_consent`. If that should change, add a condition on
