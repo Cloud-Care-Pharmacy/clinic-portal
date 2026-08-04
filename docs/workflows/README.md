@@ -96,13 +96,23 @@ existing patient has it null.
 
 ## Templates
 
-Three email templates under category `signup`:
+The **signup · assessment not started** sequence — three email templates under
+category `signup`:
 
-| Template | ID | Used by |
-|---|---|---|
-| Signup welcome — start your assessment | `019fce9f-d890-76cd-8a07-ff7269c0af0e` | the `send_welcome_email` step |
-| Signup nudge — assessment not started | `019fcea0-3d21-73da-b284-6728b9fe852b` | not wired to a workflow yet |
-| Signup nudge — final reminder | `019fcea0-41fc-739c-aef1-c445b15e2741` | not wired to a workflow yet |
+| # | Template | Subject | Timing | ID |
+|---|---|---|---|---|
+| 1 | Signup 1 · Welcome | You're all set up - ready to begin? | ~1 day after sign-up | `019fce9f-d890-76cd-8a07-ff7269c0af0e` |
+| 2 | Signup 2 · Still waiting | Your assessment is waiting | +2 days after email 1 | `019fcea0-3d21-73da-b284-6728b9fe852b` |
+| 3 | Signup 3 · Last nudge | Still thinking it over? | +4 days after email 2 | `019fcea0-41fc-739c-aef1-c445b15e2741` |
+
+Only #1 is wired up, and the workflow sends it **immediately** on signup rather
+than at the sequence's ~1 day. Add a `wait` step before `send_welcome_email` if
+the design's timing is what's wanted. Day numbers live in the template
+descriptions rather than their names, so re-timing the sequence doesn't leave a
+stale name behind.
+
+The `send_welcome_email` step carries no inline subject, so each template's
+subject is what goes out — editing it in the editor is enough.
 
 The renderer only understands `{{ dotted.path }}` — see `TOKEN_RE` in
 `src/lib/templates/variables.ts` — and leaves anything else in the body as
@@ -133,9 +143,13 @@ Subjects weren't supplied, so they mirror each email's headline
 - [ ] Activate the workflow (button in the editor, or
       `POST /workflows/{id}/activate`).
 
-The two nudge templates have no workflow. Driving them needs a way to tell
-whether a signup has since submitted an intake — the engine can't query our API
-(see above), so that check would have to come from the gateway or from this app.
+Emails 2 and 3 have no workflow. The schedule is settled (+2 days, then +4), so
+what's left is the exit condition: each send has to be skipped once the patient
+has actually started their assessment. The engine can't query our API to check
+(see above) and has no lookup-by-email step, so that signal has to come from the
+gateway — either a `patient.intake.submitted` event the sequence can wait on
+(`wait_for_event`), or an intake flag exposed on a step the sequence can branch
+against.
 
 Every customer who signs up gets the welcome email — it is not gated on
 `email_marketing_consent`. If that should change, add a condition on
