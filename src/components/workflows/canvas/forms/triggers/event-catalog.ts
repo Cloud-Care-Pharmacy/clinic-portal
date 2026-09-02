@@ -1,5 +1,5 @@
 /**
- * Catalog of domain events emitted by the Quity backend that workflows can
+ * Catalog of domain events emitted by the FastMeds backend that workflows can
  * subscribe to. Grouped by entity/domain so the trigger picker can present a
  * two-step flow: pick an entity, then pick the event.
  *

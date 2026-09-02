@@ -2,7 +2,7 @@ import type { SxProps, Theme } from "@mui/material/styles";
 
 /**
  * Shared sx styles for all MUI DataGrid instances.
- * Implements the Quity Clinic Portal Design System § 09.
+ * Implements the FastMeds Clinic Portal Design System § 09.
  *
  * Non-negotiable #5: No per-page DataGrid styling — every grid uses this object.
  * If a screen genuinely needs to differ, add a documented variant here.

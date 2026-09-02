@@ -1,4 +1,4 @@
-# Implementation Guide — Quity Clinic Portal Design System
+# Implementation Guide — FastMeds Clinic Portal Design System
 
 This document is the **build order**. Work top to bottom; each phase is a logical PR boundary.
 
@@ -349,4 +349,4 @@ grep -rE '[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}]' src/components/ src/app/
 
 ---
 
-— Quity Clinic Portal Design System v1.0
+— FastMeds Clinic Portal Design System v1.0

@@ -1,10 +1,10 @@
-# Claude Code Prompt — Implement the Quity Clinic Portal Design System
+# Claude Code Prompt — Implement the FastMeds Clinic Portal Design System
 
 > **How to use:** open Claude Code at the root of the [`clinic-portal`](https://github.com/Cloud-Care-Pharmacy/clinic-portal) repo, then paste everything below the divider into the chat.
 
 ---
 
-You are implementing the **Quity Clinic Portal Design System** in this repository.
+You are implementing the **FastMeds Clinic Portal Design System** in this repository.
 
 ## Inputs
 
