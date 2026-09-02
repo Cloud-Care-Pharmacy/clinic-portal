@@ -16,9 +16,6 @@ import {
   Pill,
   User,
   Building2,
-  Package,
-  ShoppingCart,
-  ClipboardList,
   Workflow,
   Mail,
 } from "lucide-react";
@@ -41,7 +38,6 @@ interface NavItem {
   label: string;
   href: string;
   icon: ReactNode;
-  roles?: UserRole[];
 }
 
 const generalNav: NavItem[] = [
@@ -82,24 +78,6 @@ const operationsNav: NavItem[] = [
     label: "Templates",
     href: "/templates",
     icon: <Mail className="size-5 " />,
-  },
-];
-
-const catalogNav: NavItem[] = [
-  {
-    label: "Products",
-    href: "/products",
-    icon: <Package className="size-5 " />,
-  },
-  {
-    label: "Orders",
-    href: "/orders",
-    icon: <ShoppingCart className="size-5 " />,
-  },
-  {
-    label: "Stocktakes",
-    href: "/stocktakes",
-    icon: <ClipboardList className="size-5 " />,
   },
 ];
 
@@ -197,9 +175,6 @@ function NavGroup({
 function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean }) {
   const { signOut } = useClerk();
   const { push } = useRouter();
-  const filteredCatalog = catalogNav.filter(
-    (item) => !item.roles || item.roles.includes(user.role)
-  );
 
   const initials = (user.name ?? user.email ?? "U")
     .split(" ")
@@ -240,9 +215,6 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
       <nav className="flex-1 space-y-6 py-4">
         <NavGroup title="General" items={generalNav} collapsed={collapsed} />
         <NavGroup title="Operations" items={operationsNav} collapsed={collapsed} />
-        {filteredCatalog.length > 0 && (
-          <NavGroup title="Catalog" items={filteredCatalog} collapsed={collapsed} />
-        )}
       </nav>
 
       {/* User profile */}
