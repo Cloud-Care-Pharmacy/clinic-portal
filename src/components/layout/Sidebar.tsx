@@ -229,7 +229,7 @@ function SidebarContent({ user, collapsed }: SidebarProps & { collapsed: boolean
               : "max-w-40 translate-x-0 opacity-100"
           )}
         >
-          <span className="truncate font-semibold">Quity</span>
+          <span className="truncate font-semibold">FastMeds</span>
           <span className="truncate text-xs text-sidebar-foreground/50">
             Clinic Portal
           </span>

@@ -1,4 +1,4 @@
-# Quity Clinic Portal — Design System Handoff
+# FastMeds Clinic Portal — Design System Handoff
 
 **For:** the developer wiring this design system into the [`clinic-portal`](https://github.com/Cloud-Care-Pharmacy/clinic-portal) Next.js 16 app.
 
@@ -57,7 +57,7 @@
 ## How to use this handoff with Claude Code
 
 1. Clone or open the `clinic-portal` repo locally.
-2. Drop this folder somewhere accessible (e.g. `~/handoffs/quity-design-system/`).
+2. Drop this folder somewhere accessible (e.g. `~/handoffs/fastmeds-design-system/`).
 3. Open `CLAUDE_CODE_PROMPT.md`, copy its contents into a Claude Code session at the repo root.
 4. Claude Code will read `IMPLEMENTATION_GUIDE.md` and `design_system.html`, plan the work, and implement components one PR at a time.
 5. **Each PR must include a screenshot** of the new/changed surface — see non-negotiable #11.
@@ -89,4 +89,4 @@ These came up while writing the system. Flag them to the design owner before imp
 
 This is **v1.0** of the design system. Treat `design_system.html` as the contract. If a real-world need forces a divergence, the system updates first, the code follows. Never the reverse.
 
-— Quity Clinic Portal Design System
+— FastMeds Clinic Portal Design System

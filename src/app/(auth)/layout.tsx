@@ -23,7 +23,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <Stethoscope className="size-4  text-white" />
           </div>
           <span className="text-[17px] font-semibold">
-            Quity <span className="text-(--auth-accent)">Clinic</span>
+            FastMeds <span className="text-(--auth-accent)">Clinic</span>
           </span>
         </div>
 
